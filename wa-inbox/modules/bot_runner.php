@@ -242,6 +242,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         $mine = []; $hourN = 0; foreach ($rows as $m) if ($m['dir'] === 'out' && ($m['via'] ?? '') === 'bot') { $mine[] = (string) ($m['text'] ?? ''); if (strtotime((string) $m['time']) > time() - 3600) $hourN++; }
         if (!$isTest && !$again && $hourN >= max(1, (int) $c['chat_per_hour'])) { $skip($x, 'limit of bot replies per chat per hour', $text); continue; }
         $mine = array_slice($mine, -3);
+        if ((string) ($last['id'] ?? '') === '') foreach (array_reverse($rows) as $m) if (($m['dir'] ?? '') === 'in') { $last['id'] = (string) ($m['id'] ?? ''); break; } // the chat list has no message id: reactions and quotes need it
         if ($c['mode'] === 'auto' && function_exists('wf_media_code_send') && wf_media_code_send($acc, (string) $x['jid'], $text, (string) ($last['id'] ?? ''))) { // a file's shortcut: the file, no AI
             $st['done'][$x['jid']] = $last['time']; $st['sent'][] = time(); wi_bot_log_add($aid, ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => $text, 'reply' => '📎', 'result' => 'sent', 'role' => 'file', 'at' => date('c')]); $n++; continue; }
         if ($text !== '' && !wf_words($text) && $c['mode'] === 'auto' && $inHours && ($em = wf_bot_emoji($acc, (string) $x['jid'], (string) ($last['id'] ?? ''), $text)) !== '') { // only emojis: answered like a person

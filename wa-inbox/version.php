@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.76.9', 'date' => '2026-10-14', 'title' => 'Emoji replies in private chats', 'changes' => [
+        'Private chats: the last message id is taken from the thread when the chat list has none, so emoji-only messages get their reaction (and short line) again, and file shortcuts quote the message.',
+    ]],
     ['v' => '3.76.8', 'date' => '2026-10-14', 'title' => 'Groups: role thresholds', 'changes' => [
         'In groups the model\'s chosen mode is used, and healer, support and dreams replies are sent from 0.65 as in private chats (they used the general threshold only).',
     ]],
