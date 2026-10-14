@@ -1,0 +1,20 @@
+
+  /* ===================== 🤖 Bot page: general settings + groups table + team + log ===================== */
+  function gCfgForm(g, pre) { g = g || {}; pre = pre || '';
+    var o = function (v, cur, l) { return '<option value="' + v + '" ' + (String(cur) === String(v) ? 'selected' : '') + '>' + l + '</option>'; };
+    return '<div class="gcf">'
+      + '<label>' + T('Reply type') + '<select data-f="mode">' + o('ai', g.mode || 'ai', '✨ ' + T('Interactive (AI answers the message)')) + o('fixed', g.mode, '📌 ' + T('Fixed message')) + '</select></label>'
+      + '<label>' + T('When') + '<select data-f="trigger">' + o('mention', g.trigger || 'mention', '@ ' + T('Only when someone mentions or replies to the number')) + o('questions', g.trigger, '❓ ' + T('Questions only')) + o('all', g.trigger, '💬 ' + T('Every message')) + '</select></label>'
+      + '<label>' + T('Learning') + '<select data-f="learn">' + o('0', g.learn ? 1 : 0, T('Do not learn from this group')) + o('1', g.learn ? 1 : 0, '📚 ' + T('Learn from this group (questions + answers of the team / admins)')) + '</select></label>'
+      + '<label>' + T('Welcome') + '<select data-f="welcome">' + o('0', g.welcome ? 1 : 0, T('No welcome')) + o('1', g.welcome ? 1 : 0, '👋 ' + T('Welcome new members with a mention')) + '</select></label>'
+      + '<label class="gcf-wide" data-show="fixed" ' + (g.mode === 'fixed' ? '' : 'hidden') + '>' + T('Fixed message ({name} = member name, {group} = group name)') + '<textarea data-f="text" rows="3" dir="auto">' + esc(g.text || '') + '</textarea></label>'
+      + '<label data-show="fixed" ' + (g.mode === 'fixed' ? '' : 'hidden') + '>' + T('Same member at most once every (hours)') + '<input type="number" data-f="cooldown" min="1" max="720" value="' + (g.cooldown || 24) + '"></label>'
+      + '<label class="gcf-wide" data-show="welcome" ' + (g.welcome ? '' : 'hidden') + '>' + T('Welcome message — {mention} = the new member (tagged), {group} = group name') + '<textarea data-f="welcome_text" rows="3" dir="auto">' + esc(g.welcome_text || '') + '</textarea></label></div>'; }
+  function gCfgRead(box) { var o = {}; [].forEach.call(box.querySelectorAll('[data-f]'), function (i) { o[i.dataset.f] = i.value; }); return o; }
+  function gCfgWire(box, onChange) {
+    var t = null, sync = function () { var m = box.querySelector('[data-f=mode]').value, w = box.querySelector('[data-f=welcome]').value; [].forEach.call(box.querySelectorAll('[data-show=fixed]'), function (x) { x.hidden = m !== 'fixed'; }); [].forEach.call(box.querySelectorAll('[data-show=welcome]'), function (x) { x.hidden = w !== '1'; }); };
+    box.addEventListener('change', function () { sync(); clearTimeout(t); t = setTimeout(onChange, 700); });
+    box.addEventListener('input', function (e) { if (e.target.matches('textarea, input')) { clearTimeout(t); t = setTimeout(onChange, 1200); } });
+  }
+  var GMODE = { ai: '✨ ' + T('Interactive'), fixed: '📌 ' + T('Fixed message') }, GTRIG = { mention: '@ ' + T('Mentions'), questions: '❓ ' + T('Questions'), all: '💬 ' + T('All') };
+

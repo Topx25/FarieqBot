@@ -1,0 +1,141 @@
+/* WhatsApp Inbox — Google desktop theme (Material 3). Loaded after theme.css when Settings → Theme = Google. */
+/* 1 ─ Tokens (Google desktop / Material 3) ---------------------------------- */
+:root{
+  --page:#f8fafd;--page-2:#f8fafd;
+  --card:#ffffff;--card-2:#ffffff;--card-in:#f0f4f9;
+  --line:#e3e3e3;--line-2:#c4c7c5;
+  --ink:#1f1f1f;--ink-2:#444746;--muted:#5e5e5e;--faint:#747775;
+  --nav:#f8fafd;--nav-2:#f8fafd;--nav-on:#d3e3fd;
+  --accent:#0b57d0;--accent-ink:#0842a0;--accent-soft:#d3e3fd;
+  --c-in:#0b57d0;--c-out:#1e8e3e;            /* chart: received (Google blue) / sent (Google green) — validated */
+  --t1:#d3e3fd;--t1i:#0842a0;--t2:#c4eed0;--t2i:#0f5223;--t3:#ffdf99;--t3i:#5c3f00;--t4:#e8def8;--t4i:#4a3a8c;
+  --hot:#fef7e0;--good:#146c2e;--bad:#b3261e;
+  --surface:var(--card);--surface-2:var(--card-in);--brand:#0b57d0;--brand-2:#0842a0;--brand-soft:#d3e3fd;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --page:#131314;--page-2:#131314;--card:#1e1f20;--card-2:#1e1f20;--card-in:#282a2c;--line:#3c4043;--line-2:#5f6368;
+  --ink:#e3e3e3;--ink-2:#c4c7c5;--muted:#a8abaf;--faint:#8e918f;--nav:#131314;--nav-2:#131314;--nav-on:#004a77;
+  --accent:#a8c7fa;--accent-ink:#c2e7ff;--accent-soft:#004a77;--c-in:#4c8df6;--c-out:#37a65a;
+  --t1:#004a77;--t1i:#c2e7ff;--t2:#0f5223;--t2i:#c4eed0;--t3:#5c3f00;--t3i:#ffdf99;--t4:#4a3a8c;--t4i:#e8def8;--hot:#3c2f00;--good:#6dd58c;--bad:#f2b8b5;
+  --surface:var(--card);--surface-2:var(--card-in);--brand:#a8c7fa;--brand-2:#0842a0;--brand-soft:#004a77;color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
+  --page:#131314;--page-2:#131314;--card:#1e1f20;--card-2:#1e1f20;--card-in:#282a2c;--line:#3c4043;--line-2:#5f6368;
+  --ink:#e3e3e3;--ink-2:#c4c7c5;--muted:#a8abaf;--faint:#8e918f;--nav:#131314;--nav-2:#131314;--nav-on:#004a77;
+  --accent:#a8c7fa;--accent-ink:#c2e7ff;--accent-soft:#004a77;--c-in:#4c8df6;--c-out:#37a65a;
+  --t1:#004a77;--t1i:#c2e7ff;--t2:#0f5223;--t2i:#c4eed0;--t3:#5c3f00;--t3i:#ffdf99;--t4:#4a3a8c;--t4i:#e8def8;--hot:#3c2f00;--good:#6dd58c;--bad:#f2b8b5;
+  --surface:var(--card);--surface-2:var(--card-in);--brand:#a8c7fa;--brand-2:#0842a0;--brand-soft:#004a77;color-scheme:dark;}}
+
+/* =====================================================================
+   UI v6 — Google desktop look (Material 3): flat pale canvas, pill menu, pill search, white rounded cards
+   ===================================================================== */
+html,body{background:var(--page)!important;font-family:Roboto,"Google Sans",Cairo,"Segoe UI",Tahoma,sans-serif}
+.shell-v3 .side{background:var(--nav)!important;border:0!important;padding:10px 12px!important}
+.shell-v3.app.nav-flip .side{border:0!important}
+.shell-v3 .side .brand{border-bottom:0!important;padding:6px 8px 10px!important}
+.shell-v3 .side .brand .logo{border-radius:50%!important}
+.shell-v3 .side .brand b{font-size:17px;font-weight:400}
+.shell-v3 #side-nav a{border-radius:999px!important;min-height:36px;padding:0 16px!important;font-size:14px!important;color:var(--ink)!important;font-weight:400}
+.shell-v3 #side-nav a i{color:var(--ink-2)}
+.shell-v3 #side-nav a:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)!important}
+.shell-v3 #side-nav a.on{background:var(--nav-on)!important;color:var(--accent-ink)!important;font-weight:700}
+.shell-v3 #side-nav a.on i{color:var(--accent-ink)}
+.shell-v3 #side-nav a.on::after{display:none!important}
+.shell-v3 #side-nav .nav-h{font-size:11px!important;letter-spacing:.02em;color:var(--muted)!important;margin:16px 16px 4px!important}
+.g-fab-unused{display:inline-flex;align-items:center;gap:12px;height:56px;padding:0 20px 0 16px;margin:4px 0 12px;border-radius:16px;background:#c2e7ff;color:#001d35;font-weight:500;font-size:14px;text-decoration:none;box-shadow:0 1px 3px rgba(0,0,0,.15),0 4px 8px 3px rgba(0,0,0,.06);width:max-content}
+.g-fab-unused:hover{box-shadow:0 2px 6px rgba(0,0,0,.2),0 6px 12px 4px rgba(0,0,0,.08)}.g-fab-unused span{font-size:20px}
+:root[data-theme="dark"] .g-fab-unused{background:#004a77;color:#c2e7ff}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])) .g-fab-unused{background:#004a77;color:#c2e7ff}}
+.topbar{background:var(--page)!important;border-bottom:0!important;height:64px}
+.tb-search{background:var(--card-in)!important;border:0!important;border-radius:999px!important;height:46px!important;max-width:720px!important;padding:0 18px!important}
+.tb-search:focus-within{background:var(--card)!important;box-shadow:0 1px 3px rgba(0,0,0,.2)!important}
+.tb-acc,.tb-btn,.theme-btn,.nav-ctl button{border:0!important;background:transparent!important;border-radius:999px!important}
+.tb-acc{background:var(--card)!important}
+.tb-btn:hover,.theme-btn:hover,.nav-ctl button:hover{background:color-mix(in srgb,var(--ink) 8%,transparent)!important}
+.tb-me .avatar{border-radius:50%!important;background:var(--accent)!important;color:#fff!important}
+.tb-ic{background:transparent!important}
+.card,.kpi,.hero,.hk,.h-grid .card,.h-short a,.shell-v3 .main .card,.h-hero,.cs-card,.rg-card,.mt-c{background:var(--card)!important;border:0!important;border-radius:16px!important;box-shadow:none!important}
+.hk:hover,.h-short a:hover,.cs-card:hover,.rg-card:hover{box-shadow:0 1px 2px rgba(0,0,0,.3),0 1px 3px 1px rgba(0,0,0,.15)!important;transform:none!important}
+.cs-card{border-inline-start:4px solid var(--t1i)!important}
+.h-it,.h-mini>div,.h-stats>div{background:var(--card-in)!important;border:0!important}
+.h-acc,.h-qbtn{background:transparent!important;border:1px solid var(--line-2)!important;border-radius:8px!important}
+.h-acc.cur{background:var(--accent-soft)!important;border-color:transparent!important;color:var(--accent-ink)!important}
+.h-qbtn:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)!important}
+.btn,.chip-btn,.pg-b{border-radius:999px!important}
+.btn.primary{background:var(--accent)!important;color:#fff!important}
+:root[data-theme="dark"] .btn.primary{color:#062e6f!important}
+.chip-btn{border:1px solid var(--line-2)!important;background:transparent!important}
+.chip-btn.on,.page-tabs a.on{background:var(--accent-soft)!important;border-color:transparent!important;color:var(--accent-ink)!important}
+input,select,textarea{border-radius:8px!important}
+.hc-d.today{background:var(--card-in)!important}
+.hc-bars i{border-radius:4px 4px 0 0}
+@media (max-width:1000px){.g-fab-unused{display:none}.topbar{height:56px}.tb-search{height:40px!important}}
+
+/* ---- UI v6 · every page: Material 3 components ---- */
+/* page header */
+.hero{padding:18px 20px!important;align-items:center}
+.hero h1{font-size:24px!important;font-weight:400!important;color:var(--ink)}
+.hero p{color:var(--muted)!important;font-size:14px}
+.hero-ic{width:48px!important;height:48px!important;border-radius:50%!important;background:var(--accent-soft)!important}
+/* tabs: Google underline style */
+.page-tabs{background:transparent!important;border:0!important;border-bottom:1px solid var(--line)!important;border-radius:0!important;padding:0!important;gap:0!important;margin:0 0 14px!important}
+.page-tabs a{border-radius:0!important;padding:12px 18px!important;color:var(--ink-2)!important;font-weight:500!important;border-bottom:3px solid transparent;background:transparent!important}
+.page-tabs a:hover{background:color-mix(in srgb,var(--ink) 6%,transparent)!important}
+.page-tabs a.on{color:var(--accent)!important;border-bottom-color:var(--accent);background:transparent!important}
+/* segmented filters → Material chips */
+.seg{background:transparent!important;border:0!important;padding:0!important;gap:8px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line-2)!important;border-radius:8px!important;padding:6px 14px!important;font-weight:500!important;color:var(--ink-2)!important;background:transparent!important}
+.seg button.on{background:var(--accent-soft)!important;color:var(--accent-ink)!important;border-color:transparent!important}
+/* search fields and filter bars */
+.search-xl{background:var(--card-in)!important;border:0!important;border-radius:999px!important;padding:0 16px!important}
+.search-xl:focus-within{background:var(--card)!important;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.fbar{background:transparent!important;border:0!important;padding:4px 0!important;gap:8px}
+.fbar select,.fbar input,.hero-tools select{border-radius:8px!important;border:1px solid var(--line-2)!important;background:var(--card)!important}
+/* tables */
+.table,.tbl{border-collapse:separate!important;border-spacing:0}
+.table th,.tbl th{background:transparent!important;color:var(--ink-2)!important;font-weight:500!important;font-size:12.5px;border-bottom:1px solid var(--line)!important}
+.table td,.tbl td{border-bottom:1px solid var(--line)!important}
+.table tbody tr:hover,.tbl tbody tr:hover{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+.table.zebra tbody tr:nth-child(even){background:transparent!important}
+/* tags, pills, badges, labels */
+.tag,.pill,.badge,.lbl{border-radius:8px!important;border:0!important;background:var(--card-in)!important;color:var(--ink-2)!important;font-weight:500!important}
+.pill.good,.badge.ok{background:var(--t2)!important;color:var(--t2i)!important}
+.badge.warn{background:var(--t3)!important;color:var(--t3i)!important}
+.cs-card .lbl,.rg-card .lbl{background:var(--t1)!important;color:var(--t1i)!important}
+.cs-card .lbl.dg{background:var(--t4)!important;color:var(--t4i)!important}
+/* dialogs and toasts */
+.dlg{border-radius:28px!important;background:var(--card)!important;box-shadow:0 4px 8px 3px rgba(0,0,0,.15),0 1px 3px rgba(0,0,0,.3)!important}
+.dlg::backdrop{background:rgba(0,0,0,.32)}
+.toast,#toast{border-radius:4px!important;background:#313033!important;color:#f4eff4!important;box-shadow:0 3px 5px rgba(0,0,0,.2)!important}
+/* conversations: Gmail-like list, clean bubbles */
+.inbox.card{padding:0!important;overflow:hidden}
+.chat-list{border-inline-end:1px solid var(--line)!important;background:var(--card)}
+.chat-list-h{border-bottom:0!important}
+.c{border-bottom:0!important;border-radius:0 999px 999px 0;margin-inline-end:8px;padding:10px 16px!important}
+[dir=rtl] .c{border-radius:999px 0 0 999px;margin-inline-end:0;margin-inline-start:8px}
+.c:hover{background:color-mix(in srgb,var(--ink) 5%,transparent)!important}
+.c.on{background:var(--nav-on)!important}
+.c-t b{font-weight:500}
+.thread-h{background:var(--card)!important;border-bottom:1px solid var(--line)!important}
+:root{--chat-bg:#f0f4f9;--bubble-in:#ffffff;--bubble-out:#d3e3fd}
+:root[data-theme="dark"]{--chat-bg:#131314;--bubble-in:#282a2c;--bubble-out:#004a77}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--chat-bg:#131314;--bubble-in:#282a2c;--bubble-out:#004a77}}
+.b{border-radius:18px!important;box-shadow:none!important;padding:8px 14px 20px!important}
+.b.in{border-start-start-radius:4px!important}.b.out{border-start-end-radius:4px!important}
+.day{border-radius:999px!important;box-shadow:none!important;background:var(--card)!important}
+.composer{background:var(--card)!important;border-top:1px solid var(--line)!important}
+.composer textarea{border-radius:24px!important;background:var(--card-in)!important;border:0!important;padding:10px 16px!important}
+.composer .btn.primary{border-radius:50%!important;width:44px;height:44px;padding:0!important}
+/* forms */
+label{color:var(--ink-2)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)!important;box-shadow:0 0 0 1px var(--accent)!important}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent)}
+/* small cards used across pages */
+.gr-card,.vcard,.sec-tile,.kpis.card>div{border-radius:16px!important;border:0!important;background:var(--card)!important;box-shadow:none!important}
+.gr-card:hover,.vcard:hover,.sec-tile:hover{box-shadow:0 1px 2px rgba(0,0,0,.3),0 1px 3px 1px rgba(0,0,0,.15)!important}
+.card-h{border-bottom:0!important}
+.card-h h2,.card h3{font-weight:500!important}
+.empty{color:var(--muted)!important}
+.alert{border-radius:12px!important}
+.bt-pane>summary{display:none!important}

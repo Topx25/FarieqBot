@@ -1,0 +1,10 @@
+wa-inbox/.data/
+wa-inbox/installed.json
+wa-local/node_modules/
+wa-local/accounts/
+wa-local/auth*/
+wa-local/archive/
+wa-local/data/
+wa-local/*.log
+wa-local/*.pid
+wa-local/gateway.json

@@ -1,0 +1,92 @@
+/* WhatsApp Inbox — "Orchid" theme. Loaded after theme.css when Settings → Theme = Orchid.
+   Floating menu and top bar cards, lavender canvas, deep violet + teal (chart pair checked for contrast and colour blindness). */
+:root{
+  --page:#f4f1fb;--page-2:#f4f1fb;--card:#ffffff;--card-2:#ffffff;--card-in:#f7f5fd;
+  --line:#ebe6f8;--line-2:#d9d1f2;--ink:#1e1a2e;--ink-2:#3b3550;--muted:#6e6887;--faint:#9690ad;
+  --nav:#ffffff;--nav-2:#ffffff;--nav-on:#6d4ad8;
+  --accent:#6d4ad8;--accent-ink:#5435b8;--accent-soft:#ede8fc;
+  --c-in:#6d4ad8;--c-out:#0f9a8a;
+  --t1:#ede8fc;--t1i:#6d4ad8;--t2:#e6faf6;--t2i:#0b6e63;--t3:#fdf2e3;--t3i:#b26100;--t4:#fbe8f3;--t4i:#a3306f;
+  --hot:#fdf2e3;--good:#0b6e63;--bad:#b26100;--shadow-v:0 6px 20px -12px rgba(109,74,216,.35);
+  --surface:var(--card);--surface-2:var(--card-in);--brand:#6d4ad8;--brand-2:#5435b8;--brand-soft:#ede8fc;
+  --chat-bg:#f4f1fb;--bubble-in:#ffffff;--bubble-out:#ede8fc;color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --page:#13111a;--page-2:#13111a;--card:#1c1a24;--card-2:#1c1a24;--card-in:#24212f;--line:#2e2a3d;--line-2:#3d3852;
+  --ink:#efecf7;--ink-2:#cdc7e0;--muted:#a39dba;--faint:#7f7996;--nav:#1c1a24;--nav-2:#1c1a24;--nav-on:#8b6cf0;
+  --accent:#8b6cf0;--accent-ink:#c4b3ff;--accent-soft:#2e2550;--c-in:#8b6cf0;--c-out:#1f9e8f;
+  --t1:#2e2550;--t1i:#c4b3ff;--t2:#103a35;--t2i:#7fe0d0;--t3:#3a2a10;--t3i:#f2bd6b;--t4:#3a1830;--t4i:#f3a6d0;--hot:#3a2a10;--good:#7fe0d0;--bad:#f2bd6b;
+  --shadow-v:0 8px 24px -14px rgba(0,0,0,.7);--surface:var(--card);--surface-2:var(--card-in);--brand:#8b6cf0;--brand-2:#5435b8;--brand-soft:#2e2550;
+  --chat-bg:#13111a;--bubble-in:#24212f;--bubble-out:#2e2550;color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
+  --page:#13111a;--page-2:#13111a;--card:#1c1a24;--card-2:#1c1a24;--card-in:#24212f;--line:#2e2a3d;--line-2:#3d3852;
+  --ink:#efecf7;--ink-2:#cdc7e0;--muted:#a39dba;--faint:#7f7996;--nav:#1c1a24;--nav-2:#1c1a24;--nav-on:#8b6cf0;
+  --accent:#8b6cf0;--accent-ink:#c4b3ff;--accent-soft:#2e2550;--c-in:#8b6cf0;--c-out:#1f9e8f;
+  --t1:#2e2550;--t1i:#c4b3ff;--t2:#103a35;--t2i:#7fe0d0;--t3:#3a2a10;--t3i:#f2bd6b;--t4:#3a1830;--t4i:#f3a6d0;--hot:#3a2a10;--good:#7fe0d0;--bad:#f2bd6b;
+  --shadow-v:0 8px 24px -14px rgba(0,0,0,.7);--surface:var(--card);--surface-2:var(--card-in);--brand:#8b6cf0;--brand-2:#5435b8;--brand-soft:#2e2550;
+  --chat-bg:#13111a;--bubble-in:#24212f;--bubble-out:#2e2550;color-scheme:dark;}}
+html,body{background:var(--page)!important;font-family:"IBM Plex Sans Arabic",Inter,Tahoma,sans-serif}
+/* floating menu card */
+@media (min-width:1001px){
+  .shell-v3.app{gap:12px;padding:12px 12px 0}
+  .shell-v3.app .side{top:12px!important;height:calc(100vh - 24px)!important;border-radius:24px!important;border:0!important;background:var(--nav)!important;box-shadow:var(--shadow-v)!important;padding:14px 10px!important}
+  .shell-v3.app.nav-hide{padding:12px 12px 0}
+  .shell-v3 .main{padding:0 0 24px!important}
+  .topbar{position:sticky;top:12px!important;margin:0 0 16px!important;border-radius:18px!important;background:var(--card)!important;border:0!important;box-shadow:var(--shadow-v)!important;padding:0 16px!important;height:58px}
+}
+.shell-v3 .side .brand{border-bottom:0!important}
+.shell-v3 .side .brand .logo{background:var(--accent)!important;color:#fff!important;border-radius:10px!important}
+.shell-v3 #side-nav a{border-radius:12px!important;color:var(--ink-2)!important;font-weight:500}
+.shell-v3 #side-nav a i{color:var(--accent)}
+.shell-v3 #side-nav a:hover{background:var(--card-in)!important}
+.shell-v3 #side-nav a.on{background:var(--nav-on)!important;color:#fff!important;font-weight:600}
+.shell-v3 #side-nav a.on i{color:#fff}
+.shell-v3 #side-nav a.on::after{display:none!important}
+.shell-v3 #side-nav .nav-h{color:var(--faint)!important;font-size:11px!important}
+.tb-search{background:var(--card-in)!important;border:0!important;border-radius:12px!important}
+.tb-acc{background:var(--t2)!important;color:var(--t2i)!important;border:0!important;border-radius:10px!important}
+.tb-btn,.theme-btn,.nav-ctl button{background:var(--card-in)!important;border:0!important;border-radius:10px!important}
+.tb-me .avatar{background:var(--accent)!important;color:#fff!important;border-radius:10px!important}
+.tb-ic{background:var(--accent-soft)!important;border-radius:10px!important}
+/* cards: soft violet shadow instead of borders */
+.card,.kpi,.hero,.hk,.h-grid .card,.h-short a,.shell-v3 .main .card,.cs-card,.rg-card,.mt-c,.gr-card,.vcard,.sec-tile{background:var(--card)!important;border:0!important;border-radius:20px!important;box-shadow:var(--shadow-v)!important}
+.cs-card{border-inline-start:4px solid var(--t1i)!important}
+.hk{flex-direction:column;align-items:flex-start!important}
+.hk-ic{border-radius:50%!important;width:40px!important;height:40px!important}
+.hk-b b{font-size:28px!important;font-weight:600}
+/* home header becomes a plain large greeting */
+.h-hero{background:transparent!important;box-shadow:none!important;padding:6px 2px!important}
+.h-hello h1{font-size:28px!important;font-weight:600!important}
+.h-acc{border-radius:10px!important;background:var(--card)!important;border:0!important;box-shadow:var(--shadow-v)}
+.h-acc.cur{background:var(--t2)!important;color:var(--t2i)!important}
+.h-qbtn{background:var(--card)!important;border:0!important;border-radius:16px!important;box-shadow:var(--shadow-v)}
+.h-qbtn span{color:var(--accent)}
+.h-it,.h-mini>div,.h-stats>div{background:var(--card-in)!important;border:0!important;border-radius:12px!important}
+.h-it.hot{background:var(--hot)!important}
+.hc-bars i{border-radius:5px 5px 0 0}.hc-d.today{background:var(--card-in)!important;border-radius:12px 12px 0 0}
+/* tabs → segmented pill container */
+.page-tabs{display:inline-flex!important;background:var(--line)!important;border:0!important;border-radius:14px!important;padding:3px!important;gap:2px!important}
+.page-tabs a{border-radius:11px!important;padding:7px 14px!important;color:var(--muted)!important;font-weight:500!important;background:transparent!important}
+.page-tabs a.on{background:var(--card)!important;color:var(--accent)!important;box-shadow:0 1px 3px rgba(30,26,46,.12)}
+.seg{background:var(--line)!important;border:0!important;border-radius:14px!important;padding:3px!important}
+.seg button{border-radius:11px!important}.seg button.on{background:var(--card)!important;color:var(--accent)!important}
+/* buttons, chips, labels */
+.btn{border-radius:12px!important}.btn.primary{background:var(--accent)!important;color:#fff!important;box-shadow:none!important}
+.chip-btn{border-radius:10px!important;border:0!important;background:var(--card-in)!important}
+.chip-btn.on{background:var(--accent-soft)!important;color:var(--accent-ink)!important}
+.tag,.pill,.badge,.lbl{border-radius:999px!important;border:0!important;background:var(--card-in)!important;color:var(--ink-2)!important}
+.pill.good,.badge.ok{background:var(--t2)!important;color:var(--t2i)!important}
+.search-xl{background:var(--card-in)!important;border:0!important;border-radius:12px!important}
+input,select,textarea{border-radius:10px!important}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)!important;box-shadow:0 0 0 3px var(--accent-soft)!important}
+input[type=checkbox],input[type=radio]{accent-color:var(--accent)}
+.table th,.tbl th{background:var(--card-in)!important;color:var(--muted)!important;font-weight:500!important}
+.dlg{border-radius:24px!important;background:var(--card)!important}
+/* conversations */
+.c{border-bottom:0!important;border-radius:14px;margin:2px 8px}.c.on{background:var(--accent-soft)!important}
+.b{border-radius:16px!important;box-shadow:none!important}
+.composer textarea{border-radius:14px!important;background:var(--card-in)!important;border:0!important}
+@media (max-width:1000px){.shell-v3 .side{border-radius:0!important}}
+@media (min-width:1001px){.imp-bar,.inv-bar{margin:0 0 12px!important;border-radius:14px}.imp-bar~.topbar{top:12px!important}}
+.bt-pane>summary{display:none!important}

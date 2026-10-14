@@ -1,0 +1,16 @@
+{
+  "name": "whatscrmbot-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "node patches/patch-baileys-platform.mjs",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "baileys": "7.0.0-rc14",
+    "express": "^4.19.2",
+    "pino": "^9.4.0",
+    "qrcode": "^1.5.4"
+  }
+}

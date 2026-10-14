@@ -1,0 +1,14 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /wa-local/
+  # Only index.php is ever served: session keys (auth/), sources, logs, package and pid files are refused.
+  RewriteCond %{REQUEST_FILENAME} -f
+  RewriteRule !^index\.php$ - [F,L]
+  # Clean gateway URLs (/wa-local/qr, /wa-local/send ...) go to the token-protected proxy.
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.php [L,QSA]
+</IfModule>
