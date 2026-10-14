@@ -202,8 +202,15 @@ function wf_bot_answer(array $acc, string $text, array $history = [], string $pr
     if (!empty($ai['ok']) && isset($ai['data']['reply'])) { $digits = fn($t) => strtr((string) $t, array_combine(array_map(fn($i) => mb_chr(0x660 + $i), range(0, 9)), array_map('strval', range(0, 9)))); // Arabic-Indic digits too
         $known = $digits($ex . ' ' . $ctx . ' ' . $text); $bad = [];
         if (preg_match_all('/(\d+)\s*(?:' . (string) (wf_pack($aid)['count_units'] ?? 'times|days|hours|weeks|months|minutes') . ')/u', $digits($ai['data']['reply']), $mm)) foreach (array_unique($mm[1]) as $nb) if (!preg_match('/(?<!\d)' . $nb . '(?!\d)/', $known)) $bad[] = $nb;
-        if ($bad) { $fix = wi_ai('Bot reply (fix)', $prompt . "\n\nYOUR DRAFT: " . $ai['data']['reply'] . "\nIt uses counts or durations that are in no example or source (" . implode(', ', $bad) . "). Rewrite it without them: give only what the examples and sources say, or ask the healer's follow-up question. Same JSON.", 120, ['prefer' => $pref]);
+        $sac = wf_sacred_unknown($aid, (string) $ai['data']['reply'], $known); // a verse, surah or dhikr that no example or source has
+        if ($bad || $sac) { $why = trim(($bad ? 'counts or durations (' . implode(', ', $bad) . ') ' : '') . ($sac ? 'verses, surahs or adhkar (' . implode(' / ', $sac) . ') ' : ''));
+            $fix = wi_ai('Bot reply (fix)', $prompt . "\n\nYOUR DRAFT: " . $ai['data']['reply'] . "\nIt uses " . $why . "that are in no team example and no source. Rewrite it without them: give only what the examples and sources say, or ask the healer's follow-up question. Same JSON.", 120, ['prefer' => $pref]);
+            if (!empty($fix['ok']) && (wf_sacred_unknown($aid, (string) ($fix['data']['reply'] ?? ''), $known))) $fix['data']['confidence'] = min((float) ($fix['data']['confidence'] ?? 0), 0.4); // still made up: not sent
             if (!empty($fix['ok']) && trim((string) ($fix['data']['reply'] ?? '')) !== '') $ai = $fix + ['task' => $ai['task']]; else $ai['data']['confidence'] = min((float) ($ai['data']['confidence'] ?? 0), 0.4); } }
+    // The number's own name after "the sheikh" (a mix-up the model keeps making): the title stays, the name goes.
+    $self = preg_replace('/[\x{064B}-\x{065F}\x{0670}\x{0640}]/u', '', trim((string) ($acc['name'] ?? '')));
+    if ($self !== '' && isset($ai['data']['reply']) && preg_match_all('/\p{L}/u', $self, $ch)) { $re = implode('[\x{064B}-\x{065F}\x{0670}\x{0640}\s]*', array_map(fn($c) => preg_quote($c, '/'), $ch[0]));
+        $ai['data']['reply'] = preg_replace('/(\x{0627}\x{0644}\x{0634}\x{064A}\x{062E}|\x{0634}\x{064A}\x{062E})[\x{064B}-\x{065F}\s]+' . $re . '/u', '$1', (string) $ai['data']['reply']); }
     $SS = wf_style_cfg($aid); $ai['data']['reply'] = wf_clean_affection((string) ($ai['data']['reply'] ?? ''), $SS['strip_affection'] ? wf_style_words((string) $SS['affection_words']) : [], !empty($SS['strip_romantic']));
     $used = [];
     foreach ((array) ($ai['data']['used'] ?? []) as $u) { $i = (int) preg_replace('/\D/', '', (string) $u) - 1; if (isset($src[$i])) $used[] = $i; }
@@ -213,6 +220,21 @@ function wf_bot_answer(array $acc, string $text, array $history = [], string $pr
     return ['ok' => true, 'reply' => $rep, 'mode' => preg_replace('/[^a-z]/', '', (string) ($ai['data']['mode'] ?? '')), 'guide' => array_column($guide, 'name'), 'confidence' => max(0, min(1, (float) ($ai['data']['confidence'] ?? 0))), 'handoff' => !empty($ai['data']['handoff']),
         'join_group' => !empty($ai['data']['join_group']), 'symptoms' => !empty($ai['data']['symptoms']), 'complaint' => mb_substr((string) ($ai['data']['complaint'] ?? ''), 0, 300),
         'reason' => (string) ($ai['data']['reason'] ?? ''), 'clarify' => !empty($ai['data']['clarify']), 'sources' => $src, 'used' => $used, 'task' => $ai['task'] ?? null];
+}
+
+/** Verses, surah names and adhkar in a reply that appear in no team example and no source (each a short quote). Markers come from the business profile. */
+function wf_sacred_unknown(string $aid, string $reply, string $known): array {
+    $mk = (string) (wf_pack($aid)['sacred_markers'] ?? ''); if ($mk === '' || trim($reply) === '') return [];
+    $n = fn(string $t) => trim(preg_replace('/\s+/u', ' ', preg_replace('/[^\p{L}\p{N}\s]/u', ' ', wf_intake_norm(preg_replace('/[\x{064B}-\x{065F}\x{0670}\x{06D6}-\x{06ED}]/u', '', $t)))));
+    $K = ' ' . $n($known) . ' '; $out = [];
+    foreach (preg_split('/[\n.\x{060C}\x{061B}!\x{061F}?:]+/u', $reply) as $seg) {
+        if (!preg_match('/(' . $mk . ')/u', $seg, $m, PREG_OFFSET_CAPTURE)) continue;
+        $w = array_values(array_filter(explode(' ', $n(substr($seg, $m[0][1])))));
+        if (count($w) < 2) continue;
+        $q = implode(' ', array_slice($w, 0, min(5, count($w)))); // the marker and the words after it
+        if (mb_strpos($K, ' ' . $q . ' ') === false && mb_strpos($K, ' ' . implode(' ', array_slice($w, 0, preg_match('/^\x{0633}\x{0648}\x{0631}/u', $w[0]) ? 2 : 3)) . ' ') === false) $out[] = mb_substr(trim($seg), 0, 60);
+    }
+    return array_slice(array_unique($out), 0, 4);
 }
 
 /** Message style: editable per number in Learning → Rules ("Message style"). These are only the starting values. */

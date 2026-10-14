@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.76.7', 'date' => '2026-10-14', 'title' => 'Bot: no made-up verses or adhkar; keeps talking', 'changes' => [
+        'After each reply, a verse, surah or dhikr found in no team answer and no source is removed by one rewrite; if it stays the reply is not sent. The words that start them are a business setting (sacred_markers).',
+        'Only questions the customer left unanswered count toward the clarify limit: a real back-and-forth is no longer handed to the team after the first question.',
+        'The number\'s own name after "the sheikh" is removed from replies.',
+    ]],
     ['v' => '3.76.6', 'date' => '2026-10-14', 'title' => 'Bot brain: short, like the healer', 'changes' => [
         'The bot copies the closest team answer: its length, directness and firmness; no greeting unless greeted, no thanks, closing lines or fillers; usually 1-3 lines (replies 20% shorter). Advice only from approved sources or team answers; adhkar and duas only those the team already used; no tafsir without a source; dreams get two short readings (spiritual and general) then one question.',
     ]],

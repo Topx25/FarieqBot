@@ -262,7 +262,10 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         $repeat = empty($jr) && $mine && $simOf($r['reply']) >= (float) $c['repeat_sim'];
         if ($repeat && !empty($c['repeat_retry'])) { $r2 = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => $mine, 'no_fast' => true]); if (!empty($r2['ok']) && trim((string) $r2['reply']) !== '' && $simOf($r2['reply']) < (float) $c['repeat_sim']) { $r = $r2; $repeat = false; } }
         // Only N clarifying questions in a row: after that the team takes over instead of asking again.
-        $askedBefore = 0; foreach (array_reverse($mine) as $p) { if (preg_match('/[؟?]\s*$/u', trim($p))) $askedBefore++; else break; }
+        // A question the customer really answered (3+ words) does not count: a normal back-and-forth goes on; only questions left unanswered do.
+        $askedBefore = 0; foreach (array_reverse($rows) as $m) { $mt = trim((string) ($m['text'] ?? ''));
+            if ($m['dir'] === 'in') { if (count(preg_split('/\s+/u', $mt, -1, PREG_SPLIT_NO_EMPTY)) >= 3) break; continue; }
+            if (($m['via'] ?? '') !== 'bot') break; if (preg_match('/[\x{061F}?]\s*$/u', $mt)) $askedBefore++; else break; }
         $isQ = !empty($r['clarify']) || preg_match('/[؟?]\s*$/u', trim((string) $r['reply']));
         if ($repeat || ($isQ && $askedBefore >= max(1, (int) $c['max_clarify']) && empty($r['handoff']))) {
             $why2 = $repeat ? 'same reply as before — handed to the team' : 'already asked to clarify — handed to the team';
