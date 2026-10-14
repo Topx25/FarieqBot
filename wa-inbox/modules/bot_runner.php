@@ -144,7 +144,9 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 // Like private chats: confident answers, short clarifying questions, and the polite
                 // "the sheikh / the team will answer you" reply when a person is needed are all sent.
                 $clar = !empty($r['clarify']) || (mb_strlen($r['reply']) < 220 && preg_match('/[؟?]\s*$/u', trim($r['reply'])) && $r['confidence'] >= 0.3);
-                $ok = $r['handoff'] || $clar || $r['confidence'] >= $c['min_conf'];
+                if (!empty($r['mode']) && $r['mode'] !== $role && isset(wf_roles_cfg($aid)['roles'][$r['mode']])) $role = (string) $r['mode']; // the model's own choice of mode
+                $gMin = in_array($role, ['dreams', 'support', 'healer'], true) ? min((float) $c['min_conf'], 0.65) : (float) $c['min_conf']; // the roles send from 0.65 in groups too, as in private chats
+                $ok = $r['handoff'] || $clar || $r['confidence'] >= $gMin;
                 if ($r['handoff']) $log['why'] = 'handed over to a person';
             }
             $n++;

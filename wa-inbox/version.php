@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.76.8', 'date' => '2026-10-14', 'title' => 'Groups: role thresholds', 'changes' => [
+        'In groups the model\'s chosen mode is used, and healer, support and dreams replies are sent from 0.65 as in private chats (they used the general threshold only).',
+    ]],
     ['v' => '3.76.7', 'date' => '2026-10-14', 'title' => 'Bot: no made-up verses or adhkar; keeps talking', 'changes' => [
         'After each reply, a verse, surah or dhikr found in no team answer and no source is removed by one rewrite; if it stays the reply is not sent. The words that start them are a business setting (sacred_markers).',
         'Only questions the customer left unanswered count toward the clarify limit: a real back-and-forth is no longer handed to the team after the first question.',
