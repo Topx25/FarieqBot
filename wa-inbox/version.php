@@ -5,6 +5,12 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.76.5', 'date' => '2026-10-14', 'title' => 'File shortcuts with spaces', 'changes' => [
+        'A file shortcut is found however it is written: with a dash or spaces (#رقية-عامة / #رقية عامة) and after the send word (#ارسال #رقية عامة), in groups and from the phone. The shortcut is checked before the other library commands, so #رقية … with a file code sends the file.',
+    ]],
+    ['v' => '3.76.4', 'date' => '2026-10-14', 'title' => 'Cases: one file per person', 'changes' => [
+        '#case for a number that already has a file: no second file and no questions. Nothing new → a short reply with the file number and follower (template case_intake_exists). New details or a recording → added to the same file, the update goes to the diagnosis group (template case_intake_updated).',
+    ]],
     ['v' => '3.76.3', 'date' => '2026-10-14', 'title' => 'Gemini limits per key', 'changes' => [
         'With several Gemini keys, each key keeps its own count for each model (every key is its own Google project): the keys are used one after the other, and when a model reaches its limit on one key the next key still uses it.',
     ]],

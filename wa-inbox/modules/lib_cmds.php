@@ -38,6 +38,7 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
     $W = wf_libcmd_words($aid);
     if ($cmd === 'menu' || $q === '') { $say(wf_msg('lib_menu', ['list' => implode("\n", array_map(fn($k, $w) => '• ' . $w . ' …', array_keys(array_diff_key($W, ['menu' => 1])), array_diff_key($W, ['menu' => 1])))])); return; }
     $many = function (array $labels) use ($say, $q) { $say(wf_msg('lib_many', ['query' => mb_substr($q, 0, 40), 'list' => implode("\n", array_map(fn($l) => '• ' . $l, array_slice($labels, 0, 8)))])); };
+    if (wf_media_code_in($aid, $text) !== '') { wf_media_code_send($acc, $jid, $text, $id); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => 'send']); return; } // "#ارسال #رقية عامة": the file with that code
     if ($cmd === 'send' && preg_match_all('/#\S+/u', $text, $mm)) foreach ($mm[0] as $tok) if (wf_media_code_find($aid, $tok) !== '') { wf_media_code_send($acc, $jid, $tok, $id); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => 'send']); return; } // "#ارسال #رقية-عامة"
     if ($cmd === 'send') {
         $items = wf_libcmd_media($acc); $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['title'], $x['name'], $x['caption'], $x['tags']], $items));
@@ -73,10 +74,17 @@ function wf_media_code_find(string $aid, string $code): string {
     foreach ((array) (wi_read('media_meta.json', [])[$aid] ?? []) as $k => $m) { $c = (string) ($m['code'] ?? ''); if ($c !== '' && empty($m['hidden']) && str_replace(['-', ' '], '', wf_intake_norm($c)) === $want) return (string) $k; }
     return '';
 }
-/** A message that is exactly a file's code: the file is sent there (with its caption). True when sent. */
+/** The file a message names by its code: the code alone ("#رقية-عامة"), written with spaces ("#رقية عامة"), or after the send word ("#ارسال #رقية عامة"). */
+function wf_media_code_in(string $aid, string $text): string {
+    $t = trim($text); if ($t === '' || mb_strpos($t, '#') === false || mb_strlen($t) > 80) return '';
+    $send = (string) (wf_libcmd_words($aid)['send'] ?? '');
+    if ($send !== '' && wf_intake_has($t, $send)) $t = trim(preg_replace('/' . preg_quote($send, '/') . '/u', '', $t, 1) ?? $t); // the send word itself is not part of the code
+    if ($t === '' || $t[0] !== '#') return '';
+    return wf_media_code_find($aid, $t);
+}
+/** A message that names a file's code: the file is sent there (with its caption). True when sent. */
 function wf_media_code_send(array $acc, string $jid, string $text, string $quote = ''): bool {
-    $t = trim($text); if ($t === '' || $t[0] !== '#' || mb_strlen($t) > 60 || preg_match('/\s/u', $t)) return false;
-    $key = wf_media_code_find((string) $acc['id'], $t); if ($key === '') return false;
+    $key = wf_media_code_in((string) $acc['id'], $text); if ($key === '') return false;
     $m = (array) (wi_read('media_meta.json', [])[(string) $acc['id']][$key] ?? []);
     $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => (string) ($m['caption'] ?? ''), 'attachment' => $key, 'via' => 'bot'] + ($quote !== '' ? ['quote_id' => $quote] : []), $acc);
     if (!empty($r['ok'])) wi_update('media_meta.json', function ($M) use ($acc, $key) { $a = (string) $acc['id']; $M[$a][$key]['used'] = (int) ($M[$a][$key]['used'] ?? 0) + 1; return $M; });

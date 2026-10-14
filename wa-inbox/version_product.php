@@ -5,6 +5,8 @@ declare(strict_types=1);
  * The full development log stays in version.php. Each entry has Arabic (ar) and English (en) text.
  */
 return [
+    ['v' => '3.76', 'date' => '2026-10-14', 'ar' => ['ملف واحد لكل حالة', ['لو الرقم ليه ملف بالفعل، الوسم #حالة مش بيفتح ملف تاني: البوت يرد برقم الملف والمتابع، وأي تفاصيل أو تسجيل جديد يتضاف لنفس الملف.']],
+        'en' => ['One file per case', ['#case for a number that already has a file opens no second one: the bot replies with the file number and follower; new details or recordings are added to the same file.']]],
     ['v' => '3.74', 'date' => '2026-10-14', 'ar' => ['جرد المكتبة', ['زرار «📋 الجرد» في المكتبة: كل الملفات واختصاراتها وأحجامها والردود الجاهزة والبرامج، دايمًا بآخر تعديل، وتنزّله Excel.', 'في واتساب: #قائمة #المكتبة يبعتلك الجرد.']],
         'en' => ['Library inventory', ['Every file, shortcut, size, quick reply and program, always up to date, downloadable as Excel; also in WhatsApp.']]],
     ['v' => '3.73', 'date' => '2026-10-14', 'ar' => ['شكل جديد لإعادة التوجيه والإرسال', ['كارت للملف (صورة أو تشغيل، الاسم، الحجم، الكابشن)، بحث ومحادثات وجروبات بالصورة والاسم، واللي اخترتهم ظاهرين فوق، وزرار إرسال ثابت تحت.']],

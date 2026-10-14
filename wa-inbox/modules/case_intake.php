@@ -220,7 +220,7 @@ function wf_intake_hook(array $acc, array $in): void {
     $diag = wf_intake_diag($aid);
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && wf_libcmd_which($aid, $text) !== '') { // library commands (spiritual healing numbers)
         $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(120); wf_libcmd_hook($acc, $jid, $text, $id, $from); exit; }
-    if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && function_exists('wf_media_code_find') && wf_media_code_find($aid, $text) !== '' && !preg_match('/\s/u', trim($text))) { // a file's shortcut: the file
+    if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && function_exists('wf_media_code_find') && wf_media_code_in($aid, $text) !== '') { // a file's shortcut (alone or after the send word): the file
         $reply(['ok' => false, 'done' => true]); wf_media_code_send($acc, $jid, $text, $id); exit; }
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && preg_match('/^\s*#\S+\s*$/u', $text) && function_exists('wi_replies_for')) { // a quick reply's keyword ("#تحصين"): its text, in the group
         $typed = wf_norm(ltrim(trim($text), '#')); $hit = array_values(array_filter(wi_replies_for($acc), fn($r) => ($k = wf_norm(ltrim(trim((string) ($r['keyword'] ?? '')), '#/'))) !== '' && $k === $typed));
@@ -259,6 +259,17 @@ function wf_intake_hook(array $acc, array $in): void {
     if ($text !== '') { $x = wf_intake_extract($aid, implode("\n\n", $pend['texts'])); $pend['fields'] = $x['fields'] + (array) ($pend['fields'] ?? []); } // a recording alone needs no AI
     $pend['fields'] = (array) ($pend['fields'] ?? []);
     $phone = wf_intake_phone($pend['fields'], $pend['mentions'], $from, $acc);
+    if ($phone !== '' && ($old = wf_case_get($aid, $phone))) { // the number already has a file: never a second one — new details are added to it, nothing new gets a short answer
+        $od = (array) ($old['data'] ?? []);
+        $newF = array_filter(array_diff_key((array) $pend['fields'], ['name' => 1, 'phone' => 1]), fn($x, $k) => trim((string) $x) !== '' && wf_intake_norm((string) $x) !== wf_intake_norm(is_array($od[$k] ?? null) ? implode("\n", $od[$k]) : (string) ($od[$k] ?? '')), ARRAY_FILTER_USE_BOTH);
+        $newV = array_filter((array) $pend['voices'], fn($vo) => !in_array($vo['file'], array_column((array) ($old['voices'] ?? []), 'file'), true));
+        if (!$newF && !$newV) {
+            wi_update('case_intake.json', function ($A) use ($aid, $pk) { unset($A[$aid][$pk]); return $A; });
+            [$tagT, $tagM] = wf_group_tag($from);
+            $r = wi_gateway('/chat/send', ['jid' => $jid, 'mentions' => $tagM, 'text' => $tagT . wf_msg('case_intake_exists', ['case' => (string) wf_case_cfg($aid)['one'], 'person' => (string) ($old['name'] ?? '') ?: ('+' . $phone), 'no' => (string) ($old['no'] ?? ''), 'follower' => (string) ($old['data']['follower'] ?? '')]), 'quote_id' => $pend['msg_id'], 'via' => 'bot'], $acc);
+            wi_log('case_intake_exists', ['account' => $aid, 'group' => $jid, 'case' => $phone, 'sent' => !empty($r['ok'])]); return; }
+        $pend['asked'] = true; $pend['deadline'] = date('c'); // details for a file that exists: added now, no questions
+    }
     $pend['fields'] += wf_intake_known($aid, $phone, (array) $pend['people']); // what is already known about the tagged number
     $miss = wf_intake_missing($aid, $pend['fields'], $phone, (array) $pend['voices'], wf_intake_follower($acc, $pend, $pend['fields']));
     $ask = $miss && $wait > 0 && empty($pend['asked']);
@@ -312,6 +323,7 @@ function wf_intake_finish(array $acc, string $pk): array {
     $v = ['join' => date('d/m/Y'), 'name' => (string) ($f['name'] ?? ''), 'phone' => $phone, 'follower' => $by, 'diag_by' => $by] + $f; $v['symptoms'] = implode("\n", $sym);
     $report = wf_case_report($aid, $v);
     $voices = (array) ($pend['voices'] ?? []); $miss = wf_intake_missing($aid, $f, $phone, $voices, $by);
+    $old = wf_case_get($aid, $key); // a file that exists is updated, never opened again
     wf_case_update($aid, $key, function (?array $case) use ($key, $v, $by, $f, $sym, $report, $pend, $voices, $miss, $c) { // built on the stored case under the lock: nothing added meanwhile is lost
         $case = $case ?? ['phone' => $key, 'created' => date('c'), 'notes' => [], 'groups' => []];
         $case['name'] = $v['name'] !== '' ? $v['name'] : ($case['name'] ?? ''); $case['status'] = 'follow'; $case['manual'] = true;
@@ -320,13 +332,14 @@ function wf_intake_finish(array $acc, string $pk): array {
         $case['report'] = $report; $case['report_at'] = date('c'); $case['by'] = 'group:' . $pend['from'];
         $case['groups'][$pend['jid']] = $case['groups'][$pend['jid']] ?? $pend['jid'];
         foreach ($voices as $vo) if (!in_array($vo['file'], array_column((array) ($case['voices'] ?? []), 'file'), true)) $case['voices'][] = $vo + ['at' => date('c'), 'by' => $by, 'group' => $pend['jid']];
-        $case['notes'][] = ['at' => date('c'), 'by' => $by, 'text' => 'Case opened from the group keyword ' . $c['keyword'] . ($miss ? ' — missing: ' . implode(', ', $miss) : '') . '.'];
+        $case['notes'][] = ['at' => date('c'), 'by' => $by, 'text' => ($old ? 'Details added from the group keyword ' : 'Case opened from the group keyword ') . $c['keyword'] . ($miss ? ' — missing: ' . implode(', ', $miss) : '') . '.'];
         return $case; });
     $diag = wf_intake_diag($aid); $sent = null;
     if ($diag !== '') { $sent = wi_gateway('/chat/send', ['jid' => $diag, 'text' => $report, 'via' => 'bot'], $acc);
         foreach ($voices as $vo) wi_gateway('/chat/send', ['jid' => $diag, 'attachment' => $vo['file'], 'via' => 'bot'], $acc); } // the recording follows the report
     [$tagT, $tagM] = wf_group_tag((string) $pend['from']);
-    if (!empty($c['confirm'])) wi_gateway('/chat/send', ['jid' => $pend['jid'], 'mentions' => $tagM, 'text' => $tagT . wf_msg('case_intake_done', ['name' => $by, 'case' => (string) wf_case_cfg($aid)['one'], 'person' => $v['name'] ?: ('+' . $phone),
+    if (!empty($c['confirm']) && $old) wi_gateway('/chat/send', ['jid' => $pend['jid'], 'mentions' => $tagM, 'text' => $tagT . wf_msg('case_intake_updated', ['case' => (string) wf_case_cfg($aid)['one'], 'person' => $v['name'] ?: ('+' . $phone), 'no' => (string) (wf_case_get($aid, $key)['no'] ?? '')]), 'quote_id' => $pend['msg_id'], 'via' => 'bot'], $acc);
+    elseif (!empty($c['confirm'])) wi_gateway('/chat/send', ['jid' => $pend['jid'], 'mentions' => $tagM, 'text' => $tagT . wf_msg('case_intake_done', ['name' => $by, 'case' => (string) wf_case_cfg($aid)['one'], 'person' => $v['name'] ?: ('+' . $phone),
         'missing' => $miss ? implode(', ', $miss) : '']), 'quote_id' => $pend['msg_id'], 'via' => 'bot'], $acc);
     wi_log('case_intake', ['account' => $aid, 'group' => $pend['jid'], 'case' => $key, 'missing' => array_keys($miss), 'posted' => !empty($sent['ok'])]);
     return ['ok' => true, 'case' => $key];
