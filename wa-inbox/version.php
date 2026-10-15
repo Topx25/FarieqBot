@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.80.2', 'date' => '2026-10-15', 'title' => 'Case not found: look up the ID', 'changes' => [
+        'When no case matches the name or number, the reply names the diagnosis group and asks to take the case ID from there and write it instead of the name (template case_not_found, new {diag}).',
+    ]],
     ['v' => '3.80.1', 'date' => '2026-10-15', 'title' => 'Case follow-up commands work again', 'changes' => [
         'Fixed: every case command in a group (#الحالة …, #اتحسنت …) stopped with an error since 3.6x because a line of code had slipped into a comment; the bot did not answer and nothing changed.',
         'A stage word wins over the lookup word: "#الحالة … #اتحسنت …" changes the stage instead of only showing the file.',

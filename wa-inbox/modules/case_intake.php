@@ -159,7 +159,8 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
     if (!$hits && $ref !== '') { $w = preg_split('/\s+/u', preg_replace('/@\d+/', '', $ref)); // "aamer reason words": try the first 1–3 words as the name
         for ($i = min(3, count($w)); $i >= 1 && !$hits; $i--) { $h = wf_intake_find($aid, implode(' ', array_slice($w, 0, $i)), [], $acc); if (count($h) === 1) { $hits = $h; $reason = trim(implode(' ', array_slice($w, $i)) . "\n" . $reason); } } }
     elseif ($hits && $mentions) $reason = trim(preg_replace('/@\d+/', '', $ref) . "\n" . $reason);
-    if (!$hits) { $say(wf_msg('case_not_found', ['case' => $one, 'query' => mb_substr($ref, 0, 40)])); return true; }
+    if (!$hits) { $dj = wf_intake_diag($aid); $dn = ''; if ($dj !== '') foreach ((array) (wi_gateway('/groups', null, $acc)['groups'] ?? []) as $g) if ((string) ($g['id'] ?? $g['jid'] ?? '') === $dj) $dn = (string) ($g['subject'] ?? $g['name'] ?? '');
+        $say(wf_msg('case_not_found', ['case' => $one, 'query' => mb_substr($ref, 0, 40), 'diag' => $dn])); return true; }
     if (count($hits) > 1) { $say(wf_msg('case_many', ['case' => $one, 'list' => implode("\n", array_map(fn($k, $c) => '• ' . ($c['name'] ?? '') . ' — ID ' . ($c['no'] ?? '') . ' — ' . $k, array_keys(array_slice($hits, 0, 8, true)), array_slice($hits, 0, 8, true)))])); return true; }
     $key = (string) array_key_first($hits); $case = $hits[$key]; $by = trim((string) ($in['name'] ?? '')) ?: '+' . $from;
     if (!$mentions && $ref !== '' && trim($reason) === '') { // "aamer the reason" on one line: the words that are not the name or the number
