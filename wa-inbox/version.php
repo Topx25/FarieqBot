@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.78.1', 'date' => '2026-10-15', 'title' => 'Join requests approved automatically', 'changes' => [
+        'Group setting "Join requests: approve automatically": the gateway approves each new request at once (the number must be an admin), and every 10 minutes the ones that came while it was offline. Approved members then get the welcome and the reception follow-up.',
+    ]],
     ['v' => '3.78.0', 'date' => '2026-10-15', 'title' => 'Reception: follow-up of silent members', 'changes' => [
         'A new member of a reception group who writes nothing gets a reminder after 3 hours (template gate_remind), a last notice 3 hours later (gate_final), and is removed from the group 30 minutes after it. Any message from them stops it. Hours, minutes and on/off are group settings; members who joined before this are left alone. The gateway can remove a member (/groups/remove).',
     ]],

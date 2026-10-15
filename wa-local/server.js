@@ -297,6 +297,25 @@ function botTypingSeen(jid, state) {
   if (state === 'composing' || state === 'recording') { botTyping.set(jid, Date.now()); botArm(jid, gatherCfg().quietMs); }
   else if (state === 'paused') { botTyping.delete(jid); botArm(jid, gatherCfg().quietMs); }
 }
+/** Groups whose join requests are approved automatically (Bot settings, re-read every minute). */
+let approveCache = { at: 0, set: new Set() };
+function approveGroups() {
+  if (Date.now() - approveCache.at < 60000) return approveCache.set;
+  const set = new Set();
+  try { const b = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'wa-inbox', '.data', 'bot.json'), 'utf8')); const g = ((b[process.env.ACCOUNT_ID || 'main'] || {}).run || {}).groups || {};
+    for (const [j, x] of Object.entries(g)) if (x && x.approve && x.approve !== '0') set.add(j); } catch { /* none */ }
+  approveCache = { at: Date.now(), set };
+  return set;
+}
+/** Approves waiting join requests: each new request at once, and every 10 minutes the ones that came while offline. */
+async function approveRequests(sock, gjid, who) {
+  try {
+    const list = who ? [who] : ((await withTimeout(sock.groupRequestParticipantsList(gjid), 15000, 't')) || []).map((r) => r.jid).filter(Boolean);
+    if (!list.length) return;
+    await withTimeout(sock.groupRequestParticipantsUpdate(gjid, list.slice(0, 50), 'approve'), 20000, 't');
+    archive({ dir: 'group_event', id: `ge_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`, jid: gjid, action: 'approved', member: list.map((j) => String(j).split('@')[0]).join(','), by: 'bot' });
+  } catch (e) { console.log('approve failed', gjid, e?.message || e); }
+}
 /** Groups with the reception gate on (Bot settings, re-read every minute). */
 let gateCache = { at: 0, set: new Set() };
 function gateGroups() {
@@ -850,6 +869,7 @@ async function startSocket() {
     sock.ev.on('groups.upsert', (list) => { for (const g of list || []) if (g.id && g.subject) setName(g.id, g.subject); });
     sock.ev.on('groups.update', (list) => { for (const g of list || []) if (g.id && g.subject) setName(g.id, g.subject); });
     // Joins / leaves / admin changes in groups are kept in the archive (for group management and case follow-up).
+    sock.ev.on('group.join-request', (u) => { if (u?.action === 'created' && approveGroups().has(u.id)) approveRequests(sock, u.id, u.participant); });
     sock.ev.on('group-participants.update', (u) => {
       try {
         for (const p of u.participants || []) {
@@ -2486,3 +2506,6 @@ if (isPassenger) {
     startAfterListen();
   });
 }
+
+// Join requests that came while the gateway was offline: approved every 10 minutes (groups set to approve automatically).
+setInterval(() => { if (!connected || !socket) return; for (const g of approveGroups()) approveRequests(socket, g, ''); }, 600000);
