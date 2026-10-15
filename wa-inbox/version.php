@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.77.0', 'date' => '2026-10-15', 'title' => 'Reception gate and one welcome', 'changes' => [
+        'Reception gate (group setting): a new member who writes "woman" / "man" is asked once, quoting them, to record Al-Fatiha or Ayat Al-Kursi in their own voice (templates gate_ask_f / gate_ask_m); their recording tags the reviewers to check it and move them (template gate_voice). Words and reviewers are editable per group; the team is never asked. The gateway passes every message of a gate group.',
+        'Members who join close together get one welcome with all their mentions, and a member welcomed in the last 7 days is not welcomed again.',
+    ]],
     ['v' => '3.76.9', 'date' => '2026-10-14', 'title' => 'Emoji replies in private chats', 'changes' => [
         'Private chats: the last message id is taken from the thread when the chat list has none, so emoji-only messages get their reaction (and short line) again, and file shortcuts quote the message.',
     ]],

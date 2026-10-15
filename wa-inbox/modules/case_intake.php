@@ -213,10 +213,42 @@ function wf_is_menu(string $aid, string $text): bool {
 /** A group reply tags the person it answers (so replies to different people never get mixed up): the text gets "@number " and the tag. */
 function wf_group_tag(string $from): array { $from = preg_replace('/\D/', '', $from); return $from === '' ? ['', []] : ['@' . $from . ' ', [$from . (strlen($from) >= 14 ? '@lid' : '@s.whatsapp.net')]]; }
 /** Called by the gateway for a group message that has the keyword, or from someone the bot is waiting for. */
+/** Reception gate (a group setting): a new member writes "woman" / "man" → asked once for a recording, quoting them;
+ *  their recording → the reviewers are tagged to check it and move them. True when it handled the message. */
+function wf_gate_hook(array $acc, array $in, callable $reply): bool {
+    $aid = (string) $acc['id']; $jid = wf_jid($in['jid'] ?? ''); if (!str_ends_with($jid, '@g.us') || !empty($in['from_me'])) return false;
+    $c = wf_bot_run_cfg($aid); if ($c['mode'] !== 'auto' || wi_account_blocked($acc)) return false;
+    $g = wf_bot_group_cfg($c, $jid); if (!$g || empty($g['gate'])) return false;
+    $from = wf_phone((string) ($in['from'] ?? '')); if ($from === '' || isset(wf_team($acc, (array) ($c['groups'] ?? []))[$from])) return false; // the team talks freely
+    $id = preg_replace('/[^0-9A-Za-z]/', '', (string) ($in['id'] ?? '')); $text = trim((string) ($in['text'] ?? ''));
+    $name = mb_substr(trim((string) ($in['name'] ?? '')), 0, 60); $now = time(); $act = '';
+    if ((array) ($in['voices'] ?? [])) $act = 'voice';
+    else {
+        $W = (array) (wf_pack($aid)['gate_words'] ?? []); $tok = array_filter(preg_split('/[\s,.\x{060C}!?\x{061F}]+/u', wf_intake_norm($text)));
+        $hit = function (string $list) use ($tok) { foreach (preg_split('/[,\x{060C}\n]+/u', $list) as $w) if (($w = wf_intake_norm(trim($w))) !== '' && in_array($w, $tok, true)) return true; return false; };
+        if ($tok && count($tok) <= 6) { if ($hit($g['gate_f'] !== '' ? $g['gate_f'] : (string) ($W['f'] ?? ''))) $act = 'f'; elseif ($hit($g['gate_m'] !== '' ? $g['gate_m'] : (string) ($W['m'] ?? ''))) $act = 'm'; }
+    }
+    if ($act === '') return false;
+    $go = false; // once per member: the question once a day, the reviewers once per 30 minutes
+    wi_update('gate_state.json', function ($S) use ($aid, $jid, $from, $act, $now, &$go) { $k = $act === 'voice' ? 'v' : 'a'; $last = (int) ($S[$aid][$jid][$from][$k] ?? 0);
+        $go = $now - $last > ($act === 'voice' ? 1800 : 86400); if ($go) { $S[$aid][$jid][$from][$k] = $now; if ($act !== 'voice') $S[$aid][$jid][$from]['g'] = $act; }
+        foreach ((array) ($S[$aid][$jid] ?? []) as $p => $r) if (max((int) ($r['a'] ?? 0), (int) ($r['v'] ?? 0)) < $now - 30 * 86400) unset($S[$aid][$jid][$p]); return $S; });
+    $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(60);
+    if (!$go) return true;
+    [$tagT, $tagM] = wf_group_tag($from);
+    if ($act === 'voice') {
+        $rev = array_values(array_filter(array_map('wf_phone', explode(',', (string) $g['gate_review'])))); if (!$rev) return true;
+        $txt = wf_msg('gate_voice', ['reviewers' => implode(' ', array_map(fn($p) => '@' . $p, $rev)), 'name' => $name !== '' ? $name : '@' . $from]);
+        $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => $txt, 'mentions' => array_map(fn($p) => $p . '@s.whatsapp.net', $rev), 'quote_id' => $id, 'via' => 'bot'], $acc);
+    } else $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => $tagT . wf_msg($act === 'f' ? 'gate_ask_f' : 'gate_ask_m', ['name' => $name]), 'mentions' => $tagM, 'quote_id' => $id, 'via' => 'bot'], $acc);
+    wi_log('reception_gate', ['account' => $aid, 'group' => $jid, 'step' => $act, 'sent' => !empty($r['ok'])]);
+    return true;
+}
 function wf_intake_hook(array $acc, array $in): void {
     $aid = (string) $acc['id']; $c = wf_intake_cfg($aid); $jid = wf_jid($in['jid'] ?? ''); $from = preg_replace('/\D/', '', (string) ($in['from'] ?? ''));
     $text = trim(mb_substr((string) ($in['text'] ?? ''), 0, 8000)); $id = preg_replace('/[^0-9A-Za-z]/', '', (string) ($in['id'] ?? ''));
     $reply = function (array $x) { header('Content-Type: application/json'); header('Connection: close'); $b = json_encode($x); header('Content-Length: ' . strlen($b)); echo $b; flush(); if (function_exists('fastcgi_finish_request')) fastcgi_finish_request(); };
+    if (wf_gate_hook($acc, $in, $reply)) exit; // reception gate: woman / man → recording → reviewers
     $diag = wf_intake_diag($aid);
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && wf_libcmd_which($aid, $text) !== '') { // library commands (spiritual healing numbers)
         $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(120); wf_libcmd_hook($acc, $jid, $text, $id, $from); exit; }

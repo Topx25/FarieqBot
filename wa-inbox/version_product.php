@@ -5,6 +5,8 @@ declare(strict_types=1);
  * The full development log stays in version.php. Each entry has Arabic (ar) and English (en) text.
  */
 return [
+    ['v' => '3.77', 'date' => '2026-10-15', 'ar' => ['بوابة جروب الاستقبال', ['العضو اللي يكتب امرأة أو رجل يتطلب منه تسجيل صوتي، ولما يوصل التسجيل يتعمل منشن للمراجعين. ترحيب واحد للأعضاء اللي دخلوا مع بعض ومن غير تكرار.']],
+        'en' => ['Reception group gate', ['A member who writes woman or man is asked for a recording; when it arrives the reviewers are tagged. One welcome for members who join together, never repeated.']]],
     ['v' => '3.76', 'date' => '2026-10-14', 'ar' => ['ملف واحد لكل حالة', ['لو الرقم ليه ملف بالفعل، الوسم #حالة مش بيفتح ملف تاني: البوت يرد برقم الملف والمتابع، وأي تفاصيل أو تسجيل جديد يتضاف لنفس الملف.']],
         'en' => ['One file per case', ['#case for a number that already has a file opens no second one: the bot replies with the file number and follower; new details or recordings are added to the same file.']]],
     ['v' => '3.74', 'date' => '2026-10-14', 'ar' => ['جرد المكتبة', ['زرار «📋 الجرد» في المكتبة: كل الملفات واختصاراتها وأحجامها والردود الجاهزة والبرامج، دايمًا بآخر تعديل، وتنزّله Excel.', 'في واتساب: #قائمة #المكتبة يبعتلك الجرد.']],

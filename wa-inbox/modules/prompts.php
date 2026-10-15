@@ -122,7 +122,8 @@ function wf_pack_presets(): array {
     $emoji = "❤️ 🤍 💙 💚 💛 💜 ♥️ 😍 🥰 😘 => 🤍\n😂 🤣 😅 😁 😆 😄 => 😄\n👍 👌 ✅ 💯 => 👍\n🤲 🙏 => 🤲 | آمين يارب 🤲\n🌹 🌸 💐 🌷 => 🌹\n😢 😭 💔 😔 😞 😓 => 🤍 | ربنا يطمّن قلبك 🤍 إحنا معاك، احكيلنا لو حابب.\n👋 => 👋 | أهلاً بيك 🤍\n* => 🤍";
     $units = 'مر|مره|مرات|مرة|يوم|ايام|أيام|ساع|اسبوع|أسبوع|شهر|دقيق|times|days|hours|weeks|months|minutes'; // words after a count (the bot's made-up-count check)
     $sacred = '﴿|سورة|سوره|قال تعالى|قوله تعالى|اللهم|سبحان|أعوذ|اعوذ|بسم الله|لا إله|لا اله|حسبي الله|حسبنا الله|أستغفر|استغفر|لا حول|يا حي يا قيوم'; // words that start a verse, a surah name or a dhikr (the bot's made-up-text check)
-    foreach ($P as $k => $v) $P[$k] += ['emoji_replies' => $emoji, 'count_units' => $units, 'sacred_markers' => $sacred];
+    $gate = ['f' => 'امرأة، امراة، مرأة، مراة، ست، بنت، انثى، أنثى', 'm' => 'رجل، راجل، ذكر، شاب']; // reception groups: the words a new member answers with
+    foreach ($P as $k => $v) $P[$k] += ['emoji_replies' => $emoji, 'count_units' => $units, 'sacred_markers' => $sacred, 'gate_words' => $gate];
     return $P;
 }
 /** The starting business type of a number: a client's (SaaS) number starts as CRM, the operator's as general. */

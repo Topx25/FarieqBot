@@ -13,7 +13,13 @@ if (isset($_GET['bot_hook'])) {
     if (strlen($tok) < 32 || !hash_equals($tok, (string) ($_SERVER['HTTP_X_BOT_TOKEN'] ?? ''))) { http_response_code(403); exit; }
     $in = json_decode(wi_input(), true) ?: [];
     $acc = wi_accounts()[(string) ($in['account'] ?? '')] ?? null;
-    if ($acc && ($in['cmd'] ?? '') === 'join') { http_response_code(202); header('Content-Length: 0'); flush(); if (function_exists('fastcgi_finish_request')) fastcgi_finish_request(); sleep(3); wf_bot_welcome($acc, preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($in['jid'] ?? '')), (array) ($in['members'] ?? [])); exit; }
+    if ($acc && ($in['cmd'] ?? '') === 'join') { http_response_code(202); header('Content-Length: 0'); flush(); if (function_exists('fastcgi_finish_request')) fastcgi_finish_request(); ignore_user_abort(true); @set_time_limit(120);
+        // Members who join close together get ONE welcome: each join waits; the last one (no newer join for 30 s) sends it for all.
+        $gj = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($in['jid'] ?? '')); $k = (string) $acc['id'] . '|' . $gj; $mine = uniqid("", true);
+        wi_update('welcome_queue.json', function ($Q) use ($k, $in, $mine) { $Q[$k]['m'] = array_values(array_unique(array_merge((array) ($Q[$k]['m'] ?? []), array_map('strval', (array) ($in['members'] ?? []))))); $Q[$k]['t'] = $mine; return $Q; });
+        sleep(30); $take = [];
+        wi_update('welcome_queue.json', function ($Q) use ($k, $mine, &$take) { if ((string) ($Q[$k]['t'] ?? '') === $mine) { $take = (array) ($Q[$k]['m'] ?? []); unset($Q[$k]); } return $Q; });
+        if ($take) wf_bot_welcome($acc, $gj, $take); exit; }
     // A shortcut typed on the phone ("#تحصين-المكان"): the gateway edits that message into the full quick reply.
     // A member wrote a keyword (#تحصين) in a group or a private chat: the quick reply with that keyword, within the limits that protect the number.
     // "#حالة" + details in a group (or the writer answering the bot's questions): a case is opened — see modules/case_intake.php

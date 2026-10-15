@@ -224,7 +224,7 @@ async function caseIntake(sock, jid, msg, text, kind, file) {
   const from = key.fromMe ? String(sock?.user?.id || '').split(':')[0].split('@')[0] : String(key.participantAlt || key.participant || '').split('@')[0];
   const pk = `${jid}|${from}`, w = intakeWait.get(pk), waiting = w && w > Date.now();
   if (isVoice) { recentVoice.set(pk, { id: key.id, file, at: Date.now() }); if (recentVoice.size > 500) recentVoice.clear(); }
-  if (isVoice ? !waiting : (!t.includes('#') && !waiting)) return;
+  if (!gateGroups().has(jid) && (isVoice ? !waiting : (!t.includes('#') && !waiting))) return; // reception-gate groups: every message ("woman" / "man", the recording)
   const pl = unwrapMessageContent(msg.message) || {};
   const c = pl.extendedTextMessage?.contextInfo || pl.audioMessage?.contextInfo || {};
   // The case's recording: this message, the recording it quotes, or the writer's recording of the last 10 minutes.
@@ -296,6 +296,16 @@ function botTypingSeen(jid, state) {
   if (!botFirst.has(jid)) return;
   if (state === 'composing' || state === 'recording') { botTyping.set(jid, Date.now()); botArm(jid, gatherCfg().quietMs); }
   else if (state === 'paused') { botTyping.delete(jid); botArm(jid, gatherCfg().quietMs); }
+}
+/** Groups with the reception gate on (Bot settings, re-read every minute). */
+let gateCache = { at: 0, set: new Set() };
+function gateGroups() {
+  if (Date.now() - gateCache.at < 60000) return gateCache.set;
+  const set = new Set();
+  try { const b = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'wa-inbox', '.data', 'bot.json'), 'utf8')); const g = ((b[process.env.ACCOUNT_ID || 'main'] || {}).run || {}).groups || {};
+    for (const [j, x] of Object.entries(g)) if (x && x.gate && x.gate !== '0') set.add(j); } catch { /* none */ }
+  gateCache = { at: Date.now(), set };
+  return set;
 }
 /** Bot timing from Bot settings (re-read every minute): quiet time after the last message / typing, and the longest wait. */
 let gatherCache = { at: 0, quietMs: 6000, maxMs: 45000 };

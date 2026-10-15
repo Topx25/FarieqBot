@@ -28,7 +28,10 @@ function wf_clean_gcfg(array $g): array {
     return ['mode' => ($g['mode'] ?? '') === 'fixed' ? 'fixed' : 'ai', 'trigger' => in_array($g['trigger'] ?? '', ['all', 'questions', 'mention'], true) ? $g['trigger'] : 'mention',
         'text' => mb_substr(trim((string) ($g['text'] ?? '')), 0, 2000), 'cooldown' => max(1, min(720, (int) ($g['cooldown'] ?? 24))), 'name' => mb_substr((string) ($g['name'] ?? ''), 0, 120),
         'welcome' => !empty($g['welcome']) && $g['welcome'] !== '0', 'welcome_text' => mb_substr(trim((string) ($g['welcome_text'] ?? '')), 0, 2000),
-        'learn' => !empty($g['learn']) && $g['learn'] !== '0'];
+        'learn' => !empty($g['learn']) && $g['learn'] !== '0',
+        // Reception gate: "woman / man" → the member is asked for a recording; the recording → the reviewers are tagged
+        'gate' => !empty($g['gate']) && $g['gate'] !== '0', 'gate_f' => mb_substr(trim((string) ($g['gate_f'] ?? '')), 0, 300), 'gate_m' => mb_substr(trim((string) ($g['gate_m'] ?? '')), 0, 300),
+        'gate_review' => implode(', ', array_slice(array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) ($g['gate_review'] ?? ''))))), 0, 10))];
 }
 /** A message with no words, only emojis: a reaction like a person would give (and for some a short line), without the AI.
  *  Rules from the business profile "emoji_replies" ("emojis => reaction | reply", "*" = any other emoji). Returns what was done, or ''. */
@@ -52,6 +55,12 @@ function wf_bot_welcome(array $acc, string $gjid, array $members): array {
     $jids = []; $tags = [];
     foreach ($members as $m) { $m = (string) $m; $num = wf_phone(explode('@', $m)[0]); if ($num === '') continue; $jids[] = $num . '@' . (str_ends_with($m, '@lid') ? 'lid' : 's.whatsapp.net'); $tags[] = '@' . $num; }
     if (!$jids) return ['skipped' => 'no members'];
+    // A member welcomed in this group during the last 7 days is not welcomed again (left and joined back, or the join event came twice).
+    $fresh = []; $now = time();
+    wi_update('welcomed.json', function ($W) use ($aid, $gjid, $jids, $now, &$fresh) { foreach ($jids as $j) if ((int) ($W[$aid][$gjid][$j] ?? 0) < $now - 7 * 86400) { $fresh[] = $j; $W[$aid][$gjid][$j] = $now; }
+        $W[$aid][$gjid] = array_filter((array) ($W[$aid][$gjid] ?? []), fn($t) => $t > $now - 30 * 86400); return $W; });
+    if (!$fresh) return ['skipped' => 'already welcomed'];
+    $jids = $fresh; $tags = array_map(fn($j) => '@' . explode('@', $j)[0], $fresh);
     $names = wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long') , null, $acc); $gname = '';
     foreach ($names['chats'] ?? [] as $x) if ($x['jid'] === $gjid) $gname = (string) ($x['name'] ?? '');
     $text = strtr((string) $g['welcome_text'], ['{mention}' => implode(' ', $tags), '{group}' => $gname, '{name}' => implode(' ', $tags)]);
