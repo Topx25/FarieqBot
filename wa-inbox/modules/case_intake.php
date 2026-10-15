@@ -149,8 +149,8 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
     [$tagT, $tagM] = wf_group_tag($from); $say = fn(string $t) => wi_gateway('/chat/send', ['jid' => $jid, 'text' => $tagT . $t, 'quote_id' => $id, 'mentions' => $tagM, 'via' => 'bot'], $acc);
     // the person: first line (or the words before the reason) — a tag, a number or a name
     $lines = preg_split('/\R/u', $rest); $ref = trim((string) array_shift($lines)); $reason = trim(implode("\n", $lines));
-    if (preg_match('/^[^\n]{0,30}[:\x{061B}]/u', $rest) || preg_match('/\R[^\n]{0,30}[:\x{061B}]/u', $rest)) { // a filled form: "#case: name", "#mobile: +212…", "#reason: …" — the values only
-        $vals = []; foreach (preg_split('/\R/u', $rest) as $ln) { $ln = trim($ln); if ($ln === '') continue; $ln = trim(preg_replace('/^[^:\x{061B}]{0,30}[:\x{061B}]\s*/u', '', $ln)); if ($ln !== '') $vals[] = $ln; }
+    if (preg_match('/(^|\R)\s*#[^\s:\x{061B}]+\s*[:\x{061B}]/u', $text)) { // a filled form: "#case: name", "#mobile: +212…", "#reason: …" — only the labelled values (a title line or a lone #stage is skipped)
+        $vals = []; foreach (preg_split('/\R/u', $text) as $ln) if (preg_match('/^\s*#?[^:\x{061B}\n]{1,30}[:\x{061B}]\s*(.+)$/u', $ln, $mm) && ($x = trim(preg_replace('/#\S+/u', '', $mm[1]))) !== '') $vals[] = $x;
         $ph = ''; foreach ($vals as $i => $x) if (preg_match('/^(?:\+|00)?\d[\d\s-]{7,16}\d$/', $x)) { $ph = $x; unset($vals[$i]); break; }
         $vals = array_values($vals); $ref = $ph !== '' ? $ph : (string) array_shift($vals); if ($ph !== '' && count($vals) > 1) array_shift($vals); // with a number, the name line is not the reason
         $reason = trim(implode("\n", $vals));
@@ -175,10 +175,21 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
         $c['status_log'][] = ['from' => $c['status'] ?? 'new', 'to' => $status, 'at' => date('c'), 'by' => 'group:' . $from];
         $c['status'] = $status; $c['updated'] = date('c'); $c['notes'][] = $note; return $c; });
     $say(wf_msg('case_status_done', ['name' => $by, 'case' => $one, 'person' => ($case['name'] ?? '') ?: '+' . $key, 'status' => $st[$status] ?? $status, 'reason' => mb_substr($reason, 0, 300)]));
+    wf_case_diag_note($acc, $key, $jid, (string) ($st[$status] ?? $status), $reason, $by);
     wi_log('case_status_cmd', ['account' => $aid, 'group' => $jid, 'case' => $key, 'to' => $status]);
     return true;
 }
 
+/** A stage change written in another group is noted in the diagnosis group too, as a reply to the case's report there when it is known. */
+function wf_case_diag_note(array $acc, string $key, string $fromJid, string $status, string $reason, string $by): void {
+    $aid = (string) $acc['id']; $c = wf_case_get($aid, $key); if (!$c) return;
+    $diag = (string) ($c['diag_jid'] ?? '') ?: wf_intake_diag($aid); if ($diag === '' || $diag === $fromJid) return; // written in the diagnosis group itself: already there
+    $txt = wf_msg('case_diag_note', ['no' => (string) ($c['no'] ?? ''), 'name' => (string) ($c['name'] ?? '') ?: '+' . $key, 'status' => $status, 'reason' => mb_substr($reason, 0, 1500), 'by' => $by]);
+    $q = !empty($c['diag_msg']) && ($c['diag_jid'] ?? '') === $diag ? (string) $c['diag_msg'] : '';
+    if ($q === '') foreach (array_reverse((array) (wi_gateway('/archive/thread?limit=600&jid=' . rawurlencode($diag), null, $acc)['rows'] ?? [])) as $m) { $t = (string) ($m['text'] ?? ''); // an older report: found by the number in it
+        if (mb_strlen($t) > 60 && (strpos($t, '+' . $key) !== false || strpos($t, $key) !== false)) { $q = (string) ($m['id'] ?? ''); break; } }
+    wi_gateway('/chat/send', ['jid' => $diag, 'text' => $txt, 'via' => 'bot'] + ($q !== '' ? ['quote_id' => $q] : []), $acc);
+}
 /** "#menu": every command this number answers in WhatsApp, with what it does (words and help text from the case presets). */
 function wf_cmd_menu(string $aid): string {
     $cc = wf_case_cfg($aid); $w = (array) ($cc['words'] ?? []); $h = (array) ($w['help'] ?? []); $one = (string) $cc['one'];
@@ -430,6 +441,7 @@ function wf_intake_finish(array $acc, string $pk): array {
     $diag = wf_intake_diag($aid); $sent = null;
     $report = wf_report_id($report, wf_case_get($aid, $key)['no'] ?? ''); // the case ID on top of the copy
     if ($diag !== '') { $sent = wi_gateway('/chat/send', ['jid' => $diag, 'text' => $report, 'via' => 'bot'], $acc);
+        if (!empty($sent['id'])) wf_case_update($aid, $key, function (?array $x) use ($sent, $diag) { if ($x === null) return null; $x['diag_msg'] = (string) $sent['id']; $x['diag_jid'] = $diag; return $x; }); // later stage changes reply to it
         foreach ($voices as $vo) wi_gateway('/chat/send', ['jid' => $diag, 'attachment' => $vo['file'], 'via' => 'bot'], $acc); } // the recording follows the report
     [$tagT, $tagM] = wf_group_tag((string) $pend['from']);
     if (!empty($c['confirm']) && $old) wi_gateway('/chat/send', ['jid' => $pend['jid'], 'mentions' => $tagM, 'text' => $tagT . wf_msg('case_intake_updated', ['case' => (string) wf_case_cfg($aid)['one'], 'person' => $v['name'] ?: ('+' . $phone), 'no' => (string) (wf_case_get($aid, $key)['no'] ?? '')]), 'quote_id' => $pend['msg_id'], 'via' => 'bot'], $acc);

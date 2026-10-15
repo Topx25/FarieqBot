@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.80.4', 'date' => '2026-10-15', 'title' => 'Stage changes noted in the diagnosis group', 'changes' => [
+        'A stage change written in another group (#الحالة … #اتحسنت …) is also posted in the diagnosis group as a reply to the case report (template case_diag_note); the report message is remembered, and an older one is found by the number in it.',
+        'Form messages read only the labelled lines ("#الحالة: …", "#السبب: …"); a title line is no longer taken as the reason.',
+    ]],
     ['v' => '3.80.3', 'date' => '2026-10-15', 'title' => 'Case ID on every diagnosis report', 'changes' => [
         'Every report posted to the diagnosis group starts with the case ID (🆔 ID n), from the group keyword and from the Cases form; a new case gets its ID before its report is posted.',
         'Fixed: details added to an existing case were noted as "case opened".',

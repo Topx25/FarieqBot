@@ -193,6 +193,7 @@ function wf_api_cases(string $api): void {
             $r = ['ok' => false];
             if ($own && ($in['send_from'] ?? 'mine') === 'mine') { $r = wi_gateway('/chat/send', ['jid' => $gj, 'text' => $report, 'by' => (string) $_SESSION['email']], $own); if (!empty($r['ok'])) $c['sent_from'] = 'own'; }
             if (empty($r['ok'])) $r = wi_gateway('/chat/send', ['jid' => $gj, 'text' => $report, 'by' => (string) $_SESSION['email']], $acc);
+            if (!empty($r['id']) && empty($c['sent_from'])) { $c['diag_msg'] = (string) $r['id']; $c['diag_jid'] = $gj; } // stage changes reply to this report
             $sent = !empty($r['ok']); if ($sent) { $c['groups'][$gj] = $groups[$gj]['name'] ?? $gj; $c['report_msg'] = $r['id'] ?? null; }
         }
         wf_case_put($aid, $phone, $c);
