@@ -222,6 +222,7 @@ function wf_gate_hook(array $acc, array $in, callable $reply): bool {
     $from = wf_phone((string) ($in['from'] ?? '')); if ($from === '' || isset(wf_team($acc, (array) ($c['groups'] ?? []))[$from])) return false; // the team talks freely
     $id = preg_replace('/[^0-9A-Za-z]/', '', (string) ($in['id'] ?? '')); $text = trim((string) ($in['text'] ?? ''));
     $name = mb_substr(trim((string) ($in['name'] ?? '')), 0, 60); $now = time(); $act = '';
+    if (!!($g['gate_follow'] ?? true)) wi_update('gate_state.json', function ($S) use ($aid, $jid, $from, $now) { if (isset($S[$aid][$jid][$from]['j']) && empty($S[$aid][$jid][$from]['r'])) $S[$aid][$jid][$from]['r'] = $now; return $S; }); // they answered: no reminders
     if ((array) ($in['voices'] ?? [])) $act = 'voice';
     else {
         $W = (array) (wf_pack($aid)['gate_words'] ?? []); $tok = array_filter(preg_split('/[\s,.\x{060C}!?\x{061F}]+/u', wf_intake_norm($text)));
@@ -233,7 +234,7 @@ function wf_gate_hook(array $acc, array $in, callable $reply): bool {
     wi_update('gate_state.json', function ($S) use ($aid, $jid, $from, $act, $now, $name, &$go) { $k = $act === 'voice' ? 'v' : 'a'; $last = (int) ($S[$aid][$jid][$from][$k] ?? 0);
         if ($name !== '') $S[$aid][$jid][$from]['n'] = $name;
         $go = $now - $last > ($act === 'voice' ? 1800 : 86400); if ($go) { $S[$aid][$jid][$from][$k] = $now; if ($act !== 'voice') $S[$aid][$jid][$from]['g'] = $act; }
-        foreach ((array) ($S[$aid][$jid] ?? []) as $p => $r) if (max((int) ($r['a'] ?? 0), (int) ($r['v'] ?? 0)) < $now - 30 * 86400) unset($S[$aid][$jid][$p]); return $S; });
+        foreach ((array) ($S[$aid][$jid] ?? []) as $p => $r) if (max((int) ($r['a'] ?? 0), (int) ($r['v'] ?? 0), (int) ($r['j'] ?? 0)) < $now - 30 * 86400) unset($S[$aid][$jid][$p]); return $S; });
     $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(60);
     if (!$go) return true;
     [$tagT, $tagM] = wf_group_tag($from);
@@ -261,6 +262,38 @@ function wf_gate_moved(array $acc, string $gjid, array $members, string $by): vo
             $r = wi_gateway('/chat/send', ['jid' => $g['gate_notify'], 'text' => $txt, 'mentions' => $jids, 'via' => 'bot'], $acc);
             wi_update('gate_state.json', function ($X) use ($aid, $gate, $num) { $X[$aid][$gate][$num]['moved'] = time(); return $X; });
             wi_log('reception_moved', ['account' => $aid, 'from_group' => $gate, 'to_group' => $gjid, 'sent' => !empty($r['ok'])]);
+        }
+    }
+}
+/** New members of a reception group: their join time starts the follow-up (reminder, last notice, removal) until they answer. */
+function wf_gate_joined(array $acc, string $gjid, array $members): void {
+    $aid = (string) $acc['id']; $c = wf_bot_run_cfg($aid); $g = wf_bot_group_cfg($c, $gjid);
+    if (!$g || empty($g['gate']) || !($g['gate_follow'] ?? true)) return;
+    $now = time(); $nums = array_values(array_filter(array_map(fn($m) => wf_phone(explode('@', (string) $m)[0]), $members)));
+    wi_update('gate_state.json', function ($S) use ($aid, $gjid, $nums, $now) { foreach ($nums as $n) { $p = (array) ($S[$aid][$gjid][$n] ?? []);
+        unset($p['r'], $p['rm'], $p['fn'], $p['k']); $p['j'] = $now; $S[$aid][$gjid][$n] = $p; } return $S; });
+}
+/** Every minute (cron): members who joined a reception group and never answered get a reminder, then a last notice, then are removed. */
+function wf_gate_due(array $accounts): void {
+    $now = time(); $all = wi_read('gate_state.json', []);
+    foreach ($accounts as $acc) {
+        $aid = (string) $acc['id']; if (empty($all[$aid]) || wi_account_blocked($acc)) continue;
+        $c = wf_bot_run_cfg($aid); if ($c['mode'] !== 'auto') continue; $sent = 0;
+        foreach ((array) $all[$aid] as $gjid => $people) {
+            $g = wf_bot_group_cfg($c, (string) $gjid); if (!$g || empty($g['gate']) || !($g['gate_follow'] ?? true)) continue;
+            $rh = (int) ($g['gate_remind_h'] ?? 3) * 3600; $fh = $rh + (int) ($g['gate_final_h'] ?? 3) * 3600; $km = (int) ($g['gate_kick_m'] ?? 30) * 60;
+            foreach ((array) $people as $num => $p) {
+                if ($sent >= 5) break 2; // a few per minute
+                $j = (int) ($p['j'] ?? 0); if (!$j || !empty($p['r']) || !empty($p['moved']) || !empty($p['k']) || $j < $now - 7 * 86400) continue;
+                $step = ''; if (empty($p['rm']) && $now - $j >= $rh && $now - $j < $fh) $step = 'rm'; elseif (empty($p['fn']) && $now - $j >= $fh) $step = 'fn'; elseif (!empty($p['fn']) && $km > 0 && $now - (int) $p['fn'] >= $km) $step = 'k';
+                if ($step === '') continue;
+                $mj = (string) $num . (strlen((string) $num) > 13 ? '@lid' : '@s.whatsapp.net'); $tag = '@' . $num;
+                if ($step === 'k') $r = wi_gateway('/groups/remove', ['group' => $gjid, 'jid' => $mj], $acc);
+                else $r = wi_gateway('/chat/send', ['jid' => $gjid, 'text' => wf_msg($step === 'rm' ? 'gate_remind' : 'gate_final', ['mention' => $tag, 'minutes' => (string) (int) ($g['gate_kick_m'] ?? 30)]), 'mentions' => [$mj], 'via' => 'bot'], $acc);
+                wi_update('gate_state.json', function ($S) use ($aid, $gjid, $num, $step, $now) { $S[$aid][$gjid][$num][$step] = $now; return $S; });
+                wi_log('reception_follow', ['account' => $aid, 'group' => $gjid, 'step' => $step, 'ok' => !empty($r['ok']), 'result' => $r['result'] ?? ($r['error'] ?? '')]);
+                $sent++;
+            }
         }
     }
 }

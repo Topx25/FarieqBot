@@ -31,6 +31,8 @@ function wf_clean_gcfg(array $g): array {
         'learn' => !empty($g['learn']) && $g['learn'] !== '0',
         // Reception gate: "woman / man" → the member is asked for a recording; the recording → the reviewers are tagged
         'gate' => !empty($g['gate']) && $g['gate'] !== '0', 'gate_f' => mb_substr(trim((string) ($g['gate_f'] ?? '')), 0, 300), 'gate_m' => mb_substr(trim((string) ($g['gate_m'] ?? '')), 0, 300),
+        // New members who do not answer: a reminder after gate_remind_h hours, a last notice gate_final_h hours later, removal gate_kick_m minutes after it (0 = never removed)
+        'gate_follow' => !isset($g['gate_follow']) || ($g['gate_follow'] && $g['gate_follow'] !== '0'), 'gate_remind_h' => max(1, min(72, (int) ($g['gate_remind_h'] ?? 3))), 'gate_final_h' => max(1, min(72, (int) ($g['gate_final_h'] ?? 3))), 'gate_kick_m' => max(0, min(1440, (int) ($g['gate_kick_m'] ?? 30))),
         'gate_notify' => preg_match('/^[0-9-]{6,40}@g\.us$/', (string) ($g['gate_notify'] ?? '')) ? (string) $g['gate_notify'] : '', // where the healer is asked to open the case
         'gate_review' => implode(', ', array_slice(array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) ($g['gate_review'] ?? ''))))), 0, 10))];
 }

@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.78.0', 'date' => '2026-10-15', 'title' => 'Reception: follow-up of silent members', 'changes' => [
+        'A new member of a reception group who writes nothing gets a reminder after 3 hours (template gate_remind), a last notice 3 hours later (gate_final), and is removed from the group 30 minutes after it. Any message from them stops it. Hours, minutes and on/off are group settings; members who joined before this are left alone. The gateway can remove a member (/groups/remove).',
+    ]],
     ['v' => '3.77.2', 'date' => '2026-10-15', 'title' => 'View-once messages shown', 'changes' => [
         'View-once photos, videos and voice notes are kept as their own kind and shown in the chat as a note (WhatsApp sends their file to the phone only, never to linked devices); before, they were dropped as empty messages.',
     ]],

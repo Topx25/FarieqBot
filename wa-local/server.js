@@ -1688,6 +1688,17 @@ app.post('/groups/add', requireToken, async (req, res) => {
     res.json({ ok: st === '200' || st === '409', status: st, can_invite: Boolean(ar?.attrs?.code), result: st === '200' ? 'added' : (st === '409' ? 'already' : (st === '403' ? 'privacy' : (st === '408' ? 'left_recently' : (st === '401' ? 'blocked' : 'failed')))) });
   } catch (error) { res.status(502).json({ ok: false, error: error.message }); }
 });
+/** Removes a person from a group this number administers (reception groups: a new member who never answered). */
+app.post('/groups/remove', requireToken, async (req, res) => {
+  if (!connected || !socket) { res.status(503).json({ ok: false, error: 'WhatsApp is not connected.' }); return; }
+  try {
+    const g = String(req.body.group || ''), who = String(req.body.jid || '');
+    if (!g.endsWith('@g.us') || !who) { res.status(422).json({ ok: false, error: 'Choose a group and a person.' }); return; }
+    const r = await withTimeout(socket.groupParticipantsUpdate(g, [who], 'remove'), 20000, 'timed out');
+    groupsCache = null; const st = String(r?.[0]?.status || '');
+    res.json({ ok: st === '200' || st === '404', status: st, result: st === '200' ? 'removed' : (st === '404' ? 'not in group' : 'refused') });
+  } catch (error) { res.status(502).json({ ok: false, error: error.message }); }
+});
 /** Invite link of a group this number administers. */
 app.get('/groups/invite', requireToken, async (req, res) => {
   if (!connected || !socket) { res.status(503).json({ ok: false, error: 'WhatsApp is not connected.' }); return; }
