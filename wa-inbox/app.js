@@ -23,7 +23,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
   // Links from messages / contacts open only as web pages (no javascript: or data: URLs).
   function safeUrl(u) { u = String(u || '').trim(); if (!/^https?:\/\//i.test(u)) u = /^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(u) ? 'https://' + u : '#'; return u; }
   function fmt(n) { return Number(n || 0).toLocaleString((AR ? ((window.WI_SYS || {}).locale || 'ar') : 'en-GB')); }
-  var KIND = { image: '🖼️ Photo', voice: '🎤 Voice message', audio: '🎵 Audio', video: '🎬 Video', gif: '🎞️ GIF', sticker: '🏷️ Sticker', document: '📄 File', contact: '👤 Contact', location: '📍 Location', poll: '📊 Poll', reaction: '' };
+  var KIND = { image: '🖼️ Photo', voice: '🎤 Voice message', audio: '🎵 Audio', video: '🎬 Video', gif: '🎞️ GIF', sticker: '🏷️ Sticker', document: '📄 File', contact: '👤 Contact', location: '📍 Location', poll: '📊 Poll', reaction: '', viewonce: '👁️ View-once photo or video — WhatsApp opens it on the phone only' };
   function tick(st) { st = Number(st || 0); return st >= 4 ? '<span class="read">✓✓</span>' : (st >= 3 ? '✓✓' : '✓'); }
   function kindLabel(k) { return KIND[k] ? T(KIND[k]) : ''; }
   function title(c) { if (c.name && /[·•∙⋅]{2,}/.test(c.name)) c.name = ''; return c.customer ? c.customer.name : (c.name || (c.phone ? '+' + c.phone : (c.group ? T('Group') : String(c.jid || '').split('@')[0] + ' (' + T('hidden') + ')'))); }

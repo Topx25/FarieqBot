@@ -360,8 +360,16 @@ function textFromMessage(message) {
 }
 
 /** Archive type of any message (voice, video, sticker, reaction, …), wider than the payment bot's mediaKind. */
+/** View-once photo / video / voice: WhatsApp gives its content to the phone only, linked devices get the wrapper without the file. */
+function isViewOnce(message) {
+  const m = message?.message || {};
+  if (m.viewOnceMessage || m.viewOnceMessageV2 || m.viewOnceMessageV2Extension) return true;
+  const p = unwrapMessageContent(message) || {};
+  return Boolean(p.imageMessage?.viewOnce || p.videoMessage?.viewOnce || p.audioMessage?.viewOnce);
+}
 function archiveKind(message) {
   const p = unwrapMessageContent(message) || {};
+  if (isViewOnce(message) && !((p.imageMessage || p.videoMessage || p.audioMessage || {}).mediaKey)) return 'viewonce'; // nothing to download: shown as a note
   if (p.reactionMessage) return 'reaction';
   if (p.imageMessage) return 'image';
   if (p.audioMessage) return p.audioMessage.ptt ? 'voice' : 'audio';

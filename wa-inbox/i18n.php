@@ -1214,6 +1214,7 @@ return [
     'Choose at least one group, or “All groups”.' => 'اختار جروب واحد على الأقل، أو «كل الجروبات».',
     'No welcome' => 'بدون ترحيب',
     'Reception gate' => 'بوابة الاستقبال',
+    '👁️ View-once photo or video — WhatsApp opens it on the phone only' => '👁️ صورة أو فيديو للعرض مرة واحدة — واتساب بيفتحها على الموبايل بس',
     'After the move, ask the healer to open the case in this group (group ID, e.g. 1203…@g.us)' => 'بعد النقل، اطلب من المعالج يفتح ملف الحالة في الجروب ده (معرّف الجروب، مثلاً 1203…@g.us)',
     'Woman / man → ask for a recording → tag the reviewers' => 'امرأة / رجل ← طلب تسجيل صوتي ← منشن للمراجعين',
     'Reviewers tagged when a recording arrives (phone numbers, comma separated)' => 'المراجعون اللي يتعملهم منشن لما يوصل التسجيل (أرقام، بينها فاصلة)',
