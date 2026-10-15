@@ -141,13 +141,20 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
     $L = (array) (wf_intake_cfg($aid)['lists'] ?? []) + (array) (wf_case_cfg($aid)['words'] ?? []) + ['list' => '', 'shortcuts' => '', 'programs' => ''];
     if ($L['list'] !== '' && wf_intake_has($text, (string) $L['list'])) return wf_intake_list($acc, $jid, $text, $id, $L, $from); // "#قائمة #الحالة" before "#الحالة"
     $kw = wf_intake_lookup_kw($aid); $status = null; $cmd = '';
-    if (wf_intake_has($text, $kw)) $cmd = $kw;
-    else foreach (wf_intake_cmds($aid) as $c => $k) if (wf_intake_has($text, $c)) { $cmd = $c; $status = $k; break; }
+    foreach (wf_intake_cmds($aid) as $c => $k) if (wf_intake_has($text, $c)) { $cmd = $c; $status = $k; break; } // a stage (#اتحسنت…) wins: "#الحالة … #اتحسنت" changes it
+    if ($cmd === '' && wf_intake_has($text, $kw)) $cmd = $kw;
     if ($cmd === '') return false;
-    $rest = trim(preg_replace('/#\S+/u', '', $text)); // the command words (#…) are not the person $mentions = array_map('strval', (array) ($in['mentions'] ?? []));
+    $rest = trim(preg_replace('/#\S+/u', '', $text)); // the command words (#…) are not the person
+    $mentions = array_map('strval', (array) ($in['mentions'] ?? []));
     [$tagT, $tagM] = wf_group_tag($from); $say = fn(string $t) => wi_gateway('/chat/send', ['jid' => $jid, 'text' => $tagT . $t, 'quote_id' => $id, 'mentions' => $tagM, 'via' => 'bot'], $acc);
     // the person: first line (or the words before the reason) — a tag, a number or a name
     $lines = preg_split('/\R/u', $rest); $ref = trim((string) array_shift($lines)); $reason = trim(implode("\n", $lines));
+    if (preg_match('/^[^\n]{0,30}[:\x{061B}]/u', $rest) || preg_match('/\R[^\n]{0,30}[:\x{061B}]/u', $rest)) { // a filled form: "#case: name", "#mobile: +212…", "#reason: …" — the values only
+        $vals = []; foreach (preg_split('/\R/u', $rest) as $ln) { $ln = trim($ln); if ($ln === '') continue; $ln = trim(preg_replace('/^[^:\x{061B}]{0,30}[:\x{061B}]\s*/u', '', $ln)); if ($ln !== '') $vals[] = $ln; }
+        $ph = ''; foreach ($vals as $i => $x) if (preg_match('/^(?:\+|00)?\d[\d\s-]{7,16}\d$/', $x)) { $ph = $x; unset($vals[$i]); break; }
+        $vals = array_values($vals); $ref = $ph !== '' ? $ph : (string) array_shift($vals); if ($ph !== '' && count($vals) > 1) array_shift($vals); // with a number, the name line is not the reason
+        $reason = trim(implode("\n", $vals));
+    }
     $hits = wf_intake_find($aid, $ref, $mentions, $acc);
     if (!$hits && $ref !== '') { $w = preg_split('/\s+/u', preg_replace('/@\d+/', '', $ref)); // "aamer reason words": try the first 1–3 words as the name
         for ($i = min(3, count($w)); $i >= 1 && !$hits; $i--) { $h = wf_intake_find($aid, implode(' ', array_slice($w, 0, $i)), [], $acc); if (count($h) === 1) { $hits = $h; $reason = trim(implode(' ', array_slice($w, $i)) . "\n" . $reason); } } }
@@ -157,7 +164,7 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
     $key = (string) array_key_first($hits); $case = $hits[$key]; $by = trim((string) ($in['name'] ?? '')) ?: '+' . $from;
     if (!$mentions && $ref !== '' && trim($reason) === '') { // "aamer the reason" on one line: the words that are not the name or the number
         $nm = mb_strtolower((string) ($case['name'] ?? ''));
-        $reason = trim(implode(' ', array_filter(preg_split('/\s+/u', $ref), fn($w) => !preg_match('/^[+\d-]{6,}$/', $w) && ($nm === '' || mb_strpos($nm, mb_strtolower($w)) === false)))); }
+        $reason = trim(implode(' ', array_filter(preg_split('/\s+/u', $ref), fn($w) => !preg_match('/^[+\d-]{6,}$/', $w) && $w !== (string) ($case['no'] ?? '') && ($nm === '' || mb_strpos($nm, mb_strtolower($w)) === false)))); }
     if ($status === null) { // lookup: the report and the stage
         $rep = trim((string) ($case['report'] ?? '')) ?: wf_case_report($aid, ['name' => $case['name'] ?? '', 'phone' => $key] + array_map(fn($v) => is_array($v) ? implode("\n", $v) : (string) $v, (array) ($case['data'] ?? [])));
         $say('ID ' . ($case['no'] ?? '') . ' · ' . ($st[$case['status'] ?? 'new'] ?? '') . "\n\n" . $rep); wi_log('case_lookup', ['account' => $aid, 'group' => $jid, 'case' => $key]); return true; }

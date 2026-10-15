@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.80.1', 'date' => '2026-10-15', 'title' => 'Case follow-up commands work again', 'changes' => [
+        'Fixed: every case command in a group (#الحالة …, #اتحسنت …) stopped with an error since 3.6x because a line of code had slipped into a comment; the bot did not answer and nothing changed.',
+        'A stage word wins over the lookup word: "#الحالة … #اتحسنت …" changes the stage instead of only showing the file.',
+        'Filled forms are understood: "#الحالة: name", "#رقم الموبايل: +212…", "#السبب: …" — a phone number anywhere is the person, the other values the reason. The case ID is never taken as the reason.',
+    ]],
     ['v' => '3.80.0', 'date' => '2026-10-15', 'title' => 'SaaS: the client\'s own address', 'changes' => [
         'A client may have their own address: name.<SaaS domain> (Clients → Plans and sign-up) and/or their own domains (CNAME to this server). On it the panel shows their brand name and logo, and only they, their team and the super admin may sign in; anyone else signed in there is signed out.',
         'Sign-up asks for a password (the panel signs in with email + password, then the WhatsApp code); before, the new client could not sign in.',
