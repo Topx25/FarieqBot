@@ -100,8 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $accounts = wi_accounts();
         $target = $accounts[(string) ($_POST['acc'] ?? '')] ?? null;
         $owned = array_filter($accounts, fn($a) => !empty($a['owner']) && strtolower($a['owner']) === strtolower((string) $_SESSION['email']));
-        $allowed = $do === 'add_account' ? ((wi_is_admin() && empty(wi_me()['own_number'])) || (wi_can_link_own() && !$owned)) : ($target && (wi_is_super() || (wi_can_manage($target) && empty($target['main']))));
-        if (!$allowed) { wi_flash($do === 'add_account' ? 'You can link one number of your own. Ask an admin for more.' : 'Not allowed for this number.', 'bad'); header('Location: ?p=accounts'); exit; }
+        $allowed = $do === 'add_account' ? ((wi_is_admin() && empty(wi_me()['own_number'])) || (wi_can_link_own() && count($owned) < ((wi_me()['role'] ?? '') === 'client' ? wi_client_max_numbers(wi_me()) : 1))) : ($target && (wi_is_super() || (wi_can_manage($target) && empty($target['main']))));
+        if (!$allowed) { wi_flash($do === 'add_account' ? 'You reached the numbers of your plan. Upgrade your plan or ask us for more.' : 'Not allowed for this number.', 'bad'); header('Location: ?p=accounts'); exit; }
         if ($do === 'add_account') {
             $name = trim((string) ($_POST['name'] ?? ''));
             $used = array_map(fn($a) => (int) $a['port'], $accounts);
@@ -146,13 +146,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header('Location: ?p=accounts'); exit;
     }
+    // Clients page (super admin): the plans themselves, and whether visitors may sign up.
+    if ($do === 'plans_save') {
+        if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admin only.'); }
+        $out = []; foreach ((array) ($_POST['plans'] ?? []) as $id => $p) { $id = preg_replace('/[^a-z0-9_-]/', '', strtolower((string) ($p['id'] ?? $id))); if ($id === '' || trim((string) ($p['name'] ?? '')) === '' || !empty($p['del'])) continue; $out[$id] = wi_plan_clean((array) $p); }
+        if ($out) wi_write('plans.json', $out);
+        $cfg = wi_config(); $cfg['system']['signup_on'] = !empty($_POST['signup_on']) ? 1 : 0; wi_write('config.json', $cfg);
+        wi_log('plans_save', ['plans' => array_keys($out)]); wi_flash('Saved.', 'ok'); header('Location: ?p=clients'); exit;
+    }
     // Clients page (super admin): plan, end date, pause, seats and features of a client.
     if (in_array($do, ['client_save', 'client_extend', 'client_toggle'], true)) {
         if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admin only.'); }
         $email = strtolower(trim((string) ($_POST['email'] ?? ''))); $all = wi_users(); $hit = false;
         foreach ($all as &$u) { if (strtolower((string) $u['email']) !== $email || ($u['role'] ?? '') !== 'client') continue; $hit = true;
             if ($do === 'client_save') {
-                $u['plan'] = mb_substr(trim((string) ($_POST['plan'] ?? '')), 0, 40);
+                $pid = (string) ($_POST['plan_id'] ?? ''); if ($pid !== '' && isset(wi_plans()[$pid]) && $pid !== (string) ($u['plan_id'] ?? '')) $u = wi_plan_apply($u, $pid, false); // a new plan: its limits and features
+                elseif ($pid === '') $u['plan_id'] = '';
+                $u['plan'] = mb_substr(trim((string) ($_POST['plan'] ?? ($u['plan'] ?? ''))), 0, 40) ?: (string) ($u['plan'] ?? '');
+                $u['max_numbers'] = max(0, min(100, (int) ($_POST['max_numbers'] ?? ($u['max_numbers'] ?? 1))));
+                $u['ai_calls'] = max(0, min(1000000, (int) ($_POST['ai_calls'] ?? ($u['ai_calls'] ?? 0))));
                 $ex = trim((string) ($_POST['expires'] ?? '')); $u['expires'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $ex) ? $ex : '';
                 $u['max_team'] = max(0, min(500, (int) ($_POST['max_team'] ?? 0)));
                 foreach (['can_bot', 'can_meetings', 'can_cases', 'can_backup'] as $fk) $u[$fk] = !empty($_POST[$fk]);

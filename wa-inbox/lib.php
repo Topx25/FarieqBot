@@ -12,7 +12,7 @@ const WI_DIR = __DIR__ . '/.data';
 /** System settings (Settings → System): everything that differs per installation. Values here are only the starting values. */
 function wi_sys_defaults(): array {
     $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost'); $dir = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))), '/');
-    return ['brand_name' => 'WhatsApp Inbox', 'brand_logo' => '💬', 'device_name' => 'WhatsGuard', 'base_url' => 'https://' . $host . $dir . '/',
+    return ['signup_on' => 0, 'brand_name' => 'WhatsApp Inbox', 'brand_logo' => '💬', 'device_name' => 'WhatsGuard', 'base_url' => 'https://' . $host . $dir . '/',
         'timezone' => date_default_timezone_get() ?: 'UTC', 'country_code' => '', 'trunk_prefix' => '0', 'idle_min' => 30, 'otp_min' => 5, 'max_fails' => 5, 'lock_min' => 15,
         'cookie_path' => ($dir ?: '') . '/', 'backup_folder' => 'WhatsApp Inbox Backups', 'archive_months' => 3, 'refresh_pct' => 100, 'changelog' => 'product', 'max_send_mb' => 70, 'group_add_day' => 20, 'notify_clients' => 1, 'keyword_per_hour' => 30, 'keyword_cooldown_min' => 10, 'max_learn_mb' => 20, 'max_status_mb' => 60, 'max_export_mb' => 25, 'months_recent' => 1, 'months_short' => 3, 'months_long' => 36, 'msg_lang' => 'ar', 'ai_engine' => 'bridge', 'addon_invoices' => 0, 'currency' => '', 'ai_safety' => 'BLOCK_ONLY_HIGH', 'number_locale' => 'ar', 'trusted_proxies' => '173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32', 'invoices_config' => '', 'bridge_url' => '', 'bridge_host' => ''];
 }
@@ -763,10 +763,16 @@ function wi_ai_scope(): string {
     elseif (($me = wi_me()) && ($me['role'] ?? '') === 'client') $email = (string) $me['email'];
     elseif (PHP_SAPI !== 'cli' && ($c = wi_current()) && !wi_is_super()) $email = (string) ($c['owner'] ?? '');
     if ($email === '') return '';
-    foreach (wi_users() as $u) if (strtolower((string) $u['email']) === strtolower($email)) return ($u['role'] ?? '') === 'client' ? 'u' . substr(md5(strtolower($email)), 0, 10) : '';
+    foreach (wi_users() as $u) if (strtolower((string) $u['email']) === strtolower($email)) {
+        if (($u['role'] ?? '') !== 'client') return '';
+        // No AI keys of their own: the plan's monthly allowance runs on the operator's keys
+        if (!wi_client_has_ai($email) && wi_ai_allowance_left($u) > 0) { $GLOBALS['WI_AI_PAYER'] = strtolower($email); return ''; }
+        return 'u' . substr(md5(strtolower($email)), 0, 10);
+    }
     return '';
 }
 function wi_ai_call(array $body, int $timeout = 90): array {
+    $GLOBALS['WI_AI_PAYER'] = ''; if (wi_ai_scope() === '' && $GLOBALS['WI_AI_PAYER'] !== '' && ($body['action'] ?? '') === 'ai_json') wi_ai_allowance_use($GLOBALS['WI_AI_PAYER']); // a client on the operator's keys: counted against their plan
     if (wi_sys('ai_engine') !== 'local' && wi_ai_scope() === '') return wi_bridge($body, $timeout);
     require_once __DIR__ . '/modules/lib/WiAiProviders.php';
     $eng = new WiAiProviders(wi_ai_scope()); $cat = WiAiProviders::catalog(); $act = (string) ($body['action'] ?? '');
@@ -896,3 +902,4 @@ function wi_ai(string $task, string $prompt, int $timeout = 180, array $meta = [
     $r['task'] = ['id' => $id, 'task' => $task] + $done;
     return $r;
 }
+require_once __DIR__ . '/modules/saas.php'; // plans, sign-up, AI allowance

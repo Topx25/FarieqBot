@@ -250,7 +250,7 @@
           <div class="ux-tags"><?php foreach ($fx as $k => $f): ?><span class="<?= !empty($c[$k]) ? 'on' : '' ?>"><?= $f[0] ?> <?= wi_e(wi_t($f[1])) ?></span><?php endforeach; ?></div>
           <?php if (!empty($c['client_note'])): ?><p class="cl-note" dir="auto">📝 <?= wi_e((string) $c['client_note']) ?></p><?php endif; ?>
           <div class="cl-act">
-            <button type="button" class="btn ghost sm" data-cl-edit="<?= wi_e(json_encode(['email' => $c['email'], 'name' => ($c['name'] ?? '') ?: $c['email'], 'plan' => $c['plan'] ?? '', 'expires' => $c['expires'] ?? '', 'max_team' => (int) ($c['max_team'] ?? 0), 'note' => $c['client_note'] ?? '', 'active' => !empty($c['active']), 'can_bot' => !empty($c['can_bot']), 'can_meetings' => !empty($c['can_meetings']), 'can_cases' => !empty($c['can_cases']), 'can_backup' => !empty($c['can_backup']), 'allow_ruqyah' => !empty($c['allow_ruqyah'])], JSON_UNESCAPED_UNICODE)) ?>">✏️ Edit plan</button>
+            <button type="button" class="btn ghost sm" data-cl-edit="<?= wi_e(json_encode(['email' => $c['email'], 'name' => ($c['name'] ?? '') ?: $c['email'], 'plan' => $c['plan'] ?? '', 'plan_id' => (string) ($c['plan_id'] ?? ''), 'max_numbers' => wi_client_max_numbers($c), 'ai_calls' => (int) ($c['ai_calls'] ?? 0), 'expires' => $c['expires'] ?? '', 'max_team' => (int) ($c['max_team'] ?? 0), 'note' => $c['client_note'] ?? '', 'active' => !empty($c['active']), 'can_bot' => !empty($c['can_bot']), 'can_meetings' => !empty($c['can_meetings']), 'can_cases' => !empty($c['can_cases']), 'can_backup' => !empty($c['can_backup']), 'allow_ruqyah' => !empty($c['allow_ruqyah'])], JSON_UNESCAPED_UNICODE)) ?>">✏️ Edit plan</button>
             <form method="post" class="inline cl-ext"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="client_extend"><input type="hidden" name="f" value="<?= wi_e($cf) ?>"><input type="hidden" name="email" value="<?= wi_e($c['email']) ?>">
               <span class="muted small">Renew:</span><button class="chip-btn sm" name="days" value="30">+30</button><button class="chip-btn sm" name="days" value="90">+90</button><button class="chip-btn sm" name="days" value="365">+1 year</button></form>
             <form method="post" class="inline"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="client_toggle"><input type="hidden" name="f" value="<?= wi_e($cf) ?>"><input type="hidden" name="email" value="<?= wi_e($c['email']) ?>"><button class="btn ghost sm" onclick="return confirm('<?= !empty($c['active']) ? 'Pause this panel? The client and their team cannot sign in and the bot stops; nothing is deleted.' : 'Resume this panel?' ?>')"><?= !empty($c['active']) ? '⏸ Pause' : '▶️ Resume' ?></button></form>
@@ -259,10 +259,28 @@
         </article>
       <?php endforeach; ?>
       </div>
+      <details class="card pad" style="margin:12px 0"><summary><b>📦 Plans and sign-up</b> <small class="muted">— the limits each plan gives, and whether visitors may open a trial themselves</small></summary>
+        <form method="post" class="stack" style="margin-top:10px"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="plans_save">
+          <label class="check"><input type="checkbox" name="signup_on" value="1" <?= wi_sys('signup_on') ? 'checked' : '' ?>> Visitors may sign up (a trial on the plan marked «trial») — page: <a href="pricing.php" target="_blank" rel="noopener">pricing.php</a></label>
+          <div style="overflow-x:auto"><table class="tbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Days</th><th>Numbers</th><th>Team</th><th>AI calls / month</th><th>Bot</th><th>Meetings</th><th>Cases</th><th>Backup</th><th>Shown</th><th>Trial</th><th>Delete</th></tr>
+          <?php $prow = 0; foreach (wi_plans() + ['' => ['name' => '', 'price' => 0, 'days' => 30, 'numbers' => 1, 'team' => 0, 'ai_calls' => 0]] as $pid => $pp): $n = 'plans[' . $prow++ . ']'; ?>
+            <tr><td><input name="<?= $n ?>[id]" value="<?= wi_e((string) $pid) ?>" size="7" placeholder="new" dir="ltr"></td><td><input name="<?= $n ?>[name]" value="<?= wi_e((string) $pp['name']) ?>" size="9" dir="auto"></td>
+              <td><input type="number" step="0.01" min="0" name="<?= $n ?>[price]" value="<?= wi_e((string) $pp['price']) ?>" style="width:70px"></td><td><input type="number" min="1" name="<?= $n ?>[days]" value="<?= (int) $pp['days'] ?>" style="width:60px"></td>
+              <td><input type="number" min="0" name="<?= $n ?>[numbers]" value="<?= (int) $pp['numbers'] ?>" style="width:55px"></td><td><input type="number" min="0" name="<?= $n ?>[team]" value="<?= (int) $pp['team'] ?>" style="width:55px"></td>
+              <td><input type="number" min="0" name="<?= $n ?>[ai_calls]" value="<?= (int) $pp['ai_calls'] ?>" style="width:75px"></td>
+              <?php foreach (['bot', 'meetings', 'cases', 'backup', 'public', 'trial'] as $fk): ?><td><input type="checkbox" name="<?= $n ?>[<?= $fk ?>]" value="1" <?= !empty($pp[$fk]) ? 'checked' : '' ?>></td><?php endforeach; ?>
+              <td><?php if ($pid !== ''): ?><input type="checkbox" name="<?= $n ?>[del]" value="1"><?php endif; ?></td></tr>
+          <?php endforeach; ?></table></div>
+          <p class="muted">Prices are shown in <?= wi_e((string) (wi_sys('currency') ?: 'USD')) ?>. A client on a plan gets its limits when you choose the plan for them; their end date is extended with the renew buttons.</p>
+          <div class="row"><button class="btn primary">💾 Save plans</button></div>
+        </form></details>
       <dialog id="cl-dlg" class="dlg ux-dlg"><form method="post" class="stack pad">
         <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="client_save"><input type="hidden" name="f" value="<?= wi_e($cf) ?>"><input type="hidden" name="email" id="cl-email">
         <div class="ux-head"><h2 id="cl-title">Edit plan</h2><button type="button" class="btn ghost sm" data-close>✕</button></div>
-        <div class="ux-g2"><label>Plan name<input name="plan" id="cl-plan" maxlength="40" placeholder="e.g. Basic, Pro" dir="auto"></label>
+        <div class="ux-g2"><label>Plan <small class="muted">(changing it applies its limits and features)</small><select name="plan_id" id="cl-pid"><option value="">Custom</option><?php foreach (wi_plans() as $pid => $pp): ?><option value="<?= wi_e((string) $pid) ?>"><?= wi_e((string) $pp['name']) ?></option><?php endforeach; ?></select></label>
+          <label>Plan name<input name="plan" id="cl-plan" maxlength="40" placeholder="e.g. Basic, Pro" dir="auto"></label>
+          <label>WhatsApp numbers<input type="number" name="max_numbers" id="cl-nums" min="0" max="100"></label>
+          <label>AI calls a month on our keys <small class="muted">(when they have no keys of their own)</small><input type="number" name="ai_calls" id="cl-ai" min="0"></label>
           <label>Ends on <small class="muted">(empty = no end)</small><input type="date" name="expires" id="cl-exp"></label>
           <label>Team users (supervisors + employees)<input type="number" name="max_team" id="cl-team" min="0" max="500"></label>
           <label class="check" style="align-self:end"><input type="checkbox" name="active" value="1" id="cl-act"> Panel active</label></div>
@@ -274,7 +292,7 @@
       <script>document.addEventListener('DOMContentLoaded', function () { var d = document.getElementById('cl-dlg'), q = function (id) { return document.getElementById(id); };
         function syncFt() { [].forEach.call(d.querySelectorAll('.ux-ft'), function (l) { l.classList.toggle('on', l.querySelector('input').checked); }); }
         document.addEventListener('click', function (e) { var b = e.target.closest('[data-cl-edit]'); if (b) { var c = JSON.parse(b.getAttribute('data-cl-edit'));
-            q('cl-email').value = c.email; q('cl-title').textContent = c.name; q('cl-plan').value = c.plan; q('cl-exp').value = c.expires; q('cl-team').value = c.max_team; q('cl-note').value = c.note; q('cl-act').checked = c.active; q('cl-ruq').checked = !!c.allow_ruqyah;
+            q('cl-email').value = c.email; q('cl-title').textContent = c.name; q('cl-plan').value = c.plan; q('cl-pid').value = c.plan_id || ''; q('cl-nums').value = c.max_numbers; q('cl-ai').value = c.ai_calls; q('cl-exp').value = c.expires; q('cl-team').value = c.max_team; q('cl-note').value = c.note; q('cl-act').checked = c.active; q('cl-ruq').checked = !!c.allow_ruqyah;
             [].forEach.call(d.querySelectorAll('[data-cf]'), function (i) { i.checked = !!c[i.dataset.cf]; }); syncFt(); d.showModal(); }
           if (e.target.closest('#cl-dlg [data-close]')) d.close(); });
         d.addEventListener('change', syncFt);

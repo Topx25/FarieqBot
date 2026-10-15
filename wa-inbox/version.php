@@ -5,6 +5,12 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.79.0', 'date' => '2026-10-15', 'title' => 'SaaS: plans, sign-up, limits', 'changes' => [
+        'Plans with real limits (WhatsApp numbers, team seats, bot, meetings, cases, backups, monthly AI calls on the operator keys), edited by the super admin on the Clients page; choosing a plan for a client applies them.',
+        'A client may link as many numbers as their plan gives (hand-made clients: one).',
+        'A client with no AI keys of their own uses the plan monthly allowance on the operator keys; when it runs out, their own keys are needed.',
+        'Public page pricing.php: the shown plans and, when sign-up is on, a free trial: the visitor gets a client panel on the trial plan and signs in with the code sent to their WhatsApp. Limits: 3 sign-ups per connection a day, one account per email and number, a hidden field against robots.',
+    ]],
     ['v' => '3.78.1', 'date' => '2026-10-15', 'title' => 'Join requests approved automatically', 'changes' => [
         'Group setting "Join requests: approve automatically": the gateway approves each new request at once (the number must be an admin), and every 10 minutes the ones that came while it was offline. Approved members then get the welcome and the reception follow-up.',
     ]],

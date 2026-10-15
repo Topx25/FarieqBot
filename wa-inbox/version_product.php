@@ -5,6 +5,8 @@ declare(strict_types=1);
  * The full development log stays in version.php. Each entry has Arabic (ar) and English (en) text.
  */
 return [
+    ['v' => '3.79', 'date' => '2026-10-15', 'ar' => ['باقات وتسجيل ذاتي', ['باقات بحدود حقيقية (الأرقام، الفريق، البوت، الاجتماعات، الحالات، النسخ الاحتياطي، طلبات الذكاء الاصطناعي)، وصفحة أسعار يقدر الزائر يفتح منها تجربة مجانية بنفسه.']],
+        'en' => ['Plans and self sign-up', ['Plans with real limits (numbers, team, bot, meetings, cases, backups, AI calls) and a pricing page where a visitor can open a free trial.']]],
     ['v' => '3.78', 'date' => '2026-10-15', 'ar' => ['متابعة الأعضاء الجداد في جروب الاستقبال', ['العضو اللي ما بيردش ياخد تذكير بعد 3 ساعات، وتنبيه أخير بعد 3 ساعات كمان، وبعدها يتحذف من الجروب. أي رد منه يوقف المتابعة، والمدد بتتغير من الإعدادات.']],
         'en' => ['Follow-up of new members in the reception group', ['A member who does not answer gets a reminder after 3 hours, a last notice 3 hours later, then is removed. Any answer stops it; the times are settings.']]],
     ['v' => '3.77', 'date' => '2026-10-15', 'ar' => ['بوابة جروب الاستقبال', ['العضو اللي يكتب امرأة أو رجل يتطلب منه تسجيل صوتي، ولما يوصل التسجيل يتعمل منشن للمراجعين. ترحيب واحد للأعضاء اللي دخلوا مع بعض ومن غير تكرار.']],
