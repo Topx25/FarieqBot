@@ -417,7 +417,7 @@ function wf_intake_finish(array $acc, string $pk): array {
     $report = wf_case_report($aid, $v);
     $voices = (array) ($pend['voices'] ?? []); $miss = wf_intake_missing($aid, $f, $phone, $voices, $by);
     $old = wf_case_get($aid, $key); // a file that exists is updated, never opened again
-    wf_case_update($aid, $key, function (?array $case) use ($key, $v, $by, $f, $sym, $report, $pend, $voices, $miss, $c) { // built on the stored case under the lock: nothing added meanwhile is lost
+    wf_case_update($aid, $key, function (?array $case) use ($key, $v, $by, $f, $sym, $report, $pend, $voices, $miss, $c, $old) { // built on the stored case under the lock: nothing added meanwhile is lost
         $case = $case ?? ['phone' => $key, 'created' => date('c'), 'notes' => [], 'groups' => []];
         $case['name'] = $v['name'] !== '' ? $v['name'] : ($case['name'] ?? ''); $case['status'] = 'follow'; $case['manual'] = true;
         $data = array_filter(['join' => $v['join'], 'follower' => $by] + array_diff_key($f, ['name' => 1, 'phone' => 1, 'symptoms' => 1]) + ['symptoms' => $sym]);
@@ -428,6 +428,7 @@ function wf_intake_finish(array $acc, string $pk): array {
         $case['notes'][] = ['at' => date('c'), 'by' => $by, 'text' => ($old ? 'Details added from the group keyword ' : 'Case opened from the group keyword ') . $c['keyword'] . ($miss ? ' — missing: ' . implode(', ', $miss) : '') . '.'];
         return $case; });
     $diag = wf_intake_diag($aid); $sent = null;
+    $report = wf_report_id($report, wf_case_get($aid, $key)['no'] ?? ''); // the case ID on top of the copy
     if ($diag !== '') { $sent = wi_gateway('/chat/send', ['jid' => $diag, 'text' => $report, 'via' => 'bot'], $acc);
         foreach ($voices as $vo) wi_gateway('/chat/send', ['jid' => $diag, 'attachment' => $vo['file'], 'via' => 'bot'], $acc); } // the recording follows the report
     [$tagT, $tagM] = wf_group_tag((string) $pend['from']);

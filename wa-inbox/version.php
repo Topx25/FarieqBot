@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.80.3', 'date' => '2026-10-15', 'title' => 'Case ID on every diagnosis report', 'changes' => [
+        'Every report posted to the diagnosis group starts with the case ID (🆔 ID n), from the group keyword and from the Cases form; a new case gets its ID before its report is posted.',
+        'Fixed: details added to an existing case were noted as "case opened".',
+    ]],
     ['v' => '3.80.2', 'date' => '2026-10-15', 'title' => 'Case not found: look up the ID', 'changes' => [
         'When no case matches the name or number, the reply names the diagnosis group and asks to take the case ID from there and write it instead of the name (template case_not_found, new {diag}).',
     ]],

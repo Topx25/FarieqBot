@@ -107,6 +107,14 @@ function wf_case_snapshot(array $acc, string $phone): array {
 /** API calls of this area (moved unchanged from the old single switch). */
 /** Changes one case without overwriting what others changed meanwhile (the cases store is read and written under a lock). */
 /* ---------- The case store: the only place that reads and writes cases.json ---------- */
+/** The report with the case ID on top, so the diagnosis group can answer by ID (#الحالة ID …). */
+function wf_report_id(string $report, $no): string { $no = (string) $no; return $no === '' || preg_match('/^\D{0,4}ID ' . preg_quote($no, '/') . '\b/u', $report) ? $report : '🆔 ID ' . $no . "\n" . $report; }
+/** Saves a new case once so it gets its ID now (before its report is posted). Returns the ID. */
+function wf_case_reserve_no(string $aid, string $key, array $draft): string {
+    if (!empty($draft['no'])) return (string) $draft['no'];
+    wf_case_update($aid, $key, fn(?array $x) => $x ?? $draft);
+    return (string) (wf_case_get($aid, $key)['no'] ?? '');
+}
 function wf_case_get(string $aid, string $key): ?array { $c = wf_cases($aid)[$key] ?? null; return is_array($c) ? $c : null; }
 /** Change one number's cases under the lock: $fn gets them and returns them. */
 function wf_cases_update(string $aid, callable $fn): void { wi_update('cases.json', function ($A) use ($aid, $fn) { $A[$aid] = $fn((array) ($A[$aid] ?? [])); return $A; }); }
@@ -176,7 +184,8 @@ function wf_api_cases(string $api): void {
         if (!empty($c['data']['tgroup'])) $c['groups'][$c['data']['tgroup']] = $c['data']['tgroup_name'] ?: $c['data']['tgroup']; // the case is followed in its treatment group too
         $c['report'] = $report; $c['report_at'] = date('c'); $c['by'] = $_SESSION['email'];
         $c['notes'][] = ['at' => date('c'), 'by' => $_SESSION['email'], 'text' => 'Case added from the form.'];
-        // 2) post a copy of the report to the diagnosis group
+        // 2) post a copy of the report to the diagnosis group, with the case ID on top
+        $c['no'] = wf_case_reserve_no($aid, $phone, $c); $report = wf_report_id($report, $c['no']); $c['report'] = $report;
         $gj = wf_jid((string) ($in['group'] ?? '')); $groups = wf_registry_groups($aid); $sent = null;
         if ($gj === '' && $groups) $gj = (string) array_key_first($groups);
         if (!empty($in['send']) && $gj !== '') {
