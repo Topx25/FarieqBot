@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.80.0', 'date' => '2026-10-15', 'title' => 'SaaS: the client\'s own address', 'changes' => [
+        'A client may have their own address: name.<SaaS domain> (Clients → Plans and sign-up) and/or their own domains (CNAME to this server). On it the panel shows their brand name and logo, and only they, their team and the super admin may sign in; anyone else signed in there is signed out.',
+        'Sign-up asks for a password (the panel signs in with email + password, then the WhatsApp code); before, the new client could not sign in.',
+    ]],
     ['v' => '3.79.0', 'date' => '2026-10-15', 'title' => 'SaaS: plans, sign-up, limits', 'changes' => [
         'Plans with real limits (WhatsApp numbers, team seats, bot, meetings, cases, backups, monthly AI calls on the operator keys), edited by the super admin on the Clients page; choosing a plan for a client applies them.',
         'A client may link as many numbers as their plan gives (hand-made clients: one).',

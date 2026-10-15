@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     else { $err = wi_signup($_POST); $done = $err === ''; }
 }
 $plans = array_filter(wi_plans(), fn($p) => !empty($p['public']));
-$cur = (string) (wi_sys('currency') ?: 'USD'); $brand = (string) wi_sys('brand_name'); $logo = (string) wi_sys('brand_logo');
+$cur = (string) (wi_sys('currency') ?: 'USD'); $brand = (string) wi_brand('brand_name'); $logo = (string) wi_brand('brand_logo');
 $v = fn($k) => wi_e((string) ($_POST[$k] ?? ''));
 ob_start('wi_translate_html');
 ?><!doctype html>
@@ -52,7 +52,7 @@ a{color:var(--acc2)}footer{text-align:center;margin:30px 0 10px;font-size:13px}
 <?php endforeach; ?>
 </div>
 <?php if ($done): ?>
-  <div class="ok"><h2>✅ Your panel is ready</h2><p>Sign in with your email. The sign-in code reaches you on WhatsApp.</p><p><a href="./">Sign in →</a></p></div>
+  <div class="ok"><h2>✅ Your panel is ready</h2><p>Sign in with your email and password. A sign-in code then reaches you on WhatsApp.</p><p><a href="./">Sign in →</a></p></div>
 <?php elseif (wi_sys('signup_on')): ?>
   <form method="post" autocomplete="on"><h2 style="margin:0">Start your free trial</h2>
     <?php if ($err): ?><div class="e"><?= wi_e(wi_t($err)) ?></div><?php endif; ?>
@@ -61,6 +61,7 @@ a{color:var(--acc2)}footer{text-align:center;margin:30px 0 10px;font-size:13px}
     <label>Business name<input name="business" value="<?= $v('business') ?>" maxlength="120" dir="auto"></label>
     <label>Email<input type="email" name="email" value="<?= $v('email') ?>" required dir="ltr"></label>
     <label>Your WhatsApp number (with country code)<input name="phone" value="<?= $v('phone') ?>" required dir="ltr" placeholder="+20 10…"></label>
+    <label>Password (10+ characters)<input type="password" name="password" required minlength="10" autocomplete="new-password" dir="ltr"></label>
     <button>Create my panel</button><p class="m" style="margin:0;font-size:13px">No card needed. You link your WhatsApp number from the panel by scanning a QR code.</p>
   </form>
 <?php else: ?>

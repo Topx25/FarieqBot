@@ -7,6 +7,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($do === 'login') {
         $email = strtolower(trim((string) ($_POST['email'] ?? '')));
         $u = wi_find_user($email);
+        if ($u && !wi_host_allows($u)) $u = null; // another client's address: treated as unknown
         if (wi_locked($email)) {
             wi_flash('Too many failed attempts. Try again in 15 minutes.', 'bad');
         } elseif (($raw = $u ?: (array_values(array_filter(wi_users(), fn($x) => strtolower((string) $x['email']) === $email && ($x['role'] ?? '') === 'client'))[0] ?? null))
@@ -151,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admin only.'); }
         $out = []; foreach ((array) ($_POST['plans'] ?? []) as $id => $p) { $id = preg_replace('/[^a-z0-9_-]/', '', strtolower((string) ($p['id'] ?? $id))); if ($id === '' || trim((string) ($p['name'] ?? '')) === '' || !empty($p['del'])) continue; $out[$id] = wi_plan_clean((array) $p); }
         if ($out) wi_write('plans.json', $out);
-        $cfg = wi_config(); $cfg['system']['signup_on'] = !empty($_POST['signup_on']) ? 1 : 0; wi_write('config.json', $cfg);
+        $cfg = wi_config(); $cfg['system']['signup_on'] = !empty($_POST['signup_on']) ? 1 : 0; $sd = strtolower(trim((string) ($_POST['saas_domain'] ?? ''))); $cfg['system']['saas_domain'] = preg_match('/^([a-z0-9-]+\.)+[a-z]{2,}$/', $sd) ? $sd : ''; wi_write('config.json', $cfg);
         wi_log('plans_save', ['plans' => array_keys($out)]); wi_flash('Saved.', 'ok'); header('Location: ?p=clients'); exit;
     }
     // Clients page (super admin): plan, end date, pause, seats and features of a client.
@@ -163,6 +164,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pid = (string) ($_POST['plan_id'] ?? ''); if ($pid !== '' && isset(wi_plans()[$pid]) && $pid !== (string) ($u['plan_id'] ?? '')) $u = wi_plan_apply($u, $pid, false); // a new plan: its limits and features
                 elseif ($pid === '') $u['plan_id'] = '';
                 $u['plan'] = mb_substr(trim((string) ($_POST['plan'] ?? ($u['plan'] ?? ''))), 0, 40) ?: (string) ($u['plan'] ?? '');
+                if (isset($_POST['slug'])) { $u = wi_client_addr($u, (string) $_POST['slug'], (string) ($_POST['domains'] ?? ''));
+                    foreach ($all as $x) if (strtolower((string) $x['email']) !== $email && (($u['slug'] !== '' && ($x['slug'] ?? '') === $u['slug']) || array_intersect($u['domains'], (array) ($x['domains'] ?? [])))) { wi_flash('This address is already used by another client.', 'bad'); header('Location: ?p=clients'); exit; } }
+                if (isset($_POST['brand_name'])) { $u['brand_name'] = mb_substr(trim((string) $_POST['brand_name']), 0, 60); $u['brand_logo'] = mb_substr(trim((string) ($_POST['brand_logo'] ?? '')), 0, 8); }
                 $u['max_numbers'] = max(0, min(100, (int) ($_POST['max_numbers'] ?? ($u['max_numbers'] ?? 1))));
                 $u['ai_calls'] = max(0, min(1000000, (int) ($_POST['ai_calls'] ?? ($u['ai_calls'] ?? 0))));
                 $ex = trim((string) ($_POST['expires'] ?? '')); $u['expires'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $ex) ? $ex : '';

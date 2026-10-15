@@ -62,6 +62,7 @@ function wi_signup(array $in): string {
     $name = trim(mb_substr((string) ($in['name'] ?? ''), 0, 80)); $biz = trim(mb_substr((string) ($in['business'] ?? ''), 0, 120));
     $email = strtolower(trim((string) ($in['email'] ?? ''))); $phone = wi_norm_phone((string) ($in['phone'] ?? ''));
     if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $phone === '') return 'Fill in your name, a valid email and your WhatsApp number.';
+    $pw = (string) ($in['password'] ?? ''); if (strlen($pw) < 10) return 'Password must be at least 10 characters.';
     $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? ''); $limited = false;
     wi_update('signup_ips.json', function ($S) use ($ip, &$limited) { $S = array_filter((array) $S, fn($t) => max((array) $t) > time() - 86400);
         $S[$ip] = array_values(array_filter((array) ($S[$ip] ?? []), fn($t) => $t > time() - 86400)); if (count($S[$ip]) >= 3) $limited = true; else $S[$ip][] = time(); return $S; });
@@ -70,9 +71,41 @@ function wi_signup(array $in): string {
     $planId = ''; foreach (wi_plans() as $id => $p) if (!empty($p['trial'])) { $planId = (string) $id; break; }
     if ($planId === '') return 'Sign-up is closed. Contact us.';
     $u = ['email' => $email, 'name' => $name, 'business' => $biz, 'phone' => $phone, 'role' => 'client', 'accounts' => [], 'can_reply' => true, 'can_link' => true, 'own_number' => true,
-        'password_hash' => password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT), 'active' => true, 'created_at' => date('c'), 'signup' => true];
+        'password_hash' => password_hash($pw, PASSWORD_DEFAULT), 'active' => true, 'created_at' => date('c'), 'signup' => true];
     $u = wi_plan_apply($u, $planId, true);
     $all = wi_users(); $all[] = $u; wi_save_users($all);
     wi_log('signup', ['target' => $email, 'plan' => $planId]);
     return '';
+}
+
+/* ---------- The client's own address: a subdomain or their own domain shows their panel with their name and logo ---------- */
+/** Host of this request, lower case, without the port. */
+function wi_req_host(): string { return strtolower(preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? ''))); }
+/** The client whose address this request came to (a domain linked to them, or <slug>.<SaaS domain>), else null. */
+function wi_host_client(): ?array {
+    static $hit = false, $val = null; if ($hit) return $val; $hit = true;
+    $h = wi_req_host(); if ($h === '') return null;
+    $base = strtolower(trim((string) wi_sys('saas_domain')));
+    foreach (wi_users() as $u) {
+        if (($u['role'] ?? '') !== 'client') continue;
+        if (in_array($h, array_map('strtolower', (array) ($u['domains'] ?? [])), true)) return $val = $u;
+        if ($base !== '' && ($u['slug'] ?? '') !== '' && $h === strtolower((string) $u['slug']) . '.' . $base) return $val = $u;
+    }
+    return null;
+}
+/** Brand shown on the page: the client's own (on their address) or the system's. */
+function wi_brand(string $k): string {
+    $c = wi_host_client(); $v = $c ? trim((string) ($c[$k === 'brand_logo' ? 'brand_logo' : 'brand_name'] ?? '')) : '';
+    return $v !== '' ? $v : (string) wi_sys($k);
+}
+/** On a client's address only that client, their team and the super admin may sign in. */
+function wi_host_allows(array $u): bool {
+    $c = wi_host_client(); if (!$c || ($u['role'] ?? '') === 'super') return true;
+    $o = wi_client_of($u); return $o && strtolower((string) $o['email']) === strtolower((string) $c['email']);
+}
+/** Cleans the address fields of a client: a short name for <slug>.<SaaS domain> and their own domains. */
+function wi_client_addr(array $u, string $slug, string $domains): array {
+    $slug = strtolower(trim($slug)); $u['slug'] = preg_match('/^[a-z0-9]([a-z0-9-]{1,28}[a-z0-9])$/', $slug) && !in_array($slug, ['www', 'mail', 'admin', 'api', 'app', 'cpanel', 'webmail'], true) ? $slug : '';
+    $d = []; foreach (preg_split('/[\s,]+/', strtolower($domains)) as $x) if (preg_match('/^([a-z0-9-]+\.)+[a-z]{2,}$/', $x)) $d[] = $x;
+    $u['domains'] = array_values(array_unique(array_slice($d, 0, 5))); return $u;
 }

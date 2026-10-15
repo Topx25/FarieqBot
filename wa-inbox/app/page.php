@@ -7,7 +7,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title><?= htmlspecialchars((string) wi_sys('brand_name')) ?></title>
+<title><?= htmlspecialchars((string) wi_brand('brand_name')) ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/app.css') ?>">
@@ -20,7 +20,7 @@
 <?php if (!$me): ?>
 <main class="auth">
   <section class="auth-card">
-    <div class="brand"><span class="logo"><?= htmlspecialchars((string) wi_sys('brand_logo')) ?></span><div><b><?= htmlspecialchars((string) wi_sys('brand_name')) ?></b><small>WhatsApp conversation archive</small></div></div>
+    <div class="brand"><span class="logo"><?= htmlspecialchars((string) wi_brand('brand_logo')) ?></span><div><b><?= htmlspecialchars((string) wi_brand('brand_name')) ?></b><small>WhatsApp conversation archive</small></div></div>
     <?php if ($flash): ?><div class="alert <?= wi_e($flash['t']) ?>"><?= wi_e($flash['m']) ?></div><?php endif; ?>
     <form method="post" class="stack">
       <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>">
@@ -43,7 +43,7 @@
 <?php else: ?>
 <div class="app shell-v3" data-sec="<?= wi_e((string) ($_GET['sec'] ?? '')) ?>" data-page="<?= wi_e($page) ?>" data-csrf="<?= wi_e(wi_csrf()) ?>" data-acc="<?= wi_e($cur['id'] ?? '') ?>">
   <aside class="side">
-    <div class="brand side-handle" title="Drag to move the menu"><span class="logo"><?= htmlspecialchars((string) wi_sys('brand_logo')) ?></span><div><b><?= htmlspecialchars((string) wi_sys('brand_name')) ?></b><small id="gw-state">…</small></div>
+    <div class="brand side-handle" title="Drag to move the menu"><span class="logo"><?= htmlspecialchars((string) wi_brand('brand_logo')) ?></span><div><b><?= htmlspecialchars((string) wi_brand('brand_name')) ?></b><small id="gw-state">…</small></div>
       <button type="button" class="lock-btn" id="menu-lock" title="Lock / unlock the menu">🔓</button></div>
     <form method="post" class="acc-switch">
       <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="switch_account"><input type="hidden" name="back" value="?p=<?= wi_e($page) ?>">
@@ -250,7 +250,7 @@
           <div class="ux-tags"><?php foreach ($fx as $k => $f): ?><span class="<?= !empty($c[$k]) ? 'on' : '' ?>"><?= $f[0] ?> <?= wi_e(wi_t($f[1])) ?></span><?php endforeach; ?></div>
           <?php if (!empty($c['client_note'])): ?><p class="cl-note" dir="auto">📝 <?= wi_e((string) $c['client_note']) ?></p><?php endif; ?>
           <div class="cl-act">
-            <button type="button" class="btn ghost sm" data-cl-edit="<?= wi_e(json_encode(['email' => $c['email'], 'name' => ($c['name'] ?? '') ?: $c['email'], 'plan' => $c['plan'] ?? '', 'plan_id' => (string) ($c['plan_id'] ?? ''), 'max_numbers' => wi_client_max_numbers($c), 'ai_calls' => (int) ($c['ai_calls'] ?? 0), 'expires' => $c['expires'] ?? '', 'max_team' => (int) ($c['max_team'] ?? 0), 'note' => $c['client_note'] ?? '', 'active' => !empty($c['active']), 'can_bot' => !empty($c['can_bot']), 'can_meetings' => !empty($c['can_meetings']), 'can_cases' => !empty($c['can_cases']), 'can_backup' => !empty($c['can_backup']), 'allow_ruqyah' => !empty($c['allow_ruqyah'])], JSON_UNESCAPED_UNICODE)) ?>">✏️ Edit plan</button>
+            <button type="button" class="btn ghost sm" data-cl-edit="<?= wi_e(json_encode(['email' => $c['email'], 'name' => ($c['name'] ?? '') ?: $c['email'], 'plan' => $c['plan'] ?? '', 'plan_id' => (string) ($c['plan_id'] ?? ''), 'slug' => (string) ($c['slug'] ?? ''), 'domains' => implode(', ', (array) ($c['domains'] ?? [])), 'brand_name' => (string) ($c['brand_name'] ?? ''), 'brand_logo' => (string) ($c['brand_logo'] ?? ''), 'max_numbers' => wi_client_max_numbers($c), 'ai_calls' => (int) ($c['ai_calls'] ?? 0), 'expires' => $c['expires'] ?? '', 'max_team' => (int) ($c['max_team'] ?? 0), 'note' => $c['client_note'] ?? '', 'active' => !empty($c['active']), 'can_bot' => !empty($c['can_bot']), 'can_meetings' => !empty($c['can_meetings']), 'can_cases' => !empty($c['can_cases']), 'can_backup' => !empty($c['can_backup']), 'allow_ruqyah' => !empty($c['allow_ruqyah'])], JSON_UNESCAPED_UNICODE)) ?>">✏️ Edit plan</button>
             <form method="post" class="inline cl-ext"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="client_extend"><input type="hidden" name="f" value="<?= wi_e($cf) ?>"><input type="hidden" name="email" value="<?= wi_e($c['email']) ?>">
               <span class="muted small">Renew:</span><button class="chip-btn sm" name="days" value="30">+30</button><button class="chip-btn sm" name="days" value="90">+90</button><button class="chip-btn sm" name="days" value="365">+1 year</button></form>
             <form method="post" class="inline"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="client_toggle"><input type="hidden" name="f" value="<?= wi_e($cf) ?>"><input type="hidden" name="email" value="<?= wi_e($c['email']) ?>"><button class="btn ghost sm" onclick="return confirm('<?= !empty($c['active']) ? 'Pause this panel? The client and their team cannot sign in and the bot stops; nothing is deleted.' : 'Resume this panel?' ?>')"><?= !empty($c['active']) ? '⏸ Pause' : '▶️ Resume' ?></button></form>
@@ -262,6 +262,7 @@
       <details class="card pad" style="margin:12px 0"><summary><b>📦 Plans and sign-up</b> <small class="muted">— the limits each plan gives, and whether visitors may open a trial themselves</small></summary>
         <form method="post" class="stack" style="margin-top:10px"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="plans_save">
           <label class="check"><input type="checkbox" name="signup_on" value="1" <?= wi_sys('signup_on') ? 'checked' : '' ?>> Visitors may sign up (a trial on the plan marked «trial») — page: <a href="pricing.php" target="_blank" rel="noopener">pricing.php</a></label>
+          <label>SaaS domain <small class="muted">— each client may get name.this-domain (point *.this-domain to this server)</small><input name="saas_domain" value="<?= wi_e((string) wi_sys('saas_domain')) ?>" dir="ltr" placeholder="crm.example.com" style="max-width:320px"></label>
           <div style="overflow-x:auto"><table class="tbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Days</th><th>Numbers</th><th>Team</th><th>AI calls / month</th><th>Bot</th><th>Meetings</th><th>Cases</th><th>Backup</th><th>Shown</th><th>Trial</th><th>Delete</th></tr>
           <?php $prow = 0; foreach (wi_plans() + ['' => ['name' => '', 'price' => 0, 'days' => 30, 'numbers' => 1, 'team' => 0, 'ai_calls' => 0]] as $pid => $pp): $n = 'plans[' . $prow++ . ']'; ?>
             <tr><td><input name="<?= $n ?>[id]" value="<?= wi_e((string) $pid) ?>" size="7" placeholder="new" dir="ltr"></td><td><input name="<?= $n ?>[name]" value="<?= wi_e((string) $pp['name']) ?>" size="9" dir="auto"></td>
@@ -280,6 +281,10 @@
         <div class="ux-g2"><label>Plan <small class="muted">(changing it applies its limits and features)</small><select name="plan_id" id="cl-pid"><option value="">Custom</option><?php foreach (wi_plans() as $pid => $pp): ?><option value="<?= wi_e((string) $pid) ?>"><?= wi_e((string) $pp['name']) ?></option><?php endforeach; ?></select></label>
           <label>Plan name<input name="plan" id="cl-plan" maxlength="40" placeholder="e.g. Basic, Pro" dir="auto"></label>
           <label>WhatsApp numbers<input type="number" name="max_numbers" id="cl-nums" min="0" max="100"></label>
+          <label>Subdomain <small class="muted">(<?= wi_sys('saas_domain') ? 'name.' . wi_e((string) wi_sys('saas_domain')) : 'set the SaaS domain in Settings first' ?>)</small><input name="slug" id="cl-slug" maxlength="30" dir="ltr" placeholder="client1"></label>
+          <label>Their own domains <small class="muted">(CNAME to this server, comma separated)</small><input name="domains" id="cl-doms" dir="ltr" placeholder="crm.client.com"></label>
+          <label>Brand name on their address<input name="brand_name" id="cl-bn" maxlength="60" dir="auto"></label>
+          <label>Logo (emoji)<input name="brand_logo" id="cl-bl" maxlength="8"></label>
           <label>AI calls a month on our keys <small class="muted">(when they have no keys of their own)</small><input type="number" name="ai_calls" id="cl-ai" min="0"></label>
           <label>Ends on <small class="muted">(empty = no end)</small><input type="date" name="expires" id="cl-exp"></label>
           <label>Team users (supervisors + employees)<input type="number" name="max_team" id="cl-team" min="0" max="500"></label>
@@ -292,7 +297,7 @@
       <script>document.addEventListener('DOMContentLoaded', function () { var d = document.getElementById('cl-dlg'), q = function (id) { return document.getElementById(id); };
         function syncFt() { [].forEach.call(d.querySelectorAll('.ux-ft'), function (l) { l.classList.toggle('on', l.querySelector('input').checked); }); }
         document.addEventListener('click', function (e) { var b = e.target.closest('[data-cl-edit]'); if (b) { var c = JSON.parse(b.getAttribute('data-cl-edit'));
-            q('cl-email').value = c.email; q('cl-title').textContent = c.name; q('cl-plan').value = c.plan; q('cl-pid').value = c.plan_id || ''; q('cl-nums').value = c.max_numbers; q('cl-ai').value = c.ai_calls; q('cl-exp').value = c.expires; q('cl-team').value = c.max_team; q('cl-note').value = c.note; q('cl-act').checked = c.active; q('cl-ruq').checked = !!c.allow_ruqyah;
+            q('cl-email').value = c.email; q('cl-title').textContent = c.name; q('cl-plan').value = c.plan; q('cl-pid').value = c.plan_id || ''; q('cl-slug').value = c.slug || ''; q('cl-doms').value = c.domains || ''; q('cl-bn').value = c.brand_name || ''; q('cl-bl').value = c.brand_logo || ''; q('cl-nums').value = c.max_numbers; q('cl-ai').value = c.ai_calls; q('cl-exp').value = c.expires; q('cl-team').value = c.max_team; q('cl-note').value = c.note; q('cl-act').checked = c.active; q('cl-ruq').checked = !!c.allow_ruqyah;
             [].forEach.call(d.querySelectorAll('[data-cf]'), function (i) { i.checked = !!c[i.dataset.cf]; }); syncFt(); d.showModal(); }
           if (e.target.closest('#cl-dlg [data-close]')) d.close(); });
         d.addEventListener('change', syncFt);
@@ -689,7 +694,7 @@ setTimeout(function(){var fx=document.getElementById('fx-root');if(fx&&/Loading|
   foreach ((array) ($wpR['sections'] ?? []) as $sx) $wpS[] = ['name' => $sx['name'], 'icon' => $sx['icon'] ?? '']; if (!empty($wpR['tag_section']['name'])) $wpS[] = ['name' => $wpR['tag_section']['name'], 'icon' => $wpR['tag_section']['icon'] ?? ''];
   echo json_encode(['audio_cats' => wf_audio_cats($wpA), 'summary_labels' => (object) $wpL, 'case' => $wpC, 'case_cfg' => $wpA !== '' ? wf_case_cfg($wpA) : null, 'library' => ['sections' => $wpS, 'audio' => (string) ($wpR['audio_section'] ?? 'Audio'), 'other' => (string) ($wpR['other_section'] ?? 'Other')]], JSON_UNESCAPED_UNICODE); ?>;</script>
 <script>window.WI_SYS = <?= json_encode(['currency' => (string) wi_sys('currency'), 'locale' => (string) (wi_sys('number_locale') ?: 'ar'), 'refresh_pct' => (int) wi_sys('refresh_pct')]) ?>;</script>
-<script>window.WI_BRAND = <?= json_encode(['name' => wi_sys('brand_name'), 'logo' => wi_sys('brand_logo'), 'backup_folder' => wi_sys('backup_folder')], JSON_UNESCAPED_UNICODE) ?>;</script>
+<script>window.WI_BRAND = <?= json_encode(['name' => wi_brand('brand_name'), 'logo' => wi_brand('brand_logo'), 'backup_folder' => wi_sys('backup_folder')], JSON_UNESCAPED_UNICODE) ?>;</script>
 <script>window.WI_LANG = <?= json_encode(wi_lang()) ?>; window.WI_T = <?= json_encode((object) wi_dict(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;</script>
 <script src="app.js?v=<?= (int) @filemtime(dirname(__DIR__) . '/app.js') ?>"></script>
 <script src="features.js?v=<?= (int) @filemtime(dirname(__DIR__) . '/features.js') ?>"></script>
