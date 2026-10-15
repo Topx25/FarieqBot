@@ -16,6 +16,7 @@ if (isset($_GET['bot_hook'])) {
     if ($acc && ($in['cmd'] ?? '') === 'join') { http_response_code(202); header('Content-Length: 0'); flush(); if (function_exists('fastcgi_finish_request')) fastcgi_finish_request(); ignore_user_abort(true); @set_time_limit(120);
         // Members who join close together get ONE welcome: each join waits; the last one (no newer join for 30 s) sends it for all.
         $gj = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($in['jid'] ?? '')); $k = (string) $acc['id'] . '|' . $gj; $mine = uniqid("", true);
+        if (function_exists('wf_gate_moved')) wf_gate_moved($acc, $gj, array_map('strval', (array) ($in['members'] ?? [])), (string) ($in['by'] ?? '')); // moved from the reception group: the healer opens the case
         wi_update('welcome_queue.json', function ($Q) use ($k, $in, $mine) { $Q[$k]['m'] = array_values(array_unique(array_merge((array) ($Q[$k]['m'] ?? []), array_map('strval', (array) ($in['members'] ?? []))))); $Q[$k]['t'] = $mine; return $Q; });
         sleep(30); $take = [];
         wi_update('welcome_queue.json', function ($Q) use ($k, $mine, &$take) { if ((string) ($Q[$k]['t'] ?? '') === $mine) { $take = (array) ($Q[$k]['m'] ?? []); unset($Q[$k]); } return $Q; });

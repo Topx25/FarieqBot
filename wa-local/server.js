@@ -853,7 +853,8 @@ async function startSocket() {
           const members = (u.participants || []).map((p) => (typeof p === 'string' ? p : (p.phoneNumber || p.id || ''))).filter(Boolean);
           try {
             const tok = fs.readFileSync(path.join(__dirname, '..', 'wa-inbox', '.data', 'bridge_token'), 'utf8').trim();
-            const body = JSON.stringify({ account: process.env.ACCOUNT_ID || 'main', jid: u.id, cmd: 'join', members });
+            const by = String(u.authorPn || u.author || '').split('@')[0].split(':')[0]; // the admin who added them (the healer who moved them)
+            const body = JSON.stringify({ account: process.env.ACCOUNT_ID || 'main', jid: u.id, cmd: 'join', members, by });
             const r = http.request({ host: inboxHook.host, port: inboxHook.port, path: inboxHook.path, method: 'POST', timeout: 8000,
               headers: { Host: inboxHook.hostname, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'X-Bot-Token': tok } }, (res) => res.resume());
             r.on('error', () => {}); r.on('timeout', () => r.destroy()); r.end(body);

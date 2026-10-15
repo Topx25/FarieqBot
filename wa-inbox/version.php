@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.77.1', 'date' => '2026-10-15', 'title' => 'Reception gate: open the case after the move', 'changes' => [
+        'When a member who went through the reception gate is added to another of our groups, the healer who added them (else the reviewers) is tagged in the chosen cases group with the member\'s name, the group and "#case +number" to open the file (template gate_moved; group setting gate_notify). Once per member.',
+    ]],
     ['v' => '3.77.0', 'date' => '2026-10-15', 'title' => 'Reception gate and one welcome', 'changes' => [
         'Reception gate (group setting): a new member who writes "woman" / "man" is asked once, quoting them, to record Al-Fatiha or Ayat Al-Kursi in their own voice (templates gate_ask_f / gate_ask_m); their recording tags the reviewers to check it and move them (template gate_voice). Words and reviewers are editable per group; the team is never asked. The gateway passes every message of a gate group.',
         'Members who join close together get one welcome with all their mentions, and a member welcomed in the last 7 days is not welcomed again.',

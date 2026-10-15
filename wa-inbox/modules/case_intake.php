@@ -230,7 +230,8 @@ function wf_gate_hook(array $acc, array $in, callable $reply): bool {
     }
     if ($act === '') return false;
     $go = false; // once per member: the question once a day, the reviewers once per 30 minutes
-    wi_update('gate_state.json', function ($S) use ($aid, $jid, $from, $act, $now, &$go) { $k = $act === 'voice' ? 'v' : 'a'; $last = (int) ($S[$aid][$jid][$from][$k] ?? 0);
+    wi_update('gate_state.json', function ($S) use ($aid, $jid, $from, $act, $now, $name, &$go) { $k = $act === 'voice' ? 'v' : 'a'; $last = (int) ($S[$aid][$jid][$from][$k] ?? 0);
+        if ($name !== '') $S[$aid][$jid][$from]['n'] = $name;
         $go = $now - $last > ($act === 'voice' ? 1800 : 86400); if ($go) { $S[$aid][$jid][$from][$k] = $now; if ($act !== 'voice') $S[$aid][$jid][$from]['g'] = $act; }
         foreach ((array) ($S[$aid][$jid] ?? []) as $p => $r) if (max((int) ($r['a'] ?? 0), (int) ($r['v'] ?? 0)) < $now - 30 * 86400) unset($S[$aid][$jid][$p]); return $S; });
     $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(60);
@@ -243,6 +244,25 @@ function wf_gate_hook(array $acc, array $in, callable $reply): bool {
     } else $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => $tagT . wf_msg($act === 'f' ? 'gate_ask_f' : 'gate_ask_m', ['name' => $name]), 'mentions' => $tagM, 'quote_id' => $id, 'via' => 'bot'], $acc);
     wi_log('reception_gate', ['account' => $aid, 'group' => $jid, 'step' => $act, 'sent' => !empty($r['ok'])]);
     return true;
+}
+/** A member who went through a reception gate joined another of our groups (a healer moved them):
+ *  the healer who added them (else the reviewers) is tagged in the gate's cases group to open the case, with the member's number. */
+function wf_gate_moved(array $acc, string $gjid, array $members, string $by): void {
+    $aid = (string) $acc['id']; $c = wf_bot_run_cfg($aid); if ($c['mode'] !== 'auto') return;
+    $S = (array) (wi_read('gate_state.json', [])[$aid] ?? []); $names = null;
+    foreach ($S as $gate => $people) {
+        if ($gate === $gjid) continue; $g = wf_bot_group_cfg($c, (string) $gate); if (!$g || empty($g['gate']) || $g['gate_notify'] === '') continue;
+        foreach ($members as $m) {
+            $num = wf_phone(explode('@', (string) $m)[0]); $p = (array) ($people[$num] ?? []); if (!$p || !empty($p['moved'])) continue; // not from the reception group, or already done
+            $by = wf_phone($by); $who = $by !== '' ? [$by] : array_values(array_filter(array_map('wf_phone', explode(',', (string) $g['gate_review']))));
+            $tags = implode(' ', array_map(fn($x) => '@' . $x, $who)); $jids = array_map(fn($x) => $x . (strlen($x) > 13 ? '@lid' : '@s.whatsapp.net'), $who);
+            if ($names === null) { $names = []; foreach ((array) (wi_gateway('/groups', null, $acc)['groups'] ?? []) as $x) $names[(string) ($x['id'] ?? $x['jid'] ?? '')] = (string) ($x['subject'] ?? $x['name'] ?? ''); }
+            $txt = wf_msg('gate_moved', ['healer' => $tags, 'name' => (string) ($p['n'] ?? '') !== '' ? (string) $p['n'] : '+' . $num, 'phone' => '+' . $num, 'group' => $names[$gjid] ?? '']);
+            $r = wi_gateway('/chat/send', ['jid' => $g['gate_notify'], 'text' => $txt, 'mentions' => $jids, 'via' => 'bot'], $acc);
+            wi_update('gate_state.json', function ($X) use ($aid, $gate, $num) { $X[$aid][$gate][$num]['moved'] = time(); return $X; });
+            wi_log('reception_moved', ['account' => $aid, 'from_group' => $gate, 'to_group' => $gjid, 'sent' => !empty($r['ok'])]);
+        }
+    }
 }
 function wf_intake_hook(array $acc, array $in): void {
     $aid = (string) $acc['id']; $c = wf_intake_cfg($aid); $jid = wf_jid($in['jid'] ?? ''); $from = preg_replace('/\D/', '', (string) ($in['from'] ?? ''));
