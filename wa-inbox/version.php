@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.83.0', 'date' => '2026-10-17', 'title' => 'Chats page: view options and all numbers', 'changes' => [
+        'Chats page buttons: ⛶ full screen (hides the header and menus), 🖼️ show/hide photo and video previews, 📋 show/hide the chat list (also in the chat header), 🙈 show hidden chats; each chat can be hidden from the list from its header. Remembered in this browser.',
+        '🔀 All my numbers in one list (when the user has more than one): each chat carries a coloured mark with its number; a chat of another number opens on that number.',
+    ]],
     ['v' => '3.82.2', 'date' => '2026-10-17', 'title' => 'Each business sees its own words', 'changes' => [
         'Business settings → Interface words: a business other than healing sees only its own words (the healing wording of the base dictionary is no longer shown on the left), and the word search shows words as they read on its own panel. Neutral search hint.',
         'Link page: a linked number shows its mobile number.',

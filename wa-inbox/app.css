@@ -856,3 +856,11 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 .inv{margin:10px 14px 14px;display:flex;flex-direction:column;gap:10px}.inv-sum{display:flex;flex-wrap:wrap;gap:8px}.inv-sum span{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:13px}
 .inv-t{max-height:50vh;overflow:auto;border:1px solid var(--line);border-radius:12px}.inv-t table{width:100%;border-collapse:collapse;font-size:13px}.inv-t th,.inv-t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top}.inv-t th{position:sticky;top:0;background:var(--surface)}
 .inv-chips{display:flex;flex-wrap:wrap;gap:6px}.inv-chips span{background:var(--surface-2);border-radius:8px;padding:3px 8px;font-size:12.5px}.inv code,.inv-t code{background:var(--brand-soft,#e0f2f1);border-radius:6px;padding:0 5px}
+
+/* Chats page view options */
+.view-bar{display:flex;gap:4px;align-items:center}.view-bar input{flex:1;min-width:0}.view-bar .icon-btn.on{background:var(--acc,#0f9d8a);color:#fff}
+.app.v-focus .side,.app.v-focus .topbar,.app.v-focus .page-tabs{display:none!important}.app.v-focus .inbox{height:calc(100vh - 16px)}
+.app.v-nothumbs .msgs img.thumb,.app.v-nothumbs .msgs video.thumb{display:none}.app.v-nothumbs .msgs .b a[href*="api=media"]::before{content:"🖼️ "}
+.app.v-nolist .inbox .chat-list{display:none}.app.v-nolist .inbox{grid-template-columns:1fr}
+.chats .c.c-hid{opacity:.55}.chats .c.c-hid::after{content:"🙈";margin-inline-start:4px}
+.chats .c{position:relative}.chats .acc-mark{position:absolute;inset-inline-end:6px;bottom:4px;font-size:10px;color:#fff;border-radius:6px;padding:0 5px;max-width:90px;overflow:hidden;white-space:nowrap}

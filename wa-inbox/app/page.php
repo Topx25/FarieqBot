@@ -142,7 +142,12 @@
       <section class="inbox card">
         <aside class="chat-list">
           <div class="chat-list-h">
-            <input type="search" id="chat-q" placeholder="Search name or number…" dir="auto">
+            <div class="view-bar" id="view-bar"><input type="search" id="chat-q" placeholder="Search name or number…" dir="auto">
+              <button type="button" class="icon-btn" data-view="focus" title="Full screen: hide the header and menus">⛶</button>
+              <button type="button" class="icon-btn" data-view="thumbs" title="Show / hide photo and video previews">🖼️</button>
+              <button type="button" class="icon-btn" data-view="hidden" title="Show the hidden chats">🙈</button>
+              <button type="button" class="icon-btn" data-view="list" title="Hide the chat list">📋</button>
+              <?php if (count(wi_my_accounts()) > 1): ?><button type="button" class="icon-btn" data-view="all" title="All my numbers in one list">🔀</button><?php endif; ?></div>
             <div class="chips" id="chat-filter"><button class="on" data-f="">All</button><button data-f="customers">Customers</button><button data-f="others">Others</button><button data-f="groups">Groups</button><button data-f="mine">👤 Mine</button><button data-f="unassigned">Unassigned</button><button data-f="remind">⏰ Follow-up</button></div>
             <div class="chips labels-filter" id="label-filter"></div>
           </div>

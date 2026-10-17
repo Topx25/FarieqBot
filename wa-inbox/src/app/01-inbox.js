@@ -41,7 +41,18 @@
     try { unread = JSON.parse(localStorage.getItem('wi_unread_' + (app.getAttribute('data-acc') || '')) || '{}') || {}; } catch (e) { unread = {}; }
     function saveUnread() { try { localStorage.setItem('wi_unread_' + (app.getAttribute('data-acc') || ''), JSON.stringify(unread)); } catch (e) {} updateTitle(); }
     function updateTitle() { var n = 0; for (var k in unread) n += unread[k] || 0; document.title = (n ? '(' + n + ') ' : '') + ((window.WI_BRAND || {}).name || ''); }
+    document.addEventListener('click', function (e) { if (e.target.closest('[data-hide-chat]') && open) { toggleHidden(open); var b = e.target.closest('[data-hide-chat]'); b.textContent = hiddenChats.indexOf(open) !== -1 ? '👁️' : '🙈'; } });
     var listEl = document.getElementById('chats'), msgsEl = document.getElementById('msgs'), headEl = document.getElementById('thread-h');
+    // View options of this browser: full screen, previews, chat list, hidden chats (per number)
+    var VK = 'wi_view', HK = 'wi_hidden_' + (app.getAttribute('data-acc') || ''), rd = function (k, d) { try { return JSON.parse(localStorage.getItem(k) || '') || d; } catch (e) { return d; } }, wr = function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+    var view = rd(VK, { focus: false, thumbs: true, list: true, showHidden: false }), hiddenChats = rd(HK, []);
+    function applyView() { app.classList.toggle('v-focus', !!view.focus); app.classList.toggle('v-nothumbs', !view.thumbs); app.classList.toggle('v-nolist', !view.list);
+      [].forEach.call(document.querySelectorAll('#view-bar [data-view]'), function (b) { var k = b.dataset.view; b.classList.toggle('on', k === 'thumbs' ? !view.thumbs : (k === 'list' ? !view.list : (k === 'hidden' ? !!view.showHidden : !!view[k]))); }); }
+    document.addEventListener('click', function (e) { var b = e.target.closest('[data-view]'); if (!b) return; var k = b.dataset.view;
+      if (k === 'thumbs') view.thumbs = !view.thumbs; else if (k === 'list') view.list = !view.list; else if (k === 'hidden') view.showHidden = !view.showHidden; else view[k] = !view[k];
+      wr(VK, view); applyView(); if (k === 'hidden') drawList(); if (k === 'all') loadChats(); });
+    function toggleHidden(jid) { var i = hiddenChats.indexOf(jid); if (i === -1) hiddenChats.push(jid); else hiddenChats.splice(i, 1); wr(HK, hiddenChats); drawList(); }
+    setTimeout(applyView, 0);
     function drawList() {
       var q = (document.getElementById('chat-q').value || '').toLowerCase();
       var html = chats.filter(function (c) {
@@ -53,10 +64,11 @@
         if (filter === 'unassigned' && (asg || c.group)) return false;
         if (filter === 'remind' && !remindersFor(c.jid).length) return false;
         if (labelFilter && (meta.chat_labels[c.jid] || []).indexOf(labelFilter) === -1) return false;
+        if (hiddenChats.indexOf(c.jid) !== -1 && !view.showHidden) return false; // hidden by this user
         return !q || (title(c) + ' ' + (c.phone || '') + ' ' + (c.last ? c.last.text : '')).toLowerCase().indexOf(q) !== -1;
       }).map(function (c) {
         var t = title(c);
-        return '<div class="c' + (c.jid === open ? ' on' : '') + '" data-jid="' + esc(c.jid) + '">' + av(c.jid, t) + '<div class="c-b"><div class="c-t"><b>' + esc(t) + (c.customer ? '<span class="tag">' + T('Customer') + '</span>' : '') + (c.group ? '<span class="tag g">' + T('Group') + '</span>' : '') + '</b><small>' + esc(c.last ? when(c.last.time) : '') + '</small></div>' + rowMeta(c.jid) + '<div class="c-row2"><div class="c-p" dir="auto">' + (typing[c.jid] && typing[c.jid] > Date.now() ? '<i class="typing">' + T('typing…') + '</i>' : (c.last && c.last.dir === 'out' ? '✓ ' : '') + (c.last ? (c.last.kind === 'reaction' ? esc(c.last.text) + ' ' + T('reacted') : (c.last.text ? esc(c.last.text) : esc(kindLabel(c.last.kind) || '…'))) : '')) + '</div>' + (c.notes ? '<span class="note-ic" title="' + T('Notes') + '">📝</span>' : '') + (unread[c.jid] ? '<span class="unread">' + unread[c.jid] + '</span>' : '') + '</div></div></div>';
+        return '<div class="c' + (c.jid === open ? ' on' : '') + (hiddenChats.indexOf(c.jid) !== -1 ? ' c-hid' : '') + '" data-jid="' + esc(c.jid) + '"' + (c.acc ? ' data-acc="' + esc(c.acc) + '" style="border-inline-start:4px solid ' + color(c.acc) + '"' : '') + '>' + av(c.jid, t) + (c.acc ? '<span class="acc-mark" style="background:' + color(c.acc) + '" title="' + esc(c.acc_name || '') + '">' + esc(String(c.acc_name || '').slice(0, 10)) + '</span>' : '') + '<div class="c-b"><div class="c-t"><b>' + esc(t) + (c.customer ? '<span class="tag">' + T('Customer') + '</span>' : '') + (c.group ? '<span class="tag g">' + T('Group') + '</span>' : '') + '</b><small>' + esc(c.last ? when(c.last.time) : '') + '</small></div>' + rowMeta(c.jid) + '<div class="c-row2"><div class="c-p" dir="auto">' + (typing[c.jid] && typing[c.jid] > Date.now() ? '<i class="typing">' + T('typing…') + '</i>' : (c.last && c.last.dir === 'out' ? '✓ ' : '') + (c.last ? (c.last.kind === 'reaction' ? esc(c.last.text) + ' ' + T('reacted') : (c.last.text ? esc(c.last.text) : esc(kindLabel(c.last.kind) || '…'))) : '')) + '</div>' + (c.notes ? '<span class="note-ic" title="' + T('Notes') + '">📝</span>' : '') + (unread[c.jid] ? '<span class="unread">' + unread[c.jid] + '</span>' : '') + '</div></div></div>';
       }).join('');
       listEl.innerHTML = html || '<div class="empty">' + T('No conversations.') + '</div>';
     }
@@ -77,7 +89,7 @@
       headEl.innerHTML = '<div class="th-top"><button type="button" class="icon-btn th-back" title="' + T('Back to the chats') + '">‹</button>' + av(jid, title(c))
         + '<div class="th-id grow"><div class="th-name"><b dir="auto">' + esc(title(c)) + '</b>' + (c.customer ? '<span class="th-badge cust">🧾 ' + T('Customer') + '</span>' : '') + (isG ? '<span class="th-badge grp">👥 ' + T('Group') + '</span>' : '') + '<span id="th-badges"></span></div>'
         + '<div class="th-sub"><span dir="ltr">' + (c.phone ? '+' + esc(c.phone) : (isG ? '' : esc(String(jid).split('@')[0]))) + '</span><span>💬 ' + fmt(c.count) + ' ' + T('messages') + '</span>' + (c.last && c.last.time ? '<span>🕐 ' + esc(when(c.last.time)) + '</span>' : '') + '<span class="info-hint">ⓘ ' + T('Contact info') + '</span><span class="typing" id="typing-h" hidden></span></div></div>'
-        + '<div class="th-acts">' + (isG ? '<a class="icon-btn" href="?p=groups&g=' + encodeURIComponent(jid) + '" title="' + T('Group page') + '">👥</a>' : '<a class="icon-btn" href="?p=customer&jid=' + encodeURIComponent(jid) + '" title="' + T('Customer profile') + '">👤</a><a class="icon-btn" href="?p=programs&jid=' + encodeURIComponent(jid) + '" title="' + T('Enrol in a program') + '">💊</a>')
+        + '<div class="th-acts"><button type="button" class="icon-btn" data-view="list" title="' + T('Show / hide the chat list') + '">📋</button><button type="button" class="icon-btn" data-hide-chat title="' + T('Hide / show this chat in the list') + '">' + (hiddenChats.indexOf(jid) !== -1 ? '👁️' : '🙈') + '</button>' + (isG ? '<a class="icon-btn" href="?p=groups&g=' + encodeURIComponent(jid) + '" title="' + T('Group page') + '">👥</a>' : '<a class="icon-btn" href="?p=customer&jid=' + encodeURIComponent(jid) + '" title="' + T('Customer profile') + '">👤</a><a class="icon-btn" href="?p=programs&jid=' + encodeURIComponent(jid) + '" title="' + T('Enrol in a program') + '">💊</a>')
         + (!isG && CAN('groups') ? '<button type="button" class="icon-btn" id="add-grp" title="' + T('Add to a group') + '">👥➕</button>' : '')
         + '<button type="button" class="icon-btn" id="chat-media" title="' + T('Media of this chat') + '">📁</button>'
         + (CAN('delete_chat') ? '<button type="button" class="icon-btn" id="del-chat" title="' + T('Delete this chat') + '">🧹</button>' : '')
@@ -207,7 +219,7 @@
             var el = msgsEl.querySelector('.b[data-id="' + ev.id + '"] .tick'); if (el) el.innerHTML = tick(ev.status);
           }
         });
-        if (needChats) api('chats').then(function (x) { if (x.ok) { chats = x.chats || []; drawList(); } });
+        if (needChats) api(view.all ? 'chats_all' : 'chats').then(function (x) { if (x.ok) { chats = x.chats || []; drawList(); } });
         else if (redrawList) drawList();
         if (reloadOpen) loadThread(open, false);
         if (ding) beep();
@@ -468,12 +480,16 @@
           .finally(function () { btn.disabled = false; btn.textContent = '➤'; });
       });
     }
-    api('chats').then(function (r) {
+    var curAcc = app.getAttribute('data-acc') || '';
+    function loadChats() { return api(view.all ? 'chats_all' : 'chats').then(function (r) {
       if (!r.ok) { listEl.innerHTML = '<div class="empty">' + esc(r.error || T('Could not load')) + '</div>'; return; }
-      chats = r.chats || []; drawList(); if (open) openChat(open);
+      chats = r.chats || []; drawList(); return r; }); }
+    loadChats().then(function (r) { if (!r) return; if (open) openChat(open);
       else { var dj = new URLSearchParams(location.search).get('jid'); if (dj) openChat(dj); } // links from other pages (team activity, cases…)
     });
-    listEl.addEventListener('click', function (e) { var c = e.target.closest('.c'); if (c) openChat(c.getAttribute('data-jid')); });
+    listEl.addEventListener('click', function (e) { var c = e.target.closest('.c'); if (!c) return; var a = c.getAttribute('data-acc');
+      if (a && a !== curAcc) { location.href = '?p=inbox&acc=' + encodeURIComponent(a) + '&jid=' + encodeURIComponent(c.getAttribute('data-jid')); return; } // a chat of another number opens on that number
+      openChat(c.getAttribute('data-jid')); });
     document.getElementById('chat-q').addEventListener('input', drawList);
     // ---- AI summary & category
     function showSummary(jid, x) {

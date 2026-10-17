@@ -13,6 +13,15 @@
         }
         wi_json($r);
     }
+    // Every number of this user in one list: each chat carries its number (acc) for a mark and to open it on that number.
+    if ($api === 'chats_all') {
+        $out = []; $c = wi_customers();
+        foreach (wi_my_accounts() as $a) { $r = wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long'), null, $a); if (empty($r['ok'])) continue;
+            $hide = wi_chats_taken_by_others((string) $a['id']);
+            foreach ((array) $r['chats'] as $x) { if (isset($hide[$x['jid'] ?? ''])) continue; $x['customer'] = $c[$x['phone'] ?? ''] ?? null; $x['acc'] = (string) $a['id']; $x['acc_name'] = (string) ($a['name'] ?? $a['id']); $out[] = $x; } }
+        usort($out, fn($p, $q) => strcmp((string) ($q['last']['time'] ?? ''), (string) ($p['last']['time'] ?? '')));
+        wi_json(['ok' => true, 'chats' => array_slice($out, 0, 1500)]);
+    }
     if ($api === 'chats') {
         $r = wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long') );
         if (!empty($r['ok'])) {
