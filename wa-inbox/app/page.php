@@ -453,6 +453,8 @@
           <div class="search-xl"><span>🔎</span><input type="search" id="lib-q" placeholder="Search the library…" dir="auto"></div>
           <select id="lib-sort"><option value="shared">Most shared</option><option value="score">Best ranked</option><option value="recent">Newest</option><option value="versions">Most versions</option></select>
           <div class="seg" id="lib-view"><button class="on" data-v="cards" title="Cards">▦</button><button data-v="list" title="List">☰</button></div>
+          <button type="button" class="btn primary" id="lib-add">➕ Add text</button>
+          <label class="btn ghost" id="lib-up-l">⬆️ Upload files<input type="file" id="lib-up" multiple accept="image/jpeg,image/png,image/webp,audio/*,application/pdf,video/mp4" hidden></label>
           <a class="btn ghost" id="lib-export" href="#">⬇️ Export .txt</a>
         </div>
       </section>

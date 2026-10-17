@@ -1345,7 +1345,9 @@ document.addEventListener('keydown', function (e) {
       var head = '<div class="lc-top"><span class="lc-sec" style="--c:' + si[2] + '">' + si[1] + ' ' + esc(g.section) + '</span><span class="lc-topic">' + esc(g.topic) + '</span>'
         + (g.audio ? '' : '<span class="score" title="' + esc(scoreTip(b.parts)) + '">⭐ ' + b.score + '</span>') + '</div>'
         + '<h3 class="lc-t" dir="auto">' + esc(g.title) + '</h3>'
+        + (g.cover ? '<img class="lc-cover" loading="lazy" alt="" src="' + mediaUrl(g.cover) + '">' : '')
         + (g.code ? '<div class="lc-code" dir="auto">🔑 ' + esc(g.code) + '</div>' : '')
+        + (g.keywords ? '<div class="lc-kw muted small" dir="auto">🏷️ ' + esc(g.keywords) + '</div>' : '')
         + (g.ai && g.ai.quality ? '<div class="lc-ai' + (g.ai.valid === false ? ' bad' : '') + '">🤖 ' + (g.ai.quality ? '★'.repeat(g.ai.quality) + '☆'.repeat(5 - g.ai.quality) : '') + (g.ai.valid === false ? ' · ⚠️ ' + T('Needs checking') : ' · ✓ ' + T('Checked')) + (g.ai.note ? ' · ' + esc(g.ai.note) : '') + '</div>' : '');
       var meta = '<div class="lc-meta"><span>🧬 ' + fmt(g.versions) + ' ' + T(g.audio ? 'copies' : 'versions') + '</span>' + (g.audio ? '' : '<span>🔁 ' + fmt(g.total) + '× ' + T('shared') + '</span>') + '<span>💬 ' + fmt(g.chats) + ' ' + T('chats') + '</span><span>🕐 ' + esc(when(b.last || b.time, true)) + '</span></div>';
       var body;
@@ -1362,6 +1364,7 @@ document.addEventListener('keydown', function (e) {
       if (!g.audio && ai.formatted) aiBox += '<details class="ai-box"><summary>✨ ' + T('AI formatted version') + '</summary><div class="vc-t" dir="auto">' + esc(ai.formatted) + '</div><button class="link-btn" data-copy-f="' + i + '">📋 ' + T('Copy') + '</button></details>';
       var actions = '<div class="lc-actions">' + (g.audio ? '' : '<button class="chip-btn sm" data-copy="' + i + '">📋 ' + T('Copy') + '</button>')
         + (g.audio ? '' : (g.others.length ? '<button class="chip-btn sm" data-ai-do="compare" data-gk="' + esc(gk) + '">🏆 ' + T('Compare & pick best') + '</button>' : '') + '<button class="chip-btn sm" data-ai-do="format" data-gk="' + esc(gk) + '">✨ ' + T('Format with AI') + '</button>')
+        + (g.audio ? '' : g.manual ? '<button class="chip-btn sm" data-lt-edit="' + i + '">✏️ ' + T('Edit') + '</button><button class="chip-btn sm bad-t" data-lt-del="' + i + '">🗑️ ' + T('Delete') + '</button>' : '<button class="chip-btn sm" data-lt-edit="' + i + '" title="' + esc(T('Make it a text you can edit, with a tag and keywords')) + '">✏️ ' + T('Edit as my text') + '</button>')
         + (g.audio && b.attachment ? '<button class="chip-btn sm" data-lname="' + esc(b.attachment) + '">✏️ ' + T('Name & shortcut') + '</button>' : '')
         + (g.audio ? (b.attachment ? '<button class="chip-btn sm primary" data-lfw-att="' + esc(b.attachment) + '">↪ ' + T('Send to chats and groups') + '</button>' : '') : '<button class="chip-btn sm primary" data-lfw-txt="' + i + '">↪ ' + T('Send to chats and groups') + '</button>')
         + '<a class="chip-btn sm" href="?p=inbox#' + encodeURIComponent(b.jid) + '">💬 ' + T('Open chat') + '</a></div>';
@@ -1394,6 +1397,38 @@ document.addEventListener('keydown', function (e) {
         document.getElementById('mq-st').innerHTML = (q.pending ? '⏳ ' + T('Downloading…') + ' ' + fmt(q.pending) + ' ' + T('left') + '<br>' : '') + '✓ ' + fmt(q.done) + ' · ' + T('expired on WhatsApp') + ' ' + fmt(q.expired) + ' · ' + T('failed') + ' ' + fmt(q.failed);
       });
     }
+    // ➕ a text written by hand (a written ruqyah, a price list…): add, edit, delete — with a cover, a tag, a title, a topic and keywords
+    function textDialog(g) {
+      var t = g ? { id: g.manual ? g.mid : '', section: g.section, topic: g.topic, title: g.title, code: g.code || '', keywords: g.keywords || '', text: g.best.text, cover: g.cover || '' }
+        : { id: '', section: L.section || (SEC[1] || [''])[0], topic: L.topic || '', title: '', code: '', keywords: '', text: '', cover: '' };
+      var secs = SEC.filter(function (x) { return x[0] !== (LIB.audio || 'Audio'); }), tps = {}; ((L.data && L.data.topics) || {}) && Object.keys((L.data && L.data.topics) || {}).forEach(function (k) { tps[k.split('|')[1]] = 1; });
+      var d = mlDialog('<div class="ml-head"><b>' + (t.id ? '✏️ ' + T('Edit text') : '➕ ' + T('Add text')) + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div><div class="ml-fw lt-form">'
+        + '<label>' + T('Section') + '<select id="lt-sec">' + secs.map(function (x) { return '<option value="' + esc(x[0]) + '"' + (x[0] === t.section ? ' selected' : '') + '>' + x[1] + ' ' + esc(x[0]) + '</option>'; }).join('') + '</select></label>'
+        + '<label>' + T('Title') + '<input id="lt-title" dir="auto" maxlength="120" value="' + esc(t.title) + '"></label>'
+        + '<label>' + T('Topic') + '<input id="lt-topic" dir="auto" maxlength="60" list="lt-topics" value="' + esc(t.topic) + '"><datalist id="lt-topics">' + Object.keys(tps).map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist></label>'
+        + '<label>' + T('Tag — write it in any chat or group and the text is sent') + '<input id="lt-code" dir="auto" maxlength="60" value="' + esc(t.code) + '" placeholder="' + esc(T('#ruqyah-name')) + '"></label>'
+        + '<label>' + T('Keywords — separated by commas') + '<input id="lt-kw" dir="auto" maxlength="300" value="' + esc(t.keywords) + '"></label>'
+        + '<label>' + T('Text') + '<textarea id="lt-text" rows="8" dir="auto">' + esc(t.text) + '</textarea></label>'
+        + '<div class="lt-cover"><b>' + T('Cover') + '</b><div id="lt-prev"></div><input type="file" id="lt-file" accept="image/jpeg,image/png,image/webp"><button type="button" class="chip-btn sm" id="lt-rm">✕ ' + T('Remove cover') + '</button></div>'
+        + '<div class="row"><button type="button" class="btn primary" id="lt-go">💾 ' + T('Save') + '</button><span class="muted small" id="lt-m"></span></div></div>');
+      var prev = function () { document.getElementById('lt-prev').innerHTML = t.cover ? '<img class="lc-cover" alt="" src="' + mediaUrl(t.cover) + '">' : ''; document.getElementById('lt-rm').hidden = !t.cover; }; prev();
+      document.getElementById('lt-file').onchange = function () { var f = this.files[0]; if (!f) return; var fd = new FormData(); fd.append('file', f); fd.append('cover', '1'); document.getElementById('lt-m').textContent = '⏳';
+        fetch('?api=lib_upload', { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRF': lcsrf }, body: fd }).then(wiSafeJson, wiNetFail).then(function (r) { document.getElementById('lt-m').textContent = r.ok ? '' : '⚠️ ' + (r.error || T('Failed')); if (r.ok) { t.cover = r.key; prev(); } }); };
+      d.onclick = function (ev) { if (ev.target.closest('[data-mlx]')) { d.close(); return; }
+        if (ev.target.closest('#lt-rm')) { t.cover = ''; prev(); return; }
+        if (!ev.target.closest('#lt-go')) return;
+        WI.post('lib_text_save', { id: t.id, section: document.getElementById('lt-sec').value, title: document.getElementById('lt-title').value, topic: document.getElementById('lt-topic').value, code: document.getElementById('lt-code').value, keywords: document.getElementById('lt-kw').value, text: document.getElementById('lt-text').value, cover: t.cover }).then(function (r) {
+          if (!r.ok) { document.getElementById('lt-m').textContent = '⚠️ ' + (r.error || T('Failed')); return; } d.close(); load(); }); };
+    }
+    document.getElementById('lib-add').addEventListener('click', function () { textDialog(null); });
+    document.getElementById('lib-up').addEventListener('change', function () { var fs = [].slice.call(this.files), inp = this, ok = 0, bad = '';
+      (function next() { var f = fs.shift(); if (!f) { inp.value = ''; mlToast(ok ? '✓ ' + fmt(ok) + ' ' + T('files added — find them in Media') : '⚠️ ' + bad); return; }
+        var fd = new FormData(); fd.append('file', f); mlToast('⏳ ' + f.name);
+        fetch('?api=lib_upload', { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRF': lcsrf }, body: fd }).then(wiSafeJson, wiNetFail).then(function (r) { if (r.ok) ok++; else bad = r.error || T('Failed'); next(); }); })(); });
+    document.addEventListener('click', function (e) {
+      var ed = e.target.closest('[data-lt-edit]'); if (ed) { textDialog(current[+ed.dataset.ltEdit]); return; }
+      var del = e.target.closest('[data-lt-del]'); if (del) { var g = current[+del.dataset.ltDel]; if (g && confirm(T('Delete this text?') + '\n' + g.title)) WI.post('lib_text_delete', { id: g.mid }).then(function () { load(); }); }
+    });
     mq(); setInterval(mq, WIR(10000));
     // ↪ a recording or a text of the library to chats and groups (sent from the server, one by one)
     // ✏️ a recording's name and shortcut (writing the shortcut in a chat or group sends the file)

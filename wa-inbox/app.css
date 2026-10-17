@@ -1039,3 +1039,20 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 
 /* Audio categories manager */
 .ac-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.ac-row .ac-ic{width:52px;text-align:center;font-size:18px}.ac-row .ac-lb{flex:1;min-width:0}.ac-row .ac-co{width:42px;height:34px;padding:0;border:1px solid var(--line);border-radius:8px;background:transparent}
+
+/* Library: hand-written texts (cover, tag, keywords) and a real list view (Topx1.Host) */
+.lc-cover{display:block;max-width:100%;max-height:200px;border-radius:12px;margin:6px 0;object-fit:cover}
+.lc-kw{margin:2px 0}
+.lt-form{display:flex;flex-direction:column;gap:10px}.lt-form label{display:flex;flex-direction:column;gap:4px;font-size:13px}.lt-form input,.lt-form select,.lt-form textarea{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card,#fff);color:var(--ink);font:inherit}
+.lt-cover{display:flex;flex-wrap:wrap;gap:10px;align-items:center}.lt-cover #lt-prev img{max-height:90px}
+.lib-grid.list{gap:8px}
+.lib-grid.list .lcard{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) auto;column-gap:16px;row-gap:2px;align-items:start;padding:10px 14px}
+.lib-grid.list .lcard>*{grid-column:1}
+.lib-grid.list .lcard>.vcard{grid-column:2;grid-row:1 / span 6}
+.lib-grid.list .lcard>.lc-actions{grid-column:3;grid-row:1 / span 6;display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.lib-grid.list .lcard>.lc-more,.lib-grid.list .lcard>.refs,.lib-grid.list .lcard>.ai-box,.lib-grid.list .lcard>.lc-ai{display:none}
+.lib-grid.list .lcard .lc-t{font-size:15px;margin:0}
+.lib-grid.list .lcard .vc-h,.lib-grid.list .lcard .vc-meta{display:none}
+.lib-grid.list .lcard .vc-t{-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
+.lib-grid.list .lc-cover{max-height:60px;width:auto}
+@media (max-width:860px){.lib-grid.list .lcard{grid-template-columns:1fr}.lib-grid.list .lcard>.vcard,.lib-grid.list .lcard>.lc-actions{grid-column:1;grid-row:auto}.lib-grid.list .lcard>.lc-actions{flex-direction:row;flex-wrap:wrap}}

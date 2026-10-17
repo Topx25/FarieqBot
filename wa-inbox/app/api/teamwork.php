@@ -143,6 +143,7 @@
         if (!empty($r['ok']) && isset($r['groups'])) {
             // Hide archived / deleted versions; show only archived ones when asked.
             $hidden = wi_read('lib_hidden.json', [])[wi_current()['id'] ?? ''] ?? [];
+            if (($_GET['type'] ?? 'sections') === 'sections') $r['groups'] = array_merge($r['groups'], wf_lib_text_groups((string) (wi_current()['id'] ?? ''))); // texts written by hand
             $view = (string) ($_GET['view'] ?? '');
             $groups = []; $sections = []; $topics = []; $archivedN = 0; $nameMeta = (array) (wi_read('media_meta.json', [])[wi_current()['id'] ?? ''] ?? []);
             $aiRev = wi_read('lib_ai.json', [])[wi_current()['id'] ?? ''] ?? [];

@@ -54,14 +54,16 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
     } elseif ($cmd === 'text') {
         $words = array_values(array_filter(preg_split('/\s+/u', $q), fn($w) => mb_strlen($w) >= 3)); usort($words, fn($x, $y) => mb_strlen($y) <=> mb_strlen($x));
         $g = []; foreach (array_unique(array_merge([$q], array_slice($words, 0, 2))) as $try) { $g = (array) (wi_gateway('/library?type=all&group=1&q=' . rawurlencode(mb_strtolower($try)), null, $acc)['groups'] ?? []); if ($g) break; }
-        $T = []; foreach ($g as $i => $x) $T[$i] = ['title' => trim(mb_substr((string) ($x['title'] ?? ''), 0, 70)), 'text' => (string) ($x['best']['text'] ?? '')];
-        $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['title']], $T)); // the name is in its title
+        foreach (wf_lib_text_groups($aid) as $mg) { $blob = wf_intake_norm($mg['title'] . ' ' . $mg['keywords'] . ' ' . $mg['code'] . ' ' . $mg['best']['text']); $nq = trim(wf_intake_norm($q)); if ($nq !== '' && !array_filter(preg_split('/\s+/u', $nq), fn($w) => mb_strpos($blob, $w) === false)) $g[] = $mg; } // texts written by hand: by title, keywords or text
+        $T = []; foreach ($g as $i => $x) $T[$i] = ['title' => trim(mb_substr((string) ($x['title'] ?? ''), 0, 70)), 'text' => (string) ($x['best']['text'] ?? ''), 'kw' => (string) ($x['keywords'] ?? ''), 'cover' => (string) ($x['cover'] ?? '')];
+        $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['title'], $x['kw']], $T)); // the name is in its title or keywords
         if (!$hit) $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['text']], $T)); // else every word is in its text
         if (!$hit && count($T) === 1) $hit = [array_key_first($T)];
         if (!$hit) { $say(wf_msg('lib_not_found', ['query' => mb_substr($q, 0, 40)])); return; }
         $kind = trim(wf_intake_norm(ltrim((string) ($W['text'] ?? ''), '#'))); // "#رقية العقد": the word after the command is the name, and the text must be of the kind the command names
         if (count($hit) === 1 && $kind !== '' && mb_strpos(wf_intake_norm($T[$hit[0]]['title'] . ' ' . ($g[$hit[0]]['section'] ?? '') . ' ' . ($g[$hit[0]]['topic'] ?? '')), $kind) === false) $hit = array_values(array_unique(array_merge($hit, array_keys($T)))); // only one text, and not of that kind: the choices are shown, nothing is guessed
         if (count($hit) > 1) { $many(array_map(fn($k) => $T[$k]['title'], array_slice($hit, 0, 8))); return; }
+        if ($T[$hit[0]]['cover'] !== '') { $say(mb_substr($T[$hit[0]]['text'], 0, 3900), ['attachment' => $T[$hit[0]]['cover']]); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => $cmd]); return; } // its cover goes with it
         $say(mb_substr($T[$hit[0]]['text'], 0, 3900)); // copied as it was written, never retyped
     }
     wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => $cmd]);
@@ -75,6 +77,7 @@ function wf_tag_taken(string $aid, string $tag, string $exceptKey = '', bool $sk
     if (!$skipSections) foreach (wf_libtags($aid) as $x) if (wf_libtag_key($x['tag']) === wf_libtag_key($tag)) return 'This tag is already a section tag.';
     $k = wf_media_code_find($aid, $tag); if ($k !== '' && $k !== $exceptKey) return 'This shortcut is already used by another file.';
     foreach (wf_programs($aid) as $p) if (('prog:' . ($p['id'] ?? '')) !== $exceptKey && trim((string) ($p['code'] ?? '')) !== '' && str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean((string) $p['code']))) === $want) return 'This tag is already used by a program.';
+    foreach (wf_lib_texts($aid) as $x) if (('text:' . ($x['id'] ?? '')) !== $exceptKey && trim((string) ($x['code'] ?? '')) !== '' && str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean((string) $x['code']))) === $want) return 'This tag is already used by a library text.';
     $acc = wi_accounts()[$aid] ?? null;
     if ($acc && function_exists('wi_replies_for')) foreach (wi_replies_for($acc) as $r) if (str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean((string) ($r['keyword'] ?? '')))) === $want) return 'This tag is already a quick reply keyword.';
     return '';
@@ -107,6 +110,7 @@ function wf_program_message(array $p): string {
 /** A message that names a file's code: the file is sent there (with its caption). True when sent. */
 function wf_media_code_send(array $acc, string $jid, string $text, string $quote = ''): bool {
     if (wf_libtag_which((string) $acc['id'], $text)) return wf_libtag_send($acc, $jid, $text, $quote); // a section tag: the list of that section
+    if ($lt = wf_lib_text_code_in((string) $acc['id'], $text)) return wf_lib_text_send($acc, $jid, $lt, $quote) || true; // a library text's tag: the text with its cover
     if (($prog = wf_program_code_in((string) $acc['id'], $text)) && !str_ends_with($jid, '@g.us')) { // a private chat: it follows the program (its days arrive one by one), the person is told
         $aidP = (string) $acc['id']; $new = wf_program_enroll($aidP, $jid, $prog, 'tag'); $d1 = (array) (((array) ($prog['days'] ?? []))[0] ?? []); $n = count((array) ($prog['days'] ?? []));
         foreach ((array) ($prog['days'] ?? []) as $dd) if ((int) ($dd['day'] ?? 0) === 1) $d1 = $dd; // day 1 when there is one, else the program's first step

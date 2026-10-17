@@ -5,6 +5,12 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.94.0', 'date' => '2026-10-17', 'title' => 'Library: add, edit, delete texts, upload files, list view', 'changes' => [
+        'Library: "Add text" — a written ruqyah, a price list or any answer, with a section, title, topic, tag, keywords and a cover image. Edit and delete your texts; any collected text can be turned into one with "Edit as my text".',
+        'Writing a text\'s tag in a chat or group sends it (with its cover); "#رقية name" also finds it by title or keywords. A tag cannot repeat across files, programs, texts and quick replies.',
+        'Library: "Upload files" (photos, audio, PDF, MP4) straight into the library — they show in Media.',
+        'Library: the list view is now a real list — title, tag and counts on one side, the text in the middle, the actions on the other.',
+    ]],
     ['v' => '3.93.3', 'date' => '2026-10-17', 'title' => 'Program tag: the text always arrives', 'changes' => [
         'Fixed: the confirmation after a program tag ended with "Day one:" and no text when the program had no day 1 (its first step was another day). The first step is now always sent, labelled with its own day number.',
     ]],

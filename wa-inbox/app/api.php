@@ -74,6 +74,7 @@ if (isset($_GET['api'])) {
     require __DIR__ . '/api/library_ai.php'; // library: AI review in batches
     require __DIR__ . '/api/library_tools.php'; // library: AI tools per group
     require __DIR__ . '/api/ai_providers.php'; // AI providers
+    require __DIR__ . '/api/lib_texts.php'; // library texts written by hand, uploads to the library
     require __DIR__ . '/api/library_misc.php'; // library hide, photos, notes, broadcast lists, search
     wi_json(['ok' => false, 'error' => 'Unknown request.'], 404);
 }
