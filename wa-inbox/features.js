@@ -2132,7 +2132,7 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
   var P = window.WI_PERM; if (!P) return;
   var T = window.T || function (x) { return (window.WI_T || {})[x] || x; };
   var esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
-  var alias = { link: 'accounts', gateway: 'accounts' };
+  var alias = { link: 'accounts', gateway: 'accounts', media: 'library' }; // the media page goes with the library permission
   [].forEach.call(document.querySelectorAll('a[href^="?p="]'), function (a) { var k = (a.getAttribute('href').match(/\?p=([a-z]+)/) || [])[1]; k = alias[k] || k;
     if (k && (P.pages[k] === '' || P.pages[k] === undefined && k !== 'dashboard' && k !== 'users' && k !== 'changes' && k !== 'link' && k !== 'gateway' && k !== 'search')) a.classList.add('pp-hidden'); });
   var main = document.querySelector('.main'); if (!main) return;

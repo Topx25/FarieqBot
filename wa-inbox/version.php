@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.97.4', 'date' => '2026-10-17', 'title' => 'The Media link is back', 'changes' => [
+        'Fixed: the "Media" and "Deleted" links in the library navigation were hidden by the page-permission script (the page "media" is not in the permission list, it follows the library). They show again, and "Deleted" is translated.',
+    ]],
     ['v' => '3.97.3', 'date' => '2026-10-17', 'title' => 'Labels with "&" are translated', 'changes' => [
         'Fixed: every label written with "&" (for example "Sort & check with AI", "Selection & AI tools") stayed in English because the page spells it "&amp;" and the dictionary "&". They now translate everywhere.',
     ]],

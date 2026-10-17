@@ -402,6 +402,7 @@ return [
     'Connect YouTube first (a separate sign-in from Google Drive).' => 'اربط يوتيوب الأول (تسجيل دخول منفصل عن Google Drive).',
     'YouTube is not connected.' => 'يوتيوب مش مربوط.',
     'Selection &amp; AI tools' => 'أدوات الاختيار والذكاء الاصطناعي',
+    '🗑 Deleted' => '🗑 المحذوفات',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. Ruqyah Al-Athiri' => 'مثلًا: رقية الأثيري',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',
