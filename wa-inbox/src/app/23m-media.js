@@ -66,6 +66,7 @@
     // One file as a card: the media itself (photos open the editor; voice, audio and video play and seek in place),
     // a readable name (never the raw file id), size, date and the chat it came from, and the actions.
     var KN = {}; ML_KINDS.forEach(function (k) { KN[k[0]] = k; });
+    function mlChatHref(it) { return '?p=inbox#' + encodeURIComponent(it.jid || '') + (it.mid ? '|' + encodeURIComponent(it.mid) : ''); } // the chat, scrolled to the message that carried the file
     function mlNice(it) { var n = mlName(it); if (n && !/^[A-F0-9]{16,}\.[a-z0-9]+$/i.test(n)) return n; var k = KN[it.kind]; return (k ? k[1] + ' ' + T(k[2]).replace(/s$/, '') : '📄') + (it.at ? ' · ' + when(it.at) : ''); }
     function mlCard(it) {
       var u = mlUrl(it.key), media;
@@ -79,8 +80,8 @@
         + (it.fav ? '<i class="mc-fav">★</i>' : '') + '<div class="mc-media mk-' + esc(it.kind) + '">' + media + '</div>'
         + '<div class="mc-body"><button type="button" class="ml-it mc-name" data-key="' + esc(it.key) + '" dir="auto" title="' + esc(T('Edit')) + '">' + esc(mlNice(it)) + '</button>'
         + '<div class="mc-meta"><span>' + mlSize(it.size) + '</span>' + (it.at ? '<span>' + esc(String(it.at).slice(0, 10)) + '</span>' : '') + (it.used ? '<span>📤 ' + fmt(it.used) + '</span>' : '') + '</div>'
-        + (it.from ? '<div class="mc-from" dir="auto" title="' + esc(T('Who sent it')) + '">👤 ' + esc(it.from === 'You' ? T('You') : it.from) + '</div>' : '')
-        + (chat ? '<div class="mc-chat" dir="auto">' + (/@g\.us$/.test(it.jid || '') ? '👥 ' : '💬 ') + esc(chat) + '</div>' : '')
+        + (it.from ? '<a class="mc-from" dir="auto" href="' + mlChatHref(it) + '" title="' + esc(T('Open the chat at this file')) + '">👤 ' + esc(it.from === 'You' ? T('You') : it.from) + '</a>' : '')
+        + (chat ? '<a class="mc-chat" dir="auto" href="' + mlChatHref(it) + '">' + (/@g\.us$/.test(it.jid || '') ? '👥 ' : '💬 ') + esc(chat) + '</a>' : '')
         + (it.folder ? '<div class="mc-chat">📁 ' + esc(it.folder) + '</div>' : '')
         + '</div>' + (mbin ? '<div class="mc-acts"><button type="button" data-bulk-one="restore" data-k1="' + esc(it.key) + '">↩️ ' + T('Put back') + '</button></div>' : '<div class="mc-acts">'
           + '<button type="button" data-rn="' + esc(it.key) + '" aria-label="' + esc(T('Rename')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>' + T('Name') + '</button>'
@@ -133,7 +134,7 @@
     document.getElementById('ml-ed-bg').addEventListener('click', mlEdClose);
     function mlEdit(it) { mcur = it; var p = document.getElementById('ml-ed'); p.hidden = false; var bg = document.getElementById('ml-ed-bg'); if (bg) bg.hidden = false;
       p.innerHTML = '<button type="button" class="ml-ed-x" id="me-x" aria-label="' + esc(T('Close')) + '">✕</button><div class="ml-prev big">' + (it.kind === 'audio' || it.kind === 'voice' ? '<audio controls src="' + mlUrl(it.key) + '"></audio>' : it.kind === 'video' || it.kind === 'gif' ? '<video controls src="' + mlUrl(it.key) + '"></video>' : mlThumb(it)) + '</div>'
-        + (it.from || it.chat ? '<div class="ml-owner" dir="auto">' + (it.from ? '👤 ' + esc(it.from === 'You' ? T('You') : it.from) : '') + (it.chat ? ' · 💬 ' + esc(it.chat) : '') + '</div>' : '')
+        + (it.from || it.chat ? '<div class="ml-owner" dir="auto">' + (it.from ? '<a href="' + mlChatHref(it) + '">👤 ' + esc(it.from === 'You' ? T('You') : it.from) + '</a>' : '') + (it.chat ? ' · <a href="' + mlChatHref(it) + '">💬 ' + esc(it.chat) + '</a>' : '') + '</div>' : '')
         + '<div class="ml-form"><label>' + T('Title') + '<input id="me-t" value="' + esc(it.title) + '" dir="auto" maxlength="80"></label>'
         + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="me-code" value="' + esc(it.code || '') + '" dir="auto" maxlength="60" placeholder="' + esc(T('#ruqyah-name')) + '"></label>'
         + '<label>' + T('Caption (sent with it)') + '<textarea id="me-c" rows="4" dir="auto" maxlength="1000">' + esc(it.caption) + '</textarea></label>'

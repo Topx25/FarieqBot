@@ -1,6 +1,7 @@
   if (page === 'inbox') {
     var msgById = {}; // the shown messages by id (forwarding a text)
-    var chats = [], filter = '', open = decodeURIComponent(location.hash.slice(1) || '');
+    var hashP = decodeURIComponent(location.hash.slice(1) || '').split('|'), focusMsg = hashP[1] || ''; // #chat or #chat|message (from the Media page)
+    var chats = [], filter = '', open = hashP[0];
     var unread = {}, typing = {}, labelFilter = '';
     var meta = { me: '', replies: [], labels: [], chat_labels: {}, assign: {}, reminders: [], viewing: {}, users: [] };
     var CAT = { inquiry: '❓ Inquiry', complaint: '⚠️ Complaint', payment: '💳 Payment', new_order: '🛒 New order', follow_up: '🔁 Follow-up', support: '🛠️ Support', social: '💬 Social', other: '📁 Other' }; Object.assign(CAT, (window.WI_PACK || {}).summary_labels || {}); // extra categories from the business profile
@@ -197,6 +198,7 @@
         msgsEl.innerHTML = html || '<div class="empty">' + T('No messages.') + '</div>';
         if (keepPos) { msgsEl.scrollTop = msgsEl.scrollHeight - oldH + oldTop; keepPos = false; }
         else if (scroll || nearBottom) msgsEl.scrollTop = msgsEl.scrollHeight;
+        if (focusMsg) { var fe = msgsEl.querySelector('.b[data-id="' + focusMsg.replace(/"/g, '') + '"]'); if (fe) { fe.scrollIntoView({ block: 'center' }); fe.classList.add('flash'); setTimeout(function () { fe.classList.remove('flash'); }, 2500); } focusMsg = ''; }
       });
     }
     msgsEl.addEventListener('click', function (e) { var b = e.target.closest('.th-older'); if (!b || !open) return; b.disabled = true; b.textContent = '⏳'; shown += PAGE; keepPos = true; loadThread(open, false); });

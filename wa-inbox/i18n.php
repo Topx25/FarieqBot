@@ -404,6 +404,7 @@ return [
     'Selection &amp; AI tools' => 'أدوات الاختيار والذكاء الاصطناعي',
     '🗑 Deleted' => '🗑 المحذوفات',
     'Who sent it' => 'مين اللي بعته',
+    'Open the chat at this file' => 'افتح المحادثة عند الملف ده',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. Ruqyah Al-Athiri' => 'مثلًا: رقية الأثيري',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',

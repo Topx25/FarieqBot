@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.98.2', 'date' => '2026-10-17', 'title' => 'Media: the owner opens the chat at the file', 'changes' => [
+        'Media: the sender name and the chat name on every card (and in the popup) are links — they open the chat and scroll to the message that carried the file, which flashes briefly. The inbox accepts #chat|message links.',
+    ]],
     ['v' => '3.98.1', 'date' => '2026-10-17', 'title' => 'Media cards: the settings button is visible', 'changes' => [
         'Media cards: the four actions (Name, Send, Download, Settings) wrap inside the card instead of running off its edge — the settings button was cut off, so the details popup could not be opened. It is now labelled "Settings". Clicking the picture or the name still opens it.',
     ]],

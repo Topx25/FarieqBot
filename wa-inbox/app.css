@@ -1088,3 +1088,6 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 .ml-v2 .mc-acts{flex-wrap:wrap;justify-content:flex-start;gap:6px;padding:6px 10px 10px}
 .ml-v2 .mc-acts button,.ml-v2 .mc-acts a{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .ml-v2 .mcard{min-width:0}
+
+.b.flash{animation:bflash 2.4s ease}@keyframes bflash{0%,60%{box-shadow:0 0 0 4px rgba(245,158,11,.7)}100%{box-shadow:0 0 0 0 rgba(245,158,11,0)}}
+a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hover,a.mc-chat:hover,.ml-owner a:hover{text-decoration:underline;color:var(--accent,#0b7f70)}a.mc-chat{display:block}
