@@ -1894,7 +1894,7 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
         if (!r.ok) return fail(document.getElementById('pr-list'), r);
         PR.programs = r.programs; PR.enr = r.enrollments;
         document.getElementById('pe-prog').innerHTML = PR.programs.map(function (p) { return '<option value="' + esc(p.id) + '">' + esc(p.name) + '</option>'; }).join('');
-        document.getElementById('pr-list').innerHTML = PR.programs.map(function (p) { var n = PR.enr.filter(function (e) { return e.program_id === p.id && e.status === 'active'; }).length; return '<div class="pr-row"><div><b dir="auto">' + esc(p.name) + '</b> <span class="muted small">' + fmt(p.days.length) + ' ' + T('days') + ' · ' + fmt(n) + ' ' + T('active') + '</span><div class="muted small" dir="auto">' + esc(p.desc || '') + '</div></div>' + (isAdmin ? '<button class="link-btn" data-edit="' + esc(p.id) + '">✏️ ' + T('Edit') + '</button>' : '') + '</div>'; }).join('') || '<div class="empty">' + T('No programs yet.') + '</div>';
+        document.getElementById('pr-list').innerHTML = PR.programs.map(function (p) { var n = PR.enr.filter(function (e) { return e.program_id === p.id && e.status === 'active'; }).length; return '<div class="pr-row"><div><b dir="auto">' + esc(p.name) + '</b>' + (p.code ? ' <span class="lc-code" dir="auto">🔑 ' + esc(p.code) + '</span>' : '') + ' <span class="muted small">' + fmt(p.days.length) + ' ' + T('days') + ' · ' + fmt(n) + ' ' + T('active') + '</span><div class="muted small" dir="auto">' + esc(p.desc || '') + '</div></div>' + (isAdmin ? '<button class="link-btn" data-edit="' + esc(p.id) + '">✏️ ' + T('Edit') + '</button>' : '') + '</div>'; }).join('') || '<div class="empty">' + T('No programs yet.') + '</div>';
         var progName = {}; PR.programs.forEach(function (p) { progName[p.id] = p; });
         document.getElementById('pe-list').innerHTML = PR.enr.length ? '<table class="tbl"><thead><tr><th>' + T('Person') + '</th><th>' + T('Program') + '</th><th>' + T('Progress') + '</th><th>' + T('Replies') + '</th><th>' + T('State') + '</th><th></th></tr></thead><tbody>' + PR.enr.slice().reverse().map(function (e) {
           var p = progName[e.program_id], total = p ? p.days.length : 0, sent = Object.keys(e.sent || {}).length;
@@ -1904,9 +1904,9 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
       });
     }
     function editor(p) {
-      p = p || { id: '', name: '', desc: '', days: [{ day: 1, text: '' }] };
+      p = p || { id: '', name: '', code: '', desc: '', days: [{ day: 1, text: '' }] };
       var el = document.getElementById('pr-edit');
-      el.innerHTML = '<div class="card"><h3>✏️ ' + T('Program') + '</h3><div class="row wrap"><input id="pg-name" value="' + esc(p.name) + '" placeholder="' + T('Program name') + '" dir="auto" style="flex:1"></div><textarea id="pg-desc" rows="2" placeholder="' + T('Description (optional)') + '" dir="auto">' + esc(p.desc || '') + '</textarea><div id="pg-days"></div>'
+      el.innerHTML = '<div class="card"><h3>✏️ ' + T('Program') + '</h3><div class="row wrap"><input id="pg-name" value="' + esc(p.name) + '" placeholder="' + T('Program name') + '" dir="auto" style="flex:1"><input id="pg-code" value="' + esc(p.code || '') + '" placeholder="' + T('Tag — write it in any chat or group and the program is sent (#program-name)') + '" dir="auto" maxlength="60" style="flex:1"></div><textarea id="pg-desc" rows="2" placeholder="' + T('Description (optional)') + '" dir="auto">' + esc(p.desc || '') + '</textarea><div id="pg-days"></div>'
         + '<div class="row"><button class="chip-btn sm" id="pg-add">➕ ' + T('Add day') + '</button><button class="btn primary sm" id="pg-save">💾 ' + T('Save') + '</button>' + (p.id ? '<button class="link-btn bad-t" id="pg-del">🗑 ' + T('Delete program') + '</button>' : '') + '<button class="link-btn" id="pg-close">' + T('Close') + '</button></div></div>';
       function dayRow(d) { return '<div class="pg-day"><label>' + T('Day') + ' <input type="number" min="1" max="365" class="pg-n" value="' + d.day + '"></label><textarea class="pg-t" rows="3" dir="auto" placeholder="' + T('Message for this day (paste the dhikr/ruqyah text from the Library)') + '">' + esc(d.text) + '</textarea><button class="link-btn pg-rm">✕</button></div>'; }
       document.getElementById('pg-days').innerHTML = p.days.map(dayRow).join('');
@@ -1915,7 +1915,7 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
       document.getElementById('pg-close').onclick = function () { el.innerHTML = ''; };
       document.getElementById('pg-save').onclick = function () {
         var days = [].map.call(document.querySelectorAll('.pg-day'), function (x) { return { day: Number(x.querySelector('.pg-n').value), text: x.querySelector('.pg-t').value }; });
-        post('program_save', { id: p.id, name: document.getElementById('pg-name').value, desc: document.getElementById('pg-desc').value, days: days }).then(function (r) { if (r.ok) { el.innerHTML = ''; loadP(); toast('✓ ' + T('Saved')); } else toast('⚠️ ' + r.error); });
+        post('program_save', { id: p.id, name: document.getElementById('pg-name').value, code: document.getElementById('pg-code').value, desc: document.getElementById('pg-desc').value, days: days }).then(function (r) { if (r.ok) { el.innerHTML = ''; loadP(); toast('✓ ' + T('Saved')); } else toast('⚠️ ' + r.error); });
       };
       if (p.id) document.getElementById('pg-del').onclick = function () { if (confirm(T('Delete this program?'))) post('program_save', { do: 'delete', id: p.id }).then(function () { el.innerHTML = ''; loadP(); }); };
       el.scrollIntoView({ behavior: 'smooth' });

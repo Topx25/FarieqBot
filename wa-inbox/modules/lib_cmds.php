@@ -50,8 +50,7 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
         $P = []; foreach (wf_programs($aid) as $p) $P[(string) $p['id']] = $p; $hit = wf_libcmd_match($q, array_map(fn($p) => [$p['name'] ?? ''], $P));
         if (!$hit) { $say(wf_msg('lib_not_found', ['query' => mb_substr($q, 0, 40)])); return; }
         if (count($hit) > 1) { $many(array_map(fn($k) => (string) $P[$k]['name'], $hit)); return; }
-        $p = $P[$hit[0]]; $days = implode("\n\n", array_map(fn($d) => wf_msg('lib_program_day', ['day' => (string) $d['day'], 'text' => (string) $d['text']]), (array) ($p['days'] ?? [])));
-        $say(mb_substr('📚 ' . $p['name'] . (trim((string) ($p['desc'] ?? '')) !== '' ? "\n" . $p['desc'] : '') . "\n\n" . $days, 0, 3900));
+        $say(wf_program_message($P[$hit[0]]));
     } elseif ($cmd === 'text') {
         $words = array_values(array_filter(preg_split('/\s+/u', $q), fn($w) => mb_strlen($w) >= 3)); usort($words, fn($x, $y) => mb_strlen($y) <=> mb_strlen($x));
         $g = []; foreach (array_unique(array_merge([$q], array_slice($words, 0, 2))) as $try) { $g = (array) (wi_gateway('/library?type=all&group=1&q=' . rawurlencode(mb_strtolower($try)), null, $acc)['groups'] ?? []); if ($g) break; }
@@ -75,6 +74,7 @@ function wf_tag_taken(string $aid, string $tag, string $exceptKey = '', bool $sk
     $want = str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean($tag))); if ($want === '' || $want === '#') return '';
     if (!$skipSections) foreach (wf_libtags($aid) as $x) if (wf_libtag_key($x['tag']) === wf_libtag_key($tag)) return 'This tag is already a section tag.';
     $k = wf_media_code_find($aid, $tag); if ($k !== '' && $k !== $exceptKey) return 'This shortcut is already used by another file.';
+    foreach (wf_programs($aid) as $p) if (('prog:' . ($p['id'] ?? '')) !== $exceptKey && trim((string) ($p['code'] ?? '')) !== '' && str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean((string) $p['code']))) === $want) return 'This tag is already used by a program.';
     $acc = wi_accounts()[$aid] ?? null;
     if ($acc && function_exists('wi_replies_for')) foreach (wi_replies_for($acc) as $r) if (str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean((string) ($r['keyword'] ?? '')))) === $want) return 'This tag is already a quick reply keyword.';
     return '';
@@ -93,9 +93,21 @@ function wf_media_code_in(string $aid, string $text): string {
     if ($t === '' || $t[0] !== '#') return '';
     return wf_media_code_find($aid, $t);
 }
+/** The program whose tag this message is (the tag alone), or null. */
+function wf_program_code_in(string $aid, string $text): ?array {
+    $t = trim($text); if ($t === '' || $t[0] !== '#' || mb_strlen($t) > 70) return null; $want = str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean($t)));
+    foreach (wf_programs($aid) as $p) if (trim((string) ($p['code'] ?? '')) !== '' && str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean((string) $p['code']))) === $want) return $p;
+    return null;
+}
+/** The program as one message: its name, description and every day. */
+function wf_program_message(array $p): string {
+    $days = implode("\n\n", array_map(fn($d) => wf_msg('lib_program_day', ['day' => (string) $d['day'], 'text' => (string) $d['text']]), (array) ($p['days'] ?? [])));
+    return mb_substr('📚 ' . $p['name'] . (trim((string) ($p['desc'] ?? '')) !== '' ? "\n" . $p['desc'] : '') . "\n\n" . $days, 0, 3900);
+}
 /** A message that names a file's code: the file is sent there (with its caption). True when sent. */
 function wf_media_code_send(array $acc, string $jid, string $text, string $quote = ''): bool {
     if (wf_libtag_which((string) $acc['id'], $text)) return wf_libtag_send($acc, $jid, $text, $quote); // a section tag: the list of that section
+    if ($prog = wf_program_code_in((string) $acc['id'], $text)) { $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => wf_program_message($prog), 'via' => 'bot'] + ($quote !== '' ? ['quote_id' => $quote] : []), $acc); wi_log('program_code', ['account' => (string) $acc['id'], 'jid' => $jid, 'sent' => !empty($r['ok'])]); return true; } // a program's tag: the program
     $key = wf_media_code_in((string) $acc['id'], $text); if ($key === '') return false;
     $m = (array) (wi_read('media_meta.json', [])[(string) $acc['id']][$key] ?? []);
     $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => (string) ($m['caption'] ?? ''), 'attachment' => $key, 'via' => 'bot'] + ($quote !== '' ? ['quote_id' => $quote] : []), $acc);
@@ -125,7 +137,7 @@ function wf_libtag_which(string $aid, string $text): ?array {
 function wf_libtag_send(array $acc, string $jid, string $text, string $quote = ''): bool {
     $aid = (string) $acc['id']; $x = wf_libtag_which($aid, $text); if (!$x) return false;
     $lines = [];
-    if ($x['scope'] === 'programs') foreach (wf_programs($aid) as $p) $lines[] = '• ' . (string) ($p['name'] ?? '');
+    if ($x['scope'] === 'programs') foreach (wf_programs($aid) as $p) $lines[] = '• ' . (string) ($p['name'] ?? '') . (trim((string) ($p['code'] ?? '')) !== '' ? ' — ' . $p['code'] : '');
     else { $inv = wf_lib_inventory($acc)['items']; $want = ['audio' => ['audio', 'voice'], 'video' => ['video', 'gif'], 'images' => ['image', 'sticker'], 'documents' => ['document']][$x['scope']] ?? null;
         foreach ($inv as $i) { if ($want && !in_array($i['kind'], $want, true)) continue; $n = $i['title'] ?: ($i['name'] ?: mb_substr((string) $i['caption'], 0, 40)); if ($n === '' && $i['code'] === '') continue;
             $lines[] = '• ' . ($n !== '' ? $n : $i['kind']) . ($i['code'] !== '' ? ' — ' . $i['code'] : ''); } }

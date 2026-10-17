@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.93.0', 'date' => '2026-10-17', 'title' => 'Tags for programs', 'changes' => [
+        'Programs now have a tag (e.g. #برنامج-الحسد): write it in any chat or group and the program is sent. Set it when you edit the program; the #البرامج list shows each program with its tag.',
+        'A tag cannot repeat across files, programs, section tags and quick-reply keywords.',
+    ]],
     ['v' => '3.92.1', 'date' => '2026-10-17', 'title' => 'Library text command does not guess', 'changes' => [
         'Fixed: "#رقية العقد" sent a cleaning session (the only text with "العقد" in its title). A written text is now sent directly only when it is of the kind the command names; otherwise the bot lists the closest texts and asks which one.',
     ]],

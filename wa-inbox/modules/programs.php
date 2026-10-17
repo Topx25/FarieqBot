@@ -23,7 +23,9 @@ function wf_api_programs(string $api): void {
             foreach ((array) ($in['days'] ?? []) as $d) { $n = max(1, min(365, (int) ($d['day'] ?? 0))); $tx = trim((string) ($d['text'] ?? '')); if ($tx !== '') $days[] = ['day' => $n, 'text' => mb_substr($tx, 0, 4000)]; }
             usort($days, fn($a, $b) => $a['day'] <=> $b['day']);
             if (trim((string) ($in['name'] ?? '')) === '' || !$days) wi_json(['ok' => false, 'error' => 'Give the program a name and at least one day.']);
-            $p = ['id' => preg_replace('/[^a-f0-9]/', '', (string) ($in['id'] ?? '')) ?: bin2hex(random_bytes(5)), 'name' => mb_substr(trim((string) $in['name']), 0, 80), 'desc' => mb_substr(trim((string) ($in['desc'] ?? '')), 0, 500), 'days' => $days, 'updated' => date('c')];
+            $pid = preg_replace('/[^a-f0-9]/', '', (string) ($in['id'] ?? '')) ?: bin2hex(random_bytes(5)); $code = wf_media_code_clean((string) ($in['code'] ?? ''));
+            if ($code !== '' && ($why = wf_tag_taken($aid, $code, 'prog:' . $pid)) !== '') wi_json(['ok' => false, 'error' => $why]);
+            $p = ['id' => $pid, 'code' => $code, 'name' => mb_substr(trim((string) $in['name']), 0, 80), 'desc' => mb_substr(trim((string) ($in['desc'] ?? '')), 0, 500), 'days' => $days, 'updated' => date('c')];
             $found = false; foreach ($list as &$x) if ($x['id'] === $p['id']) { $x = $p; $found = true; } unset($x);
             if (!$found) $list[] = $p;
         }

@@ -342,6 +342,8 @@ return [
     'Keep at least one category.' => 'لازم يفضل تصنيف واحد على الأقل.',
     'Delete this category? Its recordings stay, uncategorised.' => 'تمسح التصنيف ده؟ التسجيلات تفضل موجودة من غير تصنيف.',
     'Short replies that end a talk (the bot stays out of them) — separated by |' => 'ردود قصيرة بتنهي الكلام (البوت مش بيرد عليها) — افصل بينها بـ |',
+    'Tag — write it in any chat or group and the program is sent (#program-name)' => 'الوسم — اكتبه في أي محادثة أو جروب والبرنامج يتبعت (#اسم-البرنامج)',
+    'This tag is already used by a program.' => 'الوسم ده مستخدم لبرنامج.',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. Ruqyah Al-Athiri' => 'مثلًا: رقية الأثيري',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',

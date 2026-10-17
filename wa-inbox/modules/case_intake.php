@@ -328,7 +328,7 @@ function wf_intake_hook(array $acc, array $in): void {
     $diag = wf_intake_diag($aid);
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && wf_libcmd_which($aid, $text) !== '') { // library commands (spiritual healing numbers)
         $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(120); wf_libcmd_hook($acc, $jid, $text, $id, $from); exit; }
-    if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && function_exists('wf_media_code_find') && (wf_media_code_in($aid, $text) !== '' || wf_libtag_which($aid, $text))) { // a file's shortcut (alone or after the send word): the file
+    if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && function_exists('wf_media_code_find') && (wf_media_code_in($aid, $text) !== '' || wf_libtag_which($aid, $text) || wf_program_code_in($aid, $text))) { // a file's shortcut (alone or after the send word): the file
         $reply(['ok' => false, 'done' => true]); wf_media_code_send($acc, $jid, $text, $id); exit; }
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && preg_match('/^\s*#\S+\s*$/u', $text) && function_exists('wi_replies_for')) { // a quick reply's keyword ("#تحصين"): its text, in the group
         $typed = wf_norm(ltrim(trim($text), '#')); $hit = array_values(array_filter(wi_replies_for($acc), fn($r) => ($k = wf_norm(ltrim(trim((string) ($r['keyword'] ?? '')), '#/'))) !== '' && $k === $typed));
