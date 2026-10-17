@@ -13,7 +13,7 @@ function wf_meet_acc_ok(array $m): bool { $id = (string) ($m['acc'] ?? ''); $a =
     return ($id === '' && wi_is_super()) || (strtolower((string) ($m['by'] ?? '')) !== '' && strtolower((string) ($m['by'] ?? '')) === strtolower((string) ($_SESSION['email'] ?? ''))); }
 function wf_meeting_mine(array $m): bool { if (!wf_meet_acc_ok($m)) return false; return wi_is_super() || isset(wi_my_accounts()[$m['acc'] ?? '']) || strtolower((string) ($m['by'] ?? '')) === strtolower((string) ($_SESSION['email'] ?? '')); }
 function wf_meetings(): array { return wi_read('meetings.json', []); }
-function wf_meet_public(array $m): array { return array_intersect_key($m, array_flip(['id', 'slug', 'title', 'desc', 'mode', 'limit', 'hosts', 'status', 'opened_at', 'opened_by', 'closed_at', 'created', 'by', 'ask_phone', 'record', 'transcript', 'space', 'rec_note', 'approve', 'auto_close'])) + ['has_password' => !empty($m['pass']), 'has_link' => !empty($m['url']), 'joins' => count($m['joins'] ?? []), 'pending' => count(array_filter($m['joins'] ?? [], fn($j) => ($j['state'] ?? '') === 'pending' && $j['at'] >= ($m['opened_at'] ?? ''))), 'joined_now' => count(array_filter($m['joins'] ?? [], fn($j) => !empty($m['opened_at']) && $j['at'] >= $m['opened_at']))]; }
+function wf_meet_public(array $m): array { return array_intersect_key($m, array_flip(['id', 'slug', 'title', 'desc', 'mode', 'limit', 'hosts', 'status', 'opened_at', 'opened_by', 'closed_at', 'created', 'by', 'ask_phone', 'record', 'transcript', 'space', 'rec_note', 'approve', 'auto_close', 'auto_after_host', 'host_in_at', 'ui'])) + ['has_password' => !empty($m['pass']), 'has_link' => !empty($m['url']), 'joins' => count($m['joins'] ?? []), 'pending' => count(array_filter($m['joins'] ?? [], fn($j) => ($j['state'] ?? '') === 'pending' && $j['at'] >= ($m['opened_at'] ?? ''))), 'joined_now' => count(array_filter($m['joins'] ?? [], fn($j) => !empty($m['opened_at']) && $j['at'] >= $m['opened_at']))]; }
 function wf_meet_wa_hosts(array $m): array { return array_map(fn($h) => ['phone' => $h['phone'], 'name' => $h['name'] ?? ''], (array) ($m['wa_hosts'] ?? [])); }
 /** A host from WhatsApp (no dashboard login) uses a personal link: ?m=slug&h=token */
 function wf_meet_wa_host(array $m, string $tok): ?array { if ($tok === '') return null; foreach ((array) ($m['wa_hosts'] ?? []) as $h) if (hash_equals((string) $h['token'], $tok)) return $h; return null; }
@@ -44,10 +44,23 @@ function wf_meet_enter(array $m, string $name): void {
             $code = preg_replace('#^https://meet\.google\.com/#', '', (string) $m['url']);
             $android = 'intent://meet.google.com/' . $code . '#Intent;scheme=https;package=com.google.android.apps.meetings;S.browser_fallback_url=' . rawurlencode((string) $m['url']) . ';end';
             $app = preg_match('/Android/i', $ua) ? $android : (string) $m['url'];
-            echo '<!doctype html><html lang="' . (wi_sys('msg_lang') === 'en' ? 'en" dir="ltr' : 'ar" dir="rtl') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $e($m['title']) . '</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.7 Cairo,Tahoma,system-ui,sans-serif;background:linear-gradient(135deg,#ecfdf5,#eef2ff);color:#0f172a}.c{width:min(420px,92vw);background:#fff;border-radius:20px;padding:28px;text-align:center;box-shadow:0 20px 50px -20px rgba(15,23,42,.35)}a{display:block;margin-top:14px;padding:14px;border-radius:14px;font-weight:800;text-decoration:none}.a{background:linear-gradient(135deg,#12b886,#0c8f68);color:#fff}.b{background:#f1f5f9;color:#0f172a}.m{color:#64748b;font-size:13.5px}</style></head><body><div class="c"><div style="font-size:44px">🎥</div><h2>' . $e($m['title']) . '</h2><p>' . wf_mt('Hello') . ' ' . $e($name) . ' ' . wf_mt('— you can join now') . '</p>'
+            echo '<!doctype html><html lang="' . (wi_sys('msg_lang') === 'en' ? 'en" dir="ltr' : 'ar" dir="rtl') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $e($m['title']) . '</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.7 Cairo,Tahoma,system-ui,sans-serif;background:linear-gradient(135deg,#ecfdf5,#eef2ff);color:#0f172a}.c{width:min(420px,92vw);background:#fff;border-radius:20px;padding:28px;text-align:center;box-shadow:0 20px 50px -20px rgba(15,23,42,.35)}a{display:block;margin-top:14px;padding:14px;border-radius:14px;font-weight:800;text-decoration:none}.a{background:linear-gradient(135deg,#12b886,#0c8f68);color:#fff}.b{background:#f1f5f9;color:#0f172a}.m{color:#64748b;font-size:13.5px}</style>' . wf_meet_theme($m ?? []) . '</head><body><div class="c"><div style="font-size:44px">🎥</div><h2>' . $e($m['title']) . '</h2><p>' . $e(wf_meet_ui($m, 'approved_text', wf_mt('Hello') . ' ' . $name . ' ' . wf_mt('— you can join now'))) . '</p>'
                 . '<a class="a" href="' . $e($app) . '">' . wf_mt('📱 Open in the Google Meet app') . '</a><a class="b" href="' . $e($m['url']) . '" target="_blank" rel="noopener">' . wf_mt('🌐 Open in the browser') . '</a><p class="m">' . wf_mt('If the app is not installed, it opens in the browser or asks you to install it.') . '</p></div></body></html>';
     exit;
 }
+/** The wording and colours of a meeting's public pages: what the host wrote in the meeting's settings, else the built-in text. */
+function wf_meet_ui(array $m, string $k, string $default): string { $v = trim((string) ($m['ui'][$k] ?? '')); return $v !== '' ? $v : $default; }
+function wf_meet_ui_keys(): array { return ['accent', 'accent2', 'bg1', 'bg2', 'logo', 'waiting_text', 'waiting_note', 'form_text', 'form_btn', 'name_label', 'phone_label', 'pass_label', 'pending_text', 'pending_note', 'approved_text', 'rejected_text', 'full_text', 'missing_text', 'host_text']; }
+/** Colours and logo of the pages as a style block (overrides the built-in look). */
+function wf_meet_theme(array $m): string {
+    $c = fn($k, $d) => preg_match('/^#[0-9a-f]{6}$/i', (string) ($m['ui'][$k] ?? '')) ? $m['ui'][$k] : $d;
+    $a1 = $c('accent', '#12b886'); $a2 = $c('accent2', $a1); $b1 = $c('bg1', '#ecfdf5'); $b2 = $c('bg2', '#eef2ff');
+    return '<style>body{background:linear-gradient(135deg,' . $b1 . ',' . $b2 . ')!important}.a,form button{background:linear-gradient(135deg,' . $a1 . ',' . $a2 . ')!important;color:#fff!important}input:focus{outline:2px solid ' . $a1 . '}.lg{display:block;max-width:150px;max-height:70px;margin:0 auto 10px}</style>';
+}
+function wf_meet_logo(array $m, callable $e): string { $l = trim((string) ($m['ui']['logo'] ?? '')); return preg_match('#^https://[^\s"<>]+$#i', $l) ? '<img class="lg" alt="" src="' . $e($l) . '">' : ''; }
+/** A host has entered: guests who gave their details are accepted without waiting (setting "after a host has entered"). */
+function wf_meet_host_in(array &$all, string $id): void { foreach ($all as &$x) if ($x['id'] === $id) $x['host_in_at'] = date('c'); unset($x); }
+function wf_meet_auto_ok(array $m): bool { return !empty($m['auto_after_host']) && !empty($m['host_in_at']) && (string) $m['host_in_at'] >= (string) ($m['opened_at'] ?? ''); }
 function wf_meet_pending_html(array $m, callable $e): string {
     $p = array_values(array_filter($m['joins'] ?? [], fn($j) => ($j['state'] ?? '') === 'pending' && $j['at'] >= ($m['opened_at'] ?? '')));
     if (!$p) return '<p class="m">' . wf_mt('Nobody is waiting for approval right now.') . '</p>';
@@ -65,6 +78,8 @@ function wf_meet_page(string $slug): void {
     if ($m && ($m['status'] ?? '') === 'open' && !empty($m['opened_at']) && strtotime($m['opened_at']) < time() - 3600 * max(1, (int) ($m['auto_close'] ?? 3))) {
         foreach ($all as &$x) if ($x['id'] === $m['id']) { $x['status'] = 'closed'; $x['closed_at'] = date('c'); $m = $x; } unset($x); wi_write('meetings.json', $all);
     }
+    if ($m && ($m['status'] ?? '') === 'open' && wf_meet_auto_ok($m) && array_filter((array) ($m['joins'] ?? []), fn($j) => ($j['state'] ?? '') === 'pending')) { // a host is in: whoever was waiting is accepted
+        foreach ($all as &$x) if ($x['id'] === $m['id']) { foreach ($x['joins'] as &$j) if (($j['state'] ?? '') === 'pending') $j['state'] = 'approved'; unset($j); $m = $x; } unset($x); wi_write('meetings.json', $all); }
     $host = $m ? wf_meet_wa_host($m, (string) ($_GET['h'] ?? '')) : null;
     if ($host) {
         // Personal host page: open/close the meeting, then go to Meet.
@@ -76,13 +91,14 @@ function wf_meet_page(string $slug): void {
                 elseif (($_POST['do'] ?? '') === 'close') { $x['status'] = 'closed'; $x['closed_at'] = date('c'); }
                 $m = $x;
             }
-            unset($x); wi_write('meetings.json', $all);
+            unset($x); if (($_POST['do'] ?? '') === 'open') wf_meet_host_in($all, $m['id']); wi_write('meetings.json', $all);
             if (($_POST['do'] ?? '') === 'open' && !empty($m['url'])) { header('Location: ' . $m['url']); exit; }
         }
+        if (isset($_GET['go']) && ($m['status'] ?? '') === 'open' && !empty($m['url'])) { wf_meet_host_in($all, $m['id']); wi_write('meetings.json', $all); header('Location: ' . $m['url']); exit; } // the host presses Join: from now on guests are accepted (if so set)
         $open = ($m['status'] ?? '') === 'open';
-        echo '<!doctype html><html lang="' . (wi_sys('msg_lang') === 'en' ? 'en" dir="ltr' : 'ar" dir="rtl') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $e($m['title']) . '</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.7 Cairo,Tahoma,system-ui,sans-serif;background:linear-gradient(135deg,#ecfdf5,#eef2ff);color:#0f172a}.c{width:min(420px,92vw);background:#fff;border-radius:20px;padding:28px;text-align:center;box-shadow:0 20px 50px -20px rgba(15,23,42,.35)}button,a{display:block;width:100%;box-sizing:border-box;margin-top:12px;padding:14px;border:0;border-radius:14px;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}.a{background:linear-gradient(135deg,#12b886,#0c8f68);color:#fff}.b{background:#fee2e2;color:#b91c1c}.m{color:#64748b;font-size:13.5px}</style></head><body><div class="c"><div style="font-size:44px">🎙️</div><h2>' . $e($m['title']) . '</h2><p>' . wf_mt('Hello') . ' ' . $e($host['name'] ?: '') . ' ' . wf_mt('— you are one of the meeting hosts.') . '</p>'
+        echo '<!doctype html><html lang="' . (wi_sys('msg_lang') === 'en' ? 'en" dir="ltr' : 'ar" dir="rtl') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $e($m['title']) . '</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.7 Cairo,Tahoma,system-ui,sans-serif;background:linear-gradient(135deg,#ecfdf5,#eef2ff);color:#0f172a}.c{width:min(420px,92vw);background:#fff;border-radius:20px;padding:28px;text-align:center;box-shadow:0 20px 50px -20px rgba(15,23,42,.35)}button,a{display:block;width:100%;box-sizing:border-box;margin-top:12px;padding:14px;border:0;border-radius:14px;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}.a{background:linear-gradient(135deg,#12b886,#0c8f68);color:#fff}.b{background:#fee2e2;color:#b91c1c}.m{color:#64748b;font-size:13.5px}</style>' . wf_meet_theme($m ?? []) . '</head><body><div class="c"><div style="font-size:44px">🎙️</div><h2>' . $e($m['title']) . '</h2><p>' . $e(wf_meet_ui($m, 'host_text', wf_mt('Hello') . ' ' . ($host['name'] ?: '') . ' ' . wf_mt('— you are one of the meeting hosts.'))) . '</p>'
             . '<p class="m">' . ($open ? '' . wf_mt('🟢 The meeting is open now') . '' : '' . wf_mt('⚪ The meeting is closed — people wait until you open it') ) . '</p>'
-            . (empty($m['url']) ? '<p class="m">' . wf_mt('No Google Meet link has been added yet.') . '</p>' : ($open ? '<a class="a" href="' . $e($m['url']) . '">' . wf_mt('🎥 Join Google Meet') . '</a><form method="post"><button class="b" name="do" value="close">' . wf_mt('⏹ Close the meeting') . '</button></form>' : '<form method="post"><button class="a" name="do" value="open">' . wf_mt('▶️ Open the meeting and join') . '</button></form>'))
+            . (empty($m['url']) ? '<p class="m">' . wf_mt('No Google Meet link has been added yet.') . '</p>' : ($open ? '<a class="a" href="?m=' . rawurlencode($slug) . '&h=' . rawurlencode((string) $_GET['h']) . '&go=1">' . wf_mt('🎥 Join Google Meet') . '</a><form method="post"><button class="b" name="do" value="close">' . wf_mt('⏹ Close the meeting') . '</button></form>' : '<form method="post"><button class="a" name="do" value="open">' . wf_mt('▶️ Open the meeting and join') . '</button></form>'))
             . ($open && !empty($m['approve']) ? wf_meet_pending_html($m, $e) : '')
             . '<p class="m">' . wf_mt('This link is yours only — do not share it.') . '</p></div>' . ($open ? '<script>setTimeout(function(){location.reload()},10000)</script>' : '') . '</body></html>';
         exit;
@@ -101,7 +117,7 @@ function wf_meet_page(string $slug): void {
         elseif (($m['mode'] ?? 'auto') === 'password' && !password_verify((string) ($_POST['pass'] ?? ''), (string) ($m['pass'] ?? ''))) { $err = '' . wf_mt('Wrong password.') . ''; $G[$ipk][] = time(); }
         wi_write('meet_guard.json', $G);
         if ($err === '') {
-            $jid = bin2hex(random_bytes(8)); $ap = !empty($m['approve']);
+            $jid = bin2hex(random_bytes(8)); $ap = !empty($m['approve']) && !wf_meet_auto_ok($m);
             foreach ($all as &$x) if ($x['id'] === $m['id']) { $x['joins'][] = ['id' => $jid, 'name' => $name, 'phone' => $phone, 'at' => date('c'), 'ip' => substr(hash('sha256', wi_ip()), 0, 12), 'state' => $ap ? 'pending' : 'approved']; $x['joins'] = array_slice($x['joins'], -2000); }
             unset($x); wi_write('meetings.json', $all);
             if ($ap) { setcookie('mj_' . $m['id'], $jid, ['expires' => time() + 6 * 3600, 'path' => (string) wi_sys('cookie_path'), 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']); header('Location: ?m=' . rawurlencode($slug)); exit; }
@@ -113,20 +129,21 @@ function wf_meet_page(string $slug): void {
         if ($j['state'] === 'approved') wf_meet_enter($m, $j['name']);
         $state = $j['state'] === 'rejected' ? 'rejected' : 'pending';
     }
+    if ($m && isset($_GET['preview']) && in_array($_GET['preview'], ['waiting', 'form', 'pending', 'rejected', 'full'], true) && wi_logged_in() && wf_meet_can_host($m)) $state = (string) $_GET['preview']; // the host looks at a page as a guest sees it
     $title = $m ? $m['title'] : wf_mt('Meeting');
     echo '<!doctype html><html lang="' . (wi_sys('msg_lang') === 'en' ? 'en" dir="ltr' : 'ar" dir="rtl') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $e($title) . '</title>'
         . ($state === 'waiting' || $state === 'pending' ? '<meta http-equiv="refresh" content="' . ($state === 'pending' ? 5 : 15) . '">' : '')
-        . '<style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px/1.7 Cairo,Tahoma,system-ui,sans-serif;background:linear-gradient(135deg,#ecfdf5,#eef2ff);color:#0f172a}.c{width:min(420px,92vw);background:#fff;border-radius:20px;padding:28px;box-shadow:0 20px 50px -20px rgba(15,23,42,.35)}h1{font-size:21px;margin:0 0 6px}.m{color:#64748b;font-size:13.5px}label{display:block;margin:12px 0 4px;font-weight:700;font-size:13.5px}input{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #e2e8f0;border-radius:12px;font:inherit}button{margin-top:16px;width:100%;padding:12px;border:0;border-radius:12px;background:linear-gradient(135deg,#12b886,#0c8f68);color:#fff;font:inherit;font-weight:800;cursor:pointer}.e{background:#fef2f2;color:#b91c1c;padding:8px 12px;border-radius:10px;margin-top:10px}.w{font-size:44px;text-align:center}</style></head><body><div class="c">'
-        . '<div class="w">' . ['missing' => '❔', 'waiting' => '⏳', 'full' => '🚪', 'form' => '🎥', 'pending' => '🙋', 'rejected' => '🚫'][$state] . '</div><h1>' . $e($title) . '</h1>' . (!empty($m['desc']) ? '<p class="m">' . nl2br($e($m['desc'])) . '</p>' : '');
-    if ($state === 'missing') echo '<p>' . wf_mt('This link is wrong or the meeting was cancelled.') . '</p>';
-    elseif ($state === 'waiting') echo '<p>' . wf_mt('The meeting has not started yet — waiting for the host to open it.') . '</p><p class="m">' . wf_mt('This page refreshes by itself every 15 seconds.') . '</p>';
-    elseif ($state === 'pending') echo '<p>' . wf_mt('Your request was sent ✅ — wait until the host lets you in.') . '</p><p class="m">' . wf_mt('This page refreshes by itself; you join as soon as the host agrees.') . '</p>';
-    elseif ($state === 'rejected') echo '<p>' . wf_mt('The host did not let you into this meeting.') . '</p>';
-    elseif ($state === 'full') echo '<p>' . wf_mt('The meeting is full.') . '</p>';
-    else echo '<form method="post"><label>' . wf_mt('Name') . '</label><input name="name" required maxlength="60" value="' . $e($_POST['name'] ?? '') . '">'
-        . (!empty($m['ask_phone']) ? '<label>' . wf_mt('Mobile number') . '</label><input name="phone" inputmode="tel" dir="ltr" required value="' . $e($_POST['phone'] ?? '') . '">' : '')
-        . (($m['mode'] ?? 'auto') === 'password' ? '<label>' . wf_mt('Password') . '</label><input name="pass" type="password" required autocomplete="off">' : '')
-        . ($err ? '<div class="e">' . $e($err) . '</div>' : '') . '<button>' . wf_mt('Join the meeting') . '</button></form>';
+        . '<style>body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px/1.7 Cairo,Tahoma,system-ui,sans-serif;background:linear-gradient(135deg,#ecfdf5,#eef2ff);color:#0f172a}.c{width:min(420px,92vw);background:#fff;border-radius:20px;padding:28px;box-shadow:0 20px 50px -20px rgba(15,23,42,.35)}h1{font-size:21px;margin:0 0 6px}.m{color:#64748b;font-size:13.5px}label{display:block;margin:12px 0 4px;font-weight:700;font-size:13.5px}input{width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #e2e8f0;border-radius:12px;font:inherit}button{margin-top:16px;width:100%;padding:12px;border:0;border-radius:12px;background:linear-gradient(135deg,#12b886,#0c8f68);color:#fff;font:inherit;font-weight:800;cursor:pointer}.e{background:#fef2f2;color:#b91c1c;padding:8px 12px;border-radius:10px;margin-top:10px}.w{font-size:44px;text-align:center}</style>' . wf_meet_theme($m ?? []) . '</head><body><div class="c">'
+        . ($m ? wf_meet_logo($m, $e) : '') . '<div class="w">' . ['missing' => '❔', 'waiting' => '⏳', 'full' => '🚪', 'form' => '🎥', 'pending' => '🙋', 'rejected' => '🚫'][$state] . '</div><h1>' . $e($title) . '</h1>' . (!empty($m['desc']) ? '<p class="m">' . nl2br($e($m['desc'])) . '</p>' : '');
+    if ($state === 'missing') echo '<p>' . $e(wf_meet_ui($m ?? [], 'missing_text', wf_mt('This link is wrong or the meeting was cancelled.'))) . '</p>';
+    elseif ($state === 'waiting') echo '<p>' . nl2br($e(wf_meet_ui($m ?? [], 'waiting_text', wf_mt('The meeting has not started yet — waiting for the host to open it.')))) . '</p><p class="m">' . nl2br($e(wf_meet_ui($m ?? [], 'waiting_note', wf_mt('This page refreshes by itself every 15 seconds.')))) . '</p>';
+    elseif ($state === 'pending') echo '<p>' . nl2br($e(wf_meet_ui($m ?? [], 'pending_text', wf_mt('Your request was sent ✅ — wait until the host lets you in.')))) . '</p><p class="m">' . nl2br($e(wf_meet_ui($m ?? [], 'pending_note', wf_mt('This page refreshes by itself; you join as soon as the host agrees.')))) . '</p>';
+    elseif ($state === 'rejected') echo '<p>' . nl2br($e(wf_meet_ui($m ?? [], 'rejected_text', wf_mt('The host did not let you into this meeting.')))) . '</p>';
+    elseif ($state === 'full') echo '<p>' . nl2br($e(wf_meet_ui($m ?? [], 'full_text', wf_mt('The meeting is full.')))) . '</p>';
+    else echo (!empty($m['ui']['form_text']) ? '<p class="m">' . nl2br($e($m['ui']['form_text'])) . '</p>' : '') . '<form method="post"><label>' . $e(wf_meet_ui($m, 'name_label', wf_mt('Name'))) . '</label><input name="name" required maxlength="60" value="' . $e($_POST['name'] ?? '') . '">'
+        . (!empty($m['ask_phone']) ? '<label>' . $e(wf_meet_ui($m, 'phone_label', wf_mt('Mobile number'))) . '</label><input name="phone" inputmode="tel" dir="ltr" required value="' . $e($_POST['phone'] ?? '') . '">' : '')
+        . (($m['mode'] ?? 'auto') === 'password' ? '<label>' . $e(wf_meet_ui($m, 'pass_label', wf_mt('Password'))) . '</label><input name="pass" type="password" required autocomplete="off">' : '')
+        . ($err ? '<div class="e">' . $e($err) . '</div>' : '') . '<button>' . $e(wf_meet_ui($m, 'form_btn', wf_mt('Join the meeting'))) . '</button></form>';
     echo '</div></body></html>'; exit;
 }
 
@@ -207,6 +224,12 @@ function wf_api_meetings(string $api): void {
             if (!empty($sp['ok'])) $m['space'] = $sp['space']; else $m['rec_note'] = $sp['error'];
         }
         $m['record'] = $rec; $m['transcript'] = $tr;
+        $m['auto_after_host'] = !empty($in['auto_after_host']); // guests who gave their details are accepted once any host has entered
+        $ui = []; foreach (wf_meet_ui_keys() as $k) { $v = trim((string) (((array) ($in['ui'] ?? []))[$k] ?? '')); if ($v === '') continue;
+            if (in_array($k, ['accent', 'accent2', 'bg1', 'bg2'], true)) { if (preg_match('/^#[0-9a-f]{6}$/i', $v)) $ui[$k] = $v; }
+            elseif ($k === 'logo') { if (preg_match('#^https://[^\s"<>]{4,300}$#i', $v)) $ui[$k] = $v; }
+            else $ui[$k] = mb_substr($v, 0, 400); }
+        $m['ui'] = $ui;
         $m['approve'] = !empty($in['approve']); $m['auto_close'] = max(1, min(24, (int) ($in['auto_close'] ?? 3)));
         $m['hosts'] = array_values(array_filter(array_map('strval', (array) ($in['hosts'] ?? []))));
         $old = []; foreach ((array) ($m['wa_hosts'] ?? []) as $h) $old[$h['phone']] = $h;
@@ -223,7 +246,7 @@ function wf_api_meetings(string $api): void {
         if ($idx === null) wi_json(['ok' => false, 'error' => 'Not found.']);
         $m = $all[$idx];
         if (!wf_meet_can_host($m)) wi_json(['ok' => false, 'error' => 'Only the host(s) of this meeting can open or close it.'], 403);
-        if (($in['do'] ?? '') === 'open') { if (empty($m['url'])) wi_json(['ok' => false, 'error' => 'Add the Google Meet link first.']); $m['status'] = 'open'; $m['opened_at'] = date('c'); $m['opened_by'] = $_SESSION['email']; }
+        if (($in['do'] ?? '') === 'open') { if (empty($m['url'])) wi_json(['ok' => false, 'error' => 'Add the Google Meet link first.']); $m['status'] = 'open'; $m['opened_at'] = date('c'); $m['opened_by'] = $_SESSION['email']; $m['host_in_at'] = date('c'); }
         else { $m['status'] = 'closed'; $m['closed_at'] = date('c'); }
         $all[$idx] = $m; wi_write('meetings.json', $all); wi_log('meeting_' . ($in['do'] ?? ''), ['id' => $m['id']]);
         wi_json(['ok' => true, 'url' => ($in['do'] ?? '') === 'open' ? $m['url'] : '']);

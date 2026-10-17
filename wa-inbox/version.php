@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.95.0', 'date' => '2026-10-17', 'title' => 'Meetings: guests accepted after a host enters, customizable pages', 'changes' => [
+        'Meetings: a new option "Accept guests automatically once any host has entered". Several hosts can be set (dashboard users and WhatsApp group members); when any one of them enters, everyone who is waiting is accepted, and later guests are accepted as soon as they give their details.',
+        'Meetings: every public page can be customized per meeting — waiting page, details page (text, field titles, button), approval page, accepted, rejected, full, wrong link and host page — plus button and background colours and a logo. Empty fields keep the built-in wording; a preview link opens each page.',
+    ]],
     ['v' => '3.94.0', 'date' => '2026-10-17', 'title' => 'Library: add, edit, delete texts, upload files, list view', 'changes' => [
         'Library: "Add text" — a written ruqyah, a price list or any answer, with a section, title, topic, tag, keywords and a cover image. Edit and delete your texts; any collected text can be turned into one with "Edit as my text".',
         'Writing a text\'s tag in a chat or group sends it (with its cover); "#رقية name" also finds it by title or keywords. A tag cannot repeat across files, programs, texts and quick replies.',
