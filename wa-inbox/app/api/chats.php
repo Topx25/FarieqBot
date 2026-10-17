@@ -134,7 +134,8 @@
         $fits = isset($types[$ext0]) && (strtok($real, '/') === strtok($types[$ext0], '/') || ($ext0 === 'pdf' && $real === 'application/pdf') || $real === 'application/octet-stream');
         header('Content-Type: ' . ($fits ? $types[$ext0] : 'application/octet-stream'));
         header('X-Content-Type-Options: nosniff');
-        if ($ext0 !== 'pdf') header("Content-Security-Policy: sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'"); // the browser's PDF viewer does not open under a sandbox
+        if ($fits && in_array(strtok($types[$ext0], '/'), ['audio', 'video'], true)) header("Content-Security-Policy: default-src 'none'; media-src 'self'; style-src 'unsafe-inline'"); // audio / video opened on their own: a sandbox would give the player an opaque origin and block its own file
+        elseif ($ext0 !== 'pdf') header("Content-Security-Policy: sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'"); // the browser's PDF viewer does not open under a sandbox
         // Byte ranges: audio and video players seek (jump to any point) instead of playing from the start only
         $size = filesize($path); $from = 0; $to = $size - 1; header('Accept-Ranges: bytes');
         if (preg_match('/^bytes=(\d*)-(\d*)$/', (string) ($_SERVER['HTTP_RANGE'] ?? ''), $rg) && $size > 0) { if ($rg[1] === '') { $from = max(0, $size - (int) $rg[2]); } else { $from = (int) $rg[1]; if ($rg[2] !== '') $to = min($to, (int) $rg[2]); }

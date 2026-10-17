@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.89.4', 'date' => '2026-10-17', 'title' => 'Audio and video open on their own', 'changes' => [
+        'Fixed: opening a voice note, audio or video file on its own (the open links) showed an empty player at 0:00. Those files were sent with a sandbox header, so the player asked for its own file as a stranger and the session cookie (same-site only) was not sent. Audio and video now use a header without the sandbox; photos, PDFs and other files keep the strict one.',
+    ]],
     ['v' => '3.89.3', 'date' => '2026-10-17', 'title' => 'Library matches the design', 'changes' => [
         'Library cards: tinted backgrounds per kind (photo, sticker, GIF, document, video, voice), a document card with its extension, and the library keeps the teal palette of the design in every dashboard theme (light and dark).',
     ]],
