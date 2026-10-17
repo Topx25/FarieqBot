@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.88.2', 'date' => '2026-10-17', 'title' => 'Deleted always in sight', 'changes' => [
+        'Media library: 🗑 Deleted moved up next to Favourites, with how many files wait there; the sidebar is no longer cut to the screen height.',
+    ]],
     ['v' => '3.88.1', 'date' => '2026-10-17', 'title' => 'Library cards that play and act', 'changes' => [
         'Media library: new cards — voice notes and audio play with their own player, videos play in place, readable names instead of file ids, size, date, chat and folder on every card in every view, ✏️ rename and ⚙️ edit buttons; the list view shows the player in the row; the edit panel only takes room when open.',
         'Files page: each card plays videos and audio in place and has download, open, 📤 send to chats, 💬 open the chat and 🔗 copy link.',

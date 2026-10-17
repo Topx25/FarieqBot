@@ -1663,6 +1663,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
         cnt = function (f) { var a = inF(f), s = 0; a.forEach(function (i) { s += i.size; }); return fmt(a.length) + (a.length ? ' · ' + mlSize(s) : ''); };
       return mlSpace(ML.items || []) + '<button type="button" class="ml-fd' + (mf === '' && !mbin ? ' on' : '') + '" data-fd="">📚 ' + T('All media') + ' <i>' + fmt(all.length) + '</i></button>'
         + '<button type="button" class="ml-fd' + (mf === '__fav' ? ' on' : '') + '" data-fd="__fav">★ ' + T('Favourites') + ' <i>' + fmt(all.filter(function (i) { return i.fav; }).length) + '</i></button>'
+        + '<button type="button" class="ml-fd ml-binb' + (mbin ? ' on' : '') + '" data-bin>🗑 ' + T('Deleted') + ' <i>' + fmt((ML.bin || {}).count || 0) + '</i></button>' // always in sight, next to Favourites
         + '<button type="button" class="ml-fd' + (mf === '__none' ? ' on' : '') + '" data-fd="__none">📥 ' + T('Not in a folder') + ' <i>' + fmt(all.filter(function (i) { return !i.folder; }).length) + '</i></button>'
         + '<div class="ml-fh">' + T('Folders') + '<button type="button" class="link-btn" data-fnew="">＋ ' + T('New folder') + '</button></div>'
         + mfolders.map(function (f) { var depth = f.split('/').length - 1, name = f.split('/').pop();
@@ -1670,7 +1671,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
             + '<span class="ml-fa"><button type="button" title="' + esc(T('New sub-folder')) + '" data-fnew="' + esc(f) + '">＋</button><button type="button" title="' + esc(T('Rename')) + '" data-fren="' + esc(f) + '">✏️</button><button type="button" title="' + esc(T('Delete folder')) + '" data-fdel="' + esc(f) + '">🗑</button></span></div>'; }).join('')
         + '<button type="button" class="ml-fd" data-dupes>🧬 ' + T('Duplicates') + '</button>'
         + '<button type="button" class="ml-fd" data-inv>📋 ' + T('Inventory') + '</button>'
-        + '<button type="button" class="ml-fd ml-binb' + (mbin ? ' on' : '') + '" data-bin>🗑 ' + T('Deleted') + '</button>';
+        ;
     }
     // 📋 Inventory: everything in the library and every shortcut, built now — always the latest; downloadable as a sheet
     function mlInventory() {
