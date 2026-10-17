@@ -17,7 +17,7 @@
   var mlLz = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; mlLz.unobserve(e.target); e.target.preload = 'metadata'; e.target.src = e.target.dataset.lz; }); }, { rootMargin: '150px' }) : null;
   new MutationObserver(function () { [].forEach.call(document.querySelectorAll('video[data-lz]:not([data-lzq])'), function (v) { v.setAttribute('data-lzq', '1'); if (mlLz) mlLz.observe(v); else { v.preload = 'metadata'; v.src = v.dataset.lz; } }); }).observe(document.documentElement, { childList: true, subtree: true });
   function mlSize(b) { b = +b || 0; if (!b) return '0 KB'; return b >= 1073741824 ? (b / 1073741824).toFixed(2) + ' GB' : b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB'; }
-  function mlLoad(force) { if (ML.items && !force) return Promise.resolve(ML.items); return WI.get('media_lib').then(function (r) { ML.items = r.ok ? r.items : []; ML.folders = r.folders || []; ML.bin = r.bin || null; return ML.items; }); }
+  function mlLoad(force) { if (ML.items && !force) return Promise.resolve(ML.items); return WI.get('media_lib').then(function (r) { ML.items = r.ok ? r.items : []; ML.folders = r.folders || []; ML.bin = r.bin || null; ML.vaultN = r.vault_count || 0; return ML.items; }); }
   function mlDialog(html) { var d = document.getElementById('ml-dlg'); if (!d) { d = document.createElement('dialog'); d.id = 'ml-dlg'; d.className = 'dlg ml-dlg'; document.body.appendChild(d); }
     d.innerHTML = html; if (!d.open) d.showModal(); d.onclose = function () { d.innerHTML = ''; }; return d; }
   function mlFilter(items, q, kind, folder) { q = String(q || '').toLowerCase();

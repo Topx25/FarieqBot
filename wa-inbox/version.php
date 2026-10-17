@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.99.0', 'date' => '2026-10-17', 'title' => 'Media: private folder opened with a password or a WhatsApp code', 'changes' => [
+        'Media: select files → "Hide in the private folder". They disappear from the library, the zip, the shortcuts and the bot commands until the folder is opened.',
+        'The "🔐 Private folder" entry (with its count) is in the folders list. Opening it asks for the password, or a 6-digit code sent on WhatsApp to the signed-in user\'s phone (valid 5 minutes). The first time, a password is set. It stays open for 30 minutes or until "Lock".',
+        'Five wrong tries lock the attempts for 15 minutes; every unlock, bad password and hide is written to the log.',
+    ]],
     ['v' => '3.98.2', 'date' => '2026-10-17', 'title' => 'Media: the owner opens the chat at the file', 'changes' => [
         'Media: the sender name and the chat name on every card (and in the popup) are links — they open the chat and scroll to the message that carried the file, which flashes briefly. The inbox accepts #chat|message links.',
     ]],

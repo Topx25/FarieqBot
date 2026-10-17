@@ -12,6 +12,53 @@ $mlOk = function (string $key, string $aid): bool {
 $mlKind = fn(string $f) => preg_match('/\.webp$/i', $f) ? 'sticker' : (preg_match('/\.(jpe?g|png)$/i', $f) ? 'image' : (preg_match('/\.(mp4|3gp|mov)$/i', $f) ? 'video'
     : (preg_match('/\.(ogg|opus)$/i', $f) ? 'voice' : (preg_match('/\.(mp3|m4a|aac|wav)$/i', $f) ? 'audio' : 'document'))));
 
+/* ---------- Private files: hidden from the library until the password is entered ---------- */
+$mlVaultOn = function (string $aid): bool { return (int) ($_SESSION['vault'][$aid] ?? 0) > time(); };
+/** The API closes the session early (so requests do not wait for each other); the private-folder state is written by opening it again for a moment. */
+$mlSess = function (callable $f): void { if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) @session_start(); $f(); if (session_status() === PHP_SESSION_ACTIVE) session_write_close(); };
+if (in_array($api, ['media_vault', 'media_vault_set', 'media_vault_unlock', 'media_vault_lock', 'media_vault_move', 'media_vault_otp'], true)) {
+    $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number.']); $aid = (string) $acc['id'];
+    $V = (array) (wi_read('media_vault.json', [])[$aid] ?? []); $has = !empty($V['hash']);
+    if ($api === 'media_vault') { $n = 0; foreach ((array) (wi_read('media_meta.json', [])[$aid] ?? []) as $m) if (!empty($m['vault'])) $n++; wi_json(['ok' => true, 'has_password' => $has, 'unlocked' => $mlVaultOn($aid), 'count' => $n]); }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') wi_json(['ok' => false, 'error' => 'POST only.'], 405);
+    wi_check_csrf(); $in = json_decode(wi_input(), true) ?: []; $edit = wi_page_perm('library') === 'edit';
+    if ($api === 'media_vault_lock') { $mlSess(function () use ($aid) { unset($_SESSION['vault'][$aid]); }); wi_json(['ok' => true]); }
+    $guard = function () use ($aid) { $k = substr(hash('sha256', ($_SESSION['email'] ?? '') . '|' . wi_ip() . '|' . $aid), 0, 20); $G = wi_read('vault_guard.json', []); $G[$k] = array_values(array_filter($G[$k] ?? [], fn($t) => $t > time() - 900)); return [$k, $G]; };
+    if ($api === 'media_vault_otp') { // a one-time code on WhatsApp (to the phone of the signed-in user) instead of the password
+        if (!$has) wi_json(['ok' => false, 'error' => 'Set a password first.'], 422);
+        $p = $_SESSION['vault_otp'] ?? null; if ($p && time() - (int) $p['at'] < 60) wi_json(['ok' => false, 'error' => 'A code was already sent. Use the latest message.'], 429);
+        $u = wi_me(); $ph = (string) ($u['phone'] ?? ''); if ($ph === '') wi_json(['ok' => false, 'error' => 'Your account has no WhatsApp number.'], 422);
+        $code = (string) random_int(100000, 999999); $mlSess(function () use ($code, $aid) { $_SESSION['vault_otp'] = ['hash' => password_hash($code, PASSWORD_DEFAULT), 'at' => time(), 'tries' => 0, 'aid' => $aid]; });
+        require_once dirname(__DIR__, 2) . '/features.php';
+        if (!wi_send_whatsapp($ph, wf_msg('vault_otp', ['code' => $code, 'minutes' => 5]))) { $mlSess(function () { unset($_SESSION['vault_otp']); }); wi_json(['ok' => false, 'error' => 'Could not send the code on WhatsApp.'], 502); }
+        wi_log('vault_otp_sent', ['account' => $aid]); wi_json(['ok' => true, 'to' => '…' . substr($ph, -3)]);
+    }
+    if ($api === 'media_vault_unlock') {
+        if (!$has) wi_json(['ok' => false, 'error' => 'Set a password first.'], 422);
+        [$k, $G] = $guard(); if (count($G[$k]) >= 5) wi_json(['ok' => false, 'error' => 'Too many attempts — try again in 15 minutes.'], 429);
+        $code = preg_replace('/\D+/', '', (string) ($in['code'] ?? '')); $okPw = false;
+        if ($code !== '') { $p = $_SESSION['vault_otp'] ?? null; // the WhatsApp code: valid 5 minutes, 5 tries, once
+            if ($p && ($p['aid'] ?? '') === $aid && time() - (int) $p['at'] < 300 && (int) $p['tries'] < 5) { $okPw = password_verify($code, (string) $p['hash']); $mlSess(function () use ($okPw) { if ($okPw) unset($_SESSION['vault_otp']); else $_SESSION['vault_otp']['tries']++; }); } }
+        else $okPw = password_verify((string) ($in['password'] ?? ''), (string) $V['hash']);
+        if (!$okPw) { $G[$k][] = time(); wi_write('vault_guard.json', $G); wi_log('vault_bad_password', ['account' => $aid]); wi_json(['ok' => false, 'error' => 'Wrong password.'], 403); }
+        unset($G[$k]); wi_write('vault_guard.json', $G); $mlSess(function () use ($aid) { $_SESSION['vault'][$aid] = time() + 1800; }); wi_log('vault_unlock', ['account' => $aid]); wi_json(['ok' => true]);
+    }
+    if (!$edit) wi_json(['ok' => false, 'error' => 'You do not have permission to change the library.'], 403);
+    if ($api === 'media_vault_set') {
+        $pw = (string) ($in['password'] ?? ''); if (mb_strlen($pw) < 4) wi_json(['ok' => false, 'error' => 'The password must be at least 4 characters.'], 422);
+        if ($has) { [$k, $G] = $guard(); if (count($G[$k]) >= 5) wi_json(['ok' => false, 'error' => 'Too many attempts — try again in 15 minutes.'], 429); if (!password_verify((string) ($in['old'] ?? ''), (string) $V['hash'])) { $G[$k][] = time(); wi_write('vault_guard.json', $G); wi_json(['ok' => false, 'error' => 'The current password is wrong.'], 403); } }
+        wi_update('media_vault.json', function ($A) use ($aid, $pw) { $A[$aid] = ['hash' => password_hash($pw, PASSWORD_DEFAULT), 'set_at' => date('c'), 'by' => (string) ($_SESSION['email'] ?? '')]; return $A; });
+        $mlSess(function () use ($aid) { $_SESSION['vault'][$aid] = time() + 1800; }); wi_log('vault_password_set', ['account' => $aid]); wi_json(['ok' => true]);
+    }
+    if ($api === 'media_vault_move') {
+        $do = (string) ($in['do'] ?? ''); if (!in_array($do, ['hide', 'show'], true)) wi_json(['ok' => false, 'error' => 'Unknown action.'], 422);
+        if (!$has) wi_json(['ok' => false, 'need_password' => true, 'error' => 'Set a password first.'], 422);
+        if (!$mlVaultOn($aid)) wi_json(['ok' => false, 'need_unlock' => true, 'error' => 'Enter the password first.'], 403);
+        $keys = array_values(array_filter(array_slice((array) ($in['keys'] ?? []), 0, 300), fn($k) => $mlOk((string) $k, $aid)));
+        wi_update('media_meta.json', function ($M) use ($aid, $keys, $do) { foreach ($keys as $k) { if ($do === 'hide') $M[$aid][$k]['vault'] = 1; else unset($M[$aid][$k]['vault']); } return $M; });
+        wi_log('vault_' . $do, ['account' => $aid, 'count' => count($keys)]); wi_json(['ok' => true, 'count' => count($keys)]);
+    }
+}
 if ($api === 'media_lib') { // the index of this number's media
     $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number.']); $aid = (string) $acc['id']; $root = dirname(__DIR__, 3) . '/storage/';
     $meta = (array) (wi_read('media_meta.json', [])[$aid] ?? []); $items = [];
@@ -19,14 +66,16 @@ if ($api === 'media_lib') { // the index of this number's media
     foreach (glob($root . 'inbox_media/' . $aid . '/*') ?: [] as $p) { $f = basename($p); if (!preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $f) || str_ends_with($f, '.part')) continue; $items['inbox_media/' . $aid . '/' . $f] = $p; }
     foreach ((array) wi_read('uploads.json', []) as $f => $a) if ($a === $aid && is_file($root . 'inbox_uploads/' . $f)) $items['inbox_uploads/' . $f] = $root . 'inbox_uploads/' . $f;
     $bin = !empty($_GET['bin']); // the deleted ones (they can be put back)
+    $vaultMode = !empty($_GET['vault']) && $mlVaultOn($aid); $vaultN = 0; // the private ones: shown only after the password
     $out = []; $other = ['count' => 0, 'size' => 0]; // the other side (in Deleted, or still in the library) is only counted
-    foreach ($items as $key => $p) { $m = (array) ($meta[$key] ?? []); if (!empty($m['hidden']) !== $bin) { $other['count']++; $other['size'] += (int) filesize($p); continue; }
+    foreach ($items as $key => $p) { $m = (array) ($meta[$key] ?? []); $inV = !empty($m['vault']); if ($inV && !$vaultMode) { $vaultN++; continue; } if (!$inV && $vaultMode) continue; if ($vaultMode && !empty($m['hidden'])) continue;
+        if (!$vaultMode && !empty($m['hidden']) !== $bin) { $other['count']++; $other['size'] += (int) filesize($p); continue; }
         $rk = (string) ($real[$key] ?? ''); $kind = in_array($rk, ['sticker', 'image', 'gif', 'video', 'voice', 'audio', 'document'], true) ? $rk : $mlKind($key);
         if ($kind === 'document' && $mlKind($key) !== 'document') $kind = $mlKind($key); // an audio / photo sent as a file is still shown by what it is
         $out[] = ['key' => $key, 'kind' => $kind, 'size' => (int) filesize($p), 'at' => date('c', (int) filemtime($p)), 'title' => (string) ($m['title'] ?? ''), 'caption' => (string) ($m['caption'] ?? ''), 'name' => (string) ($names[$key] ?? ''), 'code' => (string) ($m['code'] ?? ''), 'mid' => (string) (((array) ($senders[$key] ?? []))['m'] ?? ''), 'from' => (function () use ($senders, $key, $cust) { $x = (array) ($senders[$key] ?? []); if (!empty($x['o'])) return 'You'; $ph = (string) ($x['p'] ?? ''); return (string) (($cust[$ph]['name'] ?? '') ?: (($x['n'] ?? '') ?: ($ph !== '' ? '+' . $ph : ''))); })(),
             'folder' => (string) ($m['folder'] ?? ''), 'jid' => (string) ($fromChat[$key] ?? ''), 'chat' => (string) ($chatNames[(string) ($fromChat[$key] ?? '')] ?? ''), 'tags' => array_values((array) ($m['tags'] ?? [])), 'fav' => !empty($m['fav']), 'used' => (int) ($m['used'] ?? 0), 'youtube' => $m['youtube'] ?? null]; }
     usort($out, fn($a, $b) => [$b['fav'], $b['at']] <=> [$a['fav'], $a['at']]);
-    wi_json(['ok' => true, 'items' => $out, 'bin' => $bin ? null : $other, 'folders' => array_values(array_unique(array_filter(array_column($out, 'folder'))))]);
+    wi_json(['ok' => true, 'vault' => $vaultMode, 'vault_count' => $vaultN, 'items' => $out, 'bin' => $bin ? null : $other, 'folders' => array_values(array_unique(array_filter(array_column($out, 'folder'))))]);
 }
 if ($api === 'media_zip') { // the selected files in one .zip download
     $acc = wi_current(); if (!$acc || !class_exists('ZipArchive')) wi_json(['ok' => false, 'error' => 'Not available on this server.']); $aid = (string) $acc['id']; $root = dirname(__DIR__, 3) . '/storage/';

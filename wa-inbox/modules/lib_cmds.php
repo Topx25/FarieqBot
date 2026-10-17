@@ -17,7 +17,7 @@ function wf_libcmd_media(array $acc): array {
     $names = (array) (wi_gateway('/archive/media-kinds', null, $acc)['names'] ?? []); $out = [];
     $keys = []; foreach (glob($root . 'inbox_media/' . $aid . '/*') ?: [] as $p) $keys[] = 'inbox_media/' . $aid . '/' . basename($p);
     foreach ((array) wi_read('uploads.json', []) as $f => $a) if ($a === $aid) $keys[] = 'inbox_uploads/' . $f;
-    foreach ($keys as $k) { $m = (array) ($meta[$k] ?? []); if (!empty($m['hidden']) || !is_file($root . $k)) continue;
+    foreach ($keys as $k) { $m = (array) ($meta[$k] ?? []); if (!empty($m['hidden']) || !empty($m['vault']) || !is_file($root . $k)) continue;
         $out[$k] = ['key' => $k, 'title' => (string) ($m['title'] ?? ''), 'name' => preg_replace('/\.[A-Za-z0-9]{2,4}$/', '', (string) ($names[$k] ?? '')), 'caption' => (string) ($m['caption'] ?? ''), 'tags' => implode(' ', (array) ($m['tags'] ?? []))]; }
     return $out;
 }
@@ -122,7 +122,7 @@ function wf_code_once(string $aid, string $jid, string $text, string $quote): bo
 /** The key of the file whose code matches (spelling variants alike), or ''. */
 function wf_media_code_find(string $aid, string $code): string {
     $want = str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean($code))); if ($want === '' || $want === '#') return '';
-    foreach ((array) (wi_read('media_meta.json', [])[$aid] ?? []) as $k => $m) { $c = (string) ($m['code'] ?? ''); if ($c !== '' && empty($m['hidden']) && str_replace(['-', ' '], '', wf_intake_norm($c)) === $want) return (string) $k; }
+    foreach ((array) (wi_read('media_meta.json', [])[$aid] ?? []) as $k => $m) { $c = (string) ($m['code'] ?? ''); if ($c !== '' && empty($m['hidden']) && empty($m['vault']) && str_replace(['-', ' '], '', wf_intake_norm($c)) === $want) return (string) $k; }
     return '';
 }
 /** The file a message names by its code: the code alone ("#رقية-عامة"), written with spaces ("#رقية عامة"), or after the send word ("#ارسال #رقية عامة"). */
@@ -206,7 +206,7 @@ function wf_lib_inventory(array $acc): array {
     $items = []; $keys = [];
     foreach (glob($root . 'inbox_media/' . $aid . '/*') ?: [] as $pf) { $f = basename($pf); if (preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $f) && !str_ends_with($f, '.part')) $keys[] = 'inbox_media/' . $aid . '/' . $f; }
     foreach ((array) wi_read('uploads.json', []) as $f => $a) if ($a === $aid) $keys[] = 'inbox_uploads/' . $f;
-    foreach ($keys as $k) { $m = (array) ($meta[$k] ?? []); if (!empty($m['hidden']) || !is_file($root . $k)) continue;
+    foreach ($keys as $k) { $m = (array) ($meta[$k] ?? []); if (!empty($m['hidden']) || !empty($m['vault']) || !is_file($root . $k)) continue;
         $ext = strtolower(pathinfo($k, PATHINFO_EXTENSION)); $kind = (string) ($kinds[$k] ?? (in_array($ext, ['jpg', 'png'], true) ? 'image' : ($ext === 'webp' ? 'sticker' : (in_array($ext, ['mp4', '3gp', 'mov'], true) ? 'video' : (in_array($ext, ['ogg', 'opus', 'mp3', 'm4a', 'aac', 'wav'], true) ? 'audio' : 'document')))));
         $items[] = ['key' => $k, 'kind' => $kind, 'title' => (string) ($m['title'] ?? ''), 'name' => (string) ($names[$k] ?? ''), 'code' => (string) ($m['code'] ?? ''), 'folder' => (string) ($m['folder'] ?? ''),
             'caption' => mb_substr((string) ($m['caption'] ?? ''), 0, 120), 'size' => (int) filesize($root . $k), 'used' => (int) ($m['used'] ?? 0), 'at' => date('Y-m-d', (int) filemtime($root . $k))]; }

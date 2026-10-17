@@ -1,7 +1,7 @@
   /* ---------------- Media library page: folders (with sub-folders), kinds, selection with move / favourite / delete,
      a bin to put deleted items back, and an edit panel (title, caption, folder, tags) with "send to chats" ---------------- */
   if (page === 'media') {
-    var mroot = document.getElementById('ml-page'), mk = '', mf = '', mq = '', mcur = null, mbin = /[?&]bin=1/.test(location.search), msel = {}, mfolders = [], msort = 'new';
+    var mroot = document.getElementById('ml-page'), mk = '', mf = '', mq = '', mcur = null, mbin = /[?&]bin=1/.test(location.search), mvault = false, msel = {}, mfolders = [], msort = 'new';
     try { msort = localStorage.getItem('wi_ml_sort') || 'new'; } catch (e) {}
     var mchat = '', mfrom = '', mto = '', mview = 'grid', mdet = false; try { mview = localStorage.getItem('wi_ml_view') || 'grid'; mdet = localStorage.getItem('wi_ml_det') === '1'; } catch (e) {}
     function mlChats(items) { var by = {}; items.forEach(function (i) { if (!i.jid) return; by[i.jid] = by[i.jid] || { n: 0, name: i.chat || i.jid.split('@')[0], g: /@g\.us$/.test(i.jid) }; by[i.jid].n++; });
@@ -22,6 +22,7 @@
       return mlSpace(ML.items || []) + '<div class="ml-fh">' + T('Show') + '</div><button type="button" class="ml-fd' + (mf === '' && !mbin ? ' on' : '') + '" data-fd="">📚 ' + T('All media') + ' <i>' + fmt(all.length) + '</i></button>'
         + '<button type="button" class="ml-fd' + (mf === '__fav' ? ' on' : '') + '" data-fd="__fav">★ ' + T('Favourites') + ' <i>' + fmt(all.filter(function (i) { return i.fav; }).length) + '</i></button>'
         + '<button type="button" class="ml-fd ml-binb' + (mbin ? ' on' : '') + '" data-bin>🗑 ' + T('Deleted') + ' <i>' + fmt((ML.bin || {}).count || 0) + '</i></button>' // always in sight, next to Favourites
+        + '<button type="button" class="ml-fd ml-vaultb' + (mvault ? ' on' : '') + '" data-vault>🔐 ' + T('Private folder') + ' <i>' + fmt(ML.vaultN || 0) + '</i></button>'
         + '<button type="button" class="ml-fd' + (mf === '__none' ? ' on' : '') + '" data-fd="__none">📥 ' + T('Not in a folder') + ' <i>' + fmt(all.filter(function (i) { return !i.folder; }).length) + '</i></button>'
         + '<div class="ml-fh">' + T('Folders') + '<button type="button" class="link-btn" data-fnew="">＋ ' + T('New folder') + '</button></div>'
         + mfolders.map(function (f) { var depth = f.split('/').length - 1, name = f.split('/').pop();
@@ -90,7 +91,7 @@
           + '<button type="button" class="ml-it" data-key="' + esc(it.key) + '" aria-label="' + esc(T('Edit')) + '" title="' + esc(T('Edit')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-.9c.6.5 1.3.9 2 1.2L10 21h4l.6-2.6c.7-.3 1.4-.7 2-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg>' + T('Settings') + '</button></div>') + '</div>';
     }
     function mlPage(force) {
-      var load = mbin ? WI.get('media_lib', { bin: 1 }).then(function (r) { return r.ok ? r.items : []; }) : mlLoad(force);
+      var load = mvault ? WI.get('media_lib', { vault: 1 }).then(function (r) { if (r.ok && r.vault) return r.items; mvault = false; return mlLoad(true); }) : mbin ? WI.get('media_lib', { bin: 1 }).then(function (r) { return r.ok ? r.items : []; }) : mlLoad(force);
       Promise.all([load, force || !mfolders.length ? mlFolders() : null]).then(function (res) { var items = res[0];
         document.getElementById('ml-tree').innerHTML = mlTree(); // also while in Deleted, so the way back is always there
         var inF = items.filter(function (i) { return mbin || mf === '' ? true : mf === '__fav' ? i.fav : mf === '__none' ? !i.folder : i.folder === mf; });
@@ -101,7 +102,7 @@
         var list = mlFilter(inF, mq, mk, '');
         list.sort(function (a, b) { return msort === 'big' ? b.size - a.size : msort === 'used' ? b.used - a.used : msort === 'old' ? (a.at > b.at ? 1 : -1) : (b.fav - a.fav) || (a.at < b.at ? 1 : -1); }); ML.shown = list;
         var tot = 0; list.forEach(function (i) { tot += i.size; }); document.getElementById('ml-tot').textContent = fmt(list.length) + ' ' + T('items') + ' · ' + mlSize(tot);
-        document.getElementById('ml-crumb').innerHTML = mbin ? '🗑 ' + T('Deleted — select and press «Put back»') : (mf === '' ? '📚 ' + T('All media') : mf === '__fav' ? '★ ' + T('Favourites') : mf === '__none' ? '📥 ' + T('Not in a folder') : '📁 ' + mf.split('/').map(esc).join(' › '));
+        document.getElementById('ml-crumb').innerHTML = mvault ? '🔐 ' + T('Private folder') + ' <button type="button" class="link-btn" data-vlock>🔒 ' + T('Lock') + '</button>' : mbin ? '🗑 ' + T('Deleted — select and press «Put back»') : (mf === '' ? '📚 ' + T('All media') : mf === '__fav' ? '★ ' + T('Favourites') : mf === '__none' ? '📥 ' + T('Not in a folder') : '📁 ' + mf.split('/').map(esc).join(' › '));
         var grid = function (arr) { return arr.length ? arr.slice(0, 300).map(function (it) { return mlCard(it); }).join('') : '<div class="empty">' + T('Nothing found.') + '</div>'; };
         document.getElementById('ml-g').innerHTML = mk || mbin ? '<div class="ml-grid in">' + grid(list) + '</div>' : (ML_KINDS.map(function (k) { var part = list.filter(function (i) { return i.kind === k[0]; }); if (!part.length) return '';
           return '<div class="ml-sec"><h3>' + k[1] + ' ' + T(k[2]) + ' <small class="muted">' + fmt(part.length) + '</small>' + (part.length > 24 ? ' <button type="button" class="link-btn" data-k="' + k[0] + '">' + T('Show all') + ' →</button>' : '') + '</h3><div class="ml-grid in">' + grid(part.slice(0, 24)) + '</div></div>'; }).join('') || '<div class="empty">' + T('Nothing found.') + '</div>');
@@ -119,6 +120,7 @@
       b.innerHTML = '<b>' + fmt(n) + ' ' + T('selected') + '</b>' + (!mbin ? '<a class="btn sm" href="?api=media_zip&keys=' + encodeURIComponent(Object.keys(msel).join(',')) + '">⬇️ ' + T('Download (.zip)') + '</a>' : '') + (mbin ? '<button type="button" class="btn primary sm" data-bulk="restore">↩️ ' + T('Put back') + '</button>'
         : '<button type="button" class="btn primary sm" data-bulk="send">📤 ' + T('Send to chats…') + '</button><button type="button" class="btn ghost sm" data-bulk="move">📁 ' + T('Move to folder…') + '</button>'
           + '<button type="button" class="btn ghost sm" data-bulk="rename">✏️ ' + T('Rename') + '</button><button type="button" class="btn ghost sm" data-bulk="tag">🏷️ ' + T('Add tags') + '</button><button type="button" class="btn ghost sm" data-bulk="caption">✍️ ' + T('Same caption') + '</button><button type="button" class="btn ghost sm" data-bulk="zip">⬇️ ' + T('Download') + '</button><button type="button" class="btn ghost sm" data-bulk="youtube">▶️ YouTube</button><button type="button" class="btn ghost sm" data-bulk="fav">★ ' + T('Favourite') + '</button><button type="button" class="btn ghost sm" data-bulk="unfav">☆</button><button type="button" class="btn ghost sm bad-t" data-bulk="delete">🗑 ' + T('Delete') + '</button>')
+        + (mbin ? '' : mvault ? '<button type="button" class="btn ghost sm" data-bulk="vshow">↩️ ' + T('Take out of the private folder') + '</button>' : '<button type="button" class="btn ghost sm" data-bulk="vhide">🔒 ' + T('Hide in the private folder') + '</button>')
         + '<button type="button" class="link-btn" data-bulk="all">' + T('Select all shown') + '</button><button type="button" class="link-btn" data-bulk="none">' + T('Clear') + '</button>'; }
     function mlBulk(do_, folder, extra) { WI.post('media_bulk', Object.assign({ do: do_, keys: Object.keys(msel), folder: folder || '' }, extra || {})).then(function (r) { mlToast(r.ok ? '✓ ' + fmt(r.count) : '⚠️ ' + (r.error || '')); msel = {}; mlPage(true); }); }
     function mlChooseFolder(cb) { // pick a folder (or make a new one) for "move"
@@ -128,6 +130,42 @@
       d.onclick = function (e) { var b; if (e.target.closest('[data-mlx]')) { d.close(); return; }
         if ((b = e.target.closest('[data-pick]'))) { d.close(); cb(b.dataset.pick); return; }
         if (e.target.closest('#mcf-go')) { var v = document.getElementById('mcf-new').value.trim(); if (!v) return; d.close(); cb(v); } };
+    }
+    // 🔐 the private folder: files hidden from the library, opened with the password or a code sent on WhatsApp
+    function mlVaultOpen(after) {
+      WI.get('media_vault').then(function (v) {
+        var enter = function () { mvault = true; mbin = false; mf = ''; msel = {}; mlPage(true); if (after) after(); };
+        if (v.unlocked) { enter(); return; }
+        if (!v.has_password) { mlVaultSet(enter); return; }
+        mlVaultUnlock(enter);
+      });
+    }
+    function mlVaultSet(done) {
+      var d = mlDialog('<div class="ml-head"><b>🔐 ' + T('Private folder password') + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div><div class="ml-fw lt-form">'
+        + '<p class="muted small">' + T('Set a password for the private folder. Files you hide there disappear from the library until it is opened with this password or a code sent on WhatsApp.') + '</p>'
+        + '<label>' + T('Password') + '<input id="vp-1" type="password" autocomplete="new-password"></label><label>' + T('Repeat the password') + '<input id="vp-2" type="password" autocomplete="new-password"></label>'
+        + '<div class="row"><button type="button" class="btn primary" id="vp-go">💾 ' + T('Save') + '</button><span class="muted small" id="vp-m"></span></div></div>');
+      d.onclick = function (e) { if (e.target.closest('[data-mlx]')) { d.close(); return; } if (!e.target.closest('#vp-go')) return;
+        var a = document.getElementById('vp-1').value; if (a !== document.getElementById('vp-2').value) { document.getElementById('vp-m').textContent = '⚠️ ' + T('The two passwords are different.'); return; }
+        WI.post('media_vault_set', { password: a }).then(function (r) { if (!r.ok) { document.getElementById('vp-m').textContent = '⚠️ ' + (r.error || T('Failed')); return; } d.close(); done(); }); };
+    }
+    function mlVaultUnlock(done) {
+      var d = mlDialog('<div class="ml-head"><b>🔐 ' + T('Private folder') + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div><div class="ml-fw lt-form">'
+        + '<label>' + T('Password') + '<input id="vu-pw" type="password" autocomplete="off"></label>'
+        + '<div class="row"><button type="button" class="btn primary" id="vu-go">🔓 ' + T('Open') + '</button><button type="button" class="btn ghost sm" id="vu-otp">📲 ' + T('Send me a code on WhatsApp') + '</button><span class="muted small" id="vu-m"></span></div>'
+        + '<div id="vu-code" hidden><label>' + T('The code from WhatsApp') + '<input id="vu-c" inputmode="numeric" maxlength="6" dir="ltr" autocomplete="one-time-code"></label><div class="row"><button type="button" class="btn primary" id="vu-cgo">🔓 ' + T('Open with the code') + '</button></div></div></div>');
+      var m = function (t) { document.getElementById('vu-m').textContent = t; }, go = function (body) { WI.post('media_vault_unlock', body).then(function (r) { if (!r.ok) { m('⚠️ ' + (r.error || T('Failed'))); return; } d.close(); done(); }); };
+      d.onclick = function (e) { if (e.target.closest('[data-mlx]')) { d.close(); return; }
+        if (e.target.closest('#vu-go')) { go({ password: document.getElementById('vu-pw').value }); return; }
+        if (e.target.closest('#vu-cgo')) { go({ code: document.getElementById('vu-c').value }); return; }
+        if (e.target.closest('#vu-otp')) { m('⏳'); WI.post('media_vault_otp', {}).then(function (r) { if (!r.ok) { m('⚠️ ' + (r.error || T('Failed'))); return; } m('✓ ' + T('The code was sent to your WhatsApp') + ' ' + (r.to || '')); document.getElementById('vu-code').hidden = false; document.getElementById('vu-c').focus(); }); } };
+    }
+    function mlVaultMove(act) {
+      var keys = Object.keys(msel); if (!keys.length) return;
+      WI.post('media_vault_move', { keys: keys, do: act }).then(function (r) {
+        if (r.need_password) { mlVaultSet(function () { mlVaultMove(act); }); return; }
+        if (r.need_unlock) { mlVaultUnlock(function () { mlVaultMove(act); }); return; }
+        if (!r.ok) { alert(r.error || T('Failed')); return; } msel = {}; mlPage(true); });
     }
     function mlEdClose() { document.getElementById('ml-ed').hidden = true; var bg = document.getElementById('ml-ed-bg'); if (bg) bg.hidden = true; document.querySelector('.ml-v2 .ml-layout').classList.remove('ed-on'); }
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !document.getElementById('ml-ed').hidden) mlEdClose(); });
@@ -170,16 +208,19 @@
       if ((b = e.target.closest('[data-send1]'))) { mlForward(b.dataset.send1, b.dataset.cap1 || '', function () { mlToast('✓ ' + T('Sent')); }); return; }
       if ((b = e.target.closest('[data-bulk-one]'))) { WI.post('media_bulk', { keys: [b.dataset.k1], do: 'restore' }).then(function () { mlPage(true); }); return; }
       if ((b = e.target.closest('#ml-k [data-k], .ml-sec [data-k]'))) { mk = b.dataset.k; mlPage(); window.scrollTo(0, 0); return; }
-      if ((b = e.target.closest('[data-fd]'))) { mf = b.dataset.fd; mbin = false; msel = {}; mlPage(); return; }
+      if ((b = e.target.closest('[data-fd]'))) { mf = b.dataset.fd; mbin = false; mvault = false; msel = {}; mlPage(); return; }
+      if (e.target.closest('[data-vault]')) { mlVaultOpen(); return; }
+      if (e.target.closest('[data-vlock]')) { WI.post('media_vault_lock', {}).then(function () { mvault = false; msel = {}; mlPage(true); }); return; }
       if (e.target.closest('[data-dupes]')) { mlDupes(); return; }
       if (e.target.closest('[data-inv]')) { mlInventory(); return; }
-      if (e.target.closest('[data-bin]')) { mbin = true; mf = ''; msel = {}; mlPage(); return; }
+      if (e.target.closest('[data-bin]')) { mbin = true; mvault = false; mf = ''; msel = {}; mlPage(); return; }
       if ((b = e.target.closest('[data-fnew]'))) { var base = b.dataset.fnew, n = folderAsk(base ? T('Name of the sub-folder inside') + ' «' + base + '»' : T('Name of the new folder'));
         if (n) WI.post('media_folders', { do: 'create', path: (base ? base + '/' : '') + n }).then(function () { mlPage(true); }); return; }
       if ((b = e.target.closest('[data-fren]'))) { var f = b.dataset.fren, nn = folderAsk(T('New name'), f.split('/').pop());
         if (nn) WI.post('media_folders', { do: 'rename', path: f, to: (f.indexOf('/') > -1 ? f.slice(0, f.lastIndexOf('/') + 1) : '') + nn }).then(function () { if (mf === f) mf = ''; mlPage(true); }); return; }
       if ((b = e.target.closest('[data-fdel]'))) { if (confirm(T('Delete this folder and its sub-folders? Their files move up to the parent folder; nothing is deleted.'))) WI.post('media_folders', { do: 'delete', path: b.dataset.fdel }).then(function () { if (mf.indexOf(b.dataset.fdel) === 0) mf = ''; mlPage(true); }); return; }
       if ((b = e.target.closest('[data-bulk]'))) { var d = b.dataset.bulk; if (d === 'rename') { mlRename(Object.keys(msel)); return; }
+        if (d === 'vhide' || d === 'vshow') { mlVaultMove(d === 'vhide' ? 'hide' : 'show'); return; }
         if (d === 'all') { (ML.shown || []).slice(0, 300).forEach(function (i) { msel[i.key] = 1; }); mlPage(); return; }
         if (d === 'none') { msel = {}; mlPage(); return; }
         if (d === 'move') { mlChooseFolder(function (f) { mlBulk('move', f); }); return; }
