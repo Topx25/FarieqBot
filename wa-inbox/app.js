@@ -1723,7 +1723,11 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
         + '<div class="mc-meta"><span>' + mlSize(it.size) + '</span>' + (it.at ? '<span>' + esc(String(it.at).slice(0, 10)) + '</span>' : '') + (it.used ? '<span>📤 ' + fmt(it.used) + '</span>' : '') + '</div>'
         + (chat ? '<div class="mc-chat" dir="auto">' + (/@g\.us$/.test(it.jid || '') ? '👥 ' : '💬 ') + esc(chat) + '</div>' : '')
         + (it.folder ? '<div class="mc-chat">📁 ' + esc(it.folder) + '</div>' : '')
-        + '</div>' + (mbin ? '' : '<div class="mc-acts"><button type="button" data-rn="' + esc(it.key) + '" title="' + esc(T('Rename')) + '">✏️</button><button type="button" class="ml-it" data-key="' + esc(it.key) + '" title="' + esc(T('Edit')) + '">⚙️</button></div>') + '</div>';
+        + '</div>' + (mbin ? '<div class="mc-acts"><button type="button" data-bulk-one="restore" data-k1="' + esc(it.key) + '">↩️ ' + T('Put back') + '</button></div>' : '<div class="mc-acts">'
+          + '<button type="button" data-rn="' + esc(it.key) + '" aria-label="' + esc(T('Rename')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>' + T('Name') + '</button>'
+          + '<button type="button" data-send1="' + esc(it.key) + '" data-cap1="' + esc(it.caption || '') + '" aria-label="' + esc(T('Send to chats')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 3 10.5l7 3 3 7z"/></svg>' + T('Send') + '</button>'
+          + '<a class="mc-dl" href="' + u + '&dl=1" aria-label="' + esc(T('Download')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>' + T('Download') + '</a>'
+          + '<button type="button" class="ml-it" data-key="' + esc(it.key) + '" aria-label="' + esc(T('Edit')) + '" title="' + esc(T('Edit')) + '"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3.9a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.6a7 7 0 0 0-2 1.2l-2.3-.9-2 3.4 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-.9c.6.5 1.3.9 2 1.2L10 21h4l.6-2.6c.7-.3 1.4-.7 2-1.2l2.3.9 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"/></svg></button></div>') + '</div>';
     }
     function mlPage(force) {
       var load = mbin ? WI.get('media_lib', { bin: 1 }).then(function (r) { return r.ok ? r.items : []; }) : mlLoad(force);
@@ -1799,6 +1803,8 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
     mroot.addEventListener('click', function (e) { var b;
       if (e.target.closest('.ml-ck')) return;
       if ((b = e.target.closest('[data-rn]'))) { mlRename([b.dataset.rn]); return; }
+      if ((b = e.target.closest('[data-send1]'))) { mlForward(b.dataset.send1, b.dataset.cap1 || '', function () { mlToast('✓ ' + T('Sent')); }); return; }
+      if ((b = e.target.closest('[data-bulk-one]'))) { WI.post('media_bulk', { keys: [b.dataset.k1], do: 'restore' }).then(function () { mlPage(true); }); return; }
       if ((b = e.target.closest('#ml-k [data-k], .ml-sec [data-k]'))) { mk = b.dataset.k; mlPage(); window.scrollTo(0, 0); return; }
       if ((b = e.target.closest('[data-fd]'))) { mf = b.dataset.fd; mbin = false; msel = {}; mlPage(); return; }
       if (e.target.closest('[data-dupes]')) { mlDupes(); return; }

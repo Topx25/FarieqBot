@@ -976,4 +976,10 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 .lib-nav a:hover{background:var(--surface-2)}
 .lib-nav a.on{background:var(--accent,#0f9d8a);color:#fff}
 .lib-nav a.ln-bin{color:#b42318}.lib-nav a.ln-bin.on{background:#b42318;color:#fff}
-@media (max-width:700px){.lib-nav .ln-group{flex-wrap:nowrap;overflow-x:auto;width:100%}}
+@media (max-width:700px){.lib-nav .ln-group{flex-wrap:nowrap;overflow-x:auto;width:100%}}/* Library cards with labelled actions (design approved in the mockup) */
+.ml-v2 .mc-acts{display:flex;gap:6px;padding:6px 12px 12px;justify-content:stretch}
+.ml-v2 .mc-acts button,.ml-v2 .mc-acts a.mc-dl{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--card,#fff);color:var(--ink-2);border-radius:10px;padding:7px 4px;cursor:pointer;font:inherit;font-size:13px;text-decoration:none;white-space:nowrap}
+.ml-v2 .mc-acts button:hover,.ml-v2 .mc-acts a.mc-dl:hover{background:var(--surface-2);border-color:var(--line-2)}
+.ml-v2 .mc-acts button.ml-it{all:unset;flex:0 0 36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:10px;padding:7px 0;cursor:pointer;color:var(--ink-2)}
+.ml-v2 .mcard.sel{border-color:var(--accent,#0b7f70);outline:2px solid var(--accent,#0b7f70);outline-offset:-1px}
+.ml-v2 #ml-g.mv-list .mc-acts{padding:0;flex:none;min-width:260px}
