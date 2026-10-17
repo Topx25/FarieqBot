@@ -80,7 +80,7 @@ function wi_translate_html(string $html): string {
     if (!$d) return $html;
     if (wi_lang() === 'ar') $html = str_replace('<html lang="en" dir="ltr">', '<html lang="ar" dir="rtl">', $html);
     foreach ($d as $en => $ar) if (strpos($en, '<') !== false) $html = str_replace($en, $ar, $html);
-    $html = preg_replace_callback('/>(\s*)([^<>]+?)(\s*)</u', function ($m) use ($d) { return '>' . $m[1] . ($d[$m[2]] ?? $m[2]) . $m[3] . '<'; }, $html);
+    $html = preg_replace_callback('/>(\s*)([^<>]+?)(\s*)</u', function ($m) use ($d) { return '>' . $m[1] . ($d[$m[2]] ?? $d[html_entity_decode($m[2], ENT_QUOTES, 'UTF-8')] ?? $m[2]) . $m[3] . '<'; }, $html); // "A &amp; B" in the page is the key "A & B"
     $html = preg_replace_callback('/\b(placeholder|title)="([^"]+)"/u', function ($m) use ($d) { return $m[1] . '="' . ($d[$m[2]] ?? $m[2]) . '"'; }, $html);
     $html = preg_replace_callback("/confirm\('([^']+)'\)/u", function ($m) use ($d) { return "confirm('" . ($d[$m[1]] ?? $m[1]) . "')"; }, $html);
     return $html;

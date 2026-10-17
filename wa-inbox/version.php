@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.97.3', 'date' => '2026-10-17', 'title' => 'Labels with "&" are translated', 'changes' => [
+        'Fixed: every label written with "&" (for example "Sort & check with AI", "Selection & AI tools") stayed in English because the page spells it "&amp;" and the dictionary "&". They now translate everywhere.',
+    ]],
     ['v' => '3.97.2', 'date' => '2026-10-17', 'title' => 'Library and Audio: calmer layout', 'changes' => [
         'Fixed: "Add text", "Upload files", "Manage categories", "Statistics", "Move to a team" and "Delete" showed in English (the emoji shared their text) — now translated.',
         'Library and Audio: the section tiles are compact pills instead of big squares, the selection and AI buttons are folded into one "Selection & AI tools" box, the side panel buttons are tidy, and the cards are lighter (no box inside a box).',
