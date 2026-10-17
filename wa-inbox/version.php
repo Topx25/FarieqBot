@@ -5,6 +5,13 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.96.0', 'date' => '2026-10-17', 'title' => 'Library commands: the nearest tags, recordings, no wrong text', 'changes' => [
+        'When a name is not found, the bot now says which tags to try — the nearest ones to what was written, then the section tags (#المكتبة #صوتيات #البرامج #رقيات) — instead of only "not found".',
+        'A text found only by words inside its body is no longer sent as the answer: the bot lists the closest texts and asks for the exact name.',
+        '"#رقية name مسموعة" (an audio word — a setting in the business profile) looks for the recording of it instead of the written text.',
+        'New section tag #رقيات (the written texts); the list of tags is a setting and can be changed or extended.',
+        'Fixed: a tag such as #صوتيات was answered twice when the same message reached the bot by two paths or was delivered twice; it is answered once.',
+    ]],
     ['v' => '3.95.1', 'date' => '2026-10-17', 'title' => 'The bot in groups: commands and dreams told in pieces', 'changes' => [
         'A case command written in a group that does not run commands (e.g. "#الحالة ID 23 #اتحذفت") is no longer answered as chat: the bot stays quiet.',
         'A dream told in several short messages: the bot waits until the person stops (setting "dream_wait", 120 seconds by default), then answers all of it once. A tagged message, a question or a long message is answered at once.',

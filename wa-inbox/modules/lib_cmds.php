@@ -31,6 +31,30 @@ function wf_libcmd_match(string $q, array $labels): array {
         elseif (!array_filter($words, fn($w) => mb_strpos($l, $w) === false)) $all[$k] = 1; }
     return array_keys($exact ?: ($start ?: $all));
 }
+/** The nearest tags to a name: section tags, files' shortcuts, texts' and programs' tags — those sharing words with the query first, else the section tags. */
+function wf_libtag_suggest(string $aid, string $q): array {
+    $words = array_values(array_filter(preg_split('/\s+/u', trim(wf_intake_norm($q))), fn($w) => mb_strlen($w) > 2)); $cand = [];
+    foreach (wf_libtags($aid) as $x) $cand[$x['tag']] = [$x['title'], 1];
+    foreach ((array) (wi_read('media_meta.json', [])[$aid] ?? []) as $m) if (!empty($m['code']) && empty($m['hidden'])) $cand[(string) $m['code']] = [(string) ($m['title'] ?? ''), 0];
+    foreach (wf_lib_texts($aid) as $t) if (trim((string) ($t['code'] ?? '')) !== '') $cand[(string) $t['code']] = [(string) $t['title'] . ' ' . (string) ($t['keywords'] ?? ''), 0];
+    foreach (wf_programs($aid) as $p) if (trim((string) ($p['code'] ?? '')) !== '') $cand[(string) $p['code']] = [(string) ($p['name'] ?? ''), 0];
+    $score = []; foreach ($cand as $tag => [$label, $sec]) { $blob = wf_intake_norm($tag . ' ' . $label); $n = 0; foreach ($words as $w) if (mb_strpos($blob, $w) !== false) $n++; if ($n) $score[$tag] = $n * 10 + $sec; }
+    arsort($score); $out = array_slice(array_keys($score), 0, 2); // the closest specific tags, then the section tags
+    foreach (wf_libtags($aid) as $x) if (count($out) < 6 && !in_array($x['tag'], $out, true)) $out[] = $x['tag'];
+    return $out;
+}
+/** "Not found" with the nearest tags to try instead. */
+function wf_libcmd_nf(string $aid, string $q): string {
+    $t = wf_libtag_suggest($aid, $q);
+    return wf_msg('lib_not_found', ['query' => mb_substr($q, 0, 40), 'hint' => $t ? wf_msg('lib_try_tags', ['tags' => implode('  ', $t)]) : '']);
+}
+/** "#رقية X مسموعة": the audio word (a setting) in the name means the recording, not the written text. Returns the name without it, or null. */
+function wf_libcmd_audio_name(string $aid, string $q): ?string {
+    $set = array_filter(array_map(fn($w) => trim(wf_intake_norm($w)), preg_split('/[|\n]/u', (string) (wf_pack($aid)['lib_audio_words'] ?? wf_pack_presets()['general']['lib_audio_words'] ?? ''))));
+    $words = preg_split('/\s+/u', trim($q)); $keep = []; $found = false;
+    foreach ($words as $w) { if (in_array(trim(wf_intake_norm($w)), $set, true)) $found = true; else $keep[] = $w; }
+    return $found ? trim(implode(' ', $keep)) : null;
+}
 function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, string $from = ''): void {
     $aid = (string) $acc['id']; $cmd = wf_libcmd_which($aid, $text); if ($cmd === '') return;
     [$tagT, $tagM] = wf_group_tag($from); $say = fn(string $t, array $extra = []) => wi_gateway('/chat/send', ['jid' => $jid, 'text' => isset($extra['attachment']) ? $t : $tagT . $t, 'quote_id' => $id, 'mentions' => isset($extra['attachment']) ? [] : $tagM, 'via' => 'bot'] + $extra, $acc); // a file goes with its own caption
@@ -42,24 +66,29 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
     if ($cmd === 'send' && preg_match_all('/#\S+/u', $text, $mm)) foreach ($mm[0] as $tok) if (wf_media_code_find($aid, $tok) !== '') { wf_media_code_send($acc, $jid, $tok, $id); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => 'send']); return; } // "#ارسال #رقية-عامة"
     if ($cmd === 'send') {
         $items = wf_libcmd_media($acc); $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['title'], $x['name'], $x['caption'], $x['tags']], $items));
-        if (!$hit) { $say(wf_msg('lib_not_found', ['query' => mb_substr($q, 0, 40)])); return; }
+        if (!$hit) { $say(wf_libcmd_nf($aid, $q)); return; }
         if (count($hit) > 1) { $many(array_map(fn($k) => $items[$k]['title'] ?: ($items[$k]['name'] ?: mb_substr($items[$k]['caption'], 0, 50)), $hit)); return; }
         $x = $items[$hit[0]]; $r = $say($x['caption'], ['attachment' => $x['key']]);
         if (!empty($r['ok'])) wi_update('media_meta.json', function ($M) use ($aid, $x) { $M[$aid][$x['key']]['used'] = (int) ($M[$aid][$x['key']]['used'] ?? 0) + 1; return $M; });
     } elseif ($cmd === 'program') {
         $P = []; foreach (wf_programs($aid) as $p) $P[(string) $p['id']] = $p; $hit = wf_libcmd_match($q, array_map(fn($p) => [$p['name'] ?? ''], $P));
-        if (!$hit) { $say(wf_msg('lib_not_found', ['query' => mb_substr($q, 0, 40)])); return; }
+        if (!$hit) { $say(wf_libcmd_nf($aid, $q)); return; }
         if (count($hit) > 1) { $many(array_map(fn($k) => (string) $P[$k]['name'], $hit)); return; }
         $say(wf_program_message($P[$hit[0]]));
     } elseif ($cmd === 'text') {
+        if (($an = wf_libcmd_audio_name($aid, $q)) !== null && $an !== '') { // the recording of it
+            $inv = array_values(array_filter(wf_lib_inventory($acc)['items'], fn($i) => in_array($i['kind'], ['audio', 'voice'], true))); $ah = wf_libcmd_match($an, array_map(fn($i) => [$i['title'], $i['name'], $i['caption'], $i['code']], $inv));
+            if (!$ah) { $say(wf_libcmd_nf($aid, $an)); return; }
+            if (count($ah) > 1) { $many(array_map(fn($k) => $inv[$k]['title'] ?: ($inv[$k]['name'] ?: mb_substr($inv[$k]['caption'], 0, 50)), array_slice($ah, 0, 8))); return; }
+            $say($inv[$ah[0]]['caption'], ['attachment' => $inv[$ah[0]]['key']]); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => 'audio']); return; }
         $words = array_values(array_filter(preg_split('/\s+/u', $q), fn($w) => mb_strlen($w) >= 3)); usort($words, fn($x, $y) => mb_strlen($y) <=> mb_strlen($x));
         $g = []; foreach (array_unique(array_merge([$q], array_slice($words, 0, 2))) as $try) { $g = (array) (wi_gateway('/library?type=all&group=1&q=' . rawurlencode(mb_strtolower($try)), null, $acc)['groups'] ?? []); if ($g) break; }
         foreach (wf_lib_text_groups($aid) as $mg) { $blob = wf_intake_norm($mg['title'] . ' ' . $mg['keywords'] . ' ' . $mg['code'] . ' ' . $mg['best']['text']); $nq = trim(wf_intake_norm($q)); if ($nq !== '' && !array_filter(preg_split('/\s+/u', $nq), fn($w) => mb_strpos($blob, $w) === false)) $g[] = $mg; } // texts written by hand: by title, keywords or text
         $T = []; foreach ($g as $i => $x) $T[$i] = ['title' => trim(mb_substr((string) ($x['title'] ?? ''), 0, 70)), 'text' => (string) ($x['best']['text'] ?? ''), 'kw' => (string) ($x['keywords'] ?? ''), 'cover' => (string) ($x['cover'] ?? '')];
         $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['title'], $x['kw']], $T)); // the name is in its title or keywords
-        if (!$hit) $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['text']], $T)); // else every word is in its text
-        if (!$hit && count($T) === 1) $hit = [array_key_first($T)];
-        if (!$hit) { $say(wf_msg('lib_not_found', ['query' => mb_substr($q, 0, 40)])); return; }
+        $byText = false; if (!$hit) { $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['text']], $T)); $byText = (bool) $hit; } // else every word is in its text — only a hint: it is never sent as the answer
+        if ($byText) { $say(wf_msg('lib_close', ['query' => mb_substr($q, 0, 40), 'list' => implode("\n", array_map(fn($k) => '• ' . $T[$k]['title'], array_slice($hit, 0, 5))), 'hint' => ($t = wf_libtag_suggest($aid, $q)) ? wf_msg('lib_try_tags', ['tags' => implode('  ', $t)]) : ''])); return; }
+        if (!$hit) { $say(wf_libcmd_nf($aid, $q)); return; }
         $kind = trim(wf_intake_norm(ltrim((string) ($W['text'] ?? ''), '#'))); // "#رقية العقد": the word after the command is the name, and the text must be of the kind the command names
         if (count($hit) === 1 && $kind !== '' && mb_strpos(wf_intake_norm($T[$hit[0]]['title'] . ' ' . ($g[$hit[0]]['section'] ?? '') . ' ' . ($g[$hit[0]]['topic'] ?? '')), $kind) === false) $hit = array_values(array_unique(array_merge($hit, array_keys($T)))); // only one text, and not of that kind: the choices are shown, nothing is guessed
         if (count($hit) > 1) { $many(array_map(fn($k) => $T[$k]['title'], array_slice($hit, 0, 8))); return; }
@@ -81,6 +110,12 @@ function wf_tag_taken(string $aid, string $tag, string $exceptKey = '', bool $sk
     $acc = wi_accounts()[$aid] ?? null;
     if ($acc && function_exists('wi_replies_for')) foreach (wi_replies_for($acc) as $r) if (str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean((string) ($r['keyword'] ?? '')))) === $want) return 'This tag is already a quick reply keyword.';
     return '';
+}
+/** True the first time this message (its id, or its text in this minute) asks for a tag; false when it was already answered. */
+function wf_code_once(string $aid, string $jid, string $text, string $quote): bool {
+    $k = substr(md5($aid . '|' . $jid . '|' . ($quote !== '' ? $quote : trim($text) . '|' . intdiv(time(), 60))), 0, 16); $first = false;
+    wi_update('code_done.json', function ($D) use ($k, &$first) { $D = array_filter((array) $D, fn($t) => $t > time() - 900); if (!isset($D[$k])) { $D[$k] = time(); $first = true; } return $D; });
+    return $first;
 }
 /** The key of the file whose code matches (spelling variants alike), or ''. */
 function wf_media_code_find(string $aid, string $code): string {
@@ -109,6 +144,7 @@ function wf_program_message(array $p): string {
 }
 /** A message that names a file's code: the file is sent there (with its caption). True when sent. */
 function wf_media_code_send(array $acc, string $jid, string $text, string $quote = ''): bool {
+    if ((wf_libtag_which((string) $acc['id'], $text) || wf_program_code_in((string) $acc['id'], $text) || wf_lib_text_code_in((string) $acc['id'], $text) || wf_media_code_in((string) $acc['id'], $text) !== '') && !wf_code_once((string) $acc['id'], $jid, $text, $quote)) return true; // the same message delivered twice, or caught by two paths: answered once
     if (wf_libtag_which((string) $acc['id'], $text)) return wf_libtag_send($acc, $jid, $text, $quote); // a section tag: the list of that section
     if ($lt = wf_lib_text_code_in((string) $acc['id'], $text)) return wf_lib_text_send($acc, $jid, $lt, $quote) || true; // a library text's tag: the text with its cover
     if (($prog = wf_program_code_in((string) $acc['id'], $text)) && !str_ends_with($jid, '@g.us')) { // a private chat: it follows the program (its days arrive one by one), the person is told
@@ -133,7 +169,7 @@ function wf_media_code_send(array $acc, string $jid, string $text, string $quote
 function wf_libtags(string $aid): array {
     $raw = (string) (wf_pack($aid)['lib_tags'] ?? wf_pack_presets()['general']['lib_tags'] ?? ''); $out = [];
     foreach (preg_split('/\R/u', $raw) as $l) { $x = array_map('trim', explode('|', $l)); $t = wf_media_code_clean($x[0] ?? '');
-        if ($t === '' || !in_array($x[1] ?? '', ['library', 'audio', 'video', 'images', 'documents', 'programs'], true)) continue; $out[] = ['tag' => $t, 'scope' => $x[1], 'title' => $x[2] ?? ltrim($t, '#')]; }
+        if ($t === '' || !in_array($x[1] ?? '', ['library', 'audio', 'video', 'images', 'documents', 'programs', 'texts'], true)) continue; $out[] = ['tag' => $t, 'scope' => $x[1], 'title' => $x[2] ?? ltrim($t, '#')]; }
     return $out;
 }
 /** The section tag this message is (the tag alone, spelling variants alike), or null. */
@@ -148,7 +184,9 @@ function wf_libtag_which(string $aid, string $text): ?array {
 function wf_libtag_send(array $acc, string $jid, string $text, string $quote = ''): bool {
     $aid = (string) $acc['id']; $x = wf_libtag_which($aid, $text); if (!$x) return false;
     $lines = [];
-    if ($x['scope'] === 'programs') foreach (wf_programs($aid) as $p) $lines[] = '• ' . (string) ($p['name'] ?? '') . (trim((string) ($p['code'] ?? '')) !== '' ? ' — ' . $p['code'] : '');
+    if ($x['scope'] === 'texts') { foreach (wf_lib_texts($aid) as $t) $lines[] = '• ' . $t['title'] . (trim((string) ($t['code'] ?? '')) !== '' ? ' — ' . $t['code'] : '');
+        foreach ((array) (wi_gateway('/library?type=sections&min=60', null, $acc)['groups'] ?? []) as $g) if (empty($g['audio']) && trim((string) ($g['title'] ?? '')) !== '' && count($lines) < 60) $lines[] = '• ' . trim(mb_substr((string) $g['title'], 0, 70)); }
+    elseif ($x['scope'] === 'programs') foreach (wf_programs($aid) as $p) $lines[] = '• ' . (string) ($p['name'] ?? '') . (trim((string) ($p['code'] ?? '')) !== '' ? ' — ' . $p['code'] : '');
     else { $inv = wf_lib_inventory($acc)['items']; $want = ['audio' => ['audio', 'voice'], 'video' => ['video', 'gif'], 'images' => ['image', 'sticker'], 'documents' => ['document']][$x['scope']] ?? null;
         foreach ($inv as $i) { if ($want && !in_array($i['kind'], $want, true)) continue; $n = $i['title'] ?: ($i['name'] ?: mb_substr((string) $i['caption'], 0, 40)); if ($n === '' && $i['code'] === '') continue;
             $lines[] = '• ' . ($n !== '' ? $n : $i['kind']) . ($i['code'] !== '' ? ' — ' . $i['code'] : ''); } }
