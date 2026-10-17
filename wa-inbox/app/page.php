@@ -41,7 +41,7 @@
   </section>
 </main>
 <?php else: ?>
-<div class="app shell-v3" data-sec="<?= wi_e((string) ($_GET['sec'] ?? '')) ?>" data-page="<?= wi_e($page) ?>" data-csrf="<?= wi_e(wi_csrf()) ?>" data-acc="<?= wi_e($cur['id'] ?? '') ?>">
+<div class="app shell-v3" data-sec="<?= wi_e((string) ($_GET['sec'] ?? '')) ?>" data-page="<?= wi_e($page) ?>" data-csrf="<?= wi_e(wi_csrf()) ?>" data-acc="<?= wi_e($cur['id'] ?? '') ?>" data-canusers="<?= wi_can_users() ? '1' : '' ?>">
   <aside class="side">
     <div class="brand side-handle" title="Drag to move the menu"><span class="logo"><?= htmlspecialchars((string) wi_brand('brand_logo')) ?></span><div><b><?= htmlspecialchars((string) wi_brand('brand_name')) ?></b><small id="gw-state">…</small></div>
       <button type="button" class="lock-btn" id="menu-lock" title="Lock / unlock the menu">🔓</button></div>

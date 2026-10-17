@@ -712,7 +712,19 @@ function wi_customers(): array {
     return $map;
 }
 
+/** Chats and groups hidden from the signed-in user by their client or admin: jid => true (owners and the super admin: none). */
+function wi_hidden_jids(): array {
+    static $h = null; if ($h !== null) return $h; $u = wi_me();
+    return $h = $u && !wi_is_super() ? array_fill_keys(array_map('strval', (array) ($u['hide_jids'] ?? [])), true) : [];
+}
+/** Drops every item that belongs to a hidden chat or group from an API answer (lists of chats, messages, search results, groups…). */
+function wi_scrub_hidden($x, array $H) {
+    if (!is_array($x)) return $x; $list = array_is_list($x); $out = [];
+    foreach ($x as $k => $v) { if (is_array($v) && ((isset($v['jid']) && is_string($v['jid']) && isset($H[$v['jid']])) || (isset($v['group']) && is_string($v['group']) && isset($H[$v['group']])))) continue; $out[$k] = wi_scrub_hidden($v, $H); }
+    return $list ? array_values($out) : $out;
+}
 function wi_json(array $data, int $code = 200): void {
+    if (($H = wi_hidden_jids()) && isset($_GET['api'])) $data = wi_scrub_hidden($data, $H); // STRICT: a hidden chat never reaches this user, whatever the page
     if (isset($data['error']) && is_string($data['error']) && $data['error'] !== '') $data['error'] = wi_t($data['error']); // every error in the user's language, from one place
     http_response_code($code);
     header('Content-Type: application/json; charset=utf-8');

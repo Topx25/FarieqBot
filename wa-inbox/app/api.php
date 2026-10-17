@@ -30,6 +30,21 @@ if (isset($_GET['api'])) {
         $out = []; foreach ($cands as $i => $c) $out[] = ['text' => $c['text'], 'count' => $c['n'], 'last' => $c['last'], 'title' => (string) ($names[$i + 1]['title'] ?? mb_substr($c['text'], 0, 30)), 'triggers' => array_values(array_map('strval', (array) ($names[$i + 1]['triggers'] ?? [])))];
         wi_json(['ok' => true, 'items' => $out, 'ai' => !empty($ai['ok'])]);
     }
+    // A chat or group hidden from this user: refused by its address too (opening it from a link, its media, notes, export…).
+    if (($H = wi_hidden_jids()) && isset($H[(string) ($_GET['jid'] ?? ($_GET['g'] ?? ''))])) wi_json(['ok' => false, 'error' => 'This conversation is hidden from you.'], 403);
+    // Who sees a chat (its header → 🔒): the client or admin hides it from chosen team members.
+    if ($api === 'hide_for') {
+        $jid = (string) ($_GET['jid'] ?? ''); if ($jid === '' || !wi_can_users()) wi_json(['ok' => false, 'error' => 'Not allowed.'], 403);
+        $acc = wi_current(); $all = wi_users(); $rows = [];
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') { $in = json_decode(wi_input(), true) ?: []; $em = strtolower((string) ($in['email'] ?? '')); $hit = false;
+            foreach ($all as &$u) { if (strtolower((string) $u['email']) !== $em || !wi_user_in_scope($u) || in_array($u['role'] ?? '', ['super', 'client'], true)) continue; $hj = (array) ($u['hide_jids'] ?? []);
+                $hj = !empty($in['hide']) ? array_values(array_unique(array_merge($hj, [$jid]))) : array_values(array_diff($hj, [$jid])); $u['hide_jids'] = $hj; $hit = true; } unset($u);
+            if (!$hit) wi_json(['ok' => false, 'error' => 'Not allowed.'], 403); wi_save_users($all); wi_log('hide_for', ['jid' => $jid, 'target' => $em, 'hide' => !empty($in['hide'])]); }
+        foreach (wi_users() as $u) { if (in_array($u['role'] ?? '', ['super', 'client'], true) || !wi_user_in_scope($u) || strtolower((string) $u['email']) === strtolower((string) ($_SESSION['email'] ?? ''))) continue;
+            $sees = !$acc || wi_is_team($u) || isset(array_flip((array) ($u['accounts'] ?? []))[$acc['id']]); if (!$sees) continue;
+            $rows[] = ['email' => (string) $u['email'], 'name' => (string) ($u['name'] ?? '') ?: (string) $u['email'], 'role' => (string) ($u['role'] ?? ''), 'hidden' => in_array($jid, (array) ($u['hide_jids'] ?? []), true)]; }
+        wi_json(['ok' => true, 'users' => $rows]);
+    }
     // Page permissions: no access → refused; view only → no changes (POST).
     wi_ctx_set('api_page', $apiPage = wi_api_page($api));
     if ($apiPage !== '') { $pp = wi_page_perm($apiPage);

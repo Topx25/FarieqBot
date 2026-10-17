@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.84.0', 'date' => '2026-10-17', 'title' => 'Hide a chat from chosen team members', 'changes' => [
+        'Chat header → 🔒 Who sees this chat (for those who manage users): tick the team members who must not see it. It is removed from every answer of the server for them (chat list, search, groups, reports, messages), and opening it by link is refused.',
+    ]],
     ['v' => '3.83.0', 'date' => '2026-10-17', 'title' => 'Chats page: view options and all numbers', 'changes' => [
         'Chats page buttons: ⛶ full screen (hides the header and menus), 🖼️ show/hide photo and video previews, 📋 show/hide the chat list (also in the chat header), 🙈 show hidden chats; each chat can be hidden from the list from its header. Remembered in this browser.',
         '🔀 All my numbers in one list (when the user has more than one): each chat carries a coloured mark with its number; a chat of another number opens on that number.',

@@ -42,7 +42,19 @@
     function saveUnread() { try { localStorage.setItem('wi_unread_' + (app.getAttribute('data-acc') || ''), JSON.stringify(unread)); } catch (e) {} updateTitle(); }
     function updateTitle() { var n = 0; for (var k in unread) n += unread[k] || 0; document.title = (n ? '(' + n + ') ' : '') + ((window.WI_BRAND || {}).name || ''); }
     document.addEventListener('click', function (e) { if (e.target.closest('[data-hide-chat]') && open) { toggleHidden(open); var b = e.target.closest('[data-hide-chat]'); b.textContent = hiddenChats.indexOf(open) !== -1 ? '👁️' : '🙈'; } });
-    var listEl = document.getElementById('chats'), msgsEl = document.getElementById('msgs'), headEl = document.getElementById('thread-h');
+    // 🔒 Who sees this chat: hide it from chosen team members (their lists, search, groups and reports never show it)
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-hide-for]'); if (!b || !open) return; var jid = open;
+      api('hide_for&jid=' + encodeURIComponent(jid)).then(function (r) {
+        if (!r.ok) return alert(r.error || ''); var d = document.createElement('dialog'); d.className = 'dlg';
+        d.innerHTML = '<form method="dialog" class="stack pad"><h3>🔒 ' + T('Who sees this chat') + '</h3><p class="muted small">' + T('Ticked people do not see this chat anywhere: list, search, groups, reports.') + '</p>'
+          + ((r.users || []).length ? r.users.map(function (u) { return '<label class="check"><input type="checkbox" data-em="' + esc(u.email) + '"' + (u.hidden ? ' checked' : '') + '> ' + T('Hide from') + ' <b dir="auto">' + esc(u.name) + '</b> <small class="muted">' + esc(u.role) + '</small></label>'; }).join('') : '<p class="muted">' + T('No team members on this number.') + '</p>')
+          + '<div class="row"><button class="btn primary">' + T('Done') + '</button></div></form>';
+        document.body.appendChild(d); d.showModal(); d.addEventListener('close', function () { d.remove(); });
+        d.addEventListener('change', function (ev) { var i = ev.target.closest('[data-em]'); if (!i) return; i.disabled = true;
+          WI.post('hide_for&jid=' + encodeURIComponent(jid), { email: i.dataset.em, hide: i.checked ? 1 : 0 }).then(function (x) { i.disabled = false; if (!x.ok) { i.checked = !i.checked; alert(x.error || ''); } }); });
+      });
+    });    var listEl = document.getElementById('chats'), msgsEl = document.getElementById('msgs'), headEl = document.getElementById('thread-h');
     // View options of this browser: full screen, previews, chat list, hidden chats (per number)
     var VK = 'wi_view', HK = 'wi_hidden_' + (app.getAttribute('data-acc') || ''), rd = function (k, d) { try { return JSON.parse(localStorage.getItem(k) || '') || d; } catch (e) { return d; } }, wr = function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
     var view = rd(VK, { focus: false, thumbs: true, list: true, showHidden: false }), hiddenChats = rd(HK, []);
@@ -89,7 +101,7 @@
       headEl.innerHTML = '<div class="th-top"><button type="button" class="icon-btn th-back" title="' + T('Back to the chats') + '">‹</button>' + av(jid, title(c))
         + '<div class="th-id grow"><div class="th-name"><b dir="auto">' + esc(title(c)) + '</b>' + (c.customer ? '<span class="th-badge cust">🧾 ' + T('Customer') + '</span>' : '') + (isG ? '<span class="th-badge grp">👥 ' + T('Group') + '</span>' : '') + '<span id="th-badges"></span></div>'
         + '<div class="th-sub"><span dir="ltr">' + (c.phone ? '+' + esc(c.phone) : (isG ? '' : esc(String(jid).split('@')[0]))) + '</span><span>💬 ' + fmt(c.count) + ' ' + T('messages') + '</span>' + (c.last && c.last.time ? '<span>🕐 ' + esc(when(c.last.time)) + '</span>' : '') + '<span class="info-hint">ⓘ ' + T('Contact info') + '</span><span class="typing" id="typing-h" hidden></span></div></div>'
-        + '<div class="th-acts"><button type="button" class="icon-btn" data-view="list" title="' + T('Show / hide the chat list') + '">📋</button><button type="button" class="icon-btn" data-hide-chat title="' + T('Hide / show this chat in the list') + '">' + (hiddenChats.indexOf(jid) !== -1 ? '👁️' : '🙈') + '</button>' + (isG ? '<a class="icon-btn" href="?p=groups&g=' + encodeURIComponent(jid) + '" title="' + T('Group page') + '">👥</a>' : '<a class="icon-btn" href="?p=customer&jid=' + encodeURIComponent(jid) + '" title="' + T('Customer profile') + '">👤</a><a class="icon-btn" href="?p=programs&jid=' + encodeURIComponent(jid) + '" title="' + T('Enrol in a program') + '">💊</a>')
+        + '<div class="th-acts"><button type="button" class="icon-btn" data-view="list" title="' + T('Show / hide the chat list') + '">📋</button><button type="button" class="icon-btn" data-hide-chat title="' + T('Hide / show this chat in the list') + '">' + (hiddenChats.indexOf(jid) !== -1 ? '👁️' : '🙈') + '</button>' + (app.getAttribute('data-canusers') ? '<button type="button" class="icon-btn" data-hide-for title="' + T('Who sees this chat') + '">🔒</button>' : '') + (isG ? '<a class="icon-btn" href="?p=groups&g=' + encodeURIComponent(jid) + '" title="' + T('Group page') + '">👥</a>' : '<a class="icon-btn" href="?p=customer&jid=' + encodeURIComponent(jid) + '" title="' + T('Customer profile') + '">👤</a><a class="icon-btn" href="?p=programs&jid=' + encodeURIComponent(jid) + '" title="' + T('Enrol in a program') + '">💊</a>')
         + (!isG && CAN('groups') ? '<button type="button" class="icon-btn" id="add-grp" title="' + T('Add to a group') + '">👥➕</button>' : '')
         + '<button type="button" class="icon-btn" id="chat-media" title="' + T('Media of this chat') + '">📁</button>'
         + (CAN('delete_chat') ? '<button type="button" class="icon-btn" id="del-chat" title="' + T('Delete this chat') + '">🧹</button>' : '')
