@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.93.1', 'date' => '2026-10-17', 'title' => 'Program tag links the subscriber', 'changes' => [
+        'When a program\'s tag is written in a private chat, that person is linked to the program automatically (its days arrive one by one) and is told so; written again, they are told they already follow it. In a group the tag still sends the whole program.',
+        'Programs page: each program lists its active subscribers by name under it.',
+    ]],
     ['v' => '3.93.0', 'date' => '2026-10-17', 'title' => 'Tags for programs', 'changes' => [
         'Programs now have a tag (e.g. #برنامج-الحسد): write it in any chat or group and the program is sent. Set it when you edit the program; the #البرامج list shows each program with its tag.',
         'A tag cannot repeat across files, programs, section tags and quick-reply keywords.',
