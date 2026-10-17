@@ -135,14 +135,20 @@
         header('Content-Type: ' . ($fits ? $types[$ext0] : 'application/octet-stream'));
         header('X-Content-Type-Options: nosniff');
         if ($ext0 !== 'pdf') header("Content-Security-Policy: sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'"); // the browser's PDF viewer does not open under a sandbox
-        header('Content-Length: ' . filesize($path));
+        // Byte ranges: audio and video players seek (jump to any point) instead of playing from the start only
+        $size = filesize($path); $from = 0; $to = $size - 1; header('Accept-Ranges: bytes');
+        if (preg_match('/^bytes=(\d*)-(\d*)$/', (string) ($_SERVER['HTTP_RANGE'] ?? ''), $rg) && $size > 0) { if ($rg[1] === '') { $from = max(0, $size - (int) $rg[2]); } else { $from = (int) $rg[1]; if ($rg[2] !== '') $to = min($to, (int) $rg[2]); }
+            if ($from > $to || $from >= $size) { http_response_code(416); header('Content-Range: bytes */' . $size); exit; }
+            http_response_code(206); header('Content-Range: bytes ' . $from . '-' . $to . '/' . $size); }
+        header('Content-Length: ' . ($to - $from + 1));
         header('Cache-Control: private, max-age=86400');
         $nice = trim(str_replace(['\\', '/', ':', '*', '?', '"', '<', '>', '|', "\r", "\n"], ' ', mb_substr((string) ($_GET['name'] ?? ''), 0, 120)));
         $ext = pathinfo($f, PATHINFO_EXTENSION);
         $dl = $nice !== '' ? $nice . '.' . $ext : $f;
         $inline = $fits; // anything else (or content that does not match its name) is only ever downloaded
         header("Content-Disposition: " . (!empty($_GET['dl']) || !$inline ? 'attachment' : 'inline') . "; filename=\"" . preg_replace('/[^\x20-\x7E]/', '_', $dl) . "\"; filename*=UTF-8''" . rawurlencode($dl));
-        readfile($path); exit;
+        if ($from === 0 && $to === $size - 1) { readfile($path); exit; }
+        $fh = fopen($path, 'rb'); fseek($fh, $from); $left = $to - $from + 1; while ($left > 0 && !feof($fh)) { $chunk = fread($fh, min(65536, $left)); echo $chunk; $left -= strlen($chunk); } fclose($fh); exit;
     }
     if ($api === 'export') {
         if ((wi_me()['role'] ?? '') === 'client' && empty(wi_me()['can_backup'])) wi_json(['ok' => false, 'error' => 'Backup (export) is not part of your plan.'], 403);

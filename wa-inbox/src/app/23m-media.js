@@ -62,6 +62,26 @@
         d.querySelector('#ml-dgo').onclick = function () { if (!confirm(T('Move the extra copies to Deleted and keep one copy of each file?'))) return; this.disabled = true;
           WI.post('media_dupes', {}).then(function (x) { d.close(); mlToast(x.ok ? '✓ ' + fmt(x.removed) + ' · ' + mlSize(x.waste) : '⚠️ ' + (x.error || '')); mlPage(true); }); }; });
     }
+    // One file as a card: the media itself (photos open the editor; voice, audio and video play and seek in place),
+    // a readable name (never the raw file id), size, date and the chat it came from, and the actions.
+    var KN = {}; ML_KINDS.forEach(function (k) { KN[k[0]] = k; });
+    function mlNice(it) { var n = mlName(it); if (n && !/^[A-F0-9]{16,}\.[a-z0-9]+$/i.test(n)) return n; var k = KN[it.kind]; return (k ? k[1] + ' ' + T(k[2]).replace(/s$/, '') : '📄') + (it.at ? ' · ' + when(it.at) : ''); }
+    function mlCard(it) {
+      var u = mlUrl(it.key), media;
+      if (it.kind === 'voice' || it.kind === 'audio') media = '<div class="mc-audio"><span class="mc-big">' + (it.kind === 'voice' ? '🎙️' : '🎧') + '</span><audio controls preload="none" src="' + u + '"></audio></div>';
+      else if (it.kind === 'video') media = '<video class="mc-vid" controls preload="none" playsinline data-lz="' + u + '#t=0.5"></video>';
+      else if (it.kind === 'gif') media = '<button type="button" class="ml-it mc-pic" data-key="' + esc(it.key) + '"><video data-lz="' + u + '" preload="none" muted loop autoplay playsinline></video><i class="ml-badge">GIF</i></button>';
+      else if (it.kind === 'image' || it.kind === 'sticker') media = '<button type="button" class="ml-it mc-pic" data-key="' + esc(it.key) + '"><img src="' + u + '" alt="" loading="lazy"' + (it.kind === 'sticker' ? ' class="ml-stk"' : '') + '></button>';
+      else media = '<button type="button" class="ml-it mc-pic mc-doc" data-key="' + esc(it.key) + '"><span class="mc-big">📄</span></button>';
+      var chat = it.chat || (it.jid ? it.jid.split('@')[0] : '');
+      return '<div class="ml-cell mcard' + (msel[it.key] ? ' sel' : '') + '"><label class="ml-ck"><input type="checkbox" data-sel="' + esc(it.key) + '"' + (msel[it.key] ? ' checked' : '') + '></label>'
+        + (it.fav ? '<i class="mc-fav">★</i>' : '') + '<div class="mc-media">' + media + '</div>'
+        + '<div class="mc-body"><button type="button" class="ml-it mc-name" data-key="' + esc(it.key) + '" dir="auto" title="' + esc(T('Edit')) + '">' + esc(mlNice(it)) + '</button>'
+        + '<div class="mc-meta"><span>' + mlSize(it.size) + '</span>' + (it.at ? '<span>' + esc(String(it.at).slice(0, 10)) + '</span>' : '') + (it.used ? '<span>📤 ' + fmt(it.used) + '</span>' : '') + '</div>'
+        + (chat ? '<div class="mc-chat" dir="auto">' + (/@g\.us$/.test(it.jid || '') ? '👥 ' : '💬 ') + esc(chat) + '</div>' : '')
+        + (it.folder ? '<div class="mc-chat">📁 ' + esc(it.folder) + '</div>' : '')
+        + '</div>' + (mbin ? '' : '<div class="mc-acts"><button type="button" data-rn="' + esc(it.key) + '" title="' + esc(T('Rename')) + '">✏️</button><button type="button" class="ml-it" data-key="' + esc(it.key) + '" title="' + esc(T('Edit')) + '">⚙️</button></div>') + '</div>';
+    }
     function mlPage(force) {
       var load = mbin ? WI.get('media_lib', { bin: 1 }).then(function (r) { return r.ok ? r.items : []; }) : mlLoad(force);
       Promise.all([load, force || !mfolders.length ? mlFolders() : null]).then(function (res) { var items = res[0];
@@ -75,9 +95,11 @@
         list.sort(function (a, b) { return msort === 'big' ? b.size - a.size : msort === 'used' ? b.used - a.used : msort === 'old' ? (a.at > b.at ? 1 : -1) : (b.fav - a.fav) || (a.at < b.at ? 1 : -1); }); ML.shown = list;
         var tot = 0; list.forEach(function (i) { tot += i.size; }); document.getElementById('ml-tot').textContent = fmt(list.length) + ' ' + T('items') + ' · ' + mlSize(tot);
         document.getElementById('ml-crumb').innerHTML = mbin ? '🗑 ' + T('Deleted — select and press «Put back»') : (mf === '' ? '📚 ' + T('All media') : mf === '__fav' ? '★ ' + T('Favourites') : mf === '__none' ? '📥 ' + T('Not in a folder') : '📁 ' + mf.split('/').map(esc).join(' › '));
-        var grid = function (arr) { return arr.length ? arr.slice(0, 300).map(function (it) { return '<div class="ml-cell' + (msel[it.key] ? ' sel' : '') + '"><label class="ml-ck"><input type="checkbox" data-sel="' + esc(it.key) + '"' + (msel[it.key] ? ' checked' : '') + '></label>' + (mbin ? '' : '<button type="button" class="ml-rn" title="' + esc(T('Rename')) + '" data-rn="' + esc(it.key) + '">✏️</button>') + mlGridHtml([it]) + '<div class="ml-det" dir="auto"><b>' + esc(mlName(it) || it.key.split('/').pop()) + '</b><small>' + mlSize(it.size) + ' · ' + esc(String(it.at || '').slice(0, 10)) + (it.chat || it.jid ? ' · ' + esc(it.chat || it.jid.split('@')[0]) : '') + (it.folder ? ' · 📁 ' + esc(it.folder) : '') + '</small></div></div>'; }).join('') : '<div class="empty">' + T('Nothing found.') + '</div>'; };
+        var grid = function (arr) { return arr.length ? arr.slice(0, 300).map(function (it) { return mlCard(it); }).join('') : '<div class="empty">' + T('Nothing found.') + '</div>'; };
         document.getElementById('ml-g').innerHTML = mk || mbin ? '<div class="ml-grid in">' + grid(list) + '</div>' : (ML_KINDS.map(function (k) { var part = list.filter(function (i) { return i.kind === k[0]; }); if (!part.length) return '';
           return '<div class="ml-sec"><h3>' + k[1] + ' ' + T(k[2]) + ' <small class="muted">' + fmt(part.length) + '</small>' + (part.length > 24 ? ' <button type="button" class="link-btn" data-k="' + k[0] + '">' + T('Show all') + ' →</button>' : '') + '</h3><div class="ml-grid in">' + grid(part.slice(0, 24)) + '</div></div>'; }).join('') || '<div class="empty">' + T('Nothing found.') + '</div>');
+        [].forEach.call(document.querySelectorAll('#ml-g video[data-lz]'), function (v) { if (mlLz) mlLz.observe(v); else v.src = v.dataset.lz; });
+        document.querySelector('.ml-v2 .ml-layout').classList.toggle('ed-on', !document.getElementById('ml-ed').hidden);
         var g = document.getElementById('ml-g'); g.classList.toggle('mv-list', mview === 'list'); g.classList.toggle('mv-big', mview === 'big'); g.classList.toggle('mv-det', mdet || mview === 'list');
         mlBar();
       });

@@ -1214,6 +1214,8 @@ return [
     'Choose at least one group, or “All groups”.' => 'اختار جروب واحد على الأقل، أو «كل الجروبات».',
     'No welcome' => 'بدون ترحيب',
     'Reception gate' => 'بوابة الاستقبال',
+    'Send to chats' => 'إرسال لشاتات',
+    'Open the chat' => 'فتح الشات',
     'Aurora' => 'أورورا',
     'New home: a gradient hero with your numbers as live cards, large figures, glass cards' => 'رئيسية جديدة: واجهة متدرجة فيها أرقامك ككروت حية، وأرقام كبيرة، وكروت زجاجية',
     'Move the chats of an old number to a new one' => 'نقل محادثات رقم قديم لرقم جديد',
