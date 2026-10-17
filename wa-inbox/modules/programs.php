@@ -4,6 +4,17 @@
 /* ---------- Programs (treatment programs sent day by day) ---------- */
 function wf_programs(string $aid): array { return wi_read('programs.json', [])[$aid] ?? []; }
 function wf_enrollments(string $aid): array { return wi_read('enrollments.json', [])[$aid] ?? []; }
+/** Links a private chat to a program (its days are sent one by one from now). False when the chat already follows it or is a group. */
+function wf_program_enroll(string $aid, string $jid, array $prog, string $by = 'tag'): bool {
+    if ($jid === '' || str_ends_with($jid, '@g.us')) return false; $made = false;
+    wi_update('enrollments.json', function ($A) use ($aid, $jid, $prog, $by, &$made) {
+        foreach ((array) ($A[$aid] ?? []) as $e) if (($e['jid'] ?? '') === $jid && ($e['program_id'] ?? '') === ($prog['id'] ?? '') && in_array($e['status'] ?? '', ['active', 'paused'], true)) return $A;
+        $nm = (string) (wi_customers()[preg_replace('/\D/', '', explode('@', $jid)[0])]['name'] ?? '');
+        $A[$aid][] = ['id' => bin2hex(random_bytes(6)), 'jid' => $jid, 'name' => mb_substr($nm, 0, 80), 'program_id' => (string) $prog['id'], 'start' => date('Y-m-d'), 'hour' => max(7, min(22, (int) date('G') + 1)),
+            'status' => 'active', 'sent' => [], 'replies' => 0, 'by' => $by, 'created' => date('c')]; $made = true; return $A; });
+    if ($made) wi_log('program_enroll', ['account' => $aid, 'by' => $by]);
+    return $made;
+}
 
 
 /** API calls of this area (moved unchanged from the old single switch). */

@@ -53,6 +53,8 @@ function wf_msg_registry(): array {
         'lib_menu' => ['Library commands: the list (group)', ['list'], "📖 أوامر المكتبة:\n{list}\n\nاكتب الأمر واسم الملف أو البرنامج أو الرقية.", "📖 Library commands:\n{list}\n\nWrite the command and the name."],
         'lib_section' => ['Section tag (e.g. #صوتيات): the files of that section with their shortcuts', ['title', 'count', 'list'], "📚 {title} ({count})\n{list}\n\nاكتب الاختصار (#...) وهيتبعت الملف.", "📚 {title} ({count})\n{list}\n\nWrite a shortcut (#...) and the file is sent."],
         'lib_section_empty' => ['Section tag: nothing in that section yet', ['title', 'count', 'list'], "📚 {title}: لسه مافيش ملفات في القسم ده.", "📚 {title}: nothing in this section yet."],
+        'program_enrolled' => ['Program tag written in a private chat: the person now follows the program', ['name'], "✅ تم اشتراكك في برنامج «{name}». هتوصلك أيامه يوم بيوم، ولو عايز توقفه قولنا.", "✅ You are now following «{name}». Its days arrive one by one — tell us if you want to stop."],
+        'program_already' => ['Program tag written again by someone who already follows it', ['name'], "أنت مشترك بالفعل في برنامج «{name}» وبيوصلك يوم بيوم.", "You already follow «{name}» and receive it day by day."],
         'lib_many' => ['Library commands: several matches', ['query', 'list'], "لقيت أكتر من حاجة باسم «{query}»، اكتب الاسم بالظبط:\n{list}", "Several matches for «{query}», write the exact name:\n{list}"],
         'lib_not_found' => ['Library commands: nothing found', ['query'], "⚠️ مش لاقي «{query}» في المكتبة.", "⚠️ «{query}» is not in the library."],
         'lib_program_day' => ['Library commands: one day of a program', ['day', 'text'], "📅 اليوم {day}\n{text}", "📅 Day {day}\n{text}"],
