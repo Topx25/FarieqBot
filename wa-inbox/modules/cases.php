@@ -30,6 +30,14 @@ function wf_team(array $acc, array $groups = []): array {
     @file_put_contents($cf, json_encode($t)); @chmod($cf, 0600);
     return $t;
 }
+/** A number that writes cases in a group is a healer: it joins the team, so the bot never treats it as a case (it can be removed from the team list). */
+function wf_team_learn(string $aid, string $phone, string $why): void {
+    $phone = wf_phone($phone); if ($phone === '' || strlen($phone) < 8) return;
+    $T = (array) (wi_read('team.json', [])[$aid] ?? []); if (isset($T[$phone])) return;
+    wi_update('team.json', function ($T) use ($aid, $phone, $why) { $T[$aid][$phone] = ['at' => date('c'), 'by' => 'auto', 'why' => $why]; return $T; });
+    foreach (glob(WI_DIR . '/cache_team_' . preg_replace('/\W/', '', $aid) . '_*.json') ?: [] as $f) @unlink($f); // the team list is read again
+    wi_log('team_learn', ['account' => $aid, 'phone' => $phone, 'why' => $why]);
+}
 /** Every number a person is known by: phone + WhatsApp internal IDs (LID) seen for them. */
 function wf_case_ids(array $c): array { return array_values(array_unique(array_filter(array_merge([(string) ($c['phone'] ?? '')], (array) ($c['lids'] ?? []))))); }
 /**

@@ -57,6 +57,14 @@ function wf_reply_strict(string $t, array $otherNames, string $who): string {
         $q = preg_quote($n, '/'); $t = preg_replace('/(^|\s)\x{064A}\x{0627}\s+' . $q . '/u', '$1', $t); } // only when the reply calls them ("يا NAME"): a name that is also a phrase stays in sentences
     return trim(preg_replace(['/[ \t]{2,}/u', '/\s+([\x{060C},.!?\x{061F}])/u'], [' ', '$1'], $t));
 }
+/** A short acknowledgement ("تمام", "الحمد لله", "حاضر") ends a talk: it is not a new question, the bot stays out. The words are a setting (business profile → ack_words). */
+function wf_is_ack(string $aid, string $text): bool {
+    $t = trim(wf_norm($text)); if ($t === '' || mb_strlen($t) > 40 || preg_match('/[\x{061F}?]/u', $text)) return false;
+    $set = []; foreach (preg_split('/[|\n]/u', (string) (wf_pack($aid)['ack_words'] ?? wf_pack_presets()['general']['ack_words'] ?? '')) as $w) { $w = trim(wf_norm($w)); if ($w !== '') $set[$w] = 1; }
+    if (!$set) return false; $left = $t; uksort($set, fn($a, $b) => mb_strlen($b) <=> mb_strlen($a));
+    foreach (array_keys($set) as $w) $left = str_replace($w, ' ', $left);
+    return trim(preg_replace('/\s+/u', ' ', $left)) === '' || !wf_words($left) && trim($left) === '';
+}
 /** A message with no words, only emojis: a reaction like a person would give (and for some a short line), without the AI.
  *  Rules from the business profile "emoji_replies" ("emojis => reaction | reply", "*" = any other emoji). Returns what was done, or ''. */
 function wf_bot_emoji(array $acc, string $jid, string $msgId, string $text, bool $reply = true): string {
@@ -148,6 +156,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             // A group admin is answered when they ask a question or tag the bot — not while they answer someone else (a reply or a tag of another member).
             $adminAsks = isset($team[$who]) && $mentioned; // STRICT: healers and admins talk among themselves — the bot answers them only when they tag it or reply to it
             if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun) || $text === '' || !wf_words($text)) continue;
+            if (!$mentioned && wf_is_ack($aid, $text)) continue; // "تمام" / "الحمد لله": a talk ending, not a question
             $toOther = (!empty($m['quote_from']) && wf_phone((string) $m['quote_from']) !== $me) || array_diff(array_map('wf_phone', (array) ($m['mentions'] ?? [])), [$me]);
             if (!$mentioned && $toOther && !$fun) continue; // STRICT: a message to another member is not for the bot
             $lastTo = max(array_merge([0], (array) ($st['gwho'][$x['jid']][$who] ?? []))); if (!$mentioned && time() - $lastTo < (int) ($fun ? $c['fun_gap'] : $c['group_gap'])) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
@@ -175,7 +184,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 $rc = function_exists('wf_roles_cfg') ? wf_roles_cfg($aid) : ['group_role' => '']; $role = function_exists('wf_role_pick') ? wf_role_pick($aid, $x['jid'] . '|' . $who, $text, (string) ($g['role'] ?? $rc['group_role'])) : 'bot';
                 if ($role === 'crisis') { wf_role_crisis($acc, (string) $x['jid'], $text, (string) ($m['from_name'] ?? ''), (string) ($m['id'] ?? ''), $who); $n++; continue; }
                 $mine = []; foreach (array_slice($rows, -60) as $bm) if (($bm['dir'] ?? '') === 'out' && ($bm['via'] ?? '') === 'bot' && trim((string) ($bm['text'] ?? '')) !== '') $mine[] = (string) $bm['text']; // never repeat what the bot already said here
-                $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => array_slice($mine, -4), 'role' => $role, 'jid' => $x['jid'] . '|' . $who] + ($fun ? ['fun' => true] : []));
+                $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => array_slice($mine, -4), 'role' => $role, 'jid' => $x['jid'] . '|' . $who] + ($fun ? ['fun' => true] : []) + (isset($team[$who]) ? ['team' => true] : []));
                 if (empty($r['ok']) || trim((string) $r['reply']) === '') continue;
                 $log += ['reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'role' => $role];
                 // Like private chats: confident answers, short clarifying questions, and the polite
@@ -287,6 +296,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
             $st['done'][$x['jid']] = $last['time']; $st['sent'][] = time(); wi_bot_log_add($aid, ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => $text, 'reply' => '📎', 'result' => 'sent', 'role' => 'file', 'at' => date('c')]); $n++; continue; }
         if ($text !== '' && !wf_words($text) && $c['mode'] === 'auto' && $inHours && ($em = wf_bot_emoji($acc, (string) $x['jid'], (string) ($last['id'] ?? ''), $text)) !== '') { // only emojis: answered like a person
             $st['done'][$x['jid']] = $last['time']; $st['sent'][] = time(); wi_bot_log_add($aid, ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => $text, 'reply' => $em, 'result' => 'sent', 'role' => 'emoji', 'at' => date('c')]); $n++; continue; }
+        if ($text !== '' && wf_is_ack($aid, $text) && array_filter($rows, fn($m) => ($m['dir'] ?? '') === 'out')) { $skip($x, 'a short acknowledgement in a talk already going', $text); continue; } // a new chat is still greeted
         if ($text === '' || !wf_words($text)) { $skip($x, $text === '' ? 'photo / voice note — left to people' : 'no words (emoji / ?)', $text); continue; } // also emoji-only / "ok" // photos / voice (e.g. payment receipts) are left to people and the payment bot
         $hist = []; foreach (array_slice($rows, -12, -count($q) ?: null) as $m) if (in_array($m['dir'], ['in', 'out'], true) && trim((string) ($m['text'] ?? '')) !== '') $hist[] = ['from' => $m['dir'] === 'out' ? 'bot' : 'customer', 'text' => $m['text']];
         $card = wf_customer_card($acc, $x['jid'], $rows);

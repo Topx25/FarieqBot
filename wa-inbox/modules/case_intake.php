@@ -341,10 +341,12 @@ function wf_intake_hook(array $acc, array $in): void {
     // a follow-up command (#الحالة, #اتحسنت …): also in the diagnosis group
     if (!empty($c['on']) && !wi_account_blocked($acc) && str_ends_with($jid, '@g.us') && $from !== '' && $text !== '' && wf_intake_is_cmd($aid, $text)
         && ($jid === $diag || !$c['groups'] || in_array($jid, (array) $c['groups'], true))) {
+        if (empty($in['self'])) wf_team_learn($aid, $from, 'wrote a case command in a group');
         $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(120); wf_intake_command($acc, $in, $jid, $from, $text, $id); exit; }
     if (empty($c['on']) || wi_account_blocked($acc) || !str_ends_with($jid, '@g.us') || $from === '' || ($text === '' && empty($in['voices'])) || $jid === $diag || ($c['groups'] && !in_array($jid, (array) $c['groups'], true))) { $reply(['ok' => false, 'done' => true]); exit; }
     $pk = $jid . '|' . $from; $pend = (array) (wi_read('case_intake.json', [])[$aid][$pk] ?? []);
     $isNew = wf_intake_has_kw($aid, $text) && (empty($c['mention']) || !empty($in['tagged_me'])) && wf_intake_has_target($in, $text);
+    if ($isNew && empty($in['self'])) wf_team_learn($aid, $from, 'opened a case in a group'); // who writes cases is a healer
     if ($isNew && $pend) { // the writer sends the keyword again: the same person (or a waiting case with nothing in it) continues, another person starts a new one
         $newPhone = wf_intake_phone(['phone' => $text], array_map('strval', (array) ($in['mentions'] ?? [])), $from, $acc);
         $oldPhone = wf_intake_phone((array) ($pend['fields'] ?? []), (array) ($pend['mentions'] ?? []), $from, $acc);

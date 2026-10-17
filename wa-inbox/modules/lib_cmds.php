@@ -71,7 +71,7 @@ function wf_media_code_clean(string $c): string { $c = trim(preg_replace('/\s+/u
 /** Why a tag cannot be used (a section tag, a quick reply's keyword or another file's shortcut already has it), or ''. */
 function wf_tag_taken(string $aid, string $tag, string $exceptKey = '', bool $skipSections = false): string {
     $want = str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean($tag))); if ($want === '' || $want === '#') return '';
-    if (!$skipSections) foreach (wf_libtags($aid) as $x) if (str_replace(['-', ' '], '', wf_intake_norm($x['tag'])) === $want) return 'This tag is already a section tag.';
+    if (!$skipSections) foreach (wf_libtags($aid) as $x) if (wf_libtag_key($x['tag']) === wf_libtag_key($tag)) return 'This tag is already a section tag.';
     $k = wf_media_code_find($aid, $tag); if ($k !== '' && $k !== $exceptKey) return 'This shortcut is already used by another file.';
     $acc = wi_accounts()[$aid] ?? null;
     if ($acc && function_exists('wi_replies_for')) foreach (wi_replies_for($acc) as $r) if (str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean((string) ($r['keyword'] ?? '')))) === $want) return 'This tag is already a quick reply keyword.';
@@ -112,10 +112,11 @@ function wf_libtags(string $aid): array {
     return $out;
 }
 /** The section tag this message is (the tag alone, spelling variants alike), or null. */
+function wf_libtag_key(string $tag): string { return preg_replace('/^#\x{0627}\x{0644}/u', '#', str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean($tag)))); } // "#المكتبة" = "#مكتبة"
 function wf_libtag_which(string $aid, string $text): ?array {
     $t = trim($text); if ($t === '' || $t[0] !== '#' || mb_strlen($t) > 60) return null;
-    $want = str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean($t)));
-    foreach (wf_libtags($aid) as $x) if (str_replace(['-', ' '], '', wf_intake_norm($x['tag'])) === $want) return $x;
+    $want = wf_libtag_key($t);
+    foreach (wf_libtags($aid) as $x) if (wf_libtag_key($x['tag']) === $want) return $x;
     return null;
 }
 /** Sends the list of a section: each file's name and shortcut (programs: their names). True when it was a section tag. */
