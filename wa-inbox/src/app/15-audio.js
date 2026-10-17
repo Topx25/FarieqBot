@@ -28,7 +28,7 @@
         var chk = A.sel[it.key] ? ' checked' : '';
         return '<div class="au-row ml-cell mcard' + (A.sel[it.key] ? ' sel picked' : '') + '" data-key="' + esc(it.key) + '"><label class="ml-ck"><input type="checkbox" data-pick' + chk + '></label>'
           + '<div class="mc-media mk-audio" style="--c:' + c[2] + '"><div class="mc-audio"><span class="mc-big">' + (it.kind === 'voice' ? '🎙️' : (it.category ? c[0] : '🎧')) + '</span>'
-          + (url ? '<audio controls preload="none" src="' + url + '"></audio>' : (it.fetchable ? '<button class="chip-btn sm" data-fetch="' + esc(it.fetch_id) + '">⬇️ ' + T('Fetch from WhatsApp') + '</button>' : '<span class="muted small">' + T('File not kept') + '</span>')) + '</div></div>'
+          + (url ? '<audio controls preload="none" style="display:block;width:100%;min-width:200px;height:40px" src="' + url + '"></audio>' : (it.fetchable ? '<button class="chip-btn sm" data-fetch="' + esc(it.fetch_id) + '">⬇️ ' + T('Fetch from WhatsApp') + '</button>' : '<span class="muted small">' + T('File not kept') + '</span>')) + '</div></div>'
           + '<div class="mc-body"><input class="au-title mc-name" value="' + esc(it.title) + '" placeholder="' + esc(it.auto_title || T('Name this recording…')) + '" dir="auto" maxlength="120">'
           + (it.code ? '<div class="lc-code" dir="auto">🔑 ' + esc(it.code) + '</div>' : '')
           + '<div class="mc-meta"><span>⏱ ' + adur(it.seconds) + '</span>' + (it.size ? '<span>💾 ' + (it.size / 1048576).toFixed(1) + ' MB</span>' : '') + '<span>🔁 ' + fmt(it.copies) + '× ' + T('shared') + '</span><span>💬 ' + fmt(it.chats) + '</span><span>🕐 ' + esc(when(it.last, true)) + '</span></div>'
