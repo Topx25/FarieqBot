@@ -1365,8 +1365,12 @@ document.addEventListener('play', function (e) { var t = e.target; if (!t || (t.
           + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="ln-c" dir="auto" maxlength="60" value="' + esc(it.code || '') + '" placeholder="' + esc(T('#ruqyah-name')) + '"></label>'
           + '<div class="row"><button type="button" class="btn primary" id="ln-go">💾 ' + T('Save') + '</button><span class="muted small" id="ln-m"></span></div></div>');
         d.onclick = function (ev) { if (ev.target.closest('[data-mlx]')) { d.close(); return; } if (!ev.target.closest('#ln-go')) return;
-          WI.post('media_meta', { key: key, title: document.getElementById('ln-t').value.trim(), code: document.getElementById('ln-c').value.trim() }).then(function (r) {
-            if (!r.ok) { document.getElementById('ln-m').textContent = '⚠️ ' + (r.error || T('Failed')); return; } ML.items = null; d.close(); b.textContent = '✏️ ' + T('Saved'); }); }; }); });
+          var sent = { title: document.getElementById('ln-t').value.trim(), code: document.getElementById('ln-c').value.trim() };
+          WI.post('media_meta', { key: key, title: sent.title, code: sent.code }).then(function (r) {
+            if (!r.ok) { document.getElementById('ln-m').textContent = '⚠️ ' + (r.error || T('Failed')); return; } ML.items = null; d.close();
+            var nt = sent.title, nc = sent.code; // the card shows it at once, no refresh
+            ((L.data && L.data.groups) || []).forEach(function (g) { if (g.audio && [g.best].concat(g.others || []).some(function (v) { return v.attachment === key; })) { if (nt) g.title = nt; g.code = nc; } });
+            draw(); }); }; }); });
     document.addEventListener('click', function (e) { var b = e.target.closest('[data-lfw-att],[data-lfw-txt]'); if (!b || typeof mlForward !== 'function') return;
       if (b.dataset.lfwAtt) mlForward(b.dataset.lfwAtt, ''); else { var g = current[+b.dataset.lfwTxt]; if (g && g.best) mlForward(null, g.best.text || ''); } });
     document.getElementById('mq-go').addEventListener('click', function () {

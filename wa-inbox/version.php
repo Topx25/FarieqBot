@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.89.8', 'date' => '2026-10-17', 'title' => 'Name and shortcut show at once', 'changes' => [
+        'Saving "Name & shortcut" on a library card now updates the card right away, without refreshing the page.',
+    ]],
     ['v' => '3.89.7', 'date' => '2026-10-17', 'title' => 'One player at a time', 'changes' => [
         'Playing a recording or a video now pauses the one that was already playing, on every page.',
     ]],
