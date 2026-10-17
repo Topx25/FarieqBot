@@ -7,8 +7,8 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
   var page = app.getAttribute('data-page');
   var colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#0ea5e9', '#a855f7', '#14b8a6', '#f97316'];
 
-  var L = window.WI_T || {}, AR = window.WI_LANG === 'ar';
-  function T(s) { return Object.prototype.hasOwnProperty.call(L, s) ? L[s] : s; } window.T = window.T || T;
+  var WI_DICT = window.WI_T || {}, AR = window.WI_LANG === 'ar'; // not named L: the library page keeps its own state in L
+  function T(s) { return Object.prototype.hasOwnProperty.call(WI_DICT, s) ? WI_DICT[s] : s; } window.T = window.T || T;
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]; }); }
   // Requests never fail silently: a lost connection or a non-JSON reply becomes {ok:false, error}.
   function wiSafeJson(r) { if (r.status === 401) { location.reload(); return { ok: false, error: 'Sign in again' }; }

@@ -107,12 +107,12 @@
     <?php elseif (in_array($page, ['library', 'audio', 'files', 'media'], true)): $libSec = (string) ($_GET['sec'] ?? ''); ?>
       <?php $libBin = $page === 'media' && !empty($_GET['bin']); ?>
       <nav class="lib-nav">
-        <div class="ln-group"><span class="ln-h">🎞️ Media and files</span>
+        <div class="ln-group"><span class="ln-h"><span aria-hidden="true">🎞️</span> <span>Media and files</span></span>
           <a href="?p=media" class="<?= $page === 'media' && !$libBin ? 'on' : '' ?>">🖼️ Media</a>
           <a href="?p=audio" class="<?= $page === 'audio' ? 'on' : '' ?>">🎧 Audio</a>
           <a href="?p=files" class="<?= $page === 'files' ? 'on' : '' ?>">📄 Files</a>
           <a href="?p=media&amp;bin=1" class="ln-bin <?= $libBin ? 'on' : '' ?>">🗑 Deleted</a></div>
-        <div class="ln-group"><span class="ln-h">📚 Texts</span>
+        <div class="ln-group"><span class="ln-h"><span aria-hidden="true">📚</span> <span>Texts</span></span>
         <a href="?p=library" class="<?= $page === 'library' && $libSec === '' ? 'on' : '' ?>">🗂️ All</a>
         <?php $libR = (json_decode((string) @file_get_contents(wf_acc_rules_file((string) ($cur['id'] ?? ''))), true) ?: [])['library'] ?? []; $libTabs = [];
           foreach ((array) ($libR['sections'] ?? []) as $sx) $libTabs[] = [$sx['name'], $sx['icon'] ?? '📁', $sx['name']];

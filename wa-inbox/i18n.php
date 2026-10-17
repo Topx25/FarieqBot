@@ -1214,6 +1214,8 @@ return [
     'Choose at least one group, or “All groups”.' => 'اختار جروب واحد على الأقل، أو «كل الجروبات».',
     'No welcome' => 'بدون ترحيب',
     'Reception gate' => 'بوابة الاستقبال',
+    'Texts, audio and files collected from <b>' => 'نصوص وصوتيات وملفات متجمّعة من <b>',
+    '</b> — similar copies grouped, best version first.' => '</b> — النسخ المتشابهة متجمّعة، والأفضل أولاً.',
     'Media and files' => 'الوسائط والملفات',
     'Texts' => 'النصوص',
     'Show' => 'عرض',

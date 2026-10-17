@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.89.2', 'date' => '2026-10-17', 'title' => 'Library page in English fixed', 'changes' => [
+        'Fixed: on the Library page every text drawn by the page script showed in English (All topics, copies, chats, Best, Send to chats and groups…). The library state variable L overwrote the translation dictionary L of the shared script; the dictionary is now WI_DICT.',
+        'Library menu group titles and the Library header are translated (an emoji in front of the text stopped the match).',
+    ]],
     ['v' => '3.89.1', 'date' => '2026-10-17', 'title' => 'Library cards as designed', 'changes' => [
         'Library cards carry the approved design: labelled actions on every card (Name, Send to chats, Download, Edit), a clear accent frame on selected cards; in Deleted each card has a Put back button.',
     ]],
