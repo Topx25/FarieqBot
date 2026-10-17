@@ -5,6 +5,8 @@ declare(strict_types=1);
  * The full development log stays in version.php. Each entry has Arabic (ar) and English (en) text.
  */
 return [
+    ['v' => '3.87', 'date' => '2026-10-17', 'ar' => ['ثيم أورورا', ['ثيم جديد للوحة: رئيسية بواجهة متدرجة وأرقامك ككروت حية وأرقام كبيرة وكروت زجاجية، فاتح وغامق.']],
+        'en' => ['Aurora theme', ['A new dashboard theme: a gradient home with your numbers as live cards, large figures and glass cards, light and dark.']]],
     ['v' => '3.86', 'date' => '2026-10-17', 'ar' => ['العمل أوفلاين ونقل رقم', ['الردود اللي بتتكتب والواتساب مفصول بتستنى وتتبعت لوحدها لما الرقم يرجع، ونقل محادثات رقم قديم لرقم جديد بزرار واحد.']],
         'en' => ['Offline work and moving numbers', ['Replies written while WhatsApp is disconnected wait and go out when the number is back; move an old number\'s chats to a new one with one button.']]],
     ['v' => '3.85', 'date' => '2026-10-17', 'ar' => ['المكتبة كمدير ملفات', ['فلتر بالشات أو الجروب والتاريخ، وعرض أيقونات أو كروت كبيرة أو قائمة، وإظهار التفاصيل، وتنزيل الملفات المختارة كملف مضغوط.']],

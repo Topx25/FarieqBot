@@ -1,0 +1,68 @@
+/* WhatsApp Inbox — "Aurora" theme (Topx1.Host): a modern home built as a dashboard —
+   a deep gradient hero with the numbers as live status cards, large KPI tiles, glass cards, rounded everywhere.
+   Only colours and layout: the same page, the same data. */
+:root{
+  --page:#f3f5fb;--page-2:#eef1f9;--card:#ffffff;--card-2:#ffffff;--card-in:#f6f7fc;
+  --line:#e4e7f0;--line-2:#d5d9e6;--ink:#141826;--ink-2:#353b4f;--muted:#69708a;--faint:#9aa0b5;
+  --acc:#5b5bf6;--acc2:#14b8a6;--accent:var(--acc);--accent-ink:#3d3dd0;--accent-soft:#ececfe;
+  --nav:#ffffff;--nav-2:#ffffff;--nav-on:var(--acc);--c-in:var(--acc);--c-out:var(--acc2);
+  --t1:#ececfe;--t1i:#3d3dd0;--t2:#dcf7f3;--t2i:#0f766e;--t3:#fef3c7;--t3i:#92400e;--t4:#fde4ef;--t4i:#9d174d;--hot:#fff1e6;--good:#15803d;--bad:#b45309;
+  --surface:var(--card);--surface-2:var(--card-in);--brand:var(--acc);--brand-2:var(--accent-ink);--brand-soft:var(--accent-soft);
+  --hero-1:#1e1b4b;--hero-2:#4338ca;--hero-3:#0d9488;
+  --chat-bg:#f1f3fa;--bubble-in:#ffffff;--bubble-out:#e7e7fd;color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --page:#0d1020;--page-2:#0d1020;--card:#151a2e;--card-2:#151a2e;--card-in:#1a2038;--line:#262d47;--line-2:#323a5a;
+  --ink:#e9ecf8;--ink-2:#c3c8de;--muted:#97a0bd;--faint:#6f7896;--nav:#151a2e;--nav-2:#151a2e;--nav-on:#9a9bff;
+  --accent:#8b8cff;--accent-ink:#b9baff;--accent-soft:#25275a;--c-in:#8b8cff;--c-out:#2dd4bf;
+  --t1:#25275a;--t1i:#c7c8ff;--t2:#123b38;--t2i:#7ee8d9;--t3:#3a2e10;--t3i:#f5c86b;--t4:#3b1830;--t4i:#f9a8d4;--hot:#3a2414;--good:#7dd3a0;--bad:#f5c86b;
+  --hero-1:#0b0b2b;--hero-2:#2e2a8a;--hero-3:#0f5f58;--chat-bg:#0d1020;--bubble-in:#1a2038;--bubble-out:#2b2d6b;color-scheme:dark;
+}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
+  --page:#0d1020;--page-2:#0d1020;--card:#151a2e;--card-2:#151a2e;--card-in:#1a2038;--line:#262d47;--line-2:#323a5a;
+  --ink:#e9ecf8;--ink-2:#c3c8de;--muted:#97a0bd;--faint:#6f7896;--nav:#151a2e;--nav-2:#151a2e;--nav-on:#9a9bff;
+  --accent:#8b8cff;--accent-ink:#b9baff;--accent-soft:#25275a;--c-in:#8b8cff;--c-out:#2dd4bf;
+  --t1:#25275a;--t1i:#c7c8ff;--t2:#123b38;--t2i:#7ee8d9;--t3:#3a2e10;--t3i:#f5c86b;--t4:#3b1830;--t4i:#f9a8d4;--hot:#3a2414;--good:#7dd3a0;--bad:#f5c86b;
+  --hero-1:#0b0b2b;--hero-2:#2e2a8a;--hero-3:#0f5f58;--chat-bg:#0d1020;--bubble-in:#1a2038;--bubble-out:#2b2d6b;color-scheme:dark;}}
+
+html,body{background:var(--page)!important;font-family:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif}
+.card{border-radius:18px!important;border:1px solid var(--line)!important;box-shadow:0 1px 2px rgba(20,24,38,.04),0 8px 24px -16px rgba(20,24,38,.18)!important}
+.btn.primary{background:linear-gradient(135deg,var(--acc),var(--hero-3))!important;border:0!important;border-radius:12px!important}
+.side{background:var(--nav)!important;border-inline-end:1px solid var(--line)!important}
+.side a.on,.side .on>a{background:var(--accent-soft)!important;color:var(--accent-ink)!important;border-radius:12px!important}
+.topbar{background:color-mix(in srgb,var(--card) 82%,transparent)!important;backdrop-filter:blur(12px);border-bottom:1px solid var(--line)!important}
+
+/* ---- Home: hero with the numbers as status cards ---- */
+.home{display:grid;gap:18px}
+.home .h-hero{display:grid!important;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;padding:26px 28px!important;border-radius:24px;color:#fff;
+  background:radial-gradient(1200px 400px at 110% -40%,color-mix(in srgb,var(--hero-3) 70%,transparent),transparent 60%),linear-gradient(135deg,var(--hero-1),var(--hero-2))!important;
+  box-shadow:0 20px 40px -24px color-mix(in srgb,var(--hero-2) 80%,transparent)}
+.home .h-hero h1{color:#fff!important;font-size:30px!important;margin:4px 0}
+.home .h-hero small,.home .h-hero .muted,.home .h-hero p{color:rgba(255,255,255,.78)!important}
+.home .h-accs{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:16px}
+.home .h-acc{display:flex!important;flex-direction:column;gap:2px;padding:12px 14px!important;border-radius:16px!important;background:rgba(255,255,255,.1)!important;
+  border:1px solid rgba(255,255,255,.18)!important;color:#fff!important;text-decoration:none;backdrop-filter:blur(6px);transition:transform .15s,background .15s}
+.home .h-acc:hover{transform:translateY(-2px);background:rgba(255,255,255,.16)!important}
+.home .h-acc.cur{outline:2px solid rgba(255,255,255,.7)}
+.home .h-quick{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-content:start}
+.home .h-quick a,.home .h-quick button{display:flex;align-items:center;gap:8px;padding:14px!important;border-radius:16px!important;background:rgba(255,255,255,.12)!important;color:#fff!important;border:1px solid rgba(255,255,255,.2)!important;text-decoration:none;font-weight:600}
+.home .h-quick a:hover,.home .h-quick button:hover{background:rgba(255,255,255,.2)!important}
+
+/* ---- KPI tiles ---- */
+.home .h-kpis{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.home .kpi{border-radius:20px!important;padding:18px 20px!important;background:var(--card)!important;border:1px solid var(--line)!important;position:relative;overflow:hidden}
+.home .kpi::before{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:4px;background:linear-gradient(var(--acc),var(--acc2))}
+.home .kpi b,.home .kpi .v,.home .kpi strong{font-size:28px!important;font-weight:700;color:var(--ink)!important}
+
+/* ---- Grid of cards ---- */
+.home .h-grid{display:grid!important;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px}
+.home .h-chart{grid-row:span 2}
+.home .card-h h2{font-size:16px!important}
+.home .top-list>*,.home .h-list>*{border-radius:12px}
+.home .h-short{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+
+@media (max-width:1000px){
+  .home .h-hero{grid-template-columns:1fr;padding:20px 16px!important}
+  .home .h-grid{grid-template-columns:1fr}.home .h-chart{grid-row:auto}
+  .home .h-quick{grid-template-columns:repeat(2,minmax(0,1fr))}
+}

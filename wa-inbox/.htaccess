@@ -5,7 +5,7 @@ DirectoryIndex index.php
   # Only the app entry point and its own assets are served; data, users and code are refused.
   RewriteRule (^|/)\.data(/|$) - [F,L]
   RewriteCond %{REQUEST_FILENAME} -f
-  RewriteRule !(^|/)(index\.php|install\.php|pricing\.php|app\.css|app\.js|features\.js|theme\.css|google\.css|orchid\.css|studio\.css)$ - [F,L]
+  RewriteRule !(^|/)(index\.php|install\.php|pricing\.php|app\.css|app\.js|features\.js|theme\.css|google\.css|orchid\.css|studio\.css|aurora\.css)$ - [F,L]
 </IfModule>
 <FilesMatch "\.(json|jsonl|log|md|txt)$">
   Require all denied

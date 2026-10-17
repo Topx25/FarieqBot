@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.87.0', 'date' => '2026-10-17', 'title' => 'Aurora theme', 'changes' => [
+        'New dashboard theme «Aurora» (Settings → Dashboard theme): the home becomes a dashboard — a gradient hero with the numbers as live status cards and quick links, large KPI tiles, glass cards, two-column grid; light and dark.',
+    ]],
     ['v' => '3.86.0', 'date' => '2026-10-17', 'title' => 'Offline work and moving to a new number', 'changes' => [
         'A reply (text or file) written while WhatsApp is disconnected is kept in the number\'s outbox and sent automatically, oldest first, as soon as the number is back (checked every minute). The chats page shows an offline banner with how many replies wait; chats, files and search keep working offline.',
         'Numbers page → 🔁 Move the chats of an old number to a new one: the old messages, files, notes, assignments, summaries and cases are added to the new number once (the old number keeps its copy); the new number reconnects to show them.',

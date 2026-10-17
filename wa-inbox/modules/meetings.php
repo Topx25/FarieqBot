@@ -167,7 +167,7 @@ function wf_api_meetings(string $api): void {
     case 'ui_theme': {
         // Super admin chooses the dashboard theme for everyone.
         $in = wf_post(); if (!wi_is_super()) wi_json(['ok' => false, 'error' => 'Only the super admin can change the theme.'], 403);
-        $t = in_array($in['theme'] ?? '', ['google', 'classic', 'orchid', 'studio'], true) ? $in['theme'] : 'google';
+        $t = in_array($in['theme'] ?? '', ['google', 'classic', 'orchid', 'studio', 'aurora'], true) ? $in['theme'] : 'google';
         $c = wi_config(); $c['ui_theme'] = $t; wi_write('config.json', $c); wi_log('ui_theme', ['theme' => $t]);
         wi_json(['ok' => true]);
     }
