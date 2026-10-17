@@ -211,7 +211,7 @@ function wf_bot_answer(array $acc, string $text, array $history = [], string $pr
     $self = preg_replace('/[\x{064B}-\x{065F}\x{0670}\x{0640}]/u', '', trim((string) ($acc['name'] ?? '')));
     if ($self !== '' && isset($ai['data']['reply']) && preg_match_all('/\p{L}/u', $self, $ch)) { $re = implode('[\x{064B}-\x{065F}\x{0670}\x{0640}\s]*', array_map(fn($c) => preg_quote($c, '/'), $ch[0]));
         $ai['data']['reply'] = preg_replace('/(\x{0627}\x{0644}\x{0634}\x{064A}\x{062E}|\x{0634}\x{064A}\x{062E})[\x{064B}-\x{065F}\s]+' . $re . '/u', '$1', (string) $ai['data']['reply']); }
-    $SS = wf_style_cfg($aid); $ai['data']['reply'] = wf_clean_affection((string) ($ai['data']['reply'] ?? ''), $SS['strip_affection'] ? wf_style_words((string) $SS['affection_words']) : [], !empty($SS['strip_romantic']));
+    $SS = wf_style_cfg($aid); $ai['data']['reply'] = wf_clean_affection((string) ($ai['data']['reply'] ?? ''), $SS['strip_affection'] ? wf_style_words((string) $SS['affection_words'] . '،' . (string) (wf_pack($aid)['nicknames'] ?? '')) : [], !empty($SS['strip_romantic']));
     $used = [];
     foreach ((array) ($ai['data']['used'] ?? []) as $u) { $i = (int) preg_replace('/\D/', '', (string) $u) - 1; if (isset($src[$i])) $used[] = $i; }
     // 3) A confident general answer is kept for next time.

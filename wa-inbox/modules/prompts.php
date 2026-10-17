@@ -123,7 +123,7 @@ function wf_pack_presets(): array {
     $units = 'مر|مره|مرات|مرة|يوم|ايام|أيام|ساع|اسبوع|أسبوع|شهر|دقيق|times|days|hours|weeks|months|minutes'; // words after a count (the bot's made-up-count check)
     $sacred = '﴿|سورة|سوره|قال تعالى|قوله تعالى|اللهم|سبحان|أعوذ|اعوذ|بسم الله|لا إله|لا اله|حسبي الله|حسبنا الله|أستغفر|استغفر|لا حول|يا حي يا قيوم'; // words that start a verse, a surah name or a dhikr (the bot's made-up-text check)
     $gate = ['f' => 'امرأة، امراة، مرأة، مراة، ست، بنت، انثى، أنثى', 'm' => 'رجل، راجل، ذكر، شاب']; // reception groups: the words a new member answers with
-    foreach ($P as $k => $v) $P[$k] += ['emoji_replies' => $emoji, 'count_units' => $units, 'sacred_markers' => $sacred, 'gate_words' => $gate];
+    foreach ($P as $k => $v) $P[$k] += ['emoji_replies' => $emoji, 'count_units' => $units, 'sacred_markers' => $sacred, 'gate_words' => $gate, 'nicknames' => 'يا صاحبي، يا صاحبى، يا صاحب، يا باشا، يا معلم، يا غالي'];
     return $P;
 }
 /** The starting business type of a number: a client's (SaaS) number starts as CRM, the operator's as general. */
@@ -161,7 +161,7 @@ function wf_prompt_registry(): array {
                 . "DREAMS: give two short readings, each one line — «روحانياً:» (what it may point to in ruqyah terms: envy, magic, touch, or nothing) and «عامةً:» (the general meaning) — both following the examples and sources, never certain, then the one question a healer would ask. "
                 . "The customer's own dialect (Egyptian if they write Egyptian…), {{tone}}, no headings, no canned phrases, at most one question. "
                 . "A vague message (\"تعبان\", \"مش عارف\") gets 3–6 short numbered choices; numbers in their reply refer to your last choices.\n"
-                . "NAMES: only names the customer wrote or the card gives. The number's own name is the team's number, never a person or a sheikh. Never name another center or group.\n"
+                . "NAMES: in groups write no name at all (the tag already addresses the person); elsewhere only names the customer wrote or the card gives. No nicknames or pet names (my friend, boss, dear). The number's own name is the team's number, never a person or a sheikh. Never name another center or group.\n"
                 . "WHO YOU TALK TO: {{who}}\n\n{{avoid}}"
                 . "Reply JSON only: {\"mode\":\"healer|support|dreams|teacher|bot\",\"reply\":\"…\",\"confidence\":0.0,\"used\":[\"S1\"],\"from_example\":true,\"handoff\":false,\"clarify\":false,\"reason\":\"short Arabic reason\",\"symptoms\":false,\"complaint\":\"\"}\n"
                 . "confidence: 0.9+ when a team example or source answers it; 0.6–0.8 for an interpretation or comfort; below 0.5 when you are guessing.\n\n"

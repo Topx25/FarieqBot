@@ -5,6 +5,13 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.81.0', 'date' => '2026-10-17', 'title' => 'Strict group rules', 'changes' => [
+        'Groups: the bot answers the team (healers, admins) only when they tag it or reply to it — no more answers to their chat and jokes.',
+        'Groups: a message that tags or quotes another member is not for the bot; one reply per person per 2 minutes (more waits).',
+        'Group replies tag only the person answered: other @numbers and "يا <another member>" are removed; the prompt asks for no names and no nicknames; nicknames (يا صاحبي، يا باشا…) are removed (business profile "nicknames").',
+        'Reception: "woman / man" inside a longer greeting counts (not in a question); one move notice per member even when two joins arrive together; reminders and removal only for members still in the group, removed by their real id (removal failed in LID groups).',
+        'Fixed: Google Drive linking lost its access token (code inside a comment). New QA check: no code inside comments.',
+    ]],
     ['v' => '3.80.5', 'date' => '2026-10-17', 'title' => 'Gateway page: a new number shows starting', 'changes' => [
         'A number added in the last 3 minutes shows «Starting…» instead of «Stopped» while the watchdog starts its gateway.',
         'Fixed: a new number lost its creation time and its auto-reply flag (they sat inside a code comment).',

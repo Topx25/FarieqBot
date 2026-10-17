@@ -177,7 +177,8 @@ function wf_drive_callback(): void {
             'code' => (string) $_GET['code'], 'client_id' => $c['client_id'], 'client_secret' => $c['client_secret'], 'redirect_uri' => wf_drive_redirect(), 'grant_type' => 'authorization_code'])]);
         $r = json_decode((string) curl_exec($ch), true); curl_close($ch);
         if (!empty($r['refresh_token'])) {
-            $c['refresh_token'] = $r['refresh_token']; if (wf_google_ws() === '') wi_secret_set('google_refresh_token', (string) $r['refresh_token']); // a client's token is saved under its own name (wf_drive_save), never over the operator's $c['access_token'] = $r['access_token'] ?? ''; $c['expires'] = time() + (int) ($r['expires_in'] ?? 3000);
+            $c['refresh_token'] = $r['refresh_token']; if (wf_google_ws() === '') wi_secret_set('google_refresh_token', (string) $r['refresh_token']); // a client's token is saved under its own name (wf_drive_save), never over the operator's
+            $c['access_token'] = $r['access_token'] ?? ''; $c['expires'] = time() + (int) ($r['expires_in'] ?? 3000);
             $u = wf_drive_req('GET', 'https://www.googleapis.com/drive/v3/about?fields=user', (string) $c['access_token']);
             $c['email'] = (string) ($u['body']['user']['emailAddress'] ?? '');
             $c['scopes'] = (string) ($r['scope'] ?? '');

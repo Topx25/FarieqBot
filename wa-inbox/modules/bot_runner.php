@@ -37,6 +37,13 @@ function wf_clean_gcfg(array $g): array {
         'gate_notify' => preg_match('/^[0-9-]{6,40}@g\.us$/', (string) ($g['gate_notify'] ?? '')) ? (string) $g['gate_notify'] : '', // where the healer is asked to open the case
         'gate_review' => implode(', ', array_slice(array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) ($g['gate_review'] ?? ''))))), 0, 10))];
 }
+/** Group reply clean-up: no @numbers of other people, no names of other members, no "يا <name>" of someone else. */
+function wf_reply_strict(string $t, array $otherNames, string $who): string {
+    $t = preg_replace_callback('/@(\d{6,})/', fn($m) => $m[1] === $who ? $m[0] : '', $t);
+    foreach ($otherNames as $n) { $n = trim(preg_replace('/[^\p{L}\p{N}\s]/u', ' ', (string) $n)); $n = trim(preg_replace('/\s+/u', ' ', $n)); if (mb_strlen($n) < 3) continue;
+        $q = preg_quote($n, '/'); $t = preg_replace('/(^|\s)\x{064A}\x{0627}\s+' . $q . '/u', '$1', $t); } // only when the reply calls them ("يا NAME"): a name that is also a phrase stays in sentences
+    return trim(preg_replace(['/[ \t]{2,}/u', '/\s+([\x{060C},.!?\x{061F}])/u'], [' ', '$1'], $t));
+}
 /** A message with no words, only emojis: a reaction like a person would give (and for some a short line), without the AI.
  *  Rules from the business profile "emoji_replies" ("emojis => reaction | reply", "*" = any other emoji). Returns what was done, or ''. */
 function wf_bot_emoji(array $acc, string $jid, string $msgId, string $text, bool $reply = true): string {
@@ -125,8 +132,11 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             if ($who !== '' && !isset($team[$who]) && $text !== '' && !wf_words($text) && ($g['trigger'] ?? 'mention') === 'all' && $c['mode'] === 'auto') { wf_bot_emoji($acc, (string) $x['jid'], (string) ($m['id'] ?? ''), $text, false); continue; } // only emojis in a group: a reaction, no message
             $mentioned = $me !== '' && (in_array($me, array_map('wf_phone', (array) ($m['mentions'] ?? [])), true) || wf_phone($m['quote_from'] ?? '') === $me);
             // A group admin is answered when they ask a question or tag the bot — not while they answer someone else (a reply or a tag of another member).
-            $adminAsks = isset($team[$who]) && $team[$who] === 'group admin' && ($mentioned || (wf_is_question($text) && empty($m['quote_from']) && !array_diff(array_map('wf_phone', (array) ($m['mentions'] ?? [])), [$me])));
+            $adminAsks = isset($team[$who]) && $mentioned; // STRICT: healers and admins talk among themselves — the bot answers them only when they tag it or reply to it
             if ($who === '' || (isset($team[$who]) && !$adminAsks) || $text === '' || !wf_words($text)) continue;
+            $toOther = (!empty($m['quote_from']) && wf_phone((string) $m['quote_from']) !== $me) || array_diff(array_map('wf_phone', (array) ($m['mentions'] ?? [])), [$me]);
+            if (!$mentioned && $toOther) continue; // STRICT: a message to another member is not for the bot
+            $lastTo = max([0] + (array) ($st['gwho'][$x['jid']][$who] ?? [])); if (!$mentioned && time() - $lastTo < 120) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
             $trig = $g['trigger'] ?? 'mention';
             if ($trig === 'mention' && !$mentioned) continue;
             if ($trig === 'questions' && !$mentioned && !wf_is_question($text)) continue;
@@ -163,6 +173,9 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 if ($r['handoff']) $log['why'] = 'handed over to a person';
             }
             $n++;
+            // STRICT: the reply tags only the person it answers and never names another member (names mixed up between people)
+            $others = []; foreach (array_slice($rows, -150) as $om) { $on = trim((string) ($om['from_name'] ?? ($om['name'] ?? ''))); if ($on !== '' && wf_phone((string) ($om['from'] ?? '')) !== $who && mb_strlen($on) >= 3) $others[$on] = 1; }
+            $log['reply'] = wf_reply_strict((string) ($log['reply'] ?? ''), array_keys($others), $who);
             $mentions = [];
             if (!empty($r['handoff'])) {
                 // Handing over in a group: tag the group's admins so they get a notification.
