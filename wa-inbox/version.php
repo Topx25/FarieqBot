@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.96.3', 'date' => '2026-10-17', 'title' => 'Library has its own menu group', 'changes' => [
+        'Menu: the Library (library, audio, files, media) is now its own group, no longer inside "Automation & content" with the bot. Names and icons set in the menu settings still apply.',
+    ]],
     ['v' => '3.96.2', 'date' => '2026-10-17', 'title' => 'Written text command finds the right text', 'changes' => [
         'Fixed: "#رقية العين والحسد" did not find "رقية العين و الحسد …" (a space after the و, and the search stopped at the first phrase that returned anything). A leading "و" is now the word "and", and the whole name plus its main words are all searched.',
         'A single text that is not of the kind the command names (no "رقية" in its title) is shown as the closest, never sent.',

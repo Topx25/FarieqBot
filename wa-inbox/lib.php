@@ -483,11 +483,12 @@ function wi_menu_registry(): array {
         ['id' => 'cases', 'title' => 'Cases & follow-up', 'items' => [
             ['key' => 'cases', 'icon' => '🩺', 'label' => 'Cases', 'who' => 'all'],
             ['key' => 'schedule', 'icon' => '⏰', 'label' => 'Scheduling & programs', 'who' => 'all', 'pages' => ['schedule', 'programs', 'status']]]],
+        ['id' => 'lib', 'title' => 'Library', 'items' => [
+            ['key' => 'library', 'icon' => '📚', 'label' => 'Library', 'who' => 'all', 'pages' => ['library', 'audio', 'files', 'media']]]],
         ['id' => 'auto', 'title' => 'Automation & content', 'items' => [
             ['key' => 'botrun', 'icon' => '🤖', 'label' => 'Bot', 'who' => 'all', 'pages' => ['botrun', 'botgroup']],
             ['key' => 'learning', 'icon' => '🎓', 'label' => 'Learning', 'who' => 'all'],
             ['key' => 'bot', 'icon' => '🧠', 'label' => 'Bot: learning & test', 'who' => 'all'],
-            ['key' => 'library', 'icon' => '📚', 'label' => 'Library', 'who' => 'all', 'pages' => ['library', 'audio', 'files', 'media']],
             ['key' => 'analytics', 'icon' => '📈', 'label' => 'Analytics & data', 'who' => 'all'],
             ['key' => 'numbers', 'icon' => '📇', 'label' => 'Numbers', 'who' => 'all']]],
         ['id' => 'admin', 'title' => 'Administration', 'items' => [
