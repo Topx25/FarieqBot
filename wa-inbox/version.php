@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.82.0', 'date' => '2026-10-17', 'title' => 'Warm-up mode (healing groups)', 'changes' => [
+        'The owner types #هزار in any private chat on the phone: for 2 hours the bot chats and jokes lightly with everyone in the groups that allow it (group setting "Warm-up mode"), team included; #جد stops it. The note goes to the owner\'s own number, never to that chat. Healing business only.',
+        'The verse/dhikr check and the reception words are now part of the healing business only; other businesses do not get them.',
+        'Fixed: the one-reply-per-2-minutes rule read the wrong time.',
+    ]],
     ['v' => '3.81.0', 'date' => '2026-10-17', 'title' => 'Strict group rules', 'changes' => [
         'Groups: the bot answers the team (healers, admins) only when they tag it or reply to it — no more answers to their chat and jokes.',
         'Groups: a message that tags or quotes another member is not for the bot; one reply per person per 2 minutes (more waits).',

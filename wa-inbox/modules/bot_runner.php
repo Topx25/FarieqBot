@@ -29,6 +29,7 @@ function wf_clean_gcfg(array $g): array {
         'text' => mb_substr(trim((string) ($g['text'] ?? '')), 0, 2000), 'cooldown' => max(1, min(720, (int) ($g['cooldown'] ?? 24))), 'name' => mb_substr((string) ($g['name'] ?? ''), 0, 120),
         'welcome' => !empty($g['welcome']) && $g['welcome'] !== '0', 'welcome_text' => mb_substr(trim((string) ($g['welcome_text'] ?? '')), 0, 2000),
         'learn' => !empty($g['learn']) && $g['learn'] !== '0',
+        'fun' => !empty($g['fun']) && $g['fun'] !== '0', // warm-up mode allowed here (turned on from the phone)
         // Reception gate: "woman / man" → the member is asked for a recording; the recording → the reviewers are tagged
         'approve' => !empty($g['approve']) && $g['approve'] !== '0', // join requests approved automatically
         'gate' => !empty($g['gate']) && $g['gate'] !== '0', 'gate_f' => mb_substr(trim((string) ($g['gate_f'] ?? '')), 0, 300), 'gate_m' => mb_substr(trim((string) ($g['gate_m'] ?? '')), 0, 300),
@@ -36,6 +37,18 @@ function wf_clean_gcfg(array $g): array {
         'gate_follow' => !isset($g['gate_follow']) || ($g['gate_follow'] && $g['gate_follow'] !== '0'), 'gate_remind_h' => max(1, min(72, (int) ($g['gate_remind_h'] ?? 3))), 'gate_final_h' => max(1, min(72, (int) ($g['gate_final_h'] ?? 3))), 'gate_kick_m' => max(0, min(1440, (int) ($g['gate_kick_m'] ?? 30))),
         'gate_notify' => preg_match('/^[0-9-]{6,40}@g\.us$/', (string) ($g['gate_notify'] ?? '')) ? (string) $g['gate_notify'] : '', // where the healer is asked to open the case
         'gate_review' => implode(', ', array_slice(array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) ($g['gate_review'] ?? ''))))), 0, 10))];
+}
+/* ---------- Warm-up mode: the owner types the word (#هزار) in any private chat on the phone; the bot then chats and jokes
+ *  with everyone in the groups that allow it, for a few hours or until the stop word. A product feature for every business. ---------- */
+function wf_fun_on(string $aid): bool { return (int) (wi_read('fun_mode.json', [])[$aid] ?? 0) > time(); }
+/** The owner's word typed on the phone: on / off. Returns the note for the owner, or '' when the text is not the word. */
+function wf_fun_command(string $aid, string $text): string {
+    $P = wf_pack($aid); $on = (string) ($P['fun_cmd'] ?? ''); $off = (string) ($P['fun_off'] ?? ''); $t = wf_intake_norm(trim($text));
+    if ($on === '' || $t === '') return '';
+    if ($off !== '' && $t === wf_intake_norm($off)) { wi_update('fun_mode.json', function ($F) use ($aid) { unset($F[$aid]); return $F; }); return wf_msg('fun_off'); }
+    if ($t !== wf_intake_norm($on)) return '';
+    $h = max(1, (int) ($P['fun_hours'] ?? 2)); wi_update('fun_mode.json', function ($F) use ($aid, $h) { $F[$aid] = time() + $h * 3600; return $F; });
+    return wf_msg('fun_on', ['hours' => (string) $h, 'off' => $off]);
 }
 /** Group reply clean-up: no @numbers of other people, no names of other members, no "يا <name>" of someone else. */
 function wf_reply_strict(string $t, array $otherNames, string $who): string {
@@ -125,6 +138,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
         foreach ($pend as $w => $_) $st['gwho'][$x['jid']][$w] = array_values(array_filter((array) ($st['gwho'][$x['jid']][$w] ?? []), fn($t) => $t > $hourAgo));
         $lastAns = []; foreach ($pend as $w => $_) { $ts = (array) ($st['gwho'][$x['jid']][$w] ?? []); $lastAns[$w] = $ts ? max($ts) : 0; }
         uksort($pend, fn($p, $q) => $lastAns[$p] <=> $lastAns[$q]);
+        $fun = !empty($g['fun']) && wf_fun_on($aid); // warm-up mode: the owner typed the word on the phone — light chat with everyone in this group
         foreach ($pend as $pw => [$i, $m]) {
             if ($n >= 3) break; $r = [];
             if (count($st['gwho'][$x['jid']][$pw] ?? []) >= 4) continue; // this person already got 4 replies this hour — give others a turn
@@ -133,11 +147,11 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             $mentioned = $me !== '' && (in_array($me, array_map('wf_phone', (array) ($m['mentions'] ?? [])), true) || wf_phone($m['quote_from'] ?? '') === $me);
             // A group admin is answered when they ask a question or tag the bot — not while they answer someone else (a reply or a tag of another member).
             $adminAsks = isset($team[$who]) && $mentioned; // STRICT: healers and admins talk among themselves — the bot answers them only when they tag it or reply to it
-            if ($who === '' || (isset($team[$who]) && !$adminAsks) || $text === '' || !wf_words($text)) continue;
+            if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun) || $text === '' || !wf_words($text)) continue;
             $toOther = (!empty($m['quote_from']) && wf_phone((string) $m['quote_from']) !== $me) || array_diff(array_map('wf_phone', (array) ($m['mentions'] ?? [])), [$me]);
-            if (!$mentioned && $toOther) continue; // STRICT: a message to another member is not for the bot
-            $lastTo = max([0] + (array) ($st['gwho'][$x['jid']][$who] ?? [])); if (!$mentioned && time() - $lastTo < 120) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
-            $trig = $g['trigger'] ?? 'mention';
+            if (!$mentioned && $toOther && !$fun) continue; // STRICT: a message to another member is not for the bot
+            $lastTo = max(array_merge([0], (array) ($st['gwho'][$x['jid']][$who] ?? []))); if (!$mentioned && time() - $lastTo < ($fun ? 45 : 120)) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
+            $trig = $fun ? 'all' : ($g['trigger'] ?? 'mention');
             if ($trig === 'mention' && !$mentioned) continue;
             if ($trig === 'questions' && !$mentioned && !wf_is_question($text)) continue;
             // An admin is talking with this member: the bot waits until the admin has been quiet for "human_wait" minutes, then answers.
@@ -161,7 +175,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 $rc = function_exists('wf_roles_cfg') ? wf_roles_cfg($aid) : ['group_role' => '']; $role = function_exists('wf_role_pick') ? wf_role_pick($aid, $x['jid'] . '|' . $who, $text, (string) ($g['role'] ?? $rc['group_role'])) : 'bot';
                 if ($role === 'crisis') { wf_role_crisis($acc, (string) $x['jid'], $text, (string) ($m['from_name'] ?? ''), (string) ($m['id'] ?? ''), $who); $n++; continue; }
                 $mine = []; foreach (array_slice($rows, -60) as $bm) if (($bm['dir'] ?? '') === 'out' && ($bm['via'] ?? '') === 'bot' && trim((string) ($bm['text'] ?? '')) !== '') $mine[] = (string) $bm['text']; // never repeat what the bot already said here
-                $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => array_slice($mine, -4), 'role' => $role, 'jid' => $x['jid'] . '|' . $who]);
+                $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => array_slice($mine, -4), 'role' => $role, 'jid' => $x['jid'] . '|' . $who] + ($fun ? ['fun' => true] : []));
                 if (empty($r['ok']) || trim((string) $r['reply']) === '') continue;
                 $log += ['reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'role' => $role];
                 // Like private chats: confident answers, short clarifying questions, and the polite
@@ -169,7 +183,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 $clar = !empty($r['clarify']) || (mb_strlen($r['reply']) < 220 && preg_match('/[؟?]\s*$/u', trim($r['reply'])) && $r['confidence'] >= 0.3);
                 if (!empty($r['mode']) && $r['mode'] !== $role && isset(wf_roles_cfg($aid)['roles'][$r['mode']])) $role = (string) $r['mode']; // the model's own choice of mode
                 $gMin = in_array($role, ['dreams', 'support', 'healer'], true) ? min((float) $c['min_conf'], 0.65) : (float) $c['min_conf']; // the roles send from 0.65 in groups too, as in private chats
-                $ok = $r['handoff'] || $clar || $r['confidence'] >= $gMin;
+                $ok = $r['handoff'] || $clar || $r['confidence'] >= $gMin || ($fun && trim((string) $r['reply']) !== '' && $r['confidence'] >= 0.3);
                 if ($r['handoff']) $log['why'] = 'handed over to a person';
             }
             $n++;
