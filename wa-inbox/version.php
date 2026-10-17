@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.82.2', 'date' => '2026-10-17', 'title' => 'Each business sees its own words', 'changes' => [
+        'Business settings → Interface words: a business other than healing sees only its own words (the healing wording of the base dictionary is no longer shown on the left), and the word search shows words as they read on its own panel. Neutral search hint.',
+        'Link page: a linked number shows its mobile number.',
+    ]],
     ['v' => '3.82.1', 'date' => '2026-10-17', 'title' => 'No hard-coded rules', 'changes' => [
         'The warm-up rule and the reply-rewrite instruction moved from the code to the prompt list (bot_fun, bot_fix), editable per number.',
         'The wait between two group replies to the same person is a bot setting (default 120 seconds).',

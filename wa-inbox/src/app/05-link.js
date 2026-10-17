@@ -9,7 +9,7 @@
       }
       if (r.connected) {
         badge.textContent = T('🟢 Connected'); badge.className = 'badge ok';
-        box.innerHTML = '<div class="empty big">✅<br>' + T('Connected') + (r.account ? ' — ' + esc(r.account) : '') + '</div>';
+        box.innerHTML = '<div class="empty big">✅<br>' + T('Connected') + (r.account ? ' — ' + esc(r.account) : '') + (r.phone ? '<div class="lk-phone" dir="ltr" style="font-size:20px;font-weight:700;margin-top:6px">📱 +' + esc(r.phone) + '</div>' : '') + '</div>';
         acts.innerHTML = '<button class="btn danger" id="lk-relink">' + T('Re-link to pull old chats') + '</button>';
       } else {
         badge.textContent = T('🟡 Waiting for scan'); badge.className = 'badge warn';

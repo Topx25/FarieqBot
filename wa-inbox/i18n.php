@@ -1214,6 +1214,7 @@ return [
     'Choose at least one group, or “All groups”.' => 'اختار جروب واحد على الأقل، أو «كل الجروبات».',
     'No welcome' => 'بدون ترحيب',
     'Reception gate' => 'بوابة الاستقبال',
+    'Search a word of the system…' => 'دوّر على كلمة في النظام…',
     'Groups: seconds between two replies to the same person' => 'الجروبات: ثواني بين ردين لنفس الشخص',
     'Warm-up mode' => 'وضع الهزار',
     'Not here' => 'مش هنا',

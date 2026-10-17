@@ -21,6 +21,9 @@ function wf_api_business(string $api): void {
     if ($api !== 'business_cfg') return;
     $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number.']); $aid = (string) $acc['id'];
     $base = (array) require dirname(__DIR__) . '/i18n.php'; // the plain dictionary (without this number's words)
+    // Another business never sees the healing wording of the plain dictionary: its words are shown as they read on its own panel.
+    $heal = (string) (wf_pack($aid)['preset'] ?? '') === 'ruqyah'; $mine = []; foreach (wf_terms_rows((string) (wf_pack($aid)['ui_terms'] ?? '')) as $r) $mine[$r[0]] = $r[1];
+    if (!$heal) foreach ($base as $en => $ar) if (isset($mine[$en])) $base[$en] = $mine[$en];
     if (isset($_GET['q'])) { // search the interface words to rename (Arabic or English)
         $q = mb_strtolower(trim((string) $_GET['q'])); $o = [];
         if (mb_strlen($q) >= 2) foreach ($base as $en => $ar) { if (strpos($en, '<') !== false || mb_strlen($en) > 90) continue;
@@ -54,7 +57,7 @@ function wf_api_business(string $api): void {
     foreach (wf_business_types() as $k => $t) if (wf_type_allowed($k, $aid) || $p['preset'] === $k) $types[] = ['key' => $k, 'icon' => $t['icon'], 'label' => (string) ($P[$k]['label'] ?? $k), 'desc' => $t['desc']];
     wi_json(['ok' => true, 'number' => (string) ($acc['name'] ?? $aid), 'type' => (string) $p['preset'], 'types' => $types,
         'names' => ['industry' => (string) ($p['industry'] ?? ''), 'client' => (string) ($p['client'] ?? ''), 'staff' => (string) ($p['staff'] ?? ''), 'program_label' => (string) ($p['program_label'] ?? ''), 'one' => (string) $c['one'], 'many' => (string) $c['many'], 'icon' => (string) $c['icon']],
-        'terms' => array_map(fn($r) => ['from' => $r[0], 'to' => $r[1], 'ar' => (string) ($base[$r[0]] ?? $r[0])], wf_terms_rows((string) ($p['ui_terms'] ?? ''))),
+        'terms' => array_map(fn($r) => ['from' => $r[0], 'to' => $r[1], 'ar' => $heal ? (string) ($base[$r[0]] ?? $r[0]) : ''], wf_terms_rows((string) ($p['ui_terms'] ?? ''))),
         'library' => is_file(wf_acc_rules_path($aid)) ? array_map(fn($s) => ['name' => (string) $s['name'], 'icon' => (string) ($s['icon'] ?? ''), 'words' => implode('، ', array_map(fn($v) => stripslashes($v), explode('|', (string) $s['pattern'])))], (array) ((json_decode((string) file_get_contents(wf_acc_rules_path($aid)), true) ?: [])['library']['sections'] ?? [])) : null,
         'can_ai' => wi_page_perm('learning') === 'edit', 'can_cases' => wi_page_perm('cases') === 'edit']);
 }

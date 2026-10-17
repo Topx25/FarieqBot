@@ -43,7 +43,8 @@
     }
     if ($api === 'qr') {
         if (!wi_can_manage(wi_current())) wi_json(['ok' => false, 'error' => 'Not allowed for this number.'], 403);
-        wi_json(wi_gateway('/qr.json'));
+        $q = wi_gateway('/qr.json'); if (!empty($q['connected'])) $q['phone'] = preg_replace('/[:@].*$/', '', (string) (wi_gateway('/status')['account']['id'] ?? '')); // the linked mobile number
+        wi_json($q);
     }
     if ($api === 'relink' || $api === 'restore') {
         if (!wi_can_manage(wi_current())) wi_json(['ok' => false, 'error' => 'Not allowed for this number.'], 403);
