@@ -423,15 +423,6 @@
           <select id="au-sort"><option value="copies">Most shared</option><option value="last">Newest</option><option value="long">Longest</option><option value="name">Name</option></select>
         </div>
       </section>
-      <section class="au-stats" id="au-stats"><div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div></section>
-      <section class="grid2 au-break">
-        <div class="card"><div class="card-h"><h2>📂 By category</h2></div><div class="pad" id="au-bycat"></div></div>
-        <div class="card"><div class="card-h"><h2>📥 Download status</h2></div><div class="pad" id="au-bydl"></div></div>
-      </section>
-      <section class="grid2 au-break">
-        <div class="card"><div class="card-h"><h2>🔁 Most repeated</h2></div><div id="au-top" class="people"></div></div>
-        <div class="card"><div class="card-h"><h2>📅 By month</h2></div><div class="pad" id="au-month"></div></div>
-      </section>
       <section class="sec-tiles" id="au-tiles"></section>
       <div class="card">
         <div class="search-bar row wrap"><div class="seg" id="au-view"><button class="on" data-v="active">🎧 Library</button><button data-v="archived">🗄️ Archive</button></div>
@@ -441,6 +432,18 @@
         </div>
         <div id="au-list" class="au-list"><div class="empty">Loading…</div></div>
       </div>
+
+      <details class="au-statbox card pad"><summary><b>📊 Statistics</b> <span class="muted small">— space, listening time, duplicates, categories and months</span></summary>
+      <section class="au-stats" id="au-stats"><div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div></section>
+      <section class="grid2 au-break">
+        <div class="card"><div class="card-h"><h2>📂 By category</h2></div><div class="pad" id="au-bycat"></div></div>
+        <div class="card"><div class="card-h"><h2>📥 Download status</h2></div><div class="pad" id="au-bydl"></div></div>
+      </section>
+      <section class="grid2 au-break">
+        <div class="card"><div class="card-h"><h2>🔁 Most repeated</h2></div><div id="au-top" class="people"></div></div>
+        <div class="card"><div class="card-h"><h2>📅 By month</h2></div><div class="pad" id="au-month"></div></div>
+      </section>
+      </details>
 
     <?php elseif ($page === 'library'): ?>
       <section class="hero lib-hero">
