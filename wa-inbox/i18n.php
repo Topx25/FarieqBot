@@ -334,6 +334,7 @@ return [
     'extra keys saved' => 'مفتاح إضافي محفوظ',
     'Remove the extra keys?' => 'تمسح المفاتيح الإضافية؟',
     '#ruqyah-name' => '#رقية-الاثيري',
+    'Section tags — one per line: #tag | library, audio, video, images, documents or programs | title (empty = off)' => 'وسوم الأقسام — سطر لكل وسم: #الوسم | library أو audio أو video أو images أو documents أو programs | العنوان (فاضي = مقفول)',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. Ruqyah Al-Athiri' => 'مثلًا: رقية الأثيري',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',

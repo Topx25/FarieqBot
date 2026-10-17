@@ -84,12 +84,44 @@ function wf_media_code_in(string $aid, string $text): string {
 }
 /** A message that names a file's code: the file is sent there (with its caption). True when sent. */
 function wf_media_code_send(array $acc, string $jid, string $text, string $quote = ''): bool {
+    if (wf_libtag_which((string) $acc['id'], $text)) return wf_libtag_send($acc, $jid, $text, $quote); // a section tag: the list of that section
     $key = wf_media_code_in((string) $acc['id'], $text); if ($key === '') return false;
     $m = (array) (wi_read('media_meta.json', [])[(string) $acc['id']][$key] ?? []);
     $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => (string) ($m['caption'] ?? ''), 'attachment' => $key, 'via' => 'bot'] + ($quote !== '' ? ['quote_id' => $quote] : []), $acc);
     if (!empty($r['ok'])) wi_update('media_meta.json', function ($M) use ($acc, $key) { $a = (string) $acc['id']; $M[$a][$key]['used'] = (int) ($M[$a][$key]['used'] ?? 0) + 1; return $M; });
     wi_log('media_code', ['account' => (string) $acc['id'], 'jid' => $jid, 'sent' => !empty($r['ok'])]);
     return !empty($r['ok']);
+}
+
+/* ---------- Section tags: writing "#صوتيات" in a chat or group lists that section with the shortcuts of its files ----------
+ * One line per tag in the business profile (Learning → AI instructions → lib_tags): "#tag | scope | title".
+ * Scopes: library (every file), audio, video, images, documents, programs. An empty field turns the tags off. */
+function wf_libtags(string $aid): array {
+    $raw = (string) (wf_pack($aid)['lib_tags'] ?? wf_pack_presets()['general']['lib_tags'] ?? ''); $out = [];
+    foreach (preg_split('/\R/u', $raw) as $l) { $x = array_map('trim', explode('|', $l)); $t = wf_media_code_clean($x[0] ?? '');
+        if ($t === '' || !in_array($x[1] ?? '', ['library', 'audio', 'video', 'images', 'documents', 'programs'], true)) continue; $out[] = ['tag' => $t, 'scope' => $x[1], 'title' => $x[2] ?? ltrim($t, '#')]; }
+    return $out;
+}
+/** The section tag this message is (the tag alone, spelling variants alike), or null. */
+function wf_libtag_which(string $aid, string $text): ?array {
+    $t = trim($text); if ($t === '' || $t[0] !== '#' || mb_strlen($t) > 60) return null;
+    $want = str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean($t)));
+    foreach (wf_libtags($aid) as $x) if (str_replace(['-', ' '], '', wf_intake_norm($x['tag'])) === $want) return $x;
+    return null;
+}
+/** Sends the list of a section: each file's name and shortcut (programs: their names). True when it was a section tag. */
+function wf_libtag_send(array $acc, string $jid, string $text, string $quote = ''): bool {
+    $aid = (string) $acc['id']; $x = wf_libtag_which($aid, $text); if (!$x) return false;
+    $lines = [];
+    if ($x['scope'] === 'programs') foreach (wf_programs($aid) as $p) $lines[] = '• ' . (string) ($p['name'] ?? '');
+    else { $inv = wf_lib_inventory($acc)['items']; $want = ['audio' => ['audio', 'voice'], 'video' => ['video', 'gif'], 'images' => ['image', 'sticker'], 'documents' => ['document']][$x['scope']] ?? null;
+        foreach ($inv as $i) { if ($want && !in_array($i['kind'], $want, true)) continue; $n = $i['title'] ?: ($i['name'] ?: mb_substr((string) $i['caption'], 0, 40)); if ($n === '' && $i['code'] === '') continue;
+            $lines[] = '• ' . ($n !== '' ? $n : $i['kind']) . ($i['code'] !== '' ? ' — ' . $i['code'] : ''); } }
+    $total = count($lines); $lines = array_slice($lines, 0, 60);
+    $say = wf_msg($lines ? 'lib_section' : 'lib_section_empty', ['title' => $x['title'], 'count' => (string) $total, 'list' => implode("\n", $lines)]);
+    $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => mb_substr($say, 0, 3900), 'via' => 'bot'] + ($quote !== '' ? ['quote_id' => $quote] : []), $acc);
+    wi_log('lib_tag', ['account' => $aid, 'jid' => $jid, 'scope' => $x['scope'], 'sent' => !empty($r['ok'])]);
+    return true;
 }
 
 /* ---------- Library inventory: everything in the library and every shortcut, built fresh on each request (always the latest) ---------- */

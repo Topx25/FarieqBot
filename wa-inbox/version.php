@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.90.0', 'date' => '2026-10-17', 'title' => 'Section tags', 'changes' => [
+        'New: write #المكتبة (every file), #صوتيات (recordings) or #البرامج (programs) in a chat or group and the bot lists that section with each file\'s name and shortcut; write a shortcut to get the file.',
+        'The tags are settings, not code: Learning → AI instructions → "Section tags" (one line per tag: #tag | library, audio, video, images, documents or programs | title). Empty = off. The two replies are editable in Messages.',
+    ]],
     ['v' => '3.89.8', 'date' => '2026-10-17', 'title' => 'Name and shortcut show at once', 'changes' => [
         'Saving "Name & shortcut" on a library card now updates the card right away, without refreshing the page.',
     ]],

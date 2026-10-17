@@ -51,6 +51,8 @@ function wf_msg_registry(): array {
         'list_shortcuts' => ['Group command "#قائمة #الاختصارات": the shortcuts', ['count', 'list'], "⚡ الاختصارات ({count})\n{list}", "⚡ Shortcuts ({count})\n{list}"],
         'list_programs' => ['Group command "#قائمة #البرامج": the programs (days)', ['count', 'list'], "📚 البرامج ({count})\n{list}", "📚 Programs ({count})\n{list}"],
         'lib_menu' => ['Library commands: the list (group)', ['list'], "📖 أوامر المكتبة:\n{list}\n\nاكتب الأمر واسم الملف أو البرنامج أو الرقية.", "📖 Library commands:\n{list}\n\nWrite the command and the name."],
+        'lib_section' => ['Section tag (e.g. #صوتيات): the files of that section with their shortcuts', ['title', 'count', 'list'], "📚 {title} ({count})\n{list}\n\nاكتب الاختصار (#...) وهيتبعت الملف.", "📚 {title} ({count})\n{list}\n\nWrite a shortcut (#...) and the file is sent."],
+        'lib_section_empty' => ['Section tag: nothing in that section yet', ['title', 'count', 'list'], "📚 {title}: لسه مافيش ملفات في القسم ده.", "📚 {title}: nothing in this section yet."],
         'lib_many' => ['Library commands: several matches', ['query', 'list'], "لقيت أكتر من حاجة باسم «{query}»، اكتب الاسم بالظبط:\n{list}", "Several matches for «{query}», write the exact name:\n{list}"],
         'lib_not_found' => ['Library commands: nothing found', ['query'], "⚠️ مش لاقي «{query}» في المكتبة.", "⚠️ «{query}» is not in the library."],
         'lib_program_day' => ['Library commands: one day of a program', ['day', 'text'], "📅 اليوم {day}\n{text}", "📅 Day {day}\n{text}"],

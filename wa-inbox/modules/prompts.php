@@ -15,7 +15,7 @@ function wf_pack_presets(): array {
             'library_kind' => 'messages and texts the business shares', 'library_sections' => 'FAQ, procedures, policies, offers, announcements, other', 'text_quality' => 'complete, correct, well formatted', 'text_errors' => 'wrong or outdated information',
             'ui_terms' => "Treatment group and follower => Follow-up group and follower\nTreatment group => Follow-up group\nDiagnosis => Assessment\nDiagnosed by => Assessed by\nConfirmed symptoms (one per line) => Main points (one per line)\nExtra symptoms => More details\nNo diagnosis group chosen yet => No reports group chosen yet",
             'case_ex_age' => '30', 'case_ex_kids' => '0', 'case_ex_country' => '', 'case_ex_points' => '', 'case_ex_assessment' => '', 'case_marital' => '', 'reception_pattern' => 'reception|استقبال', 'placement_m' => '', 'placement_f' => '', 'female_hint' => '',
-            'program_label' => 'Programs', 'audio_tag_category' => '', 'audio_categories' => "lesson | 🎓 | Lesson | #6366f1\nannouncement | 📣 | Announcement | #f59e0b\nother | 📁 | Other | #64748b", 'summary_labels' => '', 'ex_triggers' => 'التوصيل، امتى يوصل', 'ex_bot_name' => 'مساعد المتجر', 'ex_question' => 'كم مدة التوصيل؟', 'ex_message' => 'السلام عليكم، طلبت من يومين ولسه ما وصلش', 'ex_word' => 'التوصيل', 'ex_try' => 'الطلب اتأخر', 'ex_concept' => 'سياسة الاسترجاع', 'ex_search' => 'مواعيد العمل',
+            'lib_tags' => "#المكتبة | library | المكتبة\n#صوتيات | audio | الصوتيات\n#البرامج | programs | البرامج", 'program_label' => 'Programs', 'audio_tag_category' => '', 'audio_categories' => "lesson | 🎓 | Lesson | #6366f1\nannouncement | 📣 | Announcement | #f59e0b\nother | 📁 | Other | #64748b", 'summary_labels' => '', 'ex_triggers' => 'التوصيل، امتى يوصل', 'ex_bot_name' => 'مساعد المتجر', 'ex_question' => 'كم مدة التوصيل؟', 'ex_message' => 'السلام عليكم، طلبت من يومين ولسه ما وصلش', 'ex_word' => 'التوصيل', 'ex_try' => 'الطلب اتأخر', 'ex_concept' => 'سياسة الاسترجاع', 'ex_search' => 'مواعيد العمل',
             'quran_check' => '', 'quick_reply_example' => 'for a delivery-times message: "التوصيل", "امتى يوصل"', 'summary_categories' => 'inquiry, complaint, payment, new_order, follow_up, support, social, other', 'kb_types' => 'faq|procedure|policy', 'case_labels' => 'متابعة، عاجل، جديد'],
         'ruqyah' => ['label' => 'Ruqyah / spiritual healing', 'industry' => 'a Quran/ruqyah (spiritual healing) treatment team', 'language' => 'Arabic',
             'dialect_rule' => 'Reply in the customer\'s own language and dialect (Egyptian Arabic if they write Egyptian, Moroccan if Moroccan, etc.).', 'output_language' => 'Arabic', 'staff' => 'Therapist', 'client' => 'Case',
@@ -133,7 +133,7 @@ function wf_pack_default(string $aid): string { $a = wi_accounts()[$aid] ?? null
     return $a && function_exists('wi_ws') && wi_ws($a) !== '' ? 'crm' : 'general'; }
 function wf_pack(string $aid): array {
     $p = (array) (wi_read('bot.json', [])[$aid]['pack'] ?? []); $P = wf_pack_presets(); $p['preset'] ??= wf_pack_default($aid);
-    return $p + ($P[$p['preset']] ?? $P['general']);
+    return $p + ($P[$p['preset']] ?? $P['general']) + ['lib_tags' => $P['general']['lib_tags']]; // every profile starts with the section tags
 }
 /** Audio categories of the current number's business profile: "key | icon | label | colour" per line. */
 function wf_audio_cats(?string $aid = null): array {
