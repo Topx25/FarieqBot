@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.96.2', 'date' => '2026-10-17', 'title' => 'Written text command finds the right text', 'changes' => [
+        'Fixed: "#رقية العين والحسد" did not find "رقية العين و الحسد …" (a space after the و, and the search stopped at the first phrase that returned anything). A leading "و" is now the word "and", and the whole name plus its main words are all searched.',
+        'A single text that is not of the kind the command names (no "رقية" in its title) is shown as the closest, never sent.',
+    ]],
     ['v' => '3.96.1', 'date' => '2026-10-17', 'title' => 'Dream wait is a setting', 'changes' => [
         'Bot settings: "A dream told in pieces — wait this many seconds after the last piece, then answer once" (0 = answer each piece) is now editable next to the other wait times.',
     ]],

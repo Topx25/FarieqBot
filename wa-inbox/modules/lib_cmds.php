@@ -24,7 +24,7 @@ function wf_libcmd_media(array $acc): array {
 /** Best matches of a name among labels: exact, then starts with, then contains (all words). */
 function wf_libcmd_match(string $q, array $labels): array {
     $q = trim(wf_intake_norm($q)); if ($q === '') return [];
-    $words = array_filter(preg_split('/\s+/u', $q)); $exact = []; $start = []; $all = [];
+    $words = array_filter(array_map(fn($w) => mb_strlen($w) > 3 && str_starts_with($w, "\u{648}") ? mb_substr($w, 1) : $w, preg_split('/\s+/u', $q))); $exact = []; $start = []; $all = []; // a leading "و" is the word "and", not part of the name
     foreach ($labels as $k => $ls) foreach ((array) $ls as $l) { $l = trim(wf_intake_norm((string) $l)); if ($l === '') continue;
         if ($l === $q) { $exact[$k] = 1; break; }
         if (str_starts_with($l, $q)) $start[$k] = 1;
@@ -82,7 +82,8 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
             if (count($ah) > 1) { $many(array_map(fn($k) => $inv[$k]['title'] ?: ($inv[$k]['name'] ?: mb_substr($inv[$k]['caption'], 0, 50)), array_slice($ah, 0, 8))); return; }
             $say($inv[$ah[0]]['caption'], ['attachment' => $inv[$ah[0]]['key']]); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => 'audio']); return; }
         $words = array_values(array_filter(preg_split('/\s+/u', $q), fn($w) => mb_strlen($w) >= 3)); usort($words, fn($x, $y) => mb_strlen($y) <=> mb_strlen($x));
-        $g = []; foreach (array_unique(array_merge([$q], array_slice($words, 0, 2))) as $try) { $g = (array) (wi_gateway('/library?type=all&group=1&q=' . rawurlencode(mb_strtolower($try)), null, $acc)['groups'] ?? []); if ($g) break; }
+        $g = []; $seenG = []; $words = array_map(fn($w) => mb_strlen($w) > 3 && str_starts_with($w, "\u{648}") ? mb_substr($w, 1) : $w, $words); usort($words, fn($x, $y) => mb_strlen($y) <=> mb_strlen($x)); // "والحسد" is "الحسد"
+        foreach (array_unique(array_merge([$q], array_slice($words, 0, 2))) as $try) foreach ((array) (wi_gateway('/library?type=all&group=1&q=' . rawurlencode(mb_strtolower($try)), null, $acc)['groups'] ?? []) as $cg) { $ck = (string) ($cg['best']['key'] ?? $cg['title'] ?? ''); if (!isset($seenG[$ck])) { $seenG[$ck] = 1; $g[] = $cg; } } // the whole name and its main words: every candidate once
         foreach (wf_lib_text_groups($aid) as $mg) { $blob = wf_intake_norm($mg['title'] . ' ' . $mg['keywords'] . ' ' . $mg['code'] . ' ' . $mg['best']['text']); $nq = trim(wf_intake_norm($q)); if ($nq !== '' && !array_filter(preg_split('/\s+/u', $nq), fn($w) => mb_strpos($blob, $w) === false)) $g[] = $mg; } // texts written by hand: by title, keywords or text
         $T = []; foreach ($g as $i => $x) $T[$i] = ['title' => trim(mb_substr((string) ($x['title'] ?? ''), 0, 70)), 'text' => (string) ($x['best']['text'] ?? ''), 'kw' => (string) ($x['keywords'] ?? ''), 'cover' => (string) ($x['cover'] ?? '')];
         $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['title'], $x['kw']], $T)); // the name is in its title or keywords
@@ -90,7 +91,8 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
         if ($byText) { $say(wf_msg('lib_close', ['query' => mb_substr($q, 0, 40), 'list' => implode("\n", array_map(fn($k) => '• ' . $T[$k]['title'], array_slice($hit, 0, 5))), 'hint' => ($t = wf_libtag_suggest($aid, $q)) ? wf_msg('lib_try_tags', ['tags' => implode('  ', $t)]) : ''])); return; }
         if (!$hit) { $say(wf_libcmd_nf($aid, $q)); return; }
         $kind = trim(wf_intake_norm(ltrim((string) ($W['text'] ?? ''), '#'))); // "#رقية العقد": the word after the command is the name, and the text must be of the kind the command names
-        if (count($hit) === 1 && $kind !== '' && mb_strpos(wf_intake_norm($T[$hit[0]]['title'] . ' ' . ($g[$hit[0]]['section'] ?? '') . ' ' . ($g[$hit[0]]['topic'] ?? '')), $kind) === false) $hit = array_values(array_unique(array_merge($hit, array_keys($T)))); // only one text, and not of that kind: the choices are shown, nothing is guessed
+        if (count($hit) === 1 && $kind !== '' && mb_strpos(wf_intake_norm($T[$hit[0]]['title'] . ' ' . ($g[$hit[0]]['section'] ?? '') . ' ' . ($g[$hit[0]]['topic'] ?? '')), $kind) === false) { // one text, but not of that kind: shown as the closest, never sent
+            $say(wf_msg('lib_close', ['query' => mb_substr($q, 0, 40), 'list' => implode("\n", array_map(fn($k) => '• ' . $T[$k]['title'], array_slice(array_values(array_unique(array_merge($hit, array_keys($T)))), 0, 5))), 'hint' => ($tg = wf_libtag_suggest($aid, $q)) ? wf_msg('lib_try_tags', ['tags' => implode('  ', $tg)]) : ''])); return; }
         if (count($hit) > 1) { $many(array_map(fn($k) => $T[$k]['title'], array_slice($hit, 0, 8))); return; }
         if ($T[$hit[0]]['cover'] !== '') { $say(mb_substr($T[$hit[0]]['text'], 0, 3900), ['attachment' => $T[$hit[0]]['cover']]); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => $cmd]); return; } // its cover goes with it
         $say(mb_substr($T[$hit[0]]['text'], 0, 3900)); // copied as it was written, never retyped
