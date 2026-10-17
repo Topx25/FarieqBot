@@ -1022,8 +1022,8 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 #au-list .au-row.mcard{position:relative;display:flex;flex-direction:column;grid-template-columns:none;gap:0;padding:0;background:var(--card,#fff);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 #au-list .au-row.mcard:hover{border-color:#0b7f70;box-shadow:0 10px 24px -16px rgba(0,0,0,.45)}
 #au-list .mc-media{background:color-mix(in srgb,var(--c,#0b7f70) 12%,var(--card,#fff));padding:14px 12px 10px}
-#au-list .mc-audio{display:flex;flex-direction:column;align-items:center;gap:8px}#au-list .mc-big{font-size:34px;line-height:1}
-#au-list .mc-audio audio{width:100%;max-width:none;height:38px}
+#au-list .mc-audio{display:flex;flex-direction:column;align-items:stretch;gap:8px;width:100%}#au-list .mc-big{font-size:34px;line-height:1;text-align:center}
+#au-list .mc-audio audio{display:block;width:100%;min-width:0;max-width:none;height:40px}#au-list .mc-media{display:block}
 #au-list .mc-body{padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
 #au-list .au-title.mc-name{border:1px solid transparent;background:transparent;font-weight:700;font-size:15px;padding:3px 6px;border-radius:8px;width:100%;color:var(--ink)}
 #au-list .au-title.mc-name:hover{border-color:var(--line)}#au-list .au-title.mc-name:focus{border-color:#0b7f70;background:var(--surface-2)}

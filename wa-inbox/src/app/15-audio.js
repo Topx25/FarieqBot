@@ -27,7 +27,7 @@
         var c = (ACAT[it.category || ''] || ACAT['']), url = aUrl(it.attachment, '', false), dl = aUrl(it.attachment, aname(it), true);
         var chk = A.sel[it.key] ? ' checked' : '';
         return '<div class="au-row ml-cell mcard' + (A.sel[it.key] ? ' sel picked' : '') + '" data-key="' + esc(it.key) + '"><label class="ml-ck"><input type="checkbox" data-pick' + chk + '></label>'
-          + '<div class="mc-media mk-audio" style="--c:' + c[2] + '"><div class="mc-audio"><span class="mc-big">' + (it.kind === 'voice' ? '🎙️' : c[0]) + '</span>'
+          + '<div class="mc-media mk-audio" style="--c:' + c[2] + '"><div class="mc-audio"><span class="mc-big">' + (it.kind === 'voice' ? '🎙️' : (it.category ? c[0] : '🎧')) + '</span>'
           + (url ? '<audio controls preload="none" src="' + url + '"></audio>' : (it.fetchable ? '<button class="chip-btn sm" data-fetch="' + esc(it.fetch_id) + '">⬇️ ' + T('Fetch from WhatsApp') + '</button>' : '<span class="muted small">' + T('File not kept') + '</span>')) + '</div></div>'
           + '<div class="mc-body"><input class="au-title mc-name" value="' + esc(it.title) + '" placeholder="' + esc(it.auto_title || T('Name this recording…')) + '" dir="auto" maxlength="120">'
           + (it.code ? '<div class="lc-code" dir="auto">🔑 ' + esc(it.code) + '</div>' : '')

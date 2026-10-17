@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.90.2', 'date' => '2026-10-17', 'title' => 'Audio cards: the player fills the card', 'changes' => [
+        'Audio page: the player was squeezed into a tiny box under a question mark. It now spans the whole card, and recordings without a category show a headphones icon instead of a question mark.',
+    ]],
     ['v' => '3.90.1', 'date' => '2026-10-17', 'title' => 'Audio cards like the library', 'changes' => [
         'Audio page: the recordings are now cards like the media library, with their controls on every card: name & shortcut, send to chats, download, archive and category. The name and shortcut saved there show on the card.',
     ]],
