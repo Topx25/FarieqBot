@@ -77,7 +77,8 @@
     d.onclick = function (e) { if (e.target.closest('[data-mlx]')) { d.close(); return; }
       if (e.target.closest('#yt-go')) { var b = document.getElementById('yt-go'); b.disabled = true; document.getElementById('yt-m').textContent = '⏳';
         WI.post('media_youtube', { keys: keys, privacy: document.getElementById('yt-p').value, tags: document.getElementById('yt-g').value, title: one ? document.getElementById('yt-t').value : '', desc: one ? document.getElementById('yt-d').value : undefined })
-          .then(function (r) { if (!r.ok) { b.disabled = false; document.getElementById('yt-m').textContent = '⚠️ ' + (r.error || T('Failed')); return; } document.getElementById('yt-m').textContent = '✓ ' + T('Queued') + ' (' + r.queued + ')'; setTimeout(function () { d.close(); if (done) done(r); }, 900); }); } };
+          .then(function (r) { if (!r.ok && r.need_yt) { b.disabled = false; document.getElementById('yt-m').innerHTML = '⚠️ ' + esc(r.error || '') + ' <button type="button" class="btn primary sm" id="yt-con">▶️ ' + T('Connect YouTube') + '</button>'; document.getElementById('yt-con').onclick = function () { WI.post('youtube_connect', {}).then(function (x) { if (x.ok) location.href = x.url; else document.getElementById('yt-m').textContent = '⚠️ ' + (x.error || T('Failed')); }); }; return; }
+            if (!r.ok) { b.disabled = false; document.getElementById('yt-m').textContent = '⚠️ ' + (r.error || T('Failed')); return; } document.getElementById('yt-m').textContent = '✓ ' + T('Queued') + ' (' + r.queued + ')'; setTimeout(function () { d.close(); if (done) done(r); }, 900); }); } };
   }
   /** Choose up to 10 chats and send / forward one media file to them. */
   function mlForward(key, caption, done) {

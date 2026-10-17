@@ -12,7 +12,9 @@ function wf_google_ws(): string {
     return ($u['role'] ?? '') !== 'super' && wi_owned_accounts((string) $u['email']) ? strtolower((string) $u['email']) : ''; // an owner of a private number uses their own Google
 }
 function wf_google_use(?string $ws): void { if ($ws === null) unset($GLOBALS['WI_GOOGLE_WS']); else $GLOBALS['WI_GOOGLE_WS'] = $ws; }
-const WF_GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/meetings.space.created https://www.googleapis.com/auth/youtube.upload';
+/** Drive, Calendar and Meet are asked together. YouTube is a separate sign-in (WF_YOUTUBE_SCOPE): Google refuses drive.file and youtube.upload in one request. */
+const WF_GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/meetings.space.created';
+const WF_YOUTUBE_SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
 function wf_drive_cfg(): array {
     $ws = wf_google_ws();
     if ($ws !== '') { // a client's own Google account, signed in through the installation's Google app
@@ -115,7 +117,7 @@ function wf_api_drive(string $api): void {
                 if ($id !== '') $c['client_id'] = $id; if ($sec !== '') { $c['client_secret'] = $sec; wi_secret_set('google_client_secret', $sec); }
                 if (empty($c['client_id']) || empty($c['client_secret'])) wi_json(['ok' => false, 'error' => 'Enter the OAuth Client ID and Client secret.']);
                 $c['state'] = bin2hex(random_bytes(16)); $c['state_at'] = time(); wi_write('drive.json', $c);
-                wi_json(['ok' => true, 'url' => 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query(['client_id' => $c['client_id'], 'redirect_uri' => wf_drive_redirect(), 'response_type' => 'code', 'scope' => 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/meetings.space.created https://www.googleapis.com/auth/youtube.upload', 'access_type' => 'offline', 'prompt' => 'consent', 'state' => $c['state']])]);
+                wi_json(['ok' => true, 'url' => 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query(['client_id' => $c['client_id'], 'redirect_uri' => wf_drive_redirect(), 'response_type' => 'code', 'scope' => 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/meetings.space.created', 'access_type' => 'offline', 'prompt' => 'consent', 'state' => $c['state']])]);
             }
             if (($in['do'] ?? '') === 'disconnect') { unset($c['refresh_token'], $c['access_token'], $c['expires'], $c['folder_id'], $c['email']); wi_write('drive.json', $c); }
             if (($in['do'] ?? '') === 'types') { $c['types'] = array_values(array_intersect(array_keys(WF_BACKUP_TYPES), (array) ($in['types'] ?? []))) ?: ['data']; wi_write('drive.json', $c); }
@@ -166,11 +168,21 @@ function wf_api_drive(string $api): void {
 function wf_drive_callback(): void {
     // A client's sign-in: the one-time state says whose account it is (the session cookie does not come back from Google).
     $st = (string) ($_GET['state'] ?? ''); $S = wi_read('google_states.json', []); $mine = $st !== '' && isset($S[$st]) && time() - (int) $S[$st]['at'] < 900;
+    $kind = $mine ? (string) ($S[$st]['kind'] ?? '') : ''; $back = $mine ? (string) ($S[$st]['back'] ?? '') : '';
     wf_google_use($mine ? (string) $S[$st]['ws'] : ''); // whose account: from the one-time state only, never from whoever is signed in
     if ($mine) { wi_update('google_states.json', function ($A) use ($st) { unset($A[$st]); foreach ($A as $k => $x) if (time() - (int) $x['at'] > 900) unset($A[$k]); return $A; }); }
     $c = wf_drive_cfg();
     $ok = $mine || (!empty($c['state']) && hash_equals((string) $c['state'], $st) && time() - (int) ($c['state_at'] ?? 0) < 900);
     $msg = 'Google Drive: connection failed.';
+    if ($ok && $kind === 'yt' && !empty($_GET['code'])) { // the separate YouTube sign-in: its own token, the Drive connection stays as it is
+        $ch = curl_init('https://oauth2.googleapis.com/token');
+        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_POSTFIELDS => http_build_query([
+            'code' => (string) $_GET['code'], 'client_id' => $c['client_id'], 'client_secret' => $c['client_secret'], 'redirect_uri' => wf_drive_redirect(), 'grant_type' => 'authorization_code'])]);
+        $r = json_decode((string) curl_exec($ch), true); curl_close($ch);
+        if (!empty($r['refresh_token']) && strpos((string) ($r['scope'] ?? ''), 'youtube.upload') !== false) { wi_secret_set(wf_yt_secret(), (string) $r['refresh_token']); wi_log('youtube_connect', ['ws' => wf_google_ws(), 'ok' => true]); $msg = 'Google: YouTube connected.'; }
+        else $msg = 'Google: YouTube — ' . ($r['error_description'] ?? $r['error'] ?? 'no permission was given');
+        header('Location: ' . ($back !== '' && preg_match('/^\?p=[a-z]+$/', $back) ? $back : '?p=media') . '&drive=' . rawurlencode($msg)); exit;
+    }
     if ($ok && !empty($_GET['code'])) {
         $ch = curl_init('https://oauth2.googleapis.com/token');
         curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_POSTFIELDS => http_build_query([
@@ -183,7 +195,7 @@ function wf_drive_callback(): void {
             $c['email'] = (string) ($u['body']['user']['emailAddress'] ?? '');
             $c['scopes'] = (string) ($r['scope'] ?? '');
             // what was asked for but not granted (Google drops scopes that are not on the project's Data Access list, or that the person unticked)
-            $want = ['drive.readonly' => 'Read Drive files (learning)', 'meetings.space.created' => 'Meet recording', 'youtube.upload' => 'YouTube upload', 'calendar.events' => 'Calendar (Meet links)', 'drive.file' => 'Google Drive'];
+            $want = ['drive.readonly' => 'Read Drive files (learning)', 'meetings.space.created' => 'Meet recording', 'calendar.events' => 'Calendar (Meet links)', 'drive.file' => 'Google Drive'];
             $c['missing'] = array_values(array_filter(array_keys($want), fn($k) => strpos($c['scopes'], $k) === false)); $c['connected_at'] = date('c');
             $msg = 'Google Drive connected.';
         } else $msg = 'Google Drive: ' . ($r['error_description'] ?? $r['error'] ?? 'no refresh token returned');
@@ -196,6 +208,18 @@ function wf_drive_callback(): void {
 
 /* ---------- YouTube: upload a video of the media library to the channel of the connected Google account ---------- */
 /** Resumable upload in 8 MB pieces. Returns ['ok', 'id'] or ['ok' => false, 'error']. */
+/** Where the YouTube refresh token is kept (its own secret, per workspace). */
+function wf_yt_secret(): string { $ws = wf_google_ws(); return 'google_yt_refresh_token' . ($ws !== '' ? ':' . $ws : ''); }
+function wf_yt_connected(): bool { return trim((string) wi_secret(wf_yt_secret())) !== ''; }
+/** An access token for YouTube from its own refresh token. */
+function wf_youtube_token(): array {
+    $c = wf_drive_cfg(); $rt = (string) wi_secret(wf_yt_secret());
+    if ($rt === '' || empty($c['client_id'])) return ['ok' => false, 'error' => 'YouTube is not connected.', 'need_yt' => true];
+    $ch = curl_init('https://oauth2.googleapis.com/token');
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_POSTFIELDS => http_build_query(['client_id' => $c['client_id'], 'client_secret' => $c['client_secret'], 'refresh_token' => $rt, 'grant_type' => 'refresh_token'])]);
+    $r = json_decode((string) curl_exec($ch), true); curl_close($ch);
+    return !empty($r['access_token']) ? ['ok' => true, 'token' => $r['access_token']] : ['ok' => false, 'error' => 'Google refused the YouTube connection: ' . ($r['error_description'] ?? $r['error'] ?? 'unknown') . '. Connect YouTube again.', 'need_yt' => true];
+}
 function wf_youtube_upload(string $token, string $file, string $title, string $desc, array $tags, string $privacy): array {
     $meta = ['snippet' => ['title' => mb_substr($title !== '' ? $title : basename($file), 0, 100), 'description' => mb_substr($desc, 0, 4900), 'tags' => array_slice($tags, 0, 30), 'categoryId' => '22'],
         'status' => ['privacyStatus' => in_array($privacy, ['private', 'unlisted', 'public'], true) ? $privacy : 'private', 'selfDeclaredMadeForKids' => false]];
@@ -219,7 +243,7 @@ function wf_youtube_job(array $p): array {
     wf_google_use((string) ($p['ws'] ?? ''));
     try {
         $file = dirname(__DIR__, 2) . '/storage/' . $key; if (!is_file($file)) { $set(['state' => 'failed', 'error' => 'File not found.']); return ['ok' => false]; }
-        $t = wf_drive_token(); if (empty($t['ok'])) { $set(['state' => 'failed', 'error' => (string) ($t['error'] ?? 'Google is not connected.')]); return ['ok' => false]; }
+        $t = wf_youtube_token(); if (empty($t['ok'])) { $set(['state' => 'failed', 'error' => (string) ($t['error'] ?? 'YouTube is not connected.')]); return ['ok' => false]; }
         $set(['state' => 'uploading']);
         $r = wf_youtube_upload($t['token'], $file, (string) ($p['title'] ?? ''), (string) ($p['desc'] ?? ''), (array) ($p['tags'] ?? []), (string) ($p['privacy'] ?? 'private'));
         $set($r['ok'] ? ['state' => 'done', 'id' => $r['id'], 'url' => 'https://youtu.be/' . $r['id'], 'privacy' => $r['privacy']] : ['state' => 'failed', 'error' => $r['error']]);

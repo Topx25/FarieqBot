@@ -127,11 +127,18 @@ if ($api === 'media_zip') { // download the chosen files as one .zip
     $z->close(); wi_log('media_zip', ['account' => $aid, 'files' => count($keys)]);
     header('Content-Type: application/zip'); header('Content-Length: ' . filesize($tmp)); header('Content-Disposition: attachment; filename="media-' . date('Y-m-d') . '.zip"'); readfile($tmp); @unlink($tmp); exit;
 }
+if ($api === 'youtube_connect') { // the YouTube sign-in on its own (Google does not allow it together with Drive)
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') wi_json(['ok' => false, 'error' => 'POST only.'], 405);
+    wi_check_csrf(); $c = wf_drive_cfg();
+    if (empty($c['client_id']) || empty($c['client_secret'])) wi_json(['ok' => false, 'error' => 'Google sign-in is not set up on this installation yet. Ask the administrator.']);
+    $state = bin2hex(random_bytes(16)); $ws = wf_google_ws();
+    wi_update('google_states.json', function ($A) use ($state, $ws) { $A[$state] = ['ws' => $ws, 'at' => time(), 'kind' => 'yt', 'back' => '?p=media']; return $A; });
+    wi_json(['ok' => true, 'url' => 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query(['client_id' => $c['client_id'], 'redirect_uri' => wf_drive_redirect(), 'response_type' => 'code', 'scope' => WF_YOUTUBE_SCOPE, 'access_type' => 'offline', 'prompt' => 'consent', 'state' => $state])]);
+}
 if ($api === 'media_youtube') { // queue videos for upload to YouTube (title / description / tags / privacy)
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') wi_json(['ok' => false, 'error' => 'POST only.'], 405);
     wi_check_csrf(); $in = json_decode(wi_input(), true) ?: []; $acc = wi_current(); $aid = (string) ($acc['id'] ?? '');
-    $c = wf_drive_cfg(); if (empty($c['refresh_token'])) wi_json(['ok' => false, 'error' => wf_google_ws() !== '' ? 'Connect your Google account first (My account → Google account).' : 'Connect Google first (General settings → Google account).']);
-    if (strpos((string) ($c['scopes'] ?? ''), 'youtube.upload') === false) wi_json(['ok' => false, 'error' => 'Google is connected without YouTube permission. Disconnect and connect Google again, and allow YouTube.']);
+    if (!wf_yt_connected()) wi_json(['ok' => false, 'need_yt' => true, 'error' => 'Connect YouTube first (a separate sign-in from Google Drive).']);
     $kinds = (array) (wi_gateway('/archive/media-kinds', null, $acc)['kinds'] ?? []); $meta = (array) (wi_read('media_meta.json', [])[$aid] ?? []);
     $keys = array_values(array_filter(array_slice((array) ($in['keys'] ?? []), 0, 20), fn($k) => $mlOk((string) $k, $aid) && preg_match('/\.(mp4|3gp|mov)$/i', (string) $k) && ($kinds[$k] ?? 'video') !== 'gif'));
     if (!$keys) wi_json(['ok' => false, 'error' => 'Choose videos.'], 422);

@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.97.1', 'date' => '2026-10-17', 'title' => 'Google sign-in works again; YouTube on its own', 'changes' => [
+        'Fixed: signing in with Google failed ("scopes that cannot be requested together: drive.file and youtube.upload"). Drive, Calendar and Meet are asked together; YouTube is now its own sign-in with its own saved connection, started from the YouTube upload window (Media → upload to YouTube → Connect YouTube).',
+        'A Google account already connected keeps working for Drive, Calendar and Meet; only the YouTube upload needs the new sign-in.',
+    ]],
     ['v' => '3.97.0', 'date' => '2026-10-17', 'title' => 'Users: move a viewer to a team, clear delete', 'changes' => [
         'Users page: "Move to a team" on a viewer — pick the owner of the number and the role (employee / supervisor); the person keeps their number, pages and phone and then sees the owner\'s numbers and data. A viewer could never see a private number before, whatever their permissions.',
         'The super admin can now be the owner of a team (for the numbers they own), like a client.',
