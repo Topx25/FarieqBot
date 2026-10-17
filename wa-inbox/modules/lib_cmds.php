@@ -108,7 +108,10 @@ function wf_program_message(array $p): string {
 function wf_media_code_send(array $acc, string $jid, string $text, string $quote = ''): bool {
     if (wf_libtag_which((string) $acc['id'], $text)) return wf_libtag_send($acc, $jid, $text, $quote); // a section tag: the list of that section
     if (($prog = wf_program_code_in((string) $acc['id'], $text)) && !str_ends_with($jid, '@g.us')) { // a private chat: it follows the program (its days arrive one by one), the person is told
-        $new = wf_program_enroll((string) $acc['id'], $jid, $prog, 'tag'); $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => wf_msg($new ? 'program_enrolled' : 'program_already', ['name' => (string) $prog['name']]), 'via' => 'bot'] + ($quote !== '' ? ['quote_id' => $quote] : []), $acc);
+        $aidP = (string) $acc['id']; $new = wf_program_enroll($aidP, $jid, $prog, 'tag'); $d1 = (array) (((array) ($prog['days'] ?? []))[0] ?? []); $n = count((array) ($prog['days'] ?? []));
+        if ($new && (int) ($d1['day'] ?? 0) === 1) wf_program_mark_sent($aidP, $jid, (string) $prog['id'], 1); else $d1 = [];
+        $msg = $new ? wf_msg('program_enrolled', ['name' => (string) $prog['name'], 'days' => (string) $n, 'text' => (string) ($d1['text'] ?? ''), 'rest' => $n > 1 ? wf_msg('program_rest', []) : '']) : wf_msg('program_already', ['name' => (string) $prog['name']]);
+        $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => trim($msg), 'via' => 'bot'] + ($quote !== '' ? ['quote_id' => $quote] : []), $acc);
         wi_log('program_code', ['account' => (string) $acc['id'], 'jid' => $jid, 'enrolled' => $new, 'sent' => !empty($r['ok'])]); return true; }
     if ($prog = wf_program_code_in((string) $acc['id'], $text)) { $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => wf_program_message($prog), 'via' => 'bot'] + ($quote !== '' ? ['quote_id' => $quote] : []), $acc); wi_log('program_code', ['account' => (string) $acc['id'], 'jid' => $jid, 'sent' => !empty($r['ok'])]); return true; } // a program's tag: the program
     $key = wf_media_code_in((string) $acc['id'], $text); if ($key === '') return false;

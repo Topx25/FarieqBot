@@ -15,6 +15,10 @@ function wf_program_enroll(string $aid, string $jid, array $prog, string $by = '
     if ($made) wi_log('program_enroll', ['account' => $aid, 'by' => $by]);
     return $made;
 }
+/** Day 1 went out with the confirmation: the scheduler must not send it again. */
+function wf_program_mark_sent(string $aid, string $jid, string $pid, int $day): void {
+    wi_update('enrollments.json', function ($A) use ($aid, $jid, $pid, $day) { foreach ((array) ($A[$aid] ?? []) as $i => $e) if (($e['jid'] ?? '') === $jid && ($e['program_id'] ?? '') === $pid && ($e['status'] ?? '') === 'active') $A[$aid][$i]['sent'][(string) $day] = date('c'); return $A; });
+}
 
 
 /** API calls of this area (moved unchanged from the old single switch). */
