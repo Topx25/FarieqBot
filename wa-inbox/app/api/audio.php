@@ -31,6 +31,22 @@
         }
         wi_json(['ok' => true, 'items' => $out]);
     }
+    if ($api === 'audio_cats') { // the categories of this number's audio library: read, and save the whole list
+        $acc = wi_current(); $aid = (string) ($acc['id'] ?? '');
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            wi_check_csrf(); if (!$acc || !wi_can_manage($acc)) wi_json(['ok' => false, 'error' => 'Not allowed for this number.'], 403);
+            $in = json_decode(wi_input(), true) ?: []; $lines = []; $seen = [];
+            foreach (array_slice((array) ($in['cats'] ?? []), 0, 30) as $c) {
+                $label = trim(str_replace(['|', "\n", "\r"], ' ', mb_substr((string) ($c['label'] ?? ''), 0, 30))); if ($label === '') continue;
+                $key = preg_match('/^[a-z_]{2,20}$/', (string) ($c['key'] ?? '')) ? (string) $c['key'] : ''; while ($key === '' || isset($seen[$key])) { $key = ''; for ($i = 0; $i < 8; $i++) $key .= chr(97 + random_int(0, 25)); }
+                $seen[$key] = 1; $icon = trim(str_replace(['|', "\n"], ' ', mb_substr((string) ($c['icon'] ?? ''), 0, 4))) ?: '📁'; $col = preg_match('/^#[0-9a-f]{6}$/i', (string) ($c['color'] ?? '')) ? $c['color'] : '#64748b';
+                $lines[] = $key . ' | ' . $icon . ' | ' . $label . ' | ' . $col; }
+            if (!$lines) wi_json(['ok' => false, 'error' => 'Keep at least one category.'], 422);
+            wi_update('bot.json', function ($B) use ($aid, $lines) { $B[$aid]['pack'] = array_merge(wf_pack($aid), (array) ($B[$aid]['pack'] ?? []), ['audio_categories' => implode("\n", $lines)]); return $B; });
+            wi_log('audio_cats', ['account' => $aid, 'count' => count($lines)]); wi_json(['ok' => true]);
+        }
+        wi_json(['ok' => true, 'cats' => wf_audio_cats($aid)]);
+    }
     if ($api === 'audio_meta') {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') wi_json(['ok' => false, 'error' => 'POST only.'], 405);
         wi_check_csrf();

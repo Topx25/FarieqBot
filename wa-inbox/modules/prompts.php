@@ -238,6 +238,9 @@ function wf_api_prompts(string $api): void {
     if ($_SERVER['REQUEST_METHOD'] === 'POST') { $in = wf_post(); wf_admin(); $do = (string) ($in['do'] ?? '');
         if ($do === 'pack') { $P = wf_pack_presets(); $pre = isset($P[$in['preset'] ?? '']) ? $in['preset'] : 'general'; $x = ['preset' => $pre];
             if (empty($in['reset'])) foreach (array_keys($P['general']) as $k) if ($k !== 'label' && isset($in['pack'][$k])) $x[$k] = mb_substr(trim((string) $in['pack'][$k]), 0, 2000);
+            if (isset($x['lib_tags'])) { $seen = []; foreach (preg_split('/\R/u', $x['lib_tags']) as $l) { $t = wf_media_code_clean(trim(explode('|', $l)[0])); if ($t === '') continue; $n = str_replace(['-', ' '], '', wf_intake_norm($t));
+                if (isset($seen[$n])) wi_json(['ok' => false, 'error' => 'The tag ' . $t . ' is written twice.'], 422);
+                if (($why = wf_tag_taken($aid, $t, '', true)) !== '') wi_json(['ok' => false, 'error' => $t . ': ' . $why], 422); $seen[$n] = 1; } }
             $all[$aid]['pack'] = $x; wi_write('bot.json', $all); wi_log('ai_pack_save', ['account' => $aid, 'preset' => $pre]); wi_json(['ok' => true]); }
         if ($do === 'prompt') { $k = (string) ($in['key'] ?? ''); if (!isset(wf_prompt_registry()[$k])) wi_json(['ok' => false, 'error' => 'Unknown instruction.']);
             $t = trim((string) ($in['text'] ?? '')); if ($t === '' || !empty($in['reset'])) unset($all[$aid]['prompts'][$k]); else $all[$aid]['prompts'][$k] = mb_substr($t, 0, 20000);

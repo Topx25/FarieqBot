@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.91.0', 'date' => '2026-10-17', 'title' => 'Categories control and no duplicate tags', 'changes' => [
+        'Audio page: a "Manage categories" button — add, rename, change the icon and colour, or delete the categories of the audio library (recordings of a deleted category stay, uncategorised).',
+        'A shortcut or section tag can no longer repeat: it is refused when another file, a section tag or a quick reply keyword already has it, and the same tag cannot be written twice in the section tags.',
+    ]],
     ['v' => '3.90.3', 'date' => '2026-10-17', 'title' => 'Audio cards: the player always shows', 'changes' => [
         'Audio page: the player now has its own width and height on the card (it no longer depends on the page styles), and the selection box is always visible.',
     ]],

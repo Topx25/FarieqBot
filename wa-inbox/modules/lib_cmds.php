@@ -68,6 +68,15 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
 
 /* ---------- File shortcuts: a library file has its own code ("#رقية-الاثيري"); writing it in a chat or group sends the file ---------- */
 function wf_media_code_clean(string $c): string { $c = trim(preg_replace('/\s+/u', '-', trim($c))); if ($c === '') return ''; return mb_substr(str_starts_with($c, '#') ? $c : '#' . $c, 0, 60); }
+/** Why a tag cannot be used (a section tag, a quick reply's keyword or another file's shortcut already has it), or ''. */
+function wf_tag_taken(string $aid, string $tag, string $exceptKey = '', bool $skipSections = false): string {
+    $want = str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean($tag))); if ($want === '' || $want === '#') return '';
+    if (!$skipSections) foreach (wf_libtags($aid) as $x) if (str_replace(['-', ' '], '', wf_intake_norm($x['tag'])) === $want) return 'This tag is already a section tag.';
+    $k = wf_media_code_find($aid, $tag); if ($k !== '' && $k !== $exceptKey) return 'This shortcut is already used by another file.';
+    $acc = wi_accounts()[$aid] ?? null;
+    if ($acc && function_exists('wi_replies_for')) foreach (wi_replies_for($acc) as $r) if (str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean((string) ($r['keyword'] ?? '')))) === $want) return 'This tag is already a quick reply keyword.';
+    return '';
+}
 /** The key of the file whose code matches (spelling variants alike), or ''. */
 function wf_media_code_find(string $aid, string $code): string {
     $want = str_replace(['-', ' '], '', wf_intake_norm(wf_media_code_clean($code))); if ($want === '' || $want === '#') return '';

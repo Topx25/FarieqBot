@@ -1036,3 +1036,6 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 #au-list .ml-ck{position:absolute;top:8px;inset-inline-start:8px;z-index:3;background:var(--card,#fff);border-radius:6px;padding:2px;line-height:0}
 #au-list .au-row.picked{outline:3px solid #0b7f70;outline-offset:-1px}
 #au-list .ml-ck{opacity:1}#au-list .mc-media{min-height:96px;width:100%;box-sizing:border-box}
+
+/* Audio categories manager */
+.ac-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.ac-row .ac-ic{width:52px;text-align:center;font-size:18px}.ac-row .ac-lb{flex:1;min-width:0}.ac-row .ac-co{width:42px;height:34px;padding:0;border:1px solid var(--line);border-radius:8px;background:transparent}

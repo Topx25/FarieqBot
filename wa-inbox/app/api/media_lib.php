@@ -52,7 +52,7 @@ if ($api === 'media_meta') { // title / caption / folder / tags / favourite / hi
         'tags' => array_slice(array_values(array_filter(array_map(fn($t) => mb_substr(trim($t), 0, 30), preg_split('/[,،\n]+/u', (string) ($in['tags'] ?? ''))))), 0, 12), 'fav' => !empty($in['fav']), 'hidden' => !empty($in['hidden']),
         'code' => wf_media_code_clean((string) ($in['code'] ?? ''))];
     $x = array_intersect_key($x, $in);
-    if (($x['code'] ?? '') !== '' && ($taken = wf_media_code_find($aid, $x['code'])) && $taken !== $key) wi_json(['ok' => false, 'error' => 'This shortcut is already used by another file.'], 422); // only what was sent changes (a quick rename keeps the folder, tags, favourite…)
+    if (($x['code'] ?? '') !== '' && ($why = wf_tag_taken($aid, $x['code'], $key)) !== '') wi_json(['ok' => false, 'error' => $why], 422); // only what was sent changes (a quick rename keeps the folder, tags, favourite…)
     wi_update('media_meta.json', function ($M) use ($aid, $key, $x) { $M[$aid][$key] = array_merge((array) ($M[$aid][$key] ?? []), $x); return $M; }); // keeps the send count, the YouTube status…
     wi_log('media_meta', ['account' => $aid, 'key' => $key]); wi_json(['ok' => true]);
 }

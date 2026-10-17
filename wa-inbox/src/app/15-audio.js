@@ -75,6 +75,20 @@
     function itemOf(el) { var k = el.closest('.au-row').dataset.key; return A.items.filter(function (x) { return x.key === k; })[0]; }
     document.getElementById('au-tiles').addEventListener('click', function (e) { var b = e.target.closest('[data-cat]'); if (!b) return; A.cat = b.dataset.cat; draw(); });
     document.getElementById('au-view').addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; [].forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); }); A.view = b.dataset.v; A.sel = {}; A.cat = ''; draw(); });
+    // 🏷️ the categories: add, rename, change icon and colour, delete (files of a deleted category become uncategorised)
+    document.getElementById('au-cats').addEventListener('click', function () {
+      var cats = AKEYS.map(function (k) { return { key: k, icon: ACAT[k][0], label: T(ACAT[k][1]), color: ACAT[k][2], n: A.items.filter(function (i) { return i.category === k; }).length }; });
+      var d = mlDialog('<div class="ml-head"><b>🏷️ ' + T('Manage categories') + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div><div class="ml-fw"><div id="ac-rows"></div>'
+        + '<div class="row"><button type="button" class="btn ghost sm" id="ac-add">＋ ' + T('Add a category') + '</button><button type="button" class="btn primary" id="ac-go">💾 ' + T('Save') + '</button><span class="muted small" id="ac-m"></span></div></div>');
+      var rows = function () { document.getElementById('ac-rows').innerHTML = cats.map(function (c, i) { return '<div class="ac-row" data-i="' + i + '"><input class="ac-ic" value="' + esc(c.icon) + '" maxlength="4" aria-label="' + esc(T('Icon')) + '"><input class="ac-lb" value="' + esc(c.label) + '" maxlength="30" dir="auto" placeholder="' + esc(T('Name')) + '"><input class="ac-co" type="color" value="' + esc(c.color) + '">'
+        + '<span class="muted small">' + (c.n ? fmt(c.n) + ' ' + T('recordings') : '') + '</span><button type="button" class="chip-btn sm" data-acdel>🗑️</button></div>'; }).join(''); };
+      var sync = function () { [].forEach.call(d.querySelectorAll('.ac-row'), function (r) { var c = cats[+r.dataset.i]; c.icon = r.querySelector('.ac-ic').value; c.label = r.querySelector('.ac-lb').value; c.color = r.querySelector('.ac-co').value; }); };
+      rows();
+      d.onclick = function (ev) { if (ev.target.closest('[data-mlx]')) { d.close(); return; }
+        if (ev.target.closest('#ac-add')) { sync(); cats.push({ key: '', icon: '📁', label: '', color: '#64748b', n: 0 }); rows(); return; }
+        var del = ev.target.closest('[data-acdel]'); if (del) { sync(); var c = cats[+del.closest('.ac-row').dataset.i]; if (c.n && !confirm(T('Delete this category? Its recordings stay, uncategorised.'))) return; cats.splice(+del.closest('.ac-row').dataset.i, 1); rows(); return; }
+        if (ev.target.closest('#ac-go')) { sync(); WI.post('audio_cats', { cats: cats }).then(function (r) { if (!r.ok) { document.getElementById('ac-m').textContent = '⚠️ ' + (r.error || T('Failed')); return; } location.reload(); }); } };
+    });
     document.getElementById('au-sort').addEventListener('change', function () { A.sort = this.value; draw(); });
     document.getElementById('au-q').addEventListener('input', draw);
     var list$ = document.getElementById('au-list');

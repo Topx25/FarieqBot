@@ -421,6 +421,7 @@
         <div class="hero-tools">
           <div class="search-xl"><span>🔎</span><input type="search" id="au-q" placeholder="Search names, notes, senders…" dir="auto"></div>
           <select id="au-sort"><option value="copies">Most shared</option><option value="last">Newest</option><option value="long">Longest</option><option value="name">Name</option></select>
+          <button type="button" class="chip-btn" id="au-cats">🏷️ Manage categories</button>
         </div>
       </section>
       <section class="sec-tiles" id="au-tiles"></section>
