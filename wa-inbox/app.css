@@ -1059,3 +1059,19 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 
 /* Users: move a viewer to a team */
 .ux-move{display:inline-block}.ux-move>summary{list-style:none;cursor:pointer}.ux-move-f{display:flex;flex-direction:column;gap:8px;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card,#fff);min-width:240px}.ux-move-f label{display:flex;flex-direction:column;gap:3px;font-size:13px}.ux-move-f select{padding:6px 8px}
+
+/* Library & Audio: a calmer layout — compact section tiles, a tidy side panel, lighter cards (Topx1.Host) */
+.app[data-page="library"] .sec-tiles,.app[data-page="audio"] .sec-tiles{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.app[data-page="library"] .sec-tile,.app[data-page="audio"] .sec-tile{flex-direction:row;align-items:center;gap:8px;padding:8px 16px;min-height:0;border-radius:999px;box-shadow:none}
+.app[data-page="library"] .sec-tile .st-ic,.app[data-page="audio"] .sec-tile .st-ic{font-size:18px;line-height:1}
+.app[data-page="library"] .sec-tile b,.app[data-page="audio"] .sec-tile b{font-size:16px;order:3}
+.app[data-page="library"] .sec-tile small,.app[data-page="audio"] .sec-tile small{font-size:13.5px;order:2;font-weight:600}
+.app[data-page="library"] .sec-tile::before,.app[data-page="audio"] .sec-tile::before{border-radius:999px}
+.lib-layout{grid-template-columns:230px minmax(0,1fr)}
+.lib-side{display:flex;flex-direction:column;gap:6px}
+.lib-side .chip-btn{width:100%;justify-content:flex-start;text-align:start;font-size:13px;padding:6px 10px;white-space:normal}
+.lib-tools{border:1px solid var(--line);border-radius:12px;padding:6px 8px}.lib-tools>summary{cursor:pointer;font-weight:600;font-size:13.5px;list-style:none}.lib-tools-b{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.lcard .vcard.best{border:0;background:var(--surface-2,#f4f6f5)}
+.lcard .lc-meta{font-size:12.5px;color:var(--muted)}
+.lcard .lc-top{gap:6px}
+.lcard .lc-actions{display:flex;flex-wrap:wrap;gap:6px}.lcard .lc-actions .chip-btn{font-size:13px;padding:5px 10px}

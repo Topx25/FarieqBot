@@ -421,7 +421,7 @@
         <div class="hero-tools">
           <div class="search-xl"><span>🔎</span><input type="search" id="au-q" placeholder="Search names, notes, senders…" dir="auto"></div>
           <select id="au-sort"><option value="copies">Most shared</option><option value="last">Newest</option><option value="long">Longest</option><option value="name">Name</option></select>
-          <button type="button" class="chip-btn" id="au-cats">🏷️ Manage categories</button>
+          <button type="button" class="chip-btn" id="au-cats"><span>🏷️</span> Manage categories</button>
         </div>
       </section>
       <section class="sec-tiles" id="au-tiles"></section>
@@ -434,7 +434,7 @@
         <div id="au-list" class="au-list"><div class="empty">Loading…</div></div>
       </div>
 
-      <details class="au-statbox card pad"><summary><b>📊 Statistics</b> <span class="muted small">— space, listening time, duplicates, categories and months</span></summary>
+      <details class="au-statbox card pad"><summary><b><span>📊</span> Statistics</b> <span class="muted small">— space, listening time, duplicates, categories and months</span></summary>
       <section class="au-stats" id="au-stats"><div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div><div class="kpi skeleton"></div></section>
       <section class="grid2 au-break">
         <div class="card"><div class="card-h"><h2>📂 By category</h2></div><div class="pad" id="au-bycat"></div></div>
@@ -453,8 +453,8 @@
           <div class="search-xl"><span>🔎</span><input type="search" id="lib-q" placeholder="Search the library…" dir="auto"></div>
           <select id="lib-sort"><option value="shared">Most shared</option><option value="score">Best ranked</option><option value="recent">Newest</option><option value="versions">Most versions</option></select>
           <div class="seg" id="lib-view"><button class="on" data-v="cards" title="Cards">▦</button><button data-v="list" title="List">☰</button></div>
-          <button type="button" class="btn primary" id="lib-add">➕ Add text</button>
-          <label class="btn ghost" id="lib-up-l">⬆️ Upload files<input type="file" id="lib-up" multiple accept="image/jpeg,image/png,image/webp,audio/*,application/pdf,video/mp4" hidden></label>
+          <button type="button" class="btn primary" id="lib-add"><span>➕</span> Add text</button>
+          <label class="btn ghost" id="lib-up-l"><span>⬆️</span> Upload files<input type="file" id="lib-up" multiple accept="image/jpeg,image/png,image/webp,audio/*,application/pdf,video/mp4" hidden></label>
           <a class="btn ghost" id="lib-export" href="#">⬇️ Export .txt</a>
         </div>
       </section>
@@ -464,7 +464,9 @@
           <div class="lib-side-h" style="margin-top:10px">Options</div>
           <label class="check small"><input type="checkbox" id="lib-short"> Show short messages</label>
           <label class="check small"><input type="checkbox" id="lib-archived"> 🗄️ Show archived only</label>
+          <details class="lib-tools"><summary><span>🧰</span> Selection &amp; AI tools</summary><div class="lib-tools-b">
           <button type="button" class="chip-btn" id="lib-all">☑️ Select all</button><button type="button" class="chip-btn" id="lib-all-dupes">🧹 Select all duplicates</button><button type="button" class="chip-btn" id="lib-same">🟰 Select identical copies</button><button type="button" class="chip-btn" id="lib-best">🏆 Pick the best version (all groups)</button><span class="muted small" id="lib-best-st"></span><button type="button" class="chip-btn" id="lib-ai">🤖 Sort &amp; check with AI</button><span class="muted small" id="lib-ai-st"></span>
+          </div></details>
           <div class="mq-box" id="mq-box"><div class="lib-side-h">🎧 Audio downloads</div><div id="mq-st" class="muted small">…</div><div class="up-bar"><span id="mq-bar" style="width:0%"></span></div><button class="chip-btn sm" id="mq-go">⬇️ Download all audio</button></div>
           <p class="muted small lib-note">Older voice notes were not kept as files. New audio is saved automatically (up to 64 MB); re-linking brings older chats back.</p></aside>
         <main><div class="sel-bar" id="sel-bar" hidden><b id="sel-n"></b><button class="btn ghost sm" id="sel-archive">🗄️ Archive</button><button class="btn danger sm" id="sel-delete">🗑️ Delete from library</button><button class="btn ghost sm" id="sel-restore" hidden>↩️ Restore</button><button class="link-btn" id="sel-clear">✕</button></div>
@@ -665,9 +667,9 @@
           <div class="ux-act">
             <?php if (!$isClient && in_array($r, WI_TEAM_ROLES, true)): ?><span class="muted small">Managed by their client</span><?php else: ?><button class="btn ghost sm" data-edit="<?= wi_e($u['email']) ?>" data-name="<?= wi_e($u['name'] ?? '') ?>" data-phone="<?= wi_e($u['phone']) ?>" data-role="<?= wi_e($r) ?>" data-accounts="<?= wi_e(implode(',', (array) ($u['accounts'] ?? []))) ?>" data-flags="<?= wi_e(json_encode(['can_reply' => !empty($u['can_reply']), 'can_link' => !empty($u['can_link']), 'can_share' => !empty($u['can_share']), 'cases_only' => !empty($u['cases_only']), 'can_bot' => !empty($u['can_bot']), 'can_meetings' => !empty($u['can_meetings']), 'can_cases' => !empty($u['can_cases']), 'can_backup' => !empty($u['can_backup']), 'own' => !empty($u['own_number']), 'active' => !empty($u['active'])])) ?>" data-max-team="<?= (int) ($u['max_team'] ?? 0) ?>" data-chat="<?= wi_e(json_encode((object) ($u['chat'] ?? []))) ?>" data-pages="<?= wi_e(json_encode($u['pages'] ?? null)) ?>">✏️ Edit</button><?php endif; ?>
             <?php if (wi_is_super() && $r !== 'super' && empty($_SESSION['imp_from'])): ?><form method="post" class="inline"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="impersonate"><input type="hidden" name="email" value="<?= wi_e($u['email']) ?>"><button class="btn ghost sm" title="See the panel as this user">👁 Sign in as</button></form><?php endif; ?>
-            <?php if (strtolower($u['email']) !== strtolower($me['email'])): ?><form method="post" class="inline" onsubmit="return confirm('Delete this user?')"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="delete_user"><input type="hidden" name="email" value="<?= wi_e($u['email']) ?>"><button class="btn ghost sm bad-t" title="Delete this user">🗑 Delete</button></form><?php endif; ?>
+            <?php if (strtolower($u['email']) !== strtolower($me['email'])): ?><form method="post" class="inline" onsubmit="return confirm('Delete this user?')"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="delete_user"><input type="hidden" name="email" value="<?= wi_e($u['email']) ?>"><button class="btn ghost sm bad-t" title="Delete this user"><span>🗑</span> Delete</button></form><?php endif; ?>
             <?php if ($r === 'viewer' && in_array($me['role'] ?? '', ['super', 'admin'], true) && empty($_SESSION['imp_from'])): $own = []; foreach (wi_accounts() as $oa) { $oe = strtolower((string) ($oa['owner'] ?? '')); $ou = $oe !== '' ? wi_find_user($oe) : null; if ($ou && in_array($ou['role'] ?? '', ['client', 'super'], true)) $own[$oe] = ($ou['name'] ?? '') ?: $oe; } ?>
-            <details class="ux-move"><summary class="btn ghost sm">🔁 Move to a team</summary><form method="post" class="ux-move-f"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="viewer_to_team"><input type="hidden" name="email" value="<?= wi_e($u['email']) ?>">
+            <details class="ux-move"><summary class="btn ghost sm"><span>🔁</span> Move to a team</summary><form method="post" class="ux-move-f"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="viewer_to_team"><input type="hidden" name="email" value="<?= wi_e($u['email']) ?>">
               <label>Number owner<select name="owner"><?php foreach ($own as $oe => $on): ?><option value="<?= wi_e($oe) ?>"><?= wi_e($on) ?> — <?= wi_e($oe) ?></option><?php endforeach; ?></select></label>
               <label>Role<select name="role"><option value="agent">Employee</option><option value="lead">Supervisor</option></select></label>
               <button class="btn primary sm">Move</button><small class="muted">Keeps their number, pages and phone; they then see the owner's numbers and data.</small></form></details><?php endif; ?>

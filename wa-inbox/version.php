@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.97.2', 'date' => '2026-10-17', 'title' => 'Library and Audio: calmer layout', 'changes' => [
+        'Fixed: "Add text", "Upload files", "Manage categories", "Statistics", "Move to a team" and "Delete" showed in English (the emoji shared their text) — now translated.',
+        'Library and Audio: the section tiles are compact pills instead of big squares, the selection and AI buttons are folded into one "Selection & AI tools" box, the side panel buttons are tidy, and the cards are lighter (no box inside a box).',
+    ]],
     ['v' => '3.97.1', 'date' => '2026-10-17', 'title' => 'Google sign-in works again; YouTube on its own', 'changes' => [
         'Fixed: signing in with Google failed ("scopes that cannot be requested together: drive.file and youtube.upload"). Drive, Calendar and Meet are asked together; YouTube is now its own sign-in with its own saved connection, started from the YouTube upload window (Media → upload to YouTube → Connect YouTube).',
         'A Google account already connected keeps working for Drive, Calendar and Meet; only the YouTube upload needs the new sign-in.',
