@@ -388,6 +388,7 @@ return [
     'Approval page' => 'صفحة القبول',
     'Rejected' => 'مرفوض',
     'Full meeting' => 'اللقاء ممتلئ',
+    'A dream told in pieces: wait this many seconds after the last piece, then answer once (0 = answer each piece)' => 'حلم متقطّع على رسائل: استنى كام ثانية بعد آخر جزء وبعدين رد مرة واحدة (0 = رد على كل جزء)',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. Ruqyah Al-Athiri' => 'مثلًا: رقية الأثيري',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',

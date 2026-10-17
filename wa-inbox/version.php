@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.96.1', 'date' => '2026-10-17', 'title' => 'Dream wait is a setting', 'changes' => [
+        'Bot settings: "A dream told in pieces — wait this many seconds after the last piece, then answer once" (0 = answer each piece) is now editable next to the other wait times.',
+    ]],
     ['v' => '3.96.0', 'date' => '2026-10-17', 'title' => 'Library commands: the nearest tags, recordings, no wrong text', 'changes' => [
         'When a name is not found, the bot now says which tags to try — the nearest ones to what was written, then the section tags (#المكتبة #صوتيات #البرامج #رقيات) — instead of only "not found".',
         'A text found only by words inside its body is no longer sent as the answer: the bot lists the closest texts and asks for the exact name.',
