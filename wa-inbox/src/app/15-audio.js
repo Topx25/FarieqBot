@@ -98,7 +98,7 @@
       if (e.target.matches('.au-cat')) { it.category = e.target.value; post({ key: it.key, category: it.category }).then(tiles); }
       if (e.target.matches('.au-title')) { it.title = e.target.value.trim(); post({ key: it.key, title: it.title }).then(function (r) { e.target.classList.add(r.ok ? 'saved' : 'bad'); setTimeout(function () { e.target.classList.remove('saved', 'bad'); }, 1200); }); }
     });
-    list$.addEventListener('keydown', function (e) { if (e.target.matches('.au-title') && e.key === 'Enter') e.target.blur(); });
+    list$.addEventListener('keydown', function (e) { if (e.target.matches('.au-title') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
     list$.addEventListener('click', function (e) {
       var an = e.target.closest('[data-aname]');
       if (an) { var x = itemOf(an), key = x.attachment; var d = mlDialog('<div class="ml-head"><b>✏️ ' + T('Name & shortcut') + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div><div class="ml-fw">'

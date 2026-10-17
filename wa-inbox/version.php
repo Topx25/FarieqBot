@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.91.1', 'date' => '2026-10-17', 'title' => 'Enter saves', 'changes' => [
+        'Pressing Enter in a one-line field now saves: it presses the main button of its dialog or card (the only one), and a field that saves when you leave it just saves. Search boxes, forms and fields with their own Enter action are left as they were.',
+    ]],
     ['v' => '3.91.0', 'date' => '2026-10-17', 'title' => 'Categories control and no duplicate tags', 'changes' => [
         'Audio page: a "Manage categories" button — add, rename, change the icon and colour, or delete the categories of the audio library (recordings of a deleted category stay, uncategorised).',
         'A shortcut or section tag can no longer repeat: it is refused when another file, a section tag or a quick reply keyword already has it, and the same tag cannot be written twice in the section tags.',

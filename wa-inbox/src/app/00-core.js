@@ -172,3 +172,12 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
 // ▶ one player at a time: starting a recording or a video pauses the one that was playing (Topx1.Host)
 document.addEventListener('play', function (e) { var t = e.target; if (!t || (t.tagName !== 'AUDIO' && t.tagName !== 'VIDEO')) return;
   [].forEach.call(document.querySelectorAll('audio,video'), function (m) { if (m !== t && !m.paused && !m.muted) m.pause(); }); }, true);
+
+// ⏎ Enter in a one-line field saves: it presses the one main button of its dialog or card; a field that saves on change just commits (Topx1.Host)
+document.addEventListener('keydown', function (e) {
+  var t = e.target; if (e.key !== 'Enter' || e.isComposing || e.shiftKey || e.defaultPrevented || !t || t.tagName !== 'INPUT') return;
+  if (['checkbox', 'radio', 'button', 'submit', 'file', 'color', 'range', 'search'].indexOf(t.type) !== -1 || t.form || t.hasAttribute('data-no-enter')) return;
+  var scope = t.closest('dialog, .ml-fw, [data-enter], .card'); if (scope) { var bs = [].filter.call(scope.querySelectorAll('button.primary, .btn.primary, [data-enter-btn]'), function (b) { return !b.disabled && b.offsetParent !== null; });
+    if (bs.length === 1) { e.preventDefault(); bs[0].click(); return; } }
+  t.blur();
+});

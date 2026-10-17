@@ -172,6 +172,15 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
 // ▶ one player at a time: starting a recording or a video pauses the one that was playing (Topx1.Host)
 document.addEventListener('play', function (e) { var t = e.target; if (!t || (t.tagName !== 'AUDIO' && t.tagName !== 'VIDEO')) return;
   [].forEach.call(document.querySelectorAll('audio,video'), function (m) { if (m !== t && !m.paused && !m.muted) m.pause(); }); }, true);
+
+// ⏎ Enter in a one-line field saves: it presses the one main button of its dialog or card; a field that saves on change just commits (Topx1.Host)
+document.addEventListener('keydown', function (e) {
+  var t = e.target; if (e.key !== 'Enter' || e.isComposing || e.shiftKey || e.defaultPrevented || !t || t.tagName !== 'INPUT') return;
+  if (['checkbox', 'radio', 'button', 'submit', 'file', 'color', 'range', 'search'].indexOf(t.type) !== -1 || t.form || t.hasAttribute('data-no-enter')) return;
+  var scope = t.closest('dialog, .ml-fw, [data-enter], .card'); if (scope) { var bs = [].filter.call(scope.querySelectorAll('button.primary, .btn.primary, [data-enter-btn]'), function (b) { return !b.disabled && b.offsetParent !== null; });
+    if (bs.length === 1) { e.preventDefault(); bs[0].click(); return; } }
+  t.blur();
+});
   /* ---------------- Media library (shared): pick a media item, choose chats, send / forward with a caption ---------------- */
   // Used by the Media page, the 🖼️ button of the chat box and the ↪ forward action on a chat's media.
   var ML = { items: null };
@@ -1248,7 +1257,7 @@ document.addEventListener('play', function (e) { var t = e.target; if (!t || (t.
       if (e.target.matches('.au-cat')) { it.category = e.target.value; post({ key: it.key, category: it.category }).then(tiles); }
       if (e.target.matches('.au-title')) { it.title = e.target.value.trim(); post({ key: it.key, title: it.title }).then(function (r) { e.target.classList.add(r.ok ? 'saved' : 'bad'); setTimeout(function () { e.target.classList.remove('saved', 'bad'); }, 1200); }); }
     });
-    list$.addEventListener('keydown', function (e) { if (e.target.matches('.au-title') && e.key === 'Enter') e.target.blur(); });
+    list$.addEventListener('keydown', function (e) { if (e.target.matches('.au-title') && e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
     list$.addEventListener('click', function (e) {
       var an = e.target.closest('[data-aname]');
       if (an) { var x = itemOf(an), key = x.attachment; var d = mlDialog('<div class="ml-head"><b>✏️ ' + T('Name & shortcut') + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div><div class="ml-fw">'
