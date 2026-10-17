@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.89.0', 'date' => '2026-10-17', 'title' => 'Library navigation redesigned', 'changes' => [
+        'Library pages: the top menu is two clear groups — Media and files (Media, Audio, Files, 🗑 Deleted) and Texts (All and the sections) — with the open one filled; Deleted has its own link (?p=media&bin=1).',
+        'Media sidebar in groups (Show, Folders, Tools) and drawn while viewing Deleted too.',
+    ]],
     ['v' => '3.88.2', 'date' => '2026-10-17', 'title' => 'Deleted always in sight', 'changes' => [
         'Media library: 🗑 Deleted moved up next to Favourites, with how many files wait there; the sidebar is no longer cut to the screen height.',
     ]],

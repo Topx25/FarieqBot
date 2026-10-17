@@ -105,17 +105,21 @@
         <a href="?p=report" class="<?= $page === 'report' ? 'on' : '' ?>">📊 Daily report</a>
         <a href="?p=backup" class="<?= $page === 'backup' ? 'on' : '' ?>">☁️ Google Drive backup</a></div>
     <?php elseif (in_array($page, ['library', 'audio', 'files', 'media'], true)): $libSec = (string) ($_GET['sec'] ?? ''); ?>
-      <div class="page-tabs lib-tabs"><span class="pt-title">📚 Library</span>
+      <?php $libBin = $page === 'media' && !empty($_GET['bin']); ?>
+      <nav class="lib-nav">
+        <div class="ln-group"><span class="ln-h">🎞️ Media and files</span>
+          <a href="?p=media" class="<?= $page === 'media' && !$libBin ? 'on' : '' ?>">🖼️ Media</a>
+          <a href="?p=audio" class="<?= $page === 'audio' ? 'on' : '' ?>">🎧 Audio</a>
+          <a href="?p=files" class="<?= $page === 'files' ? 'on' : '' ?>">📄 Files</a>
+          <a href="?p=media&amp;bin=1" class="ln-bin <?= $libBin ? 'on' : '' ?>">🗑 Deleted</a></div>
+        <div class="ln-group"><span class="ln-h">📚 Texts</span>
         <a href="?p=library" class="<?= $page === 'library' && $libSec === '' ? 'on' : '' ?>">🗂️ All</a>
-        <a href="?p=audio" class="<?= $page === 'audio' ? 'on' : '' ?>">🎧 Audio</a>
-        <a href="?p=files" class="<?= $page === 'files' ? 'on' : '' ?>">📄 Files</a>
-        <a href="?p=media" class="<?= $page === 'media' ? 'on' : '' ?>">🖼️ Media</a>
         <?php $libR = (json_decode((string) @file_get_contents(wf_acc_rules_file((string) ($cur['id'] ?? ''))), true) ?: [])['library'] ?? []; $libTabs = [];
           foreach ((array) ($libR['sections'] ?? []) as $sx) $libTabs[] = [$sx['name'], $sx['icon'] ?? '📁', $sx['name']];
           if (!empty($libR['tag_section']['name'])) $libTabs[] = [$libR['tag_section']['name'], $libR['tag_section']['icon'] ?? '📁', $libR['tag_section']['name']]; // sections from Settings → Gateway rules
           foreach ($libTabs as $t): ?>
           <a href="?p=library&amp;sec=<?= rawurlencode($t[0]) ?>" class="<?= $page === 'library' && $libSec === $t[0] ? 'on' : '' ?>"><?= $t[1] ?> <?= wi_e($t[2]) ?></a>
-        <?php endforeach; ?></div>
+        <?php endforeach; ?></div></nav>
     <?php elseif (in_array($page, $chatPages, true)): ?>
       <div class="page-tabs"><span class="pt-title">💬 Conversations</span>
         <a href="?p=inbox" class="<?= $page === 'inbox' ? 'on' : '' ?>">💬 Chats</a>

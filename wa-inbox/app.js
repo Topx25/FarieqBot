@@ -1643,7 +1643,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
   /* ---------------- Media library page: folders (with sub-folders), kinds, selection with move / favourite / delete,
      a bin to put deleted items back, and an edit panel (title, caption, folder, tags) with "send to chats" ---------------- */
   if (page === 'media') {
-    var mroot = document.getElementById('ml-page'), mk = '', mf = '', mq = '', mcur = null, mbin = false, msel = {}, mfolders = [], msort = 'new';
+    var mroot = document.getElementById('ml-page'), mk = '', mf = '', mq = '', mcur = null, mbin = /[?&]bin=1/.test(location.search), msel = {}, mfolders = [], msort = 'new';
     try { msort = localStorage.getItem('wi_ml_sort') || 'new'; } catch (e) {}
     var mchat = '', mfrom = '', mto = '', mview = 'grid', mdet = false; try { mview = localStorage.getItem('wi_ml_view') || 'grid'; mdet = localStorage.getItem('wi_ml_det') === '1'; } catch (e) {}
     function mlChats(items) { var by = {}; items.forEach(function (i) { if (!i.jid) return; by[i.jid] = by[i.jid] || { n: 0, name: i.chat || i.jid.split('@')[0], g: /@g\.us$/.test(i.jid) }; by[i.jid].n++; });
@@ -1661,7 +1661,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
       // counts are of every kind (like the space card); the kind buttons above the grid count the open folder
       var all = ML.items || [], inF = function (f) { return all.filter(function (i) { return i.folder === f || i.folder.indexOf(f + '/') === 0; }); },
         cnt = function (f) { var a = inF(f), s = 0; a.forEach(function (i) { s += i.size; }); return fmt(a.length) + (a.length ? ' · ' + mlSize(s) : ''); };
-      return mlSpace(ML.items || []) + '<button type="button" class="ml-fd' + (mf === '' && !mbin ? ' on' : '') + '" data-fd="">📚 ' + T('All media') + ' <i>' + fmt(all.length) + '</i></button>'
+      return mlSpace(ML.items || []) + '<div class="ml-fh">' + T('Show') + '</div><button type="button" class="ml-fd' + (mf === '' && !mbin ? ' on' : '') + '" data-fd="">📚 ' + T('All media') + ' <i>' + fmt(all.length) + '</i></button>'
         + '<button type="button" class="ml-fd' + (mf === '__fav' ? ' on' : '') + '" data-fd="__fav">★ ' + T('Favourites') + ' <i>' + fmt(all.filter(function (i) { return i.fav; }).length) + '</i></button>'
         + '<button type="button" class="ml-fd ml-binb' + (mbin ? ' on' : '') + '" data-bin>🗑 ' + T('Deleted') + ' <i>' + fmt((ML.bin || {}).count || 0) + '</i></button>' // always in sight, next to Favourites
         + '<button type="button" class="ml-fd' + (mf === '__none' ? ' on' : '') + '" data-fd="__none">📥 ' + T('Not in a folder') + ' <i>' + fmt(all.filter(function (i) { return !i.folder; }).length) + '</i></button>'
@@ -1669,7 +1669,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
         + mfolders.map(function (f) { var depth = f.split('/').length - 1, name = f.split('/').pop();
           return '<div class="ml-fr" style="padding-inline-start:' + (depth * 16) + 'px"><button type="button" class="ml-fd' + (mf === f ? ' on' : '') + '" data-fd="' + esc(f) + '">' + (depth ? '└ ' : '') + '📁 ' + esc(name) + ' <i>' + cnt(f) + '</i></button>'
             + '<span class="ml-fa"><button type="button" title="' + esc(T('New sub-folder')) + '" data-fnew="' + esc(f) + '">＋</button><button type="button" title="' + esc(T('Rename')) + '" data-fren="' + esc(f) + '">✏️</button><button type="button" title="' + esc(T('Delete folder')) + '" data-fdel="' + esc(f) + '">🗑</button></span></div>'; }).join('')
-        + '<button type="button" class="ml-fd" data-dupes>🧬 ' + T('Duplicates') + '</button>'
+        + '<div class="ml-fh">' + T('Tools') + '</div><button type="button" class="ml-fd" data-dupes>🧬 ' + T('Duplicates') + '</button>'
         + '<button type="button" class="ml-fd" data-inv>📋 ' + T('Inventory') + '</button>'
         ;
     }
@@ -1728,7 +1728,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
     function mlPage(force) {
       var load = mbin ? WI.get('media_lib', { bin: 1 }).then(function (r) { return r.ok ? r.items : []; }) : mlLoad(force);
       Promise.all([load, force || !mfolders.length ? mlFolders() : null]).then(function (res) { var items = res[0];
-        if (!mbin) document.getElementById('ml-tree').innerHTML = mlTree();
+        document.getElementById('ml-tree').innerHTML = mlTree(); // also while in Deleted, so the way back is always there
         var inF = items.filter(function (i) { return mbin || mf === '' ? true : mf === '__fav' ? i.fav : mf === '__none' ? !i.folder : i.folder === mf; });
         var cnt = {}; inF.forEach(function (i) { cnt[i.kind] = (cnt[i.kind] || 0) + 1; });
         document.getElementById('ml-k').innerHTML = '<button data-k="" class="' + (mk === '' ? 'on' : '') + '">' + T('All') + ' <i>' + fmt(inF.length) + '</i></button>'
