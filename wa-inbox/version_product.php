@@ -5,6 +5,8 @@ declare(strict_types=1);
  * The full development log stays in version.php. Each entry has Arabic (ar) and English (en) text.
  */
 return [
+    ['v' => '3.85', 'date' => '2026-10-17', 'ar' => ['المكتبة كمدير ملفات', ['فلتر بالشات أو الجروب والتاريخ، وعرض أيقونات أو كروت كبيرة أو قائمة، وإظهار التفاصيل، وتنزيل الملفات المختارة كملف مضغوط.']],
+        'en' => ['Media library as a file manager', ['Filter by chat or group and dates, icons / large cards / list views, details on or off, and download the selected files as a .zip.']]],
     ['v' => '3.83', 'date' => '2026-10-17', 'ar' => ['صفحة المحادثات: خيارات عرض وكل الأرقام', ['ملء الشاشة، وإخفاء معاينة الصور والفيديو، وإخفاء قائمة الشاتات، وإخفاء شات معين، وكل أرقامك في قائمة واحدة بعلامة ملونة لكل رقم.']],
         'en' => ['Chats page: view options and all numbers', ['Full screen, hide previews, hide the chat list, hide a chat, and all your numbers in one list with a coloured mark per number.']]],
     ['v' => '3.79', 'date' => '2026-10-15', 'ar' => ['باقات وتسجيل ذاتي', ['باقات بحدود حقيقية (الأرقام، الفريق، البوت، الاجتماعات، الحالات، النسخ الاحتياطي، طلبات الذكاء الاصطناعي)، وصفحة أسعار يقدر الزائر يفتح منها تجربة مجانية بنفسه.']],

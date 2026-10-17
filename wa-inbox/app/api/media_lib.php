@@ -15,7 +15,7 @@ $mlKind = fn(string $f) => preg_match('/\.webp$/i', $f) ? 'sticker' : (preg_matc
 if ($api === 'media_lib') { // the index of this number's media
     $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number.']); $aid = (string) $acc['id']; $root = dirname(__DIR__, 3) . '/storage/';
     $meta = (array) (wi_read('media_meta.json', [])[$aid] ?? []); $items = [];
-    $mk = wi_gateway('/archive/media-kinds', null, $acc); $real = (array) ($mk['kinds'] ?? []); $names = (array) ($mk['names'] ?? []); // the real kind from WhatsApp (gif vs video, voice vs audio, sticker vs photo) and the file's own name
+    $mk = wi_gateway('/archive/media-kinds', null, $acc); $real = (array) ($mk['kinds'] ?? []); $names = (array) ($mk['names'] ?? []); $fromChat = (array) ($mk['chats'] ?? []); $chatNames = []; foreach ((array) (wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long'), null, $acc)['chats'] ?? []) as $ch) $chatNames[(string) $ch['jid']] = (string) ($ch['name'] ?? '') ?: (string) ($ch['phone'] ?? ''); // the real kind from WhatsApp (gif vs video, voice vs audio, sticker vs photo) and the file's own name
     foreach (glob($root . 'inbox_media/' . $aid . '/*') ?: [] as $p) { $f = basename($p); if (!preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $f) || str_ends_with($f, '.part')) continue; $items['inbox_media/' . $aid . '/' . $f] = $p; }
     foreach ((array) wi_read('uploads.json', []) as $f => $a) if ($a === $aid && is_file($root . 'inbox_uploads/' . $f)) $items['inbox_uploads/' . $f] = $root . 'inbox_uploads/' . $f;
     $bin = !empty($_GET['bin']); // the deleted ones (they can be put back)
@@ -24,9 +24,17 @@ if ($api === 'media_lib') { // the index of this number's media
         $rk = (string) ($real[$key] ?? ''); $kind = in_array($rk, ['sticker', 'image', 'gif', 'video', 'voice', 'audio', 'document'], true) ? $rk : $mlKind($key);
         if ($kind === 'document' && $mlKind($key) !== 'document') $kind = $mlKind($key); // an audio / photo sent as a file is still shown by what it is
         $out[] = ['key' => $key, 'kind' => $kind, 'size' => (int) filesize($p), 'at' => date('c', (int) filemtime($p)), 'title' => (string) ($m['title'] ?? ''), 'caption' => (string) ($m['caption'] ?? ''), 'name' => (string) ($names[$key] ?? ''), 'code' => (string) ($m['code'] ?? ''),
-            'folder' => (string) ($m['folder'] ?? ''), 'tags' => array_values((array) ($m['tags'] ?? [])), 'fav' => !empty($m['fav']), 'used' => (int) ($m['used'] ?? 0), 'youtube' => $m['youtube'] ?? null]; }
+            'folder' => (string) ($m['folder'] ?? ''), 'jid' => (string) ($fromChat[$key] ?? ''), 'chat' => (string) ($chatNames[(string) ($fromChat[$key] ?? '')] ?? ''), 'tags' => array_values((array) ($m['tags'] ?? [])), 'fav' => !empty($m['fav']), 'used' => (int) ($m['used'] ?? 0), 'youtube' => $m['youtube'] ?? null]; }
     usort($out, fn($a, $b) => [$b['fav'], $b['at']] <=> [$a['fav'], $a['at']]);
     wi_json(['ok' => true, 'items' => $out, 'bin' => $bin ? null : $other, 'folders' => array_values(array_unique(array_filter(array_column($out, 'folder'))))]);
+}
+if ($api === 'media_zip') { // the selected files in one .zip download
+    $acc = wi_current(); if (!$acc || !class_exists('ZipArchive')) wi_json(['ok' => false, 'error' => 'Not available on this server.']); $aid = (string) $acc['id']; $root = dirname(__DIR__, 3) . '/storage/';
+    $keys = array_slice(array_filter(explode(',', (string) ($_GET['keys'] ?? ''))), 0, 300); $tmp = tempnam(sys_get_temp_dir(), 'wiz'); $z = new ZipArchive(); $z->open($tmp, ZipArchive::OVERWRITE); $n = 0; $meta = (array) (wi_read('media_meta.json', [])[$aid] ?? []);
+    foreach ($keys as $k) { if (!preg_match('#^(inbox_media/' . preg_quote($aid, '#') . '|inbox_uploads)/[A-Za-z0-9_.-]{1,80}$#', $k)) continue; $p = $root . $k; if (!is_file($p)) continue; // only this number's files
+        $t = trim((string) ($meta[$k]['title'] ?? '')); $nm = $t !== '' ? preg_replace('/[\\\\\/:*?"<>|]+/u', '_', mb_substr($t, 0, 60)) . '.' . pathinfo($p, PATHINFO_EXTENSION) : basename($p); $z->addFile($p, (++$n) . '-' . $nm); }
+    $z->close(); if (!$n) { @unlink($tmp); wi_json(['ok' => false, 'error' => 'Nothing to download.']); }
+    header('Content-Type: application/zip'); header('Content-Disposition: attachment; filename="media-' . date('Y-m-d') . '.zip"'); header('Content-Length: ' . filesize($tmp)); readfile($tmp); @unlink($tmp); exit;
 }
 if ($api === 'media_inventory') { // the full list of the library, built now (always the latest); ?fmt=csv downloads it
     $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number.']); $v = wf_lib_inventory($acc);

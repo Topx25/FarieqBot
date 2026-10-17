@@ -864,3 +864,9 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 .app.v-nolist .inbox .chat-list{display:none}.app.v-nolist .inbox{grid-template-columns:1fr}
 .chats .c.c-hid{opacity:.55}.chats .c.c-hid::after{content:"🙈";margin-inline-start:4px}
 .chats .c{position:relative}.chats .acc-mark{position:absolute;inset-inline-end:6px;bottom:4px;font-size:10px;color:#fff;border-radius:6px;padding:0 5px;max-width:90px;overflow:hidden;white-space:nowrap}
+/* Media library: views and details */
+.ml-bar2{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}.ml-bar2 select,.ml-bar2 input{max-width:240px}#ml-det.on{background:var(--acc,#0f9d8a);color:#fff}
+.ml-det{display:none;font-size:12px;padding:4px 6px;line-height:1.35}.ml-det b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ml-det small{color:var(--muted,#667085)}
+#ml-g.mv-det .ml-det{display:block}
+#ml-g.mv-big .ml-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))!important}
+#ml-g.mv-list .ml-grid{display:block!important}#ml-g.mv-list .ml-cell{display:flex;align-items:center;gap:10px;padding:4px 6px;border-bottom:1px solid var(--line,#e5e7eb)}#ml-g.mv-list .ml-cell img,#ml-g.mv-list .ml-cell video{width:56px;height:56px;object-fit:cover}#ml-g.mv-list .ml-det{flex:1;min-width:0}

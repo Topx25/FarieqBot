@@ -1730,12 +1730,13 @@ app.get('/groups/invite', requireToken, async (req, res) => {
 let mediaKindsCache = null;
 app.get('/archive/media-kinds', requireToken, (req, res) => {
   try {
-    if (!mediaKindsCache || mediaKindsCache.v !== archiveVersion) { const kinds = {}, names = {};
+    if (!mediaKindsCache || mediaKindsCache.v !== archiveVersion) { const kinds = {}, names = {}, chats = {};
       for (const r of readArchive({ limit: 300000, months: 60 })) if (r.attachment) {
         if (r.kind && !kinds[r.attachment]) kinds[r.attachment] = r.kind;
-        if (!names[r.attachment] && r.file_name) names[r.attachment] = String(r.file_name).slice(0, 120); } // the name the file was sent with
-      mediaKindsCache = { v: archiveVersion, kinds, names }; }
-    res.json({ ok: true, kinds: mediaKindsCache.kinds, names: mediaKindsCache.names });
+        if (!names[r.attachment] && r.file_name) names[r.attachment] = String(r.file_name).slice(0, 120); // the name the file was sent with
+        if (!chats[r.attachment] && r.jid) chats[r.attachment] = r.jid; } // the chat or group it came from (media library filter)
+      mediaKindsCache = { v: archiveVersion, kinds, names, chats }; }
+    res.json({ ok: true, kinds: mediaKindsCache.kinds, names: mediaKindsCache.names, chats: mediaKindsCache.chats });
   } catch (error) { res.status(500).json({ ok: false, error: error.message }); }
 });
 

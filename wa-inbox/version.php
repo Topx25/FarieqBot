@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.85.0', 'date' => '2026-10-17', 'title' => 'Media library: file manager', 'changes' => [
+        'Media library: filter by chat or group (each file knows the chat it came from) and by dates; views: icons, large cards, list; ℹ️ details (name, size, date, chat, folder) on/off; the selected files download as one .zip. Remembered in this browser.',
+    ]],
     ['v' => '3.84.0', 'date' => '2026-10-17', 'title' => 'Hide a chat from chosen team members', 'changes' => [
         'Chat header → 🔒 Who sees this chat (for those who manage users): tick the team members who must not see it. It is removed from every answer of the server for them (chat list, search, groups, reports, messages), and opening it by link is refused.',
     ]],

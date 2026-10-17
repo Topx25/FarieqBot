@@ -385,6 +385,10 @@
           <div class="ml-main">
             <div class="ml-bar"><div class="search-xl"><span>🔎</span><input type="search" id="ml-q" placeholder="Search title, caption, tags…" dir="auto"></div><div class="seg sm" id="ml-k"></div>
               <select id="ml-sort"><option value="new">🕐 Newest</option><option value="old">Oldest</option><option value="big">💾 Largest</option><option value="used">📤 Most sent</option></select><span class="muted small" id="ml-tot"></span></div>
+            <div class="ml-bar ml-bar2"><select id="ml-chat" title="Chat or group"><option value="">💬 All chats and groups</option></select>
+              <label class="muted small">From <input type="date" id="ml-from"></label><label class="muted small">To <input type="date" id="ml-to"></label>
+              <select id="ml-view" title="View"><option value="grid">▦ Icons</option><option value="big">🖼️ Large cards</option><option value="list">☰ List</option></select>
+              <button type="button" class="chip-btn sm" id="ml-det" title="Show / hide the details of each file">ℹ️ Details</button></div>
             <div class="ml-crumb" id="ml-crumb"></div>
             <div class="ml-bulk" id="ml-bulk" hidden></div>
             <div class="ml-layout"><div id="ml-g"><div class="empty">Loading…</div></div><aside class="card ml-ed" id="ml-ed" hidden></aside></div>
