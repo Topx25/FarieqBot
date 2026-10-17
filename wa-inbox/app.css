@@ -1056,3 +1056,6 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 .lib-grid.list .lcard .vc-t{-webkit-line-clamp:3;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}
 .lib-grid.list .lc-cover{max-height:60px;width:auto}
 @media (max-width:860px){.lib-grid.list .lcard{grid-template-columns:1fr}.lib-grid.list .lcard>.vcard,.lib-grid.list .lcard>.lc-actions{grid-column:1;grid-row:auto}.lib-grid.list .lcard>.lc-actions{flex-direction:row;flex-wrap:wrap}}
+
+/* Users: move a viewer to a team */
+.ux-move{display:inline-block}.ux-move>summary{list-style:none;cursor:pointer}.ux-move-f{display:flex;flex-direction:column;gap:8px;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card,#fff);min-width:240px}.ux-move-f label{display:flex;flex-direction:column;gap:3px;font-size:13px}.ux-move-f select{padding:6px 8px}

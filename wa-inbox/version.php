@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.97.0', 'date' => '2026-10-17', 'title' => 'Users: move a viewer to a team, clear delete', 'changes' => [
+        'Users page: "Move to a team" on a viewer — pick the owner of the number and the role (employee / supervisor); the person keeps their number, pages and phone and then sees the owner\'s numbers and data. A viewer could never see a private number before, whatever their permissions.',
+        'The super admin can now be the owner of a team (for the numbers they own), like a client.',
+        'Users page: the delete button is now labelled "Delete" (it was only an icon).',
+    ]],
     ['v' => '3.96.3', 'date' => '2026-10-17', 'title' => 'Library has its own menu group', 'changes' => [
         'Menu: the Library (library, audio, files, media) is now its own group, no longer inside "Automation & content" with the bot. Names and icons set in the menu settings still apply.',
     ]],

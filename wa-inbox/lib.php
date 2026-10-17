@@ -328,7 +328,21 @@ function wi_tenant(?array $u = null): ?array {
     $u ??= wi_me(); if (!$u) return null;
     if (($u['role'] ?? '') === 'client') return $u;
     if (!wi_is_team($u)) return null;
-    $o = wi_find_user((string) ($u['tenant'] ?? '')); return $o && ($o['role'] ?? '') === 'client' ? $o : null;
+    $o = wi_find_user((string) ($u['tenant'] ?? '')); return $o && in_array($o['role'] ?? '', ['client', 'super'], true) ? $o : null; // a team belongs to a client, or to the super admin for the numbers they own
+}
+/** Turns a viewer into a member of an owner's team (role lead / agent), keeping their numbers, pages and phone. Returns an error text, or '' when done (the list is changed, not saved). */
+function wi_viewer_to_team(array &$users, string $email, string $owner, string $role): string {
+    $email = strtolower(trim($email)); $owner = strtolower(trim($owner)); $t = null; $ow = null;
+    foreach ($users as $i => $u) { if (strtolower((string) $u['email']) === $email) $t = $i; if (strtolower((string) $u['email']) === $owner) $ow = $u; }
+    if ($t === null || ($users[$t]['role'] ?? '') !== 'viewer') return 'Only a viewer can be moved to a team.';
+    if (!$ow || !in_array($ow['role'] ?? '', ['client', 'super'], true)) return 'The owner must be a client or the super admin.';
+    if (!in_array($role, WI_TEAM_ROLES, true)) return 'Choose supervisor or employee.';
+    $own = array_keys(wi_owned_accounts($owner)); if (!$own) return 'This owner has no linked number.';
+    $accs = array_values(array_intersect((array) ($users[$t]['accounts'] ?? []), $own)) ?: $own; $d = wi_team_roles($owner)[$role];
+    $pages = array_filter((array) ($users[$t]['pages'] ?? []), fn($v, $k) => in_array($v, ['view', 'edit'], true) && !in_array($k, WI_TEAM_NEVER, true), ARRAY_FILTER_USE_BOTH) ?: $d['pages'];
+    $u = $users[$t]; unset($u['cases_only'], $u['can_bot'], $u['can_meetings'], $u['can_cases'], $u['can_backup'], $u['can_share'], $u['can_link'], $u['can_reply'], $u['own_number'], $u['max_team'], $u['shared']);
+    $users[$t] = ['role' => $role, 'tenant' => $owner, 'accounts' => $accs, 'pages' => $pages, 'chat' => $d['chat'], 'moved_from' => 'viewer', 'moved_at' => date('c')] + $u;
+    return '';
 }
 /** Numbers a client owns (linked themselves). */
 function wi_owned_accounts(string $email): array { $e = strtolower($email); return array_filter(wi_accounts(), fn($a) => $e !== '' && strtolower((string) ($a['owner'] ?? '')) === $e); }
@@ -360,12 +374,13 @@ function wi_client_state(array $c): array {
 /** The client record behind a user (the client themself, or a team user's client), active or not. */
 function wi_client_of(array $u): ?array {
     if (($u['role'] ?? '') === 'client') return $u; if (!in_array($u['role'] ?? '', WI_TEAM_ROLES, true)) return null;
-    $e = strtolower((string) ($u['tenant'] ?? '')); foreach (wi_users() as $x) if (strtolower((string) $x['email']) === $e && ($x['role'] ?? '') === 'client') return $x; return null;
+    $e = strtolower((string) ($u['tenant'] ?? '')); foreach (wi_users() as $x) if (strtolower((string) $x['email']) === $e && in_array($x['role'] ?? '', ['client', 'super'], true)) return $x; return null; // the owner of a team: a client, or the super admin
 }
 /** Why this user may not use the panel now ('' = allowed). A client's team stops with its client. */
 function wi_access_blocked(array $u): string {
     if (($u['role'] ?? '') !== 'client' && !in_array($u['role'] ?? '', WI_TEAM_ROLES, true)) return '';
     $c = wi_client_of($u); if (!$c) return 'This panel was closed. Contact the administrator.';
+    if (($c['role'] ?? '') === 'super') return ''; // the super admin's own team has no subscription to end
     $s = wi_client_state($c)['state'];
     return $s === 'expired' ? 'The subscription of this panel has ended. Contact the administrator to renew it.' : ($s === 'suspended' ? 'This panel is paused. Contact the administrator.' : '');
 }
@@ -380,6 +395,7 @@ function wi_team_seats(array $client): int { return max(0, (int) ($client['max_t
 function wi_team_of(string $tenant): array { $e = strtolower($tenant); return array_values(array_filter(wi_users(), fn($u) => wi_is_team($u) && strtolower((string) ($u['tenant'] ?? '')) === $e)); }
 /** What a client's plan allows on a page (the ceiling for the whole panel). */
 function wi_client_page_perm(array $u, string $page): string {
+    if (($u['role'] ?? '') === 'super') return in_array($page, ['settings', 'backup', 'report', 'users', 'ai'], true) ? '' : 'edit'; // the super admin as the owner of a team: everything a team may see
     // Features the super admin turned on for this client: bot (+ learning + their own AI keys), meetings, cases, backup (exports).
     if (in_array($page, ['settings', 'backup', 'report'], true)) return '';
     if ($page === 'users') return wi_team_seats($u) > 0 ? 'edit' : '';

@@ -233,6 +233,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         wi_update('assign.json', function ($A) use ($email) { foreach ($A as $aid => $rows) foreach ((array) $rows as $j => $a) if (strtolower((string) ($a['to'] ?? '')) === $email) unset($A[$aid][$j]); return $A; });
         wi_log('team_delete', ['target' => $email]); $back('User deleted.');
     }
+    if ($do === 'viewer_to_team' && wi_can_users() && empty($_SESSION['imp_from']) && in_array(wi_me()['role'] ?? '', ['super', 'admin'], true)) { // the page that moves a viewer into the team of the number's owner
+        $users = wi_users(); $err = wi_viewer_to_team($users, (string) ($_POST['email'] ?? ''), (string) ($_POST['owner'] ?? ''), (string) ($_POST['role'] ?? 'agent'));
+        if ($err === '') { wi_save_users($users); wi_log('viewer_to_team', ['target' => strtolower((string) ($_POST['email'] ?? '')), 'owner' => strtolower((string) ($_POST['owner'] ?? '')), 'role' => (string) ($_POST['role'] ?? '')]); wi_flash('Moved to the team. They now see the number of their owner.', 'ok'); }
+        else wi_flash($err, 'bad');
+        header('Location: ?p=users'); exit;
+    }
     if (in_array($do, ['add_user', 'update_user', 'delete_user'], true)) {
         if (!wi_can_users() || (wi_me()['role'] ?? '') === 'client') { http_response_code(403); exit('Admins only.'); }
         $users = wi_users();
