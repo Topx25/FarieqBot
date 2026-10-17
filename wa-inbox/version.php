@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.95.1', 'date' => '2026-10-17', 'title' => 'The bot in groups: commands and dreams told in pieces', 'changes' => [
+        'A case command written in a group that does not run commands (e.g. "#الحالة ID 23 #اتحذفت") is no longer answered as chat: the bot stays quiet.',
+        'A dream told in several short messages: the bot waits until the person stops (setting "dream_wait", 120 seconds by default), then answers all of it once. A tagged message, a question or a long message is answered at once.',
+    ]],
     ['v' => '3.95.0', 'date' => '2026-10-17', 'title' => 'Meetings: guests accepted after a host enters, customizable pages', 'changes' => [
         'Meetings: a new option "Accept guests automatically once any host has entered". Several hosts can be set (dashboard users and WhatsApp group members); when any one of them enters, everyone who is waiting is accepted, and later guests are accepted as soon as they give their details.',
         'Meetings: every public page can be customized per meeting — waiting page, details page (text, field titles, button), approval page, accepted, rejected, full, wrong link and host page — plus button and background colours and a logo. Empty fields keep the built-in wording; a preview link opens each page.',

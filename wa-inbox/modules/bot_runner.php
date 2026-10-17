@@ -3,7 +3,7 @@
 
 /* ---------- Bot runner (cron): drafts or automatic replies, with safety limits ---------- */
 function wf_bot_run_cfg(string $aid): array {
-    return ((wi_read('bot.json', [])[$aid]['run'] ?? []) + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
+    return ((wi_read('bot.json', [])[$aid]['run'] ?? []) + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'dream_wait' => 120, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
         'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5,
         'scope' => 'private', 'groups_mode' => 'selected', 'groups' => [], 'group_default' => ['mode' => 'ai', 'trigger' => 'mention', 'text' => '', 'cooldown' => 24]]);
 }
@@ -156,6 +156,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             // A group admin is answered when they ask a question or tag the bot — not while they answer someone else (a reply or a tag of another member).
             $adminAsks = isset($team[$who]) && $mentioned; // STRICT: healers and admins talk among themselves — the bot answers them only when they tag it or reply to it
             if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun) || $text === '' || !wf_words($text)) continue;
+            if (function_exists('wf_intake_is_cmd') && wf_intake_is_cmd($aid, $text)) continue; // a case command in a group that does not run commands: not a chat message, the bot stays quiet
             if (!$mentioned && wf_is_ack($aid, $text)) continue; // "تمام" / "الحمد لله": a talk ending, not a question
             $toOther = (!empty($m['quote_from']) && wf_phone((string) $m['quote_from']) !== $me) || array_diff(array_map('wf_phone', (array) ($m['mentions'] ?? [])), [$me]);
             if (!$mentioned && $toOther && !$fun) continue; // STRICT: a message to another member is not for the bot
@@ -182,6 +183,13 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 $card = wf_customer_card($acc, $who . '@s.whatsapp.net');
                 // Groups: the group's role (healer and ruqyah teacher by default), or the role this person's words call; the person keeps it for a while
                 $rc = function_exists('wf_roles_cfg') ? wf_roles_cfg($aid) : ['group_role' => '']; $role = function_exists('wf_role_pick') ? wf_role_pick($aid, $x['jid'] . '|' . $who, $text, (string) ($g['role'] ?? $rc['group_role'])) : 'bot';
+                if ($role === 'dreams' && !$mentioned && !wf_is_question($text) && $c['mode'] === 'auto' && (int) ($c['dream_wait'] ?? 0) > 0) { // a dream told in pieces: wait until the person stops, then answer all of it once
+                    $dq = (array) ($st['dream'][$x['jid']][$who] ?? []); $parts = (array) ($dq['parts'] ?? []);
+                    if (!in_array($text, $parts, true)) { $parts[] = $text; $dq['last'] = time(); }
+                    $dq['parts'] = array_slice($parts, -8); $st['dream'][$x['jid']][$who] = $dq;
+                    if (mb_strlen($text) < 160 && time() - (int) ($dq['last'] ?? 0) < (int) $c['dream_wait']) { $st['gq'][$x['jid']][$who] = $m; continue; }
+                    $text = implode("\n", $dq['parts']); $log['q'] = mb_substr($text, 0, 400); unset($st['dream'][$x['jid']][$who]);
+                }
                 if ($role === 'crisis') { wf_role_crisis($acc, (string) $x['jid'], $text, (string) ($m['from_name'] ?? ''), (string) ($m['id'] ?? ''), $who); $n++; continue; }
                 $mine = []; foreach (array_slice($rows, -60) as $bm) if (($bm['dir'] ?? '') === 'out' && ($bm['via'] ?? '') === 'bot' && trim((string) ($bm['text'] ?? '')) !== '') $mine[] = (string) $bm['text']; // never repeat what the bot already said here
                 $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => array_slice($mine, -4), 'role' => $role, 'jid' => $x['jid'] . '|' . $who] + ($fun ? ['fun' => true] : []) + (isset($team[$who]) ? ['team' => true] : []));
