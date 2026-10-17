@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.89.3', 'date' => '2026-10-17', 'title' => 'Library matches the design', 'changes' => [
+        'Library cards: tinted backgrounds per kind (photo, sticker, GIF, document, video, voice), a document card with its extension, and the library keeps the teal palette of the design in every dashboard theme (light and dark).',
+    ]],
     ['v' => '3.89.2', 'date' => '2026-10-17', 'title' => 'Library page in English fixed', 'changes' => [
         'Fixed: on the Library page every text drawn by the page script showed in English (All topics, copies, chats, Best, Send to chats and groups…). The library state variable L overwrote the translation dictionary L of the shared script; the dictionary is now WI_DICT.',
         'Library menu group titles and the Library header are translated (an emoji in front of the text stopped the match).',

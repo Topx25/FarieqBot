@@ -73,10 +73,10 @@
       else if (it.kind === 'video') media = '<video class="mc-vid" controls preload="none" playsinline data-lz="' + u + '#t=0.5"></video>';
       else if (it.kind === 'gif') media = '<button type="button" class="ml-it mc-pic" data-key="' + esc(it.key) + '"><video data-lz="' + u + '" preload="none" muted loop autoplay playsinline></video><i class="ml-badge">GIF</i></button>';
       else if (it.kind === 'image' || it.kind === 'sticker') media = '<button type="button" class="ml-it mc-pic" data-key="' + esc(it.key) + '"><img src="' + u + '" alt="" loading="lazy"' + (it.kind === 'sticker' ? ' class="ml-stk"' : '') + '></button>';
-      else media = '<button type="button" class="ml-it mc-pic mc-doc" data-key="' + esc(it.key) + '"><span class="mc-big">📄</span></button>';
+      else media = '<button type="button" class="ml-it mc-pic mc-doc" data-key="' + esc(it.key) + '"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg><span class="mc-ext">' + esc((it.key.split('.').pop() || '').toUpperCase()) + '</span></button>';
       var chat = it.chat || (it.jid ? it.jid.split('@')[0] : '');
       return '<div class="ml-cell mcard' + (msel[it.key] ? ' sel' : '') + '"><label class="ml-ck"><input type="checkbox" data-sel="' + esc(it.key) + '"' + (msel[it.key] ? ' checked' : '') + '></label>'
-        + (it.fav ? '<i class="mc-fav">★</i>' : '') + '<div class="mc-media">' + media + '</div>'
+        + (it.fav ? '<i class="mc-fav">★</i>' : '') + '<div class="mc-media mk-' + esc(it.kind) + '">' + media + '</div>'
         + '<div class="mc-body"><button type="button" class="ml-it mc-name" data-key="' + esc(it.key) + '" dir="auto" title="' + esc(T('Edit')) + '">' + esc(mlNice(it)) + '</button>'
         + '<div class="mc-meta"><span>' + mlSize(it.size) + '</span>' + (it.at ? '<span>' + esc(String(it.at).slice(0, 10)) + '</span>' : '') + (it.used ? '<span>📤 ' + fmt(it.used) + '</span>' : '') + '</div>'
         + (chat ? '<div class="mc-chat" dir="auto">' + (/@g\.us$/.test(it.jid || '') ? '👥 ' : '💬 ') + esc(chat) + '</div>' : '')

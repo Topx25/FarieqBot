@@ -982,4 +982,23 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 .ml-v2 .mc-acts button:hover,.ml-v2 .mc-acts a.mc-dl:hover{background:var(--surface-2);border-color:var(--line-2)}
 .ml-v2 .mc-acts button.ml-it{all:unset;flex:0 0 36px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:10px;padding:7px 0;cursor:pointer;color:var(--ink-2)}
 .ml-v2 .mcard.sel{border-color:var(--accent,#0b7f70);outline:2px solid var(--accent,#0b7f70);outline-offset:-1px}
-.ml-v2 #ml-g.mv-list .mc-acts{padding:0;flex:none;min-width:260px}
+.ml-v2 #ml-g.mv-list .mc-acts{padding:0;flex:none;min-width:260px}/* Library: same palette and tints as the approved design, whatever dashboard theme is chosen */
+.ml-v2{--accent:#0b7f70;--accent-ink:#075e53;--accent-soft:#e1f3f0}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])) .ml-v2{--accent:#2bb5a2;--accent-ink:#8ee6d8;--accent-soft:#12403b}}
+:root[data-theme="dark"] .ml-v2{--accent:#2bb5a2;--accent-ink:#8ee6d8;--accent-soft:#12403b}
+.ml-v2 .mc-media.mk-image{background:#e3efe9;color:#3f7a63}
+.ml-v2 .mc-media.mk-sticker{background:#efe9f7;color:#6d5bd0}
+.ml-v2 .mc-media.mk-gif{background:#fbeee0;color:#b8742a}
+.ml-v2 .mc-media.mk-document{background:#f4f1ea;color:#8a6d3b}
+.ml-v2 .mc-media.mk-video{background:#1d2b29}
+.ml-v2 .mc-media.mk-voice,.ml-v2 .mc-media.mk-audio{background:linear-gradient(160deg,var(--accent-soft),var(--surface-2))}
+.ml-v2 .mc-doc{flex-direction:column;gap:6px;color:inherit}.ml-v2 .mc-ext{font-size:12px;font-weight:700;letter-spacing:.04em}
+.ml-v2 .mc-pic img{position:relative;z-index:1}
+:root[data-theme="dark"] .ml-v2 .mc-media.mk-image{background:#1c2e27;color:#7fc2a6}
+:root[data-theme="dark"] .ml-v2 .mc-media.mk-sticker{background:#262040;color:#b7acf2}
+:root[data-theme="dark"] .ml-v2 .mc-media.mk-document{background:#2b261a;color:#d8bb7e}
+.ml-v2 .ml-top-1 h1{font-weight:600}.ml-v2 .ml-title-ic{background:var(--accent-soft)}
+.ml-v2 .ml-viewseg button.on{background:var(--accent)}
+.ml-v2 .ml-kinds button.on{background:var(--ink,#15211f);color:var(--card,#fff)}
+.ml-v2 .ml-bulk{background:#15211f;color:#fff}
+.lib-nav a.on{background:#0b7f70}
