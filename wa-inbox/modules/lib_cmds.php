@@ -60,7 +60,9 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
         if (!$hit) $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['text']], $T)); // else every word is in its text
         if (!$hit && count($T) === 1) $hit = [array_key_first($T)];
         if (!$hit) { $say(wf_msg('lib_not_found', ['query' => mb_substr($q, 0, 40)])); return; }
-        if (count($hit) > 1) { $many(array_map(fn($k) => $T[$k]['title'], $hit)); return; }
+        $kind = trim(wf_intake_norm(ltrim((string) ($W['text'] ?? ''), '#'))); // "#رقية العقد": the word after the command is the name, and the text must be of the kind the command names
+        if (count($hit) === 1 && $kind !== '' && mb_strpos(wf_intake_norm($T[$hit[0]]['title'] . ' ' . ($g[$hit[0]]['section'] ?? '') . ' ' . ($g[$hit[0]]['topic'] ?? '')), $kind) === false) $hit = array_values(array_unique(array_merge($hit, array_keys($T)))); // only one text, and not of that kind: the choices are shown, nothing is guessed
+        if (count($hit) > 1) { $many(array_map(fn($k) => $T[$k]['title'], array_slice($hit, 0, 8))); return; }
         $say(mb_substr($T[$hit[0]]['text'], 0, 3900)); // copied as it was written, never retyped
     }
     wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => $cmd]);

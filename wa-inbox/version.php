@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.92.1', 'date' => '2026-10-17', 'title' => 'Library text command does not guess', 'changes' => [
+        'Fixed: "#رقية العقد" sent a cleaning session (the only text with "العقد" in its title). A written text is now sent directly only when it is of the kind the command names; otherwise the bot lists the closest texts and asks which one.',
+    ]],
     ['v' => '3.92.0', 'date' => '2026-10-17', 'title' => 'The bot stays in its place', 'changes' => [
         'Healers are no longer treated as cases: whoever writes a case or a case command in a group joins the team automatically (removable from the team list), and when the bot does answer a team member it talks to them as a colleague, never about "their condition". The rule is an editable instruction (AI instructions).',
         'Short acknowledgements ("تمام", "حاضر", "الحمد لله" …) no longer get a reply inside a talk that is already going; a brand-new chat is still welcomed. The words are a setting (AI instructions → short replies that end a talk).',
