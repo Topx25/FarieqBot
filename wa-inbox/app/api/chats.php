@@ -14,6 +14,9 @@
         wi_json($r);
     }
     // Every number of this user in one list: each chat carries its number (acc) for a mark and to open it on that number.
+    // The number's state for the chats page: connected or offline, and how many replies wait in its outbox.
+    if ($api === 'acc_state') { $a = wi_current(); $h = $a ? wi_gateway('/health', null, $a) : [];
+        wi_json(['ok' => true, 'connected' => !empty($h['connected']), 'waiting' => count((array) (wi_read('outbox.json', [])[(string) ($a['id'] ?? '')] ?? []))]); }
     if ($api === 'chats_all') {
         $out = []; $c = wi_customers();
         foreach (wi_my_accounts() as $a) { $r = wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long'), null, $a); if (empty($r['ok'])) continue;
@@ -105,7 +108,7 @@
         @chmod($dir . '/' . $name, 0644);
         $jid = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($_POST['jid'] ?? ''));
         $upAid = (string) (wi_current()['id'] ?? ''); wi_update('uploads.json', function ($U) use ($name, $upAid) { $U[$name] = $upAid; return $U; }); // which number sent it (only its people may open it)
-        $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => trim((string) ($_POST['text'] ?? '')), 'attachment' => 'inbox_uploads/' . $name,
+        $r = wi_send_or_queue(['jid' => $jid, 'text' => trim((string) ($_POST['text'] ?? '')), 'attachment' => 'inbox_uploads/' . $name,
             'file_name' => mb_substr(basename((string) $f['name']), 0, 120), 'by' => (string) $_SESSION['email']]);
         wi_log('chat_send_media', ['account' => wi_current()['id'] ?? '', 'jid' => $jid, 'type' => $mime, 'ok' => !empty($r['ok'])]);
         wi_json($r);
@@ -213,7 +216,7 @@
         $jid = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($in['jid'] ?? ''));
         $text = trim((string) ($in['text'] ?? ''));
         if (preg_match('#^/(stop|start)$#i', $text, $cm)) { require_once dirname(__DIR__, 2) . '/features.php'; wf_bot_pause((string) (wi_current()['id'] ?? ''), $jid, strtolower($cm[1]) === 'stop', (string) $_SESSION['email']); wi_json(['ok' => true, 'bot' => strtolower($cm[1])]); }
-        $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => $text, 'by' => (string) $_SESSION['email'], 'quote_id' => preg_replace('/[^0-9A-Za-z_-]/', '', (string) ($in['quote_id'] ?? '')) ?: null]);
+        $r = wi_send_or_queue(['jid' => $jid, 'text' => $text, 'by' => (string) $_SESSION['email'], 'quote_id' => preg_replace('/[^0-9A-Za-z_-]/', '', (string) ($in['quote_id'] ?? '')) ?: null]);
         wi_log('chat_send', ['account' => wi_current()['id'] ?? '', 'jid' => $jid, 'ok' => !empty($r['ok'])]);
         wi_json($r);
     }

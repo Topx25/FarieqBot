@@ -97,6 +97,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $back = (string) ($_POST['back'] ?? '');
         header('Location: ' . (preg_match('/^\?p=[a-z]+$/', $back) ? $back : './')); exit;
     }
+    // A new number for the same business: the old number's history is added to it (the gateway of the new number restarts to read it).
+    if ($do === 'merge_numbers') {
+        $all = wi_accounts(); $from = (string) ($_POST['from'] ?? ''); $to = (string) ($_POST['to'] ?? '');
+        $own = fn($id) => isset($all[$id]) && (wi_is_super() || (!empty($all[$id]['owner']) && strtolower((string) $all[$id]['owner']) === strtolower((string) $_SESSION['email'])));
+        if (!$own($from) || !$own($to)) { wi_flash('Not allowed for this number.', 'bad'); header('Location: ?p=accounts'); exit; }
+        try { require_once dirname(__DIR__) . '/features.php'; $r = wi_merge_number($from, $to); $pid = (int) (wi_gateway('/status', null, $all[$to])['pid'] ?? 0); if ($pid > 1 && function_exists('posix_kill')) @posix_kill($pid, 15); // the watchdog starts it again within a minute, reading the added history
+            wi_flash(sprintf(wi_t('Done: %s messages and %s files were added. The number reconnects in a moment to show them.'), number_format($r['lines']), number_format($r['files'])), 'ok'); }
+        catch (Throwable $e) { wi_flash($e->getMessage(), 'bad'); }
+        header('Location: ?p=accounts'); exit;
+    }
     if (in_array($do, ['add_account', 'update_account', 'delete_account'], true)) {
         $accounts = wi_accounts();
         $target = $accounts[(string) ($_POST['acc'] ?? '')] ?? null;

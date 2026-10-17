@@ -510,6 +510,13 @@
 
     <?php elseif ($page === 'accounts'): $accs = array_filter(wi_my_accounts(), 'wi_can_manage'); $owns = (bool) array_filter(wi_accounts(), fn($a) => !empty($a['owner']) && strtolower($a['owner']) === strtolower($me['email'])); ?>
       <header class="head"><div><h1>WhatsApp accounts</h1><p class="muted">Each account is its own WhatsApp number with its own gateway, archive and bot.</p></div><button class="btn ghost" data-reload-acc>Refresh ↻</button></header>
+      <?php $mergeable = array_filter($accs, fn($x) => wi_is_super() || (!empty($x['owner']) && strtolower((string) $x['owner']) === strtolower((string) ($_SESSION['email'] ?? '')))); if (count($mergeable) > 1): ?>
+      <details class="card pad" style="margin-bottom:12px"><summary><b>🔁 Move the chats of an old number to a new one</b> <small class="muted">— changed your number? the old chats, files, notes and cases come along (the old number keeps its own copy)</small></summary>
+        <form method="post" class="row" style="margin-top:10px;flex-wrap:wrap;gap:8px" onsubmit="return confirm(this.dataset.q)" data-q="<?= wi_e(wi_t('Add the history of the old number to the new number? This is done once.')) ?>"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="merge_numbers">
+          <label>From (old number) <select name="from"><?php foreach ($mergeable as $x): ?><option value="<?= wi_e($x['id']) ?>"><?= wi_e((string) $x['name']) ?></option><?php endforeach; ?></select></label>
+          <label>To (new number) <select name="to"><?php foreach ($mergeable as $x): ?><option value="<?= wi_e($x['id']) ?>"><?= wi_e((string) $x['name']) ?></option><?php endforeach; ?></select></label>
+          <button class="btn primary">🔁 Move the chats</button></form></details>
+      <?php endif; ?>
       <section class="acc-grid" id="acc-grid">
         <?php foreach ($accs as $a): ?>
         <form method="post" class="card acc" data-acc="<?= wi_e($a['id']) ?>">

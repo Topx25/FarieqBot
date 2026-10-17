@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.86.0', 'date' => '2026-10-17', 'title' => 'Offline work and moving to a new number', 'changes' => [
+        'A reply (text or file) written while WhatsApp is disconnected is kept in the number\'s outbox and sent automatically, oldest first, as soon as the number is back (checked every minute). The chats page shows an offline banner with how many replies wait; chats, files and search keep working offline.',
+        'Numbers page → 🔁 Move the chats of an old number to a new one: the old messages, files, notes, assignments, summaries and cases are added to the new number once (the old number keeps its copy); the new number reconnects to show them.',
+    ]],
     ['v' => '3.85.0', 'date' => '2026-10-17', 'title' => 'Media library: file manager', 'changes' => [
         'Media library: filter by chat or group (each file knows the chat it came from) and by dates; views: icons, large cards, list; ℹ️ details (name, size, date, chat, folder) on/off; the selected files download as one .zip. Remembered in this browser.',
     ]],

@@ -712,6 +712,51 @@ function wi_customers(): array {
     return $map;
 }
 
+/* ---------- A new number for the same business: the old number's chats, files, notes and cases come along ---------- */
+/** The folder where a number's gateway keeps its archive. */
+function wi_archive_dir(string $aid): string { $base = dirname(__DIR__) . '/wa-local'; return $aid === 'main' ? $base . '/archive' : $base . '/accounts/' . preg_replace('/[^a-z0-9]/', '', $aid) . '/archive'; }
+/** Copies the history of number $from into number $to (the old number keeps its own copy). Runs once per pair. Returns counts. */
+function wi_merge_number(string $from, string $to): array {
+    if ($from === $to) throw new RuntimeException('Choose two different numbers.');
+    $src = wi_archive_dir($from); $dst = wi_archive_dir($to); if (!is_dir($src)) throw new RuntimeException('The old number has no saved chats.');
+    if (!is_dir($dst)) @mkdir($dst, 0700, true);
+    $mark = $dst . '/merged_' . preg_replace('/[^a-z0-9]/', '', $from) . '.json'; if (is_file($mark)) throw new RuntimeException('These chats were already added to this number.');
+    $lines = 0; $files = 0;
+    foreach (glob($src . '/[0-9][0-9][0-9][0-9]-[0-9][0-9].jsonl') ?: [] as $p) { // each month: the old rows go after the new number's rows of that month, files pointing to their new place
+        $t = str_replace(['inbox_media/' . $from . '/', 'inbox_media\\/' . $from . '\\/'], ['inbox_media/' . $to . '/', 'inbox_media\\/' . $to . '\\/'], (string) file_get_contents($p)); // both spellings (JSON writes "\/")
+        if (trim($t) === '') continue; file_put_contents($dst . '/' . basename($p), rtrim($t, "\n") . "\n", FILE_APPEND | LOCK_EX); $lines += substr_count($t, "\n");
+    }
+    $root = dirname(__DIR__) . '/storage/inbox_media/'; @mkdir($root . $to, 0700, true);
+    foreach (glob($root . $from . '/*') ?: [] as $p) { $q = $root . $to . '/' . basename($p); if (!is_file($q) && @copy($p, $q)) $files++; }
+    // what the team wrote about these chats (the new number's own entries win)
+    $mv = fn(array $x) => json_decode(str_replace('inbox_media\/' . $from . '\/', 'inbox_media\/' . $to . '\/', json_encode($x)), true) ?: $x;
+    foreach (['media_meta.json', 'notes.json', 'assign.json', 'summaries.json', 'chat_meta.json', 'enrollments.json', 'known_members.json'] as $store)
+        wi_update($store, function ($S) use ($from, $to, $mv) { if (!empty($S[$from]) && is_array($S[$from])) $S[$to] = (array) ($S[$to] ?? []) + $mv($S[$from]); return $S; });
+    if (function_exists('wf_cases_update')) { $old = function_exists('wf_cases') ? wf_cases($from) : []; if ($old) wf_cases_update($to, fn(array $C) => $C + $old); }
+    file_put_contents($mark, json_encode(['from' => $from, 'at' => date('c'), 'lines' => $lines, 'files' => $files]));
+    wi_log('number_merge', ['from' => $from, 'to' => $to, 'lines' => $lines, 'files' => $files]);
+    return ['lines' => $lines, 'files' => $files];
+}
+/* ---------- Working while the number is offline: a reply is kept and sent when WhatsApp is back ---------- */
+/** Sends now, or keeps the message in this number's outbox when WhatsApp is disconnected (sent every minute once it is back). */
+function wi_send_or_queue(array $body, ?array $acc = null): array {
+    $acc ??= wi_current(); $r = wi_gateway('/chat/send', $body, $acc);
+    if (!empty($r['ok']) || !$acc) return $r;
+    $err = strtolower((string) ($r['error'] ?? ''));
+    if ($err !== '' && !preg_match('/not connected|not linked|scan|gateway|timed out|connect|503|refused|no response/', $err)) return $r; // a real refusal (bad number, too big…): shown as it is
+    $aid = (string) $acc['id']; $n = 0;
+    wi_update('outbox.json', function ($Q) use ($aid, $body, &$n) { $Q[$aid][] = $body + ['queued_at' => date('c')]; $Q[$aid] = array_slice((array) $Q[$aid], -500); $n = count($Q[$aid]); return $Q; });
+    wi_log('outbox_queued', ['account' => $aid, 'jid' => (string) ($body['jid'] ?? ''), 'waiting' => $n]);
+    return ['ok' => true, 'queued' => true, 'waiting' => $n, 'note' => 'WhatsApp is offline: the message waits and is sent as soon as the number is back.'];
+}
+/** Every minute: the waiting messages of the numbers that are connected again, oldest first. */
+function wi_outbox_flush(): void {
+    $Q = (array) wi_read('outbox.json', []); if (!$Q) return;
+    foreach ($Q as $aid => $list) { $acc = wi_accounts()[$aid] ?? null; if (!$acc || !$list) continue;
+        if (empty(wi_gateway('/health', null, $acc)['connected'])) continue;
+        $sent = 0; foreach (array_slice((array) $list, 0, 20) as $body) { unset($body['queued_at']); $r = wi_gateway('/chat/send', $body, $acc); if (empty($r['ok'])) break; $sent++; }
+        if ($sent) { wi_update('outbox.json', function ($X) use ($aid, $sent) { $X[$aid] = array_slice((array) ($X[$aid] ?? []), $sent); if (!$X[$aid]) unset($X[$aid]); return $X; }); wi_log('outbox_sent', ['account' => $aid, 'sent' => $sent]); } }
+}
 /** Chats and groups hidden from the signed-in user by their client or admin: jid => true (owners and the super admin: none). */
 function wi_hidden_jids(): array {
     static $h = null; if ($h !== null) return $h; $u = wi_me();

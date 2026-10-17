@@ -54,7 +54,12 @@
         d.addEventListener('change', function (ev) { var i = ev.target.closest('[data-em]'); if (!i) return; i.disabled = true;
           WI.post('hide_for&jid=' + encodeURIComponent(jid), { email: i.dataset.em, hide: i.checked ? 1 : 0 }).then(function (x) { i.disabled = false; if (!x.ok) { i.checked = !i.checked; alert(x.error || ''); } }); });
       });
-    });    var listEl = document.getElementById('chats'), msgsEl = document.getElementById('msgs'), headEl = document.getElementById('thread-h');
+    });    // Offline banner: the number is disconnected — chats, files and search keep working, replies wait in the outbox
+    function accState() { api('acc_state').then(function (r) { if (!r || !r.ok) return; var b = document.getElementById('off-banner');
+      if (!b) { b = document.createElement('div'); b.id = 'off-banner'; b.className = 'off-banner'; var th = document.querySelector('.inbox .thread'); if (th) th.insertBefore(b, th.firstChild); }
+      b.hidden = r.connected && !r.waiting; b.innerHTML = !r.connected ? '📴 ' + T('WhatsApp is offline — chats and files stay here; replies wait and go out when the number is back.') + (r.waiting ? ' <b>(' + fmt(r.waiting) + ' ' + T('waiting') + ')</b>' : '') : '⏳ ' + fmt(r.waiting) + ' ' + T('replies are being sent…'); }); }
+    accState(); setInterval(accState, 60000);
+    var listEl = document.getElementById('chats'), msgsEl = document.getElementById('msgs'), headEl = document.getElementById('thread-h');
     // View options of this browser: full screen, previews, chat list, hidden chats (per number)
     var VK = 'wi_view', HK = 'wi_hidden_' + (app.getAttribute('data-acc') || ''), rd = function (k, d) { try { return JSON.parse(localStorage.getItem(k) || '') || d; } catch (e) { return d; } }, wr = function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
     var view = rd(VK, { focus: false, thumbs: true, list: true, showHidden: false }), hiddenChats = rd(HK, []);
@@ -485,7 +490,8 @@
         fetch('?api=send', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-CSRF': csrf }, body: JSON.stringify({ jid: open, text: text, quote_id: window.WI_QUOTE || undefined }) })
           .then(wiSafeJson, wiNetFail)
           .then(function (r) {
-            if (r.ok) { pending.remove(); loadThread(open, true); window.WI_QUOTE = null; document.dispatchEvent(new Event('wi-sent')); }
+            if (r.ok && r.queued) { pending.classList.add('queued'); pending.querySelector('small').textContent = '⏳ ' + T('Waiting — sent when WhatsApp is back'); window.WI_QUOTE = null; accState(); } // offline: kept in the outbox
+            else if (r.ok) { pending.remove(); loadThread(open, true); window.WI_QUOTE = null; document.dispatchEvent(new Event('wi-sent')); }
             else { pending.classList.add('failed'); pending.querySelector('small').textContent = T('Not sent:') + ' ' + (r.error || ''); box.value = text; }
           })
           .catch(function () { pending.classList.add('failed'); box.value = text; })
