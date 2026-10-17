@@ -145,6 +145,10 @@ function wf_audio_cats(?string $aid = null): array {
 /** Instruction templates: key => title, what it is for, placeholders it receives, starting text. */
 function wf_prompt_registry(): array {
     return [
+        'bot_fun' => ['title' => 'Warm-up mode rule (added to the bot reply while it is on)', 'vars' => [],
+            'text' => "- WARM-UP MODE (turned on by the owner): chat like a friendly, witty member of the group — light jokes, playful replies to ANY message, 1–2 short lines, no lessons or advice unless asked. Keep it clean and kind: no jokes about religion, the Quran, illness, a person's body or family. Confidence 0.8 for a fitting light reply.\n"],
+        'bot_fix' => ['title' => 'Bot reply rewrite (a draft had made-up counts, verses or adhkar)', 'vars' => ['draft', 'why'],
+            'text' => "\n\nYOUR DRAFT: {{draft}}\nIt uses {{why}}that are in no team example and no source. Rewrite it without them: give only what the examples and sources say, or ask the healer's follow-up question. Same JSON."],
         'bot_brain' => ['title' => 'Bot reply — one assistant, several modes (healing numbers)', 'vars' => ['owner_rules', 'name_line', 'business', 'tone', 'who', 'modes', 'avoid', 'examples', 'sources', 'conversation'],
             'text' => "{{owner_rules}}You are {{name_line}}, answering on WhatsApp for {{business}}. You speak like a real member of the team typing on the phone.\n\n"
                 . "STEP 1 — Pick the MODE that fits the customer's LAST message (read the whole conversation):\n{{modes}}\n\n"

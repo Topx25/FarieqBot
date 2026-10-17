@@ -4,7 +4,7 @@
 /* ---------- Bot runner (cron): drafts or automatic replies, with safety limits ---------- */
 function wf_bot_run_cfg(string $aid): array {
     return ((wi_read('bot.json', [])[$aid]['run'] ?? []) + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
-        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'repeat_sim' => 0.7, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5,
+        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5,
         'scope' => 'private', 'groups_mode' => 'selected', 'groups' => [], 'group_default' => ['mode' => 'ai', 'trigger' => 'mention', 'text' => '', 'cooldown' => 24]]);
 }
 /** Chats where the bot is paused with /stop (until /start). */
@@ -150,7 +150,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun) || $text === '' || !wf_words($text)) continue;
             $toOther = (!empty($m['quote_from']) && wf_phone((string) $m['quote_from']) !== $me) || array_diff(array_map('wf_phone', (array) ($m['mentions'] ?? [])), [$me]);
             if (!$mentioned && $toOther && !$fun) continue; // STRICT: a message to another member is not for the bot
-            $lastTo = max(array_merge([0], (array) ($st['gwho'][$x['jid']][$who] ?? []))); if (!$mentioned && time() - $lastTo < ($fun ? 45 : 120)) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
+            $lastTo = max(array_merge([0], (array) ($st['gwho'][$x['jid']][$who] ?? []))); if (!$mentioned && time() - $lastTo < (int) ($fun ? $c['fun_gap'] : $c['group_gap'])) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
             $trig = $fun ? 'all' : ($g['trigger'] ?? 'mention');
             if ($trig === 'mention' && !$mentioned) continue;
             if ($trig === 'questions' && !$mentioned && !wf_is_question($text)) continue;

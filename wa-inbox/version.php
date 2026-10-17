@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.82.1', 'date' => '2026-10-17', 'title' => 'No hard-coded rules', 'changes' => [
+        'The warm-up rule and the reply-rewrite instruction moved from the code to the prompt list (bot_fun, bot_fix), editable per number.',
+        'The wait between two group replies to the same person is a bot setting (default 120 seconds).',
+    ]],
     ['v' => '3.82.0', 'date' => '2026-10-17', 'title' => 'Warm-up mode (healing groups)', 'changes' => [
         'The owner types #هزار in any private chat on the phone: for 2 hours the bot chats and jokes lightly with everyone in the groups that allow it (group setting "Warm-up mode"), team included; #جد stops it. The note goes to the owner\'s own number, never to that chat. Healing business only.',
         'The verse/dhikr check and the reception words are now part of the healing business only; other businesses do not get them.',
