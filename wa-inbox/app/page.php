@@ -405,7 +405,7 @@
               <div class="ml-kinds" id="ml-k"></div>
             </header>
             <div class="ml-bulk" id="ml-bulk" hidden></div>
-            <div class="ml-layout"><div id="ml-g"><div class="empty">Loading…</div></div><aside class="ml-ed" id="ml-ed" hidden></aside></div>
+            <div class="ml-layout"><div id="ml-g"><div class="empty">Loading…</div></div><div class="ml-ed-bg" id="ml-ed-bg" hidden></div><aside class="ml-ed" id="ml-ed" hidden></aside></div>
           </div>
         </div>
       </div>

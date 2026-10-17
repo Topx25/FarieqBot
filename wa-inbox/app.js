@@ -1805,6 +1805,7 @@ document.addEventListener('keydown', function (e) {
         + (it.fav ? '<i class="mc-fav">★</i>' : '') + '<div class="mc-media mk-' + esc(it.kind) + '">' + media + '</div>'
         + '<div class="mc-body"><button type="button" class="ml-it mc-name" data-key="' + esc(it.key) + '" dir="auto" title="' + esc(T('Edit')) + '">' + esc(mlNice(it)) + '</button>'
         + '<div class="mc-meta"><span>' + mlSize(it.size) + '</span>' + (it.at ? '<span>' + esc(String(it.at).slice(0, 10)) + '</span>' : '') + (it.used ? '<span>📤 ' + fmt(it.used) + '</span>' : '') + '</div>'
+        + (it.from ? '<div class="mc-from" dir="auto" title="' + esc(T('Who sent it')) + '">👤 ' + esc(it.from === 'You' ? T('You') : it.from) + '</div>' : '')
         + (chat ? '<div class="mc-chat" dir="auto">' + (/@g\.us$/.test(it.jid || '') ? '👥 ' : '💬 ') + esc(chat) + '</div>' : '')
         + (it.folder ? '<div class="mc-chat">📁 ' + esc(it.folder) + '</div>' : '')
         + '</div>' + (mbin ? '<div class="mc-acts"><button type="button" data-bulk-one="restore" data-k1="' + esc(it.key) + '">↩️ ' + T('Put back') + '</button></div>' : '<div class="mc-acts">'
@@ -1853,8 +1854,12 @@ document.addEventListener('keydown', function (e) {
         if ((b = e.target.closest('[data-pick]'))) { d.close(); cb(b.dataset.pick); return; }
         if (e.target.closest('#mcf-go')) { var v = document.getElementById('mcf-new').value.trim(); if (!v) return; d.close(); cb(v); } };
     }
-    function mlEdit(it) { mcur = it; var p = document.getElementById('ml-ed'); p.hidden = false;
-      p.innerHTML = '<div class="ml-prev big">' + (it.kind === 'audio' || it.kind === 'voice' ? '<audio controls src="' + mlUrl(it.key) + '"></audio>' : it.kind === 'video' || it.kind === 'gif' ? '<video controls src="' + mlUrl(it.key) + '"></video>' : mlThumb(it)) + '</div>'
+    function mlEdClose() { document.getElementById('ml-ed').hidden = true; var bg = document.getElementById('ml-ed-bg'); if (bg) bg.hidden = true; document.querySelector('.ml-v2 .ml-layout').classList.remove('ed-on'); }
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !document.getElementById('ml-ed').hidden) mlEdClose(); });
+    document.getElementById('ml-ed-bg').addEventListener('click', mlEdClose);
+    function mlEdit(it) { mcur = it; var p = document.getElementById('ml-ed'); p.hidden = false; var bg = document.getElementById('ml-ed-bg'); if (bg) bg.hidden = false;
+      p.innerHTML = '<button type="button" class="ml-ed-x" id="me-x" aria-label="' + esc(T('Close')) + '">✕</button><div class="ml-prev big">' + (it.kind === 'audio' || it.kind === 'voice' ? '<audio controls src="' + mlUrl(it.key) + '"></audio>' : it.kind === 'video' || it.kind === 'gif' ? '<video controls src="' + mlUrl(it.key) + '"></video>' : mlThumb(it)) + '</div>'
+        + (it.from || it.chat ? '<div class="ml-owner" dir="auto">' + (it.from ? '👤 ' + esc(it.from === 'You' ? T('You') : it.from) : '') + (it.chat ? ' · 💬 ' + esc(it.chat) : '') + '</div>' : '')
         + '<div class="ml-form"><label>' + T('Title') + '<input id="me-t" value="' + esc(it.title) + '" dir="auto" maxlength="80"></label>'
         + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="me-code" value="' + esc(it.code || '') + '" dir="auto" maxlength="60" placeholder="' + esc(T('#ruqyah-name')) + '"></label>'
         + '<label>' + T('Caption (sent with it)') + '<textarea id="me-c" rows="4" dir="auto" maxlength="1000">' + esc(it.caption) + '</textarea></label>'
@@ -1912,11 +1917,12 @@ document.addEventListener('keydown', function (e) {
         if (d === 'delete' && !confirm(T('Delete the selected files from the library? They stay in the chats and can be put back from «Deleted».'))) return;
         mlBulk(d); return; }
       if ((b = e.target.closest('.ml-it'))) { var it = (ML.shown || []).filter(function (i) { return i.key === b.dataset.key; })[0]; if (it && !mbin) mlEdit(it); return; }
-      if (e.target.closest('#me-save')) { mlSave(); return; }
+      if (e.target.closest('#me-x')) { mlEdClose(); return; }
+      if (e.target.closest('#me-save')) { mlSave().then(function (r) { if (r && r.ok) mlEdClose(); }); return; }
       if (e.target.closest('#me-yt')) { mlYoutube([mcur.key], mcur, function () { mlPage(true); }); return; }
       if (e.target.closest('#me-ytc')) { try { navigator.clipboard.writeText(mcur.youtube.url); mlToast('✓ ' + T('Copied')); } catch (x) { prompt('', mcur.youtube.url); } return; }
       if (e.target.closest('#me-send')) { mlSave().then(function () { mlForward(mcur.key, document.getElementById('me-c').value, function () { mlPage(true); }); }); return; }
-      if (e.target.closest('#me-hide') && confirm(T('Delete this file from the library? It stays in the chats and can be put back from «Deleted».'))) { mlSave({ hidden: 1 }).then(function () { document.getElementById('ml-ed').hidden = true; }); }
+      if (e.target.closest('#me-hide') && confirm(T('Delete this file from the library? It stays in the chats and can be put back from «Deleted».'))) { mlSave({ hidden: 1 }).then(function () { mlEdClose(); }); }
     });
     document.getElementById('ml-q').oninput = function () { mq = this.value; mlPage(); };
     var so = document.getElementById('ml-sort'); so.value = msort; so.onchange = function () { msort = this.value; try { localStorage.setItem('wi_ml_sort', msort); } catch (e) {} mlPage(); };
