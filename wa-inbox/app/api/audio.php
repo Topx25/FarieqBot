@@ -13,7 +13,7 @@
             return ($c[$b['phone'] ?? '']['name'] ?? '') ?: ($b['name'] ?? '');
         }
         $acc = wi_current(); $aid = $acc['id'] ?? '';
-        $meta = wi_read('audio_meta.json', [])[$aid] ?? [];
+        $meta = wi_read('audio_meta.json', [])[$aid] ?? []; $mediaMeta = (array) (wi_read('media_meta.json', [])[$aid] ?? []); // name & shortcut live with the file
         $r = wi_gateway('/library?type=sections&min=999999');
         if (empty($r['ok'])) wi_json($r);
         $out = []; $c = wi_customers();
@@ -23,7 +23,7 @@
             $m = $meta[$key] ?? [];
             $items = array_merge([$g['best']], $g['others'] ?? []);
             $times = array_filter(array_map(fn($x) => $x['time'] ?? '', $items));
-            $out[] = ['key' => $key, 'title' => $m['title'] ?? '', 'auto_title' => $g['title'], 'category' => $m['category'] ?? ($g['ruqyah'] ? (string) (wf_pack((string) (wi_current()['id'] ?? ''))['audio_tag_category'] ?? '') : ''), 'archived' => !empty($m['archived']),
+            $out[] = ['key' => $key, 'title' => ($m['title'] ?? '') !== '' ? $m['title'] : (string) ($mediaMeta[current(array_filter(array_column($items, 'attachment'))) ?: '']['title'] ?? ''), 'code' => (string) ($mediaMeta[current(array_filter(array_column($items, 'attachment'))) ?: '']['code'] ?? ''), 'auto_title' => $g['title'], 'category' => $m['category'] ?? ($g['ruqyah'] ? (string) (wf_pack((string) (wi_current()['id'] ?? ''))['audio_tag_category'] ?? '') : ''), 'archived' => !empty($m['archived']),
                 'note' => $m['note'] ?? '', 'copies' => count($items), 'chats' => $g['chats'], 'seconds' => $g['best']['seconds'] ?? null, 'size' => $g['best']['size'] ?? null,
                 'first' => $times ? min($times) : null, 'last' => $times ? max($times) : null, 'attachment' => current(array_filter(array_column($items, 'attachment'))) ?: '',
                 'fetchable' => (bool) array_filter(array_column($items, 'fetchable')), 'fetch_id' => (string) (current(array_filter($items, fn($x) => !empty($x['fetchable'])))['id'] ?? ''),

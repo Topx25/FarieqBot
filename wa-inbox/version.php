@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.90.1', 'date' => '2026-10-17', 'title' => 'Audio cards like the library', 'changes' => [
+        'Audio page: the recordings are now cards like the media library, with their controls on every card: name & shortcut, send to chats, download, archive and category. The name and shortcut saved there show on the card.',
+    ]],
     ['v' => '3.90.0', 'date' => '2026-10-17', 'title' => 'Section tags', 'changes' => [
         'New: write #المكتبة (every file), #صوتيات (recordings) or #البرامج (programs) in a chat or group and the bot lists that section with each file\'s name and shortcut; write a shortcut to get the file.',
         'The tags are settings, not code: Learning → AI instructions → "Section tags" (one line per tag: #tag | library, audio, video, images, documents or programs | title). Empty = off. The two replies are editable in Messages.',

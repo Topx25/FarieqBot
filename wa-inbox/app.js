@@ -1175,13 +1175,19 @@ document.addEventListener('play', function (e) { var t = e.target; if (!t || (t.
       document.getElementById('au-count').textContent = fmt(rows.length) + ' ' + T('recordings');
       document.getElementById('au-list').innerHTML = rows.slice(0, 300).map(function (it) {
         var c = (ACAT[it.category || ''] || ACAT['']), url = aUrl(it.attachment, '', false), dl = aUrl(it.attachment, aname(it), true);
-        return '<div class="au-row' + (A.sel[it.key] ? ' picked' : '') + '" data-key="' + esc(it.key) + '"><label class="check"><input type="checkbox" data-pick ' + (A.sel[it.key] ? 'checked' : '') + '></label>'
-          + '<div class="au-ic" style="--c:' + c[2] + '">' + (it.kind === 'voice' ? '🎤' : c[0]) + '</div>'
-          + '<div class="au-main"><input class="au-title" value="' + esc(it.title) + '" placeholder="' + esc(it.auto_title || T('Name this recording…')) + '" dir="auto" maxlength="120">'
-          + '<div class="au-meta"><span>⏱ ' + adur(it.seconds) + '</span>' + (it.size ? '<span>💾 ' + (it.size / 1048576).toFixed(1) + ' MB</span>' : '') + '<span>🔁 ' + fmt(it.copies) + '× ' + T('shared') + '</span><span>💬 ' + fmt(it.chats) + ' ' + T('chats') + '</span><span>🕐 ' + esc(when(it.last, true)) + '</span>' + (it.from ? '<span>👤 ' + esc(it.from) + '</span>' : '') + (it.group ? '<span>👥 ' + esc(it.group) + '</span>' : '') + '</div>'
-          + (url ? '<audio controls preload="none" src="' + url + '"></audio>' : (it.fetchable ? '<button class="chip-btn sm" data-fetch="' + esc(it.fetch_id) + '">⬇️ ' + T('Fetch from WhatsApp') + '</button>' : '<span class="muted small">' + T('File not kept') + '</span>')) + '</div>'
-          + '<div class="au-side"><select class="au-cat">' + Object.keys(ACAT).map(function (k) { return '<option value="' + k + '" ' + ((it.category || '') === k ? 'selected' : '') + '>' + ACAT[k][0] + ' ' + T(ACAT[k][1]) + '</option>'; }).join('') + '</select>'
-          + (url ? '<a class="chip-btn sm" href="' + dl + '">⬇️ ' + T('Download') + '</a>' : '') + '<button class="chip-btn sm" data-arch>' + (it.archived ? '↩️ ' + T('Restore') : '🗄️ ' + T('Archive')) + '</button></div></div>';
+        var chk = A.sel[it.key] ? ' checked' : '';
+        return '<div class="au-row ml-cell mcard' + (A.sel[it.key] ? ' sel picked' : '') + '" data-key="' + esc(it.key) + '"><label class="ml-ck"><input type="checkbox" data-pick' + chk + '></label>'
+          + '<div class="mc-media mk-audio" style="--c:' + c[2] + '"><div class="mc-audio"><span class="mc-big">' + (it.kind === 'voice' ? '🎙️' : c[0]) + '</span>'
+          + (url ? '<audio controls preload="none" src="' + url + '"></audio>' : (it.fetchable ? '<button class="chip-btn sm" data-fetch="' + esc(it.fetch_id) + '">⬇️ ' + T('Fetch from WhatsApp') + '</button>' : '<span class="muted small">' + T('File not kept') + '</span>')) + '</div></div>'
+          + '<div class="mc-body"><input class="au-title mc-name" value="' + esc(it.title) + '" placeholder="' + esc(it.auto_title || T('Name this recording…')) + '" dir="auto" maxlength="120">'
+          + (it.code ? '<div class="lc-code" dir="auto">🔑 ' + esc(it.code) + '</div>' : '')
+          + '<div class="mc-meta"><span>⏱ ' + adur(it.seconds) + '</span>' + (it.size ? '<span>💾 ' + (it.size / 1048576).toFixed(1) + ' MB</span>' : '') + '<span>🔁 ' + fmt(it.copies) + '× ' + T('shared') + '</span><span>💬 ' + fmt(it.chats) + '</span><span>🕐 ' + esc(when(it.last, true)) + '</span></div>'
+          + (it.from ? '<div class="mc-chat" dir="auto">👤 ' + esc(it.from) + '</div>' : '') + (it.group ? '<div class="mc-chat" dir="auto">👥 ' + esc(it.group) + '</div>' : '')
+          + '<select class="au-cat">' + Object.keys(ACAT).map(function (k) { return '<option value="' + k + '" ' + ((it.category || '') === k ? 'selected' : '') + '>' + ACAT[k][0] + ' ' + T(ACAT[k][1]) + '</option>'; }).join('') + '</select></div>'
+          + '<div class="mc-acts">' + (url ? '<button type="button" data-aname aria-label="' + esc(T('Name & shortcut')) + '">'+'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>' + T('Name') + '</button>'
+          + '<button type="button" data-asend aria-label="' + esc(T('Send to chats')) + '">'+'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 3 10.5l7 3 3 7z"/></svg>' + T('Send') + '</button>'
+          + '<a class="mc-dl" href="' + dl + '" aria-label="' + esc(T('Download')) + '">'+'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>' + T('Download') + '</a>' : '')
+          + '<button type="button" data-arch>' + (it.archived ? '↩️ ' + T('Restore') : '🗄️ ' + T('Archive')) + '</button></div></div>';
       }).join('') || '<div class="empty">' + T('Nothing found.') + '</div>';
     }
     var lastQ = null;
@@ -1230,6 +1236,16 @@ document.addEventListener('play', function (e) { var t = e.target; if (!t || (t.
     });
     list$.addEventListener('keydown', function (e) { if (e.target.matches('.au-title') && e.key === 'Enter') e.target.blur(); });
     list$.addEventListener('click', function (e) {
+      var an = e.target.closest('[data-aname]');
+      if (an) { var x = itemOf(an), key = x.attachment; var d = mlDialog('<div class="ml-head"><b>✏️ ' + T('Name & shortcut') + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div><div class="ml-fw">'
+          + '<label>' + T('Name') + '<input id="ln-t" dir="auto" maxlength="80" value="' + esc(x.title || '') + '" placeholder="' + esc(T('e.g. Ruqyah Al-Athiri')) + '"></label>'
+          + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="ln-c" dir="auto" maxlength="60" value="' + esc(x.code || '') + '" placeholder="' + esc(T('#ruqyah-name')) + '"></label>'
+          + '<div class="row"><button type="button" class="btn primary" id="ln-go">💾 ' + T('Save') + '</button><span class="muted small" id="ln-m"></span></div></div>');
+        d.onclick = function (ev) { if (ev.target.closest('[data-mlx]')) { d.close(); return; } if (!ev.target.closest('#ln-go')) return;
+          var sent = { title: document.getElementById('ln-t').value.trim(), code: document.getElementById('ln-c').value.trim() };
+          WI.post('media_meta', { key: key, title: sent.title, code: sent.code }).then(function (r) { if (!r.ok) { document.getElementById('ln-m').textContent = '⚠️ ' + (r.error || T('Failed')); return; }
+            post({ key: x.key, title: sent.title }); x.title = sent.title; x.code = sent.code; ML.items = null; d.close(); draw(); }); }; return; }
+      var sd = e.target.closest('[data-asend]'); if (sd) { mlForward(itemOf(sd).attachment, ''); return; }
       var ar = e.target.closest('[data-arch]');
       if (ar) { var it = itemOf(ar); it.archived = !it.archived; post({ key: it.key, archived: it.archived }).then(draw); return; }
       var f = e.target.closest('[data-fetch]');
