@@ -83,6 +83,8 @@
       });
     }
     [['ml-chat', function (v) { mchat = v; }], ['ml-from', function (v) { mfrom = v; }], ['ml-to', function (v) { mto = v; }], ['ml-view', function (v) { mview = v; try { localStorage.setItem('wi_ml_view', v); } catch (e) {} }]].forEach(function (p) { var el = document.getElementById(p[0]); if (el) { if (p[0] === 'ml-view') el.value = mview; el.addEventListener('change', function () { p[1](el.value); mlPage(); }); } });
+    function segSync() { [].forEach.call(document.querySelectorAll('[data-mv]'), function (b) { b.classList.toggle('on', b.dataset.mv === mview); }); }
+    document.addEventListener('click', function (e) { var b = e.target.closest('[data-mv]'); if (!b) return; var sel = document.getElementById('ml-view'); sel.value = b.dataset.mv; sel.dispatchEvent(new Event('change')); segSync(); }); segSync();
     var detB = document.getElementById('ml-det'); if (detB) { detB.classList.toggle('on', mdet); detB.onclick = function () { mdet = !mdet; detB.classList.toggle('on', mdet); try { localStorage.setItem('wi_ml_det', mdet ? '1' : '0'); } catch (e) {} mlPage(); }; }
     function mlBar() { var n = Object.keys(msel).length, b = document.getElementById('ml-bulk'); b.hidden = !n;
       b.innerHTML = '<b>' + fmt(n) + ' ' + T('selected') + '</b>' + (!mbin ? '<a class="btn sm" href="?api=media_zip&keys=' + encodeURIComponent(Object.keys(msel).join(',')) + '">⬇️ ' + T('Download (.zip)') + '</a>' : '') + (mbin ? '<button type="button" class="btn primary sm" data-bulk="restore">↩️ ' + T('Put back') + '</button>'

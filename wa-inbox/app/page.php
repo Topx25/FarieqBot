@@ -378,20 +378,30 @@
       <div id="ai-list" class="ai-list"><div class="empty">Loading…</div></div>
 
     <?php elseif ($page === 'media'): ?>
-      <section class="hero"><div class="hero-t"><span class="hero-ic">🖼️</span><div><h1>Media library</h1><p class="muted">Every photo, video, recording and file of this number, once each. Give it a title, a caption, a folder and tags, then send it again in any chat or forward it.</p></div></div></section>
-      <div id="ml-page" class="ml-page">
+      <div id="ml-page" class="ml-page ml-v2">
         <div class="ml-shell">
-          <nav class="card ml-tree" id="ml-tree"></nav>
+          <nav class="ml-tree" id="ml-tree"></nav>
           <div class="ml-main">
-            <div class="ml-bar"><div class="search-xl"><span>🔎</span><input type="search" id="ml-q" placeholder="Search title, caption, tags…" dir="auto"></div><div class="seg sm" id="ml-k"></div>
-              <select id="ml-sort"><option value="new">🕐 Newest</option><option value="old">Oldest</option><option value="big">💾 Largest</option><option value="used">📤 Most sent</option></select><span class="muted small" id="ml-tot"></span></div>
-            <div class="ml-bar ml-bar2"><select id="ml-chat" title="Chat or group"><option value="">💬 All chats and groups</option></select>
-              <label class="muted small">From <input type="date" id="ml-from"></label><label class="muted small">To <input type="date" id="ml-to"></label>
-              <select id="ml-view" title="View"><option value="grid">▦ Icons</option><option value="big">🖼️ Large cards</option><option value="list">☰ List</option></select>
-              <button type="button" class="chip-btn sm" id="ml-det" title="Show / hide the details of each file">ℹ️ Details</button></div>
-            <div class="ml-crumb" id="ml-crumb"></div>
+            <header class="ml-top">
+              <div class="ml-top-1">
+                <div class="ml-title"><span class="ml-title-ic">🗂️</span><div><h1>Media library</h1><div class="ml-crumb" id="ml-crumb"></div></div></div>
+                <span class="ml-tot" id="ml-tot"></span>
+                <div class="ml-viewseg" role="group" aria-label="View">
+                  <button type="button" data-mv="grid" title="Icons">▦</button><button type="button" data-mv="big" title="Large cards">🖼️</button><button type="button" data-mv="list" title="List">☰</button>
+                </div>
+                <button type="button" class="ml-tbtn" id="ml-det" title="Show / hide the details of each file">ℹ️ <span>Details</span></button>
+                <select id="ml-view" hidden><option value="grid">Icons</option><option value="big">Large cards</option><option value="list">List</option></select>
+              </div>
+              <div class="ml-top-2">
+                <div class="ml-search"><span>🔎</span><input type="search" id="ml-q" placeholder="Search title, caption, tags…" dir="auto"></div>
+                <select id="ml-chat" title="Chat or group"><option value="">💬 All chats and groups</option></select>
+                <label class="ml-date"><span>From</span><input type="date" id="ml-from"></label><label class="ml-date"><span>To</span><input type="date" id="ml-to"></label>
+                <select id="ml-sort" title="Sort"><option value="new">🕐 Newest</option><option value="old">Oldest</option><option value="big">💾 Largest</option><option value="used">📤 Most sent</option></select>
+              </div>
+              <div class="ml-kinds" id="ml-k"></div>
+            </header>
             <div class="ml-bulk" id="ml-bulk" hidden></div>
-            <div class="ml-layout"><div id="ml-g"><div class="empty">Loading…</div></div><aside class="card ml-ed" id="ml-ed" hidden></aside></div>
+            <div class="ml-layout"><div id="ml-g"><div class="empty">Loading…</div></div><aside class="ml-ed" id="ml-ed" hidden></aside></div>
           </div>
         </div>
       </div>

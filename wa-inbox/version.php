@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.88.0', 'date' => '2026-10-17', 'title' => 'Media library redesigned', 'changes' => [
+        'The media library is redesigned as a file manager: a sidebar with the space used and the folders; one header card with the path, the total, view buttons (icons / large cards / list), details, search, chat, dates, sort and the kinds; lifted tiles with a clear selection; a real list with columns; a sticky details panel; a dark bar for the selected files. Every tool works as before.',
+    ]],
     ['v' => '3.87.0', 'date' => '2026-10-17', 'title' => 'Aurora theme', 'changes' => [
         'New dashboard theme «Aurora» (Settings → Dashboard theme): the home becomes a dashboard — a gradient hero with the numbers as live status cards and quick links, large KPI tiles, glass cards, two-column grid; light and dark.',
     ]],
