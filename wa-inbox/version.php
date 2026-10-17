@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.80.5', 'date' => '2026-10-17', 'title' => 'Gateway page: a new number shows starting', 'changes' => [
+        'A number added in the last 3 minutes shows «Starting…» instead of «Stopped» while the watchdog starts its gateway.',
+        'Fixed: a new number lost its creation time and its auto-reply flag (they sat inside a code comment).',
+    ]],
     ['v' => '3.80.4', 'date' => '2026-10-15', 'title' => 'Stage changes noted in the diagnosis group', 'changes' => [
         'A stage change written in another group (#الحالة … #اتحسنت …) is also posted in the diagnosis group as a reply to the case report (template case_diag_note); the report message is remembered, and an older one is found by the number in it.',
         'Form messages read only the labelled lines ("#الحالة: …", "#السبب: …"); a title line is no longer taken as the reason.',

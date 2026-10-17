@@ -112,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             else {
                 $id = 'wa' . substr(bin2hex(random_bytes(4)), 0, 6);
                 $accounts[$id] = ['id' => $id, 'name' => $name, 'port' => $port, 'token' => bin2hex(random_bytes(24)), 'enabled' => true,
-                    'payments' => wi_is_super() ? !empty($_POST['payments']) : false, // the payment bot sends receipts to the owner's invoice system: owner only 'autoreply' => false, 'created_at' => date('c'), 'created_by' => (string) $_SESSION['email'],
+                    'payments' => wi_is_super() ? !empty($_POST['payments']) : false, 'autoreply' => false, 'created_at' => date('c'), 'created_by' => (string) $_SESSION['email'], // payments: the payment bot sends receipts to the owner's invoice system (owner only)
                     'owner' => wi_is_super() ? null : (string) $_SESSION['email']];
                 wi_save_accounts($accounts); wi_log('account_add', ['account' => $id, 'name' => $name]);
                 if (!wi_is_super()) { // a user's own number is visible to that user

@@ -988,7 +988,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
         var fresh = g.main_checked_at && Date.now() - Date.parse(g.main_checked_at) < 180000;
         var gs = document.getElementById('guard-state'); gs.textContent = fresh ? T('🟢 Active') : T('⚠️ Not reporting'); gs.className = 'badge ' + (fresh ? 'ok' : 'warn');
         grid.innerHTML = (r.accounts || []).map(function (a) {
-          var h = a.health || {}, state = !a.enabled ? T('⏸ Off') : (!a.running ? T('🔴 Stopped') : (a.connected ? T('🟢 Connected') : (h.needs_qr ? T('🟡 Scan QR') : T('🟠 Reconnecting'))));
+          var h = a.health || {}, state = !a.enabled ? T('⏸ Off') : (!a.running ? (a.starting ? T('⏳ Starting…') : T('🔴 Stopped')) : (a.connected ? T('🟢 Connected') : (h.needs_qr ? T('🟡 Scan QR') : T('🟠 Reconnecting'))));
           var rows = a.running ? [
             [T('Number'), a.number ? '+' + a.number : '—'], [T('Uptime'), dur(h.uptime_seconds)], [T('Memory'), (h.memory_mb || 0) + ' MB'],
             [T('Last message'), h.last_message_at ? ago(h.last_message_at) + ' ' + T('ago') : '—'], [T('Messages since start'), fmt(h.messages_since_start)],

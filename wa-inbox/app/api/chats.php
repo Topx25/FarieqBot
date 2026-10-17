@@ -61,7 +61,7 @@
             $rows[] = ['health' => $api === 'gateway' && !empty($st['ok']) ? array_intersect_key($st, array_flip(['pid', 'uptime_seconds', 'memory_mb', 'node', 'last_message_at', 'messages_since_start', 'last_error', 'last_disconnect_code', 'reconnect_attempts', 'down_seconds', 'needs_qr', 'started_at'])) : null,
                 'restarts_24h' => wi_guard_restarts($a['id']),
                 'id' => $a['id'], 'name' => $a['name'], 'main' => !empty($a['main']), 'enabled' => !empty($a['enabled']), 'payments' => !empty($a['payments']), 'autoreply' => !empty($a['autoreply']),
-                'running' => !empty($st['ok']), 'connected' => !empty($st['connected']), 'number' => isset($st['account']['id']) ? preg_replace('/[:@].*$/', '', (string) $st['account']['id']) : '',
+                'running' => !empty($st['ok']), 'starting' => empty($st['ok']) && !empty($a['enabled']) && strtotime((string) ($a['created_at'] ?? '')) > time() - 180, 'connected' => !empty($st['connected']), 'number' => isset($st['account']['id']) ? preg_replace('/[:@].*$/', '', (string) $st['account']['id']) : '',
                 'wa_name' => (string) ($st['account']['name'] ?? ''), 'messages' => (int) ($stats['total'] ?? 0), 'chats' => (int) ($stats['chats'] ?? 0)];
         }
         wi_json(['ok' => true, 'accounts' => $rows, 'guard' => wi_guard_info()]);
