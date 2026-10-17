@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.93.3', 'date' => '2026-10-17', 'title' => 'Program tag: the text always arrives', 'changes' => [
+        'Fixed: the confirmation after a program tag ended with "Day one:" and no text when the program had no day 1 (its first step was another day). The first step is now always sent, labelled with its own day number.',
+    ]],
     ['v' => '3.93.2', 'date' => '2026-10-17', 'title' => 'Program tag: day one at once', 'changes' => [
         'Fixed: writing a program\'s tag in a private chat only answered "you joined, its days arrive one by one" — confusing, and the first day came hours later. Now the person gets the program\'s first day right away with the confirmation (and, if it has more days, a line that the rest arrive daily). Day one is not sent twice.',
     ]],

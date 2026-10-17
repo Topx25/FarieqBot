@@ -109,8 +109,9 @@ function wf_media_code_send(array $acc, string $jid, string $text, string $quote
     if (wf_libtag_which((string) $acc['id'], $text)) return wf_libtag_send($acc, $jid, $text, $quote); // a section tag: the list of that section
     if (($prog = wf_program_code_in((string) $acc['id'], $text)) && !str_ends_with($jid, '@g.us')) { // a private chat: it follows the program (its days arrive one by one), the person is told
         $aidP = (string) $acc['id']; $new = wf_program_enroll($aidP, $jid, $prog, 'tag'); $d1 = (array) (((array) ($prog['days'] ?? []))[0] ?? []); $n = count((array) ($prog['days'] ?? []));
-        if ($new && (int) ($d1['day'] ?? 0) === 1) wf_program_mark_sent($aidP, $jid, (string) $prog['id'], 1); else $d1 = [];
-        $msg = $new ? wf_msg('program_enrolled', ['name' => (string) $prog['name'], 'days' => (string) $n, 'text' => (string) ($d1['text'] ?? ''), 'rest' => $n > 1 ? wf_msg('program_rest', []) : '']) : wf_msg('program_already', ['name' => (string) $prog['name']]);
+        foreach ((array) ($prog['days'] ?? []) as $dd) if ((int) ($dd['day'] ?? 0) === 1) $d1 = $dd; // day 1 when there is one, else the program's first step
+        if ($new && $d1) wf_program_mark_sent($aidP, $jid, (string) $prog['id'], (int) $d1['day']); else $d1 = [];
+        $msg = $new ? wf_msg('program_enrolled', ['name' => (string) $prog['name'], 'days' => (string) $n, 'day' => (string) ($d1['day'] ?? 1), 'text' => (string) ($d1['text'] ?? ''), 'rest' => $n > 1 ? wf_msg('program_rest', []) : '']) : wf_msg('program_already', ['name' => (string) $prog['name']]);
         $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => trim($msg), 'via' => 'bot'] + ($quote !== '' ? ['quote_id' => $quote] : []), $acc);
         wi_log('program_code', ['account' => (string) $acc['id'], 'jid' => $jid, 'enrolled' => $new, 'sent' => !empty($r['ok'])]); return true; }
     if ($prog = wf_program_code_in((string) $acc['id'], $text)) { $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => wf_program_message($prog), 'via' => 'bot'] + ($quote !== '' ? ['quote_id' => $quote] : []), $acc); wi_log('program_code', ['account' => (string) $acc['id'], 'jid' => $jid, 'sent' => !empty($r['ok'])]); return true; } // a program's tag: the program
