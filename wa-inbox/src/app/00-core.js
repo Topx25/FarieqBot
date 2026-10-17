@@ -168,3 +168,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
   if (reload) reload.addEventListener('click', function () { api('stats').then(dashboard); home(); });
 
   /* ---------------- Inbox ---------------- */
+
+// ▶ one player at a time: starting a recording or a video pauses the one that was playing (Topx1.Host)
+document.addEventListener('play', function (e) { var t = e.target; if (!t || (t.tagName !== 'AUDIO' && t.tagName !== 'VIDEO')) return;
+  [].forEach.call(document.querySelectorAll('audio,video'), function (m) { if (m !== t && !m.paused && !m.muted) m.pause(); }); }, true);

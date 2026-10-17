@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.89.7', 'date' => '2026-10-17', 'title' => 'One player at a time', 'changes' => [
+        'Playing a recording or a video now pauses the one that was already playing, on every page.',
+    ]],
     ['v' => '3.89.6', 'date' => '2026-10-17', 'title' => 'Library cards show the name and shortcut', 'changes' => [
         'Fixed: a recording named with "Name & shortcut" still showed the generic title on its library card. The card now shows the name you saved and the shortcut under it.',
     ]],
