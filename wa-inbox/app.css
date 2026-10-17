@@ -1013,3 +1013,5 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 .au-row audio{width:100%;max-width:560px;height:38px}
 .au-row .au-side{display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:150px}
 @media (max-width:760px){.au-row{grid-template-columns:auto minmax(0,1fr)}.au-row .au-ic{display:none}.au-row .au-side{grid-column:1 / -1;flex-direction:row;flex-wrap:wrap}}
+/* Library card: the shortcut written in "Name & shortcut" (Topx1.Host) */
+.lc-code{display:inline-block;margin:2px 0 6px;padding:2px 10px;border-radius:999px;background:var(--accent-soft,#e1f3f0);color:var(--accent-ink,#075e53);font-size:12px;font-weight:600}

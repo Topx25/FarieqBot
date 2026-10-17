@@ -144,7 +144,7 @@
             // Hide archived / deleted versions; show only archived ones when asked.
             $hidden = wi_read('lib_hidden.json', [])[wi_current()['id'] ?? ''] ?? [];
             $view = (string) ($_GET['view'] ?? '');
-            $groups = []; $sections = []; $topics = []; $archivedN = 0;
+            $groups = []; $sections = []; $topics = []; $archivedN = 0; $nameMeta = (array) (wi_read('media_meta.json', [])[wi_current()['id'] ?? ''] ?? []);
             $aiRev = wi_read('lib_ai.json', [])[wi_current()['id'] ?? ''] ?? [];
             if ($aiRev) {
                 // AI review: corrected section/topic/title, quality, and merges of near-duplicates.
@@ -178,6 +178,9 @@
                 }
                 if (!$keep) continue;
                 $g['best'] = $keep[0]; $g['others'] = array_slice($keep, 1); $g['versions'] = count($keep);
+                if (!empty($g['audio'])) { // the name and shortcut saved in "Name & shortcut" show on the card
+                    foreach ($keep as $v) { $mm = $nameMeta[$v['attachment'] ?? ''] ?? []; if (($mm['title'] ?? '') !== '') { $g['title'] = $mm['title']; $g['named'] = true; } if (($mm['code'] ?? '') !== '') $g['code'] = $mm['code']; if (!empty($g['named']) && !empty($g['code'])) break; }
+                }
                 if (empty($g['audio'])) $g['total'] = array_sum(array_map(fn($v) => (int) ($v['count'] ?? 1), $keep));
                 $groups[] = $g;
                 $sections[$g['section']] = ($sections[$g['section']] ?? 0) + 1;

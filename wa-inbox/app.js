@@ -1302,6 +1302,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
       var head = '<div class="lc-top"><span class="lc-sec" style="--c:' + si[2] + '">' + si[1] + ' ' + esc(g.section) + '</span><span class="lc-topic">' + esc(g.topic) + '</span>'
         + (g.audio ? '' : '<span class="score" title="' + esc(scoreTip(b.parts)) + '">⭐ ' + b.score + '</span>') + '</div>'
         + '<h3 class="lc-t" dir="auto">' + esc(g.title) + '</h3>'
+        + (g.code ? '<div class="lc-code" dir="auto">🔑 ' + esc(g.code) + '</div>' : '')
         + (g.ai && g.ai.quality ? '<div class="lc-ai' + (g.ai.valid === false ? ' bad' : '') + '">🤖 ' + (g.ai.quality ? '★'.repeat(g.ai.quality) + '☆'.repeat(5 - g.ai.quality) : '') + (g.ai.valid === false ? ' · ⚠️ ' + T('Needs checking') : ' · ✓ ' + T('Checked')) + (g.ai.note ? ' · ' + esc(g.ai.note) : '') + '</div>' : '');
       var meta = '<div class="lc-meta"><span>🧬 ' + fmt(g.versions) + ' ' + T(g.audio ? 'copies' : 'versions') + '</span>' + (g.audio ? '' : '<span>🔁 ' + fmt(g.total) + '× ' + T('shared') + '</span>') + '<span>💬 ' + fmt(g.chats) + ' ' + T('chats') + '</span><span>🕐 ' + esc(when(b.last || b.time, true)) + '</span></div>';
       var body;

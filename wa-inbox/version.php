@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.89.6', 'date' => '2026-10-17', 'title' => 'Library cards show the name and shortcut', 'changes' => [
+        'Fixed: a recording named with "Name & shortcut" still showed the generic title on its library card. The card now shows the name you saved and the shortcut under it.',
+    ]],
     ['v' => '3.89.5', 'date' => '2026-10-17', 'title' => 'Audio page: the library first', 'changes' => [
         'The Audio page now opens on the audio library itself: the category tiles, then the recordings with their players, names, categories and download. The statistics (space, listening time, duplicates, months) moved into a folded "Statistics" box under the list.',
     ]],
