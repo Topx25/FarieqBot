@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.98.1', 'date' => '2026-10-17', 'title' => 'Media cards: the settings button is visible', 'changes' => [
+        'Media cards: the four actions (Name, Send, Download, Settings) wrap inside the card instead of running off its edge — the settings button was cut off, so the details popup could not be opened. It is now labelled "Settings". Clicking the picture or the name still opens it.',
+    ]],
     ['v' => '3.98.0', 'date' => '2026-10-17', 'title' => 'Media: details as a popup, who sent each file', 'changes' => [
         'Media: the details of a file (title, shortcut, caption, folder, tags…) open as a popup over the page — close with ✕, outside click or Esc — instead of a permanent column. Saving closes it.',
         'Media: every card and the popup show who sent the file (the contact, the group member, or "You"). Needs the gateway restarted once to start returning the sender.',

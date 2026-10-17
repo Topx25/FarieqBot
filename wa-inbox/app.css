@@ -1083,3 +1083,8 @@ img.qr{width:280px;height:280px;background:#fff;padding:10px;border-radius:12px}
 .ml-ed-x{position:absolute;top:10px;inset-inline-end:10px;border:0;background:var(--surface-2,#eef2f1);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;z-index:2}
 .ml-owner{margin:6px 0 10px;font-size:13px;color:var(--muted);font-weight:600}
 .mc-from{font-size:12.5px;font-weight:600;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Media cards: the four actions wrap instead of running off the card, and the settings button has its name */
+.ml-v2 .mc-acts{flex-wrap:wrap;justify-content:flex-start;gap:6px;padding:6px 10px 10px}
+.ml-v2 .mc-acts button,.ml-v2 .mc-acts a{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.ml-v2 .mcard{min-width:0}
