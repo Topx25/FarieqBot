@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.100.4', 'date' => '2026-10-18', 'title' => 'Chat list button always in the header', 'changes' => [
+        'Chat header: the "Chat list" button (hide / show the list of chats) moved next to the fold button in the name row, so it is there also when the rest of the header is folded.',
+    ]],
     ['v' => '3.100.3', 'date' => '2026-10-18', 'title' => 'Speed: the chat screen opens much faster', 'changes' => [
         'Opening a chat asked WhatsApp for the contact on every click (about 0.8 s, and again for the profile). The contact data is now kept for 6 hours (10 minutes when WhatsApp did not answer): the profile call went from 2.4 s to 0.2 s.',
         'Gateway: a chat\'s messages were found by reading and scanning every archive file (35 MB for the main number) on every request. The files are now kept in memory with an index by chat, and only new lines are read: a thread request went from about 160 ms to 5–10 ms. Applies after the gateway restarts (the main number was restarted).',
