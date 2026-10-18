@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.100.5', 'date' => '2026-10-18', 'title' => 'Leave full screen from anywhere', 'changes' => [
+        'Chats: full screen mode hides the top menu, and the only way out was a button in the chat list — which can be hidden too. While full screen is on, a "Show the menu" button now stays in the corner of the screen.',
+    ]],
     ['v' => '3.100.4', 'date' => '2026-10-18', 'title' => 'Chat list button always in the header', 'changes' => [
         'Chat header: the "Chat list" button (hide / show the list of chats) moved next to the fold button in the name row, so it is there also when the rest of the header is folded.',
     ]],

@@ -64,6 +64,8 @@
     // View options of this browser: full screen, previews, chat list, hidden chats (per number)
     var VK = 'wi_view', HK = 'wi_hidden_' + (app.getAttribute('data-acc') || ''), rd = function (k, d) { try { return JSON.parse(localStorage.getItem(k) || '') || d; } catch (e) { return d; } }, wr = function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
     var view = rd(VK, { focus: false, thumbs: true, list: true, showHidden: false }), hiddenChats = rd(HK, []);
+    // Full screen hides the top menu: a button that brings it back is always on the screen while it is on (it used to be only in the chat list, which can be hidden too)
+    var fx = document.createElement('button'); fx.type = 'button'; fx.id = 'focus-exit'; fx.className = 'focus-exit'; fx.dataset.view = 'focus'; fx.innerHTML = '☰ <span>' + T('Show the menu') + '</span>'; fx.title = T('Leave full screen: show the top menu'); app.appendChild(fx);
     function applyView() { app.classList.toggle('v-focus', !!view.focus); app.classList.toggle('v-nothumbs', !view.thumbs); app.classList.toggle('v-nolist', !view.list);
       [].forEach.call(document.querySelectorAll('#view-bar [data-view]'), function (b) { var k = b.dataset.view; b.classList.toggle('on', k === 'thumbs' ? !view.thumbs : (k === 'list' ? !view.list : (k === 'hidden' ? !!view.showHidden : !!view[k]))); }); }
     document.addEventListener('click', function (e) { var b = e.target.closest('[data-view]'); if (!b) return; var k = b.dataset.view;

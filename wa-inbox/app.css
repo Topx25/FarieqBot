@@ -1148,3 +1148,6 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 /* The chat-list button stays in the name row, also when the header is folded */
 .th-list{margin-inline-start:auto}.th-list+.th-fold{margin-inline-start:0}
 .thread-h.collapsed .th-list{display:inline-flex!important}
+
+.focus-exit{display:none;position:fixed;top:10px;inset-inline-start:10px;z-index:60;align-items:center;gap:6px;padding:7px 14px;border:0;border-radius:999px;background:var(--brand,#0b7f70);color:#fff;font:inherit;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 8px 20px -8px rgba(0,0,0,.5)}
+.app.v-focus .focus-exit{display:inline-flex}
