@@ -440,6 +440,7 @@ return [
     'Mention in the group' => 'منشن في الجروب',
     'Copy the number' => 'انسخ الرقم',
     'Attach' => 'إرفاق',
+    'Show / hide the header buttons' => 'إظهار / إخفاء أزرار الهيدر',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. Ruqyah Al-Athiri' => 'مثلًا: رقية الأثيري',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',

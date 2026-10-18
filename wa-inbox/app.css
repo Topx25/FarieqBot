@@ -1139,3 +1139,8 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .thread-h .th-acts .icon-btn.lbl{width:auto;height:32px;display:inline-flex;grid-template-columns:none;padding:0 10px;font-size:13px}
 .thread-h .th-acts .icon-btn.lbl em{font-size:12px}
 .thread-h .th-acts .export{display:inline-flex}
+
+/* Chat header: a button folds everything under the name away (Topx1.Host) */
+.th-fold{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-size:16px;margin-inline-start:auto}
+.thread-h.collapsed .th-acts,.thread-h.collapsed .th-info,.thread-h.collapsed .thread-tools,.thread-h.collapsed #th-badges,.thread-h.collapsed .th-sub{display:none!important}
+.thread-h.collapsed{padding-block:8px;gap:0}.thread-h.collapsed .th-top>.av{width:36px;height:36px;font-size:16px}

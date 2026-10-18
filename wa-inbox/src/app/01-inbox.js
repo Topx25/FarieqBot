@@ -42,11 +42,11 @@
     try { unread = JSON.parse(localStorage.getItem('wi_unread_' + (app.getAttribute('data-acc') || '')) || '{}') || {}; } catch (e) { unread = {}; }
     function saveUnread() { try { localStorage.setItem('wi_unread_' + (app.getAttribute('data-acc') || ''), JSON.stringify(unread)); } catch (e) {} updateTitle(); }
     function updateTitle() { var n = 0; for (var k in unread) n += unread[k] || 0; document.title = (n ? '(' + n + ') ' : '') + ((window.WI_BRAND || {}).name || ''); }
-    document.addEventListener('click', function (e) { if (e.target.closest('[data-hide-chat]') && open) { toggleHidden(open); var b = e.target.closest('[data-hide-chat]'); b.textContent = hiddenChats.indexOf(open) !== -1 ? '👁️' : '🙈'; } });
+    document.addEventListener('click', function (e) { if (e.target.closest('[data-hide-chat]') && open) { toggleHidden(open); var b = e.target.closest('[data-hide-chat]'), ic = b.querySelector('span'); (ic || b).textContent = hiddenChats.indexOf(open) !== -1 ? '👁️' : '🙈'; } });
     // 🔒 Who sees this chat: hide it from chosen team members (their lists, search, groups and reports never show it)
     document.addEventListener('click', function (e) {
       var b = e.target.closest('[data-hide-for]'); if (!b || !open) return; var jid = open;
-      api('hide_for&jid=' + encodeURIComponent(jid)).then(function (r) {
+      api('hide_for', { jid: jid }).then(function (r) { // (the name and its parameters are separate: put together they were read as an unknown request)
         if (!r.ok) return alert(r.error || ''); var d = document.createElement('dialog'); d.className = 'dlg';
         d.innerHTML = '<form method="dialog" class="stack pad"><h3>🔒 ' + T('Who sees this chat') + '</h3><p class="muted small">' + T('Ticked people do not see this chat anywhere: list, search, groups, reports.') + '</p>'
           + ((r.users || []).length ? r.users.map(function (u) { return '<label class="check"><input type="checkbox" data-em="' + esc(u.email) + '"' + (u.hidden ? ' checked' : '') + '> ' + T('Hide from') + ' <b dir="auto">' + esc(u.name) + '</b> <small class="muted">' + esc(u.role) + '</small></label>'; }).join('') : '<p class="muted">' + T('No team members on this number.') + '</p>')
@@ -146,6 +146,7 @@
       headEl.innerHTML = '<div class="th-top"><button type="button" class="icon-btn th-back" title="' + T('Back to the chats') + '">‹</button>' + av(jid, title(c))
         + '<div class="th-id grow"><div class="th-name"><b dir="auto">' + esc(title(c)) + '</b>' + (c.customer ? '<span class="th-badge cust">🧾 ' + T('Customer') + '</span>' : '') + (isG ? '<span class="th-badge grp">👥 ' + T('Group') + '</span>' : '') + '<span id="th-badges"></span></div>'
         + '<div class="th-sub"><span dir="ltr">' + (c.phone ? '+' + esc(c.phone) : (isG ? '' : esc(String(jid).split('@')[0]))) + '</span><span>💬 ' + fmt(c.count) + ' ' + T('messages') + '</span>' + (c.last && c.last.time ? '<span>🕐 ' + esc(when(c.last.time)) + '</span>' : '') + '<span class="info-hint">ⓘ ' + T('Contact info') + '</span><span class="typing" id="typing-h" hidden></span></div></div>'
+        + '<button type="button" class="icon-btn th-fold" id="th-fold" title="' + T('Show / hide the header buttons') + '">⌃</button>'
         + '<div class="th-acts"><button type="button" class="icon-btn lbl" data-view="list" title="' + T('Show / hide the chat list') + '"><span>📋</span><em>' + T('Chat list') + '</em></button><button type="button" class="icon-btn lbl" data-hide-chat title="' + T('Hide / show this chat in the list') + '"><span>' + (hiddenChats.indexOf(jid) !== -1 ? '👁️' : '🙈') + '</span><em>' + T('Hide chat') + '</em></button>' + (app.getAttribute('data-canusers') ? '<button type="button" class="icon-btn lbl" data-hide-for title="' + T('Who sees this chat') + '"><span>🔒</span><em>' + T('Who sees it') + '</em></button>' : '') + (isG ? '<button type="button" class="icon-btn lbl primary-i" id="grp-members" title="' + T('Members of this group') + '"><span>👥</span><em>' + T('Members') + '</em></button><a class="icon-btn lbl" href="?p=groups&g=' + encodeURIComponent(jid) + '" title="' + T('Group page') + '"><span>⚙️</span><em>' + T('Group settings') + '</em></a>' : '<a class="icon-btn lbl" href="?p=customer&jid=' + encodeURIComponent(jid) + '" title="' + T('Customer profile') + '"><span>👤</span><em>' + T('Profile') + '</em></a><a class="icon-btn lbl" href="?p=programs&jid=' + encodeURIComponent(jid) + '" title="' + T('Enrol in a program') + '"><span>💊</span><em>' + T('Program') + '</em></a>')
         + (!isG && CAN('groups') ? '<button type="button" class="icon-btn lbl" id="add-grp" title="' + T('Add to a group') + '"><span>👥➕</span><em>' + T('Add to group') + '</em></button>' : '')
         + '<button type="button" class="icon-btn lbl" id="chat-media" title="' + T('Media of this chat') + '"><span>📁</span><em>' + T('Media') + '</em></button>'
@@ -153,6 +154,7 @@
         + (!CAN('export') ? '' : '<div class="export"><button type="button" class="icon-btn lbl" id="exp-btn" title="' + T('Export') + '"><span>⬇️</span><em>' + T('Export') + '</em></button><div class="export-menu" hidden><a href="?api=export&fmt=txt&jid=' + encodeURIComponent(jid) + '">📄 ' + T('Text (.txt)') + '</a><a href="?api=export&fmt=csv&jid=' + encodeURIComponent(jid) + '">📊 ' + T('Excel (.csv)') + '</a><a href="?api=export&fmt=html&jid=' + encodeURIComponent(jid) + '">🌐 ' + T('Web page (.html)') + '</a></div></div>') + '</div></div>'
         + '<div class="th-info" id="th-info"></div>'
         + '<div class="thread-tools" id="thread-tools"></div>';
+      var fold = false; try { fold = localStorage.getItem('wi_th_fold') === '1'; } catch (e) {} headEl.classList.toggle('collapsed', fold); var fb = document.getElementById('th-fold'); if (fb) fb.textContent = fold ? '⌄' : '⌃';
       // Customer / case details for the header (filled in when they arrive).
       if (!isG) api('customer', { jid: jid }).then(function (r) {
         if (jid !== open || !r || !r.ok) return;
@@ -351,7 +353,7 @@
       if (!f) { if (bub && !e.target.closest('a,button,audio,video,img')) fwBtn(bub); return; }
       if (bub.dataset.att) mlForward(bub.dataset.att, bub.dataset.cap || ''); else mlForward(null, (msgById[bub.dataset.id] || {}).text || ''); });
     msgsEl.addEventListener('mouseover', function (e) { fwBtn(e.target.closest('.b')); });
-    headEl.addEventListener('click', function (e) { if (e.target.closest('#chat-media')) { var cc = chats.filter(function (x) { return x.jid === open; })[0] || {}; mlChatMedia(open, title(cc)); return; } });
+    headEl.addEventListener('click', function (e) { var fb = e.target.closest('#th-fold'); if (fb) { var on = headEl.classList.toggle('collapsed'); fb.textContent = on ? '⌄' : '⌃'; try { localStorage.setItem('wi_th_fold', on ? '1' : '0'); } catch (x) {} return; } if (e.target.closest('#chat-media')) { var cc = chats.filter(function (x) { return x.jid === open; })[0] || {}; mlChatMedia(open, title(cc)); return; } });
     headEl.addEventListener('click', function (e) { if (e.target.closest('.th-back')) { if (history.state && history.state.chat) history.back(); else closeChat(); } });
     headEl.addEventListener('click', function (e) {
       var tl = e.target.closest('[data-tool]');

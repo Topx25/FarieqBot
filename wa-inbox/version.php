@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.100.2', 'date' => '2026-10-18', 'title' => 'Chat header: fold button; "Who sees it" fixed', 'changes' => [
+        'Fixed: pressing "Who sees it" (🔒) in a chat header showed "Unknown request". The request was sent with its parameter glued to its name; it is now sent properly.',
+        'Chat header: a ⌃ button at the end of the name row folds everything under the name (the action buttons, the details and the tools) and ⌄ brings it back. The choice is remembered.',
+        'The hide-chat button keeps its label after it is pressed.',
+    ]],
     ['v' => '3.100.1', 'date' => '2026-10-18', 'title' => 'Chat header: actions in their own row', 'changes' => [
         'Fixed: with the icon names added, the action buttons took the whole header and squeezed the chat name into a thin column. The actions now sit in their own row under the name; the name, number and badges keep their room.',
     ]],
