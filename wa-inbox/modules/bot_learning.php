@@ -101,7 +101,7 @@ function wf_customer_card(array $acc, string $jid, array $rows = []): array {
     if (!$rows) { $t = wi_gateway('/archive/thread?jid=' . rawurlencode($jid), null, $acc); $rows = $t['rows'] ?? []; }
     $msgs = array_values(array_filter($rows, fn($m) => in_array($m['dir'] ?? '', ['in', 'out'], true)));
     $first = $msgs[0]['time'] ?? null;
-    $c = wi_gateway('/contact?jid=' . rawurlencode($jid), null, $acc); $phone = (string) ($c['phone'] ?? '');
+    $c = wi_contact($jid, $acc); $phone = (string) ($c['phone'] ?? '');
     $groups = [];
     foreach (wi_read('known_members.json', [])[$aid] ?? [] as $gj => $g) foreach ($g['members'] ?? [] as $m) if ($phone !== '' && ($m['p'] ?? '') === $phone) $groups[] = $g['name'];
     $progs = []; $pn = []; foreach (wf_programs($aid) as $p) $pn[$p['id']] = $p['name'];
@@ -534,7 +534,7 @@ function wf_api_bot_learning(string $api): void {
         $who = []; foreach ((wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long') )['chats'] ?? []) as $ch) $who[$ch['jid']] = ['name' => (string) ($ch['name'] ?? ''), 'phone' => (string) ($ch['phone'] ?? ''), 'group' => !empty($ch['group'])];
         $pl = []; foreach (wf_bot_paused($aid) as $pj => $px) {
             $w = $who[$pj] ?? null;
-            if (!$w || ($w['name'] === '' && $w['phone'] === '')) { $cc = wi_gateway('/contact?jid=' . rawurlencode($pj)); $w = ['name' => (string) ($cc['name'] ?? ($w['name'] ?? '')), 'phone' => (string) ($cc['phone'] ?? ''), 'group' => str_ends_with($pj, '@g.us')]; }
+            if (!$w || ($w['name'] === '' && $w['phone'] === '')) { $cc = wi_contact($pj); $w = ['name' => (string) ($cc['name'] ?? ($w['name'] ?? '')), 'phone' => (string) ($cc['phone'] ?? ''), 'group' => str_ends_with($pj, '@g.us')]; }
             $pl[] = ['jid' => $pj, 'name' => $w['name'], 'phone' => $w['phone'], 'group' => $w['group'], 'at' => $px['at'] ?? '', 'by' => $px['by'] ?? '', 'until' => $px['until'] ?? null];
         }
         foreach ($dl as &$d0) if (($d0['name'] ?? '') === '' && isset($who[$d0['jid']])) $d0['name'] = $who[$d0['jid']]['name']; unset($d0);

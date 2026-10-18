@@ -271,7 +271,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         $again = isset($retry[$x['jid']]); unset($st['retry'][$x['jid']]);
         if (!$again && ($st['done'][$x['jid']] ?? '') >= $last['time']) continue;          // already handled this message
         if (!$again && isset($paused[$x['jid']]) && (empty($paused[$x['jid']]['until']) || strtotime($paused[$x['jid']]['until']) > time())) continue; // /stop, or handed over to a person for a while
-        if (($x['phone'] ?? '') === '' && str_ends_with((string) $x['jid'], '@lid')) { $cc = wi_gateway('/contact?jid=' . rawurlencode($x['jid']), null, $acc); $x['phone'] = wf_phone((string) ($cc['phone'] ?? '')); }
+        if (($x['phone'] ?? '') === '' && str_ends_with((string) $x['jid'], '@lid')) { $cc = wi_contact($x['jid'], $acc); $x['phone'] = wf_phone((string) ($cc['phone'] ?? '')); }
         $isTest = in_array((string) ($x['phone'] ?? ''), (array) $c['test'], true); // test numbers: always answered
         if (!$isTest && isset($team[(string) ($x['phone'] ?? '')]) && $team[(string) $x['phone']] !== 'group admin') continue; // team members / own numbers (a group admin is team inside the groups only: in private they may be a client)
         $isSys = fn($t) => (bool) preg_match('/^\s*(\x{26A0}\x{FE0F}|\x{2705}|\x{1F4CA}|\x{1F514}|\x{2757})/u', (string) $t) || wf_is_system_text((string) $t); // login codes, alerts, reports

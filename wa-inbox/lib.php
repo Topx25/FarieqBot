@@ -463,7 +463,7 @@ function wi_reply_match(array $replies, string $typed): ?array {
 }
 /** Fills a quick reply for one chat: {name} {phone} {due} {invoice} {date}. Invoice details only on the operator's numbers. */
 function wi_reply_fill(string $text, string $jid, array $acc): string {
-    $c = str_ends_with($jid, '@g.us') ? [] : wi_gateway('/contact?jid=' . rawurlencode($jid), null, $acc); // in a group there is no one person to name
+    $c = str_ends_with($jid, '@g.us') ? [] : wi_contact($jid, $acc); // in a group there is no one person to name
     $phone = (string) ($c['phone'] ?? ''); $cust = null;
     if (wi_ws($acc) === '' && $phone !== '' && isset(wi_customers()[$phone])) $cust = wi_customer_detail((int) wi_customers()[$phone]['id']);
     $openInv = null; foreach ((array) ($cust['invoices'] ?? []) as $i) if ((float) $i['total_due'] > 0 && in_array($i['status'], ['unpaid', 'partial', 'overdue'], true)) { $openInv = $i; break; }
@@ -690,6 +690,15 @@ function wi_current(): ?array {
 
 /* ---------- gateway ---------- */
 /** Calls the gateway of the current account ($acc overrides; 'main' for login codes). */
+/** WhatsApp's contact data of a chat (name, number…): kept for 6 hours (10 minutes when WhatsApp did not answer) — asking for it on every click was the slowest call of the chat screen. */
+function wi_contact(string $jid, $acc = null): array {
+    if (is_string($acc)) $acc = wi_accounts()[$acc] ?? null; $acc ??= wi_current(); $aid = preg_replace('/\W/', '', (string) ($acc['id'] ?? 'x')); $f = WI_DIR . '/cache_contact_' . $aid . '.json';
+    $all = is_file($f) ? (array) json_decode((string) @file_get_contents($f), true) : []; $e = $all[$jid] ?? null;
+    if ($e && time() - (int) $e['t'] < (!empty($e['d']['ok']) ? 21600 : 600)) return (array) $e['d'];
+    $d = wi_gateway('/contact?jid=' . rawurlencode($jid), null, $acc); $all[$jid] = ['t' => time(), 'd' => $d];
+    if (count($all) > 600) { uasort($all, fn($x, $y) => $y['t'] <=> $x['t']); $all = array_slice($all, 0, 400, true); }
+    @file_put_contents($f, json_encode($all, JSON_UNESCAPED_UNICODE), LOCK_EX); @chmod($f, 0600); return $d;
+}
 function wi_gateway(string $path, ?array $post = null, $acc = null): array {
     if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_FAKE_GATEWAY']) && is_callable($GLOBALS['WI_FAKE_GATEWAY'])) return ($GLOBALS['WI_FAKE_GATEWAY'])($path, $post, $acc); // tests: a stand-in gateway, nothing leaves the server
     if (is_string($acc)) { $all = wi_accounts(); $acc = $all[$acc] ?? null; }
@@ -702,7 +711,8 @@ function wi_gateway(string $path, ?array $post = null, $acc = null): array {
     $opt[CURLOPT_HTTPHEADER] = ['Authorization: Bearer ' . $token];
     if ($post !== null) { $opt[CURLOPT_POST] = true; $opt[CURLOPT_POSTFIELDS] = json_encode($post); $opt[CURLOPT_HTTPHEADER][] = 'Content-Type: application/json'; }
     curl_setopt_array($ch, $opt);
-    $r = json_decode((string) curl_exec($ch), true);
+    $t0 = microtime(true); $r = json_decode((string) curl_exec($ch), true);
+    if (getenv('WI_PROF')) @file_put_contents('/tmp/wi_prof.log', sprintf("%6.0f ms  %s\n", (microtime(true) - $t0) * 1000, $path), FILE_APPEND); // speed check: WI_PROF=1 lists every gateway call and its time
     curl_close($ch);
     return is_array($r) ? $r : ['ok' => false, 'error' => 'This account\'s gateway is not running yet (it starts within a minute of being added).'];
 }
@@ -895,7 +905,7 @@ function wi_bridge(array $body, int $timeout = 90): array {
 }
 /** Phone + customer of a chat (via the gateway's contact lookup). */
 function wi_chat_customer(string $jid): array {
-    $c = wi_gateway('/contact?jid=' . rawurlencode($jid));
+    $c = wi_contact($jid);
     $phone = (string) ($c['phone'] ?? '');
     $cust = $phone !== '' ? (wi_customers()[$phone] ?? null) : null;
     return ['phone' => $phone, 'name' => (string) ($c['name'] ?? ''), 'customer' => $cust ? wi_customer_detail((int) $cust['id']) : null];

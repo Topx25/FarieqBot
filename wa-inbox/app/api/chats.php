@@ -230,7 +230,7 @@
     // Add the person of this chat to a group this number administers (no need to save their number on the phone);
     // when their privacy does not allow it, an invite link can be sent in the chat instead. A daily limit protects the number.
     // Was this person removed from the group (by an admin)? Then WhatsApp refuses the public link; only an admin's add / personal invitation works.
-    $grpRemoved = function (string $grp, string $jid): bool { $ids = array_values(array_filter([explode('@', $jid)[0], (string) (wi_gateway('/contact?jid=' . rawurlencode($jid))['phone'] ?? '')]));
+    $grpRemoved = function (string $grp, string $jid): bool { $ids = array_values(array_filter([explode('@', $jid)[0], (string) (wi_contact($jid)['phone'] ?? '')]));
         return wf_group_member_state(wi_current() ?: [], $grp, $ids) === 'removed'; }; // removed by an admin (not left by themselves)
     if ($api === 'group_members') { // who is in a group: name, number, admin, customer, and the private chat with them when there is one
         $grp = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($_GET['group'] ?? '')); $acc = wi_current(); $aid = (string) ($acc['id'] ?? '');
@@ -259,12 +259,12 @@
         if ($api === 'group_invite_send') {
             if (!wi_chat_can('reply')) wi_json(['ok' => false, 'error' => 'You do not have permission to reply.'], 403);
             $lk = wi_gateway('/groups/invite?jid=' . rawurlencode($grp)); if (empty($lk['ok'])) wi_json(['ok' => false, 'error' => $lk['error'] ?? 'Could not get the invite link.']);
-            $c = wi_gateway('/contact?jid=' . rawurlencode($jid)); $txt = wf_msg('group_invite', ['group' => (string) $gx['name'], 'link' => (string) $lk['link'], 'name' => (string) ($c['name'] ?? '')]);
+            $c = wi_contact($jid); $txt = wf_msg('group_invite', ['group' => (string) $gx['name'], 'link' => (string) $lk['link'], 'name' => (string) ($c['name'] ?? '')]);
             $r = wi_gateway('/chat/send', ['jid' => $jid, 'text' => $txt, 'by' => (string) $_SESSION['email']]); wi_log('group_invite_send', ['account' => $aid, 'jid' => $jid, 'group' => $grp, 'ok' => !empty($r['ok'])]); wi_json($r);
         }
         $n = (int) (wi_read('group_adds.json', [])[$aid][date('Y-m-d')] ?? 0);
         if ($n >= (int) wi_sys('group_add_day')) wi_json(['ok' => false, 'error' => 'Today\'s limit of people added to groups is reached (it protects the number). Send an invite link instead, or try tomorrow.']);
-        $c = wi_gateway('/contact?jid=' . rawurlencode($jid)); $who = !empty($c['phone']) ? $c['phone'] . '@s.whatsapp.net' : $jid; // the phone number when known, else the hidden-number id
+        $c = wi_contact($jid); $who = !empty($c['phone']) ? $c['phone'] . '@s.whatsapp.net' : $jid; // the phone number when known, else the hidden-number id
         $r = wi_gateway('/groups/add', ['group' => $grp, 'jid' => $who, 'private_invite' => true, 'text' => wf_msg('group_invite', ['group' => (string) $gx['name'], 'link' => '', 'name' => (string) ($c['name'] ?? '')])]);
         if (in_array($r['result'] ?? '', ['added', 'invited'], true)) wi_update('group_adds.json', function ($A) use ($aid) { $d = date('Y-m-d'); $A[$aid] = [$d => (int) ($A[$aid][$d] ?? 0) + 1]; return $A; });
         wi_log('group_add', ['account' => $aid, 'jid' => $jid, 'group' => $grp, 'result' => $r['result'] ?? ($r['error'] ?? '')]);
@@ -331,7 +331,7 @@
     }
     if ($api === 'contact') {
         $jid = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($_GET['jid'] ?? ''));
-        $r = wi_gateway('/contact?jid=' . rawurlencode($jid));
+        $r = wi_contact($jid);
         if (!empty($r['ok']) && !empty($r['phone'])) {
             $c = wi_customers()[$r['phone']] ?? null;
             if ($c) $r['customer'] = wi_customer_detail((int) $c['id']);
