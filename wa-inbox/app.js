@@ -279,19 +279,22 @@ document.addEventListener('keydown', function (e) {
         : '<div class="fw-item"><div class="fw-th">' + (it.kind === 'voice' || it.kind === 'audio' ? '<span class="fw-ic">' + (it.kind === 'voice' ? '🎙️' : '🎧') + '</span>' : mlThumb(it)) + '</div><div class="grow"><b dir="auto">' + esc(mlName(it) || T(it.kind === 'document' ? 'Document' : 'Audio')) + '</b><small class="muted">' + (it.size ? mlSize(it.size) : '') + '</small>'
           + (it.kind === 'voice' || it.kind === 'audio' ? '<audio controls preload="none" src="' + mlUrl(key) + '"></audio>' : '') + '<textarea id="mlf-c" rows="2" dir="auto" placeholder="' + esc(T('Caption')) + '">' + esc(caption || '') + '</textarea></div></div>';
       var d = mlDialog('<div class="ml-head"><b>↪ ' + T('Forward to chats') + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div>'
-        + '<div class="fw">' + what
+        + '<div class="fw"><div class="fw-left">' + what + (isText ? '<div class="fw-len muted small" id="mlf-len"></div>' : '') + '</div><div class="fw-right">'
         + '<div class="fw-to"><div class="search-xl"><span>🔎</span><input type="search" id="mlf-q" placeholder="' + esc(T('Search name or number…')) + '" dir="auto"></div>'
         + '<div class="seg sm" id="mlf-t"><button class="on" data-t="">' + T('All') + '</button><button data-t="p">👤 ' + T('Chats') + '</button><button data-t="g">👥 ' + T('Groups') + '</button></div></div>'
         + '<div class="fw-sel" id="mlf-s" hidden></div><div class="fw-list" id="mlf-l"></div>'
-        + '<div class="fw-foot"><span class="muted small" id="mlf-m">' + T('Up to') + ' ' + maxChats + ' ' + T('chats, sent one by one.') + '</span><button type="button" class="btn primary" id="mlf-go" disabled>📤 ' + T('Send') + ' <span id="mlf-n"></span></button></div></div>');
+        + '<div class="fw-foot"><span class="muted small" id="mlf-m">' + T('Up to') + ' ' + maxChats + ' ' + T('chats, sent one by one.') + '</span><button type="button" class="btn primary" id="mlf-go" disabled>📤 ' + T('Send') + ' <span id="mlf-n"></span></button></div></div></div>');
       d.classList.add('fw-dlg');
+      var cta = document.getElementById('mlf-c'), len = document.getElementById('mlf-len'); // the whole message is shown: the box grows with the text
+      var grow = function () { if (!cta) return; cta.style.height = 'auto'; cta.style.height = Math.min(cta.scrollHeight + 2, Math.round(window.innerHeight * 0.55)) + 'px'; if (len) len.textContent = fmt(cta.value.length) + ' ' + T('characters'); };
+      if (cta) { cta.addEventListener('input', grow); setTimeout(grow, 30); }
       var drawSel = function () { var ks = Object.keys(sel), box = document.getElementById('mlf-s'); box.hidden = !ks.length;
         box.innerHTML = ks.map(function (j) { var c = chats.filter(function (x) { return x.jid === j; })[0] || { jid: j }; return '<span class="fw-chip" data-un="' + esc(j) + '" dir="auto">' + (c.group ? '👥 ' : '') + esc(label(c)) + ' ✕</span>'; }).join('');
         document.getElementById('mlf-n').textContent = ks.length ? '(' + ks.length + ')' : ''; document.getElementById('mlf-go').disabled = !ks.length; };
       var draw = function () { var q = document.getElementById('mlf-q').value.toLowerCase();
         var rows = chats.filter(function (c) { return (!gt || (gt === 'g') === !!c.group) && (!q || ((c.name || '') + ' ' + (c.phone || '')).toLowerCase().indexOf(q) !== -1); }).slice(0, 150);
         document.getElementById('mlf-l').innerHTML = rows.length ? rows.map(function (c) { var on = !!sel[c.jid]; return '<button type="button" class="fw-row' + (on ? ' on' : '') + '" data-j="' + esc(c.jid) + '">' + av(c.jid, label(c))
-          + '<span class="grow"><b dir="auto">' + esc(label(c)) + '</b><small class="muted" dir="ltr">' + (c.group ? '👥 ' + T('Group') : (c.phone ? '+' + esc(c.phone) : '')) + '</small></span><i class="fw-ck">' + (on ? '✓' : '') + '</i></button>'; }).join('') : '<div class="empty">' + T('Nothing found.') + '</div>'; };
+          + '<span class="grow"><b dir="auto">' + esc(label(c)) + '</b><small class="muted" dir="ltr">' + (c.group ? '👥 ' + T('Group') : (c.phone ? '+' + esc(c.phone) : '')) + '</small></span><i class="fw-ck' + (on ? ' on' : '') + '">' + (on ? '✓' : '') + '</i></button>'; }).join('') : '<div class="empty">' + T('Nothing found.') + '</div>'; };
       var toggle = function (j) { if (sel[j]) delete sel[j]; else { if (Object.keys(sel).length >= maxChats) { mlToast(T('Up to') + ' ' + maxChats + ' ' + T('chats, sent one by one.')); return; } sel[j] = 1; } draw(); drawSel(); };
       draw(); document.getElementById('mlf-q').oninput = draw;
       document.getElementById('mlf-t').onclick = function (e) { var b = e.target.closest('[data-t]'); if (!b) return; gt = b.dataset.t; [].forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); }); draw(); };

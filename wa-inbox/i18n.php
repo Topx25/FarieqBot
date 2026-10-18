@@ -424,6 +424,7 @@ return [
     'Your account has no WhatsApp number.' => 'حسابك ملوش رقم واتساب.',
     'Could not send the code on WhatsApp.' => 'ما قدرتش أبعت الكود على واتساب.',
     'You do not have permission to change the library.' => 'معندكش صلاحية تعدّل المكتبة.',
+    'characters' => 'حرف',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. Ruqyah Al-Athiri' => 'مثلًا: رقية الأثيري',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',

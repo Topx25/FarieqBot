@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.99.3', 'date' => '2026-10-18', 'title' => 'Forward dialog: the whole message, two columns', 'changes' => [
+        'Forward to chats: the full message is shown — the box grows with the text (up to about half the screen, then scrolls) with a character count. On a wide screen the message is on one side and the chats on the other; on a phone they stack.',
+        'Chats have a round tick that turns green when chosen, the chosen ones are chips above the list, and the Send button stays at the bottom.',
+    ]],
     ['v' => '3.99.2', 'date' => '2026-10-18', 'title' => 'Forward dialog: readable message box', 'changes' => [
         'Forward to chats: the message box was a narrow strip showing two lines; it now uses the full width, is taller (resizable), and the chosen chats are outlined.',
     ]],
