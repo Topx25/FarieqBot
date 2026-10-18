@@ -19,7 +19,7 @@ $mlSess = function (callable $f): void { if (session_status() !== PHP_SESSION_AC
 if (in_array($api, ['media_vault', 'media_vault_set', 'media_vault_unlock', 'media_vault_lock', 'media_vault_move', 'media_vault_otp'], true)) {
     $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number.']); $aid = (string) $acc['id'];
     $V = (array) (wi_read('media_vault.json', [])[$aid] ?? []); $has = !empty($V['hash']);
-    if ($api === 'media_vault') { $n = 0; foreach ((array) (wi_read('media_meta.json', [])[$aid] ?? []) as $m) if (!empty($m['vault'])) $n++; wi_json(['ok' => true, 'has_password' => $has, 'unlocked' => $mlVaultOn($aid), 'count' => $n]); }
+    if ($api === 'media_vault') { $n = count(wf_vault_files($aid)); wi_json(['ok' => true, 'has_password' => $has, 'unlocked' => $mlVaultOn($aid), 'count' => $n]); }
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') wi_json(['ok' => false, 'error' => 'POST only.'], 405);
     wi_check_csrf(); $in = json_decode(wi_input(), true) ?: []; $edit = wi_page_perm('library') === 'edit';
     if ($api === 'media_vault_lock') { $mlSess(function () use ($aid) { unset($_SESSION['vault'][$aid]); }); wi_json(['ok' => true]); }
@@ -41,7 +41,7 @@ if (in_array($api, ['media_vault', 'media_vault_set', 'media_vault_unlock', 'med
             if ($p && ($p['aid'] ?? '') === $aid && time() - (int) $p['at'] < 300 && (int) $p['tries'] < 5) { $okPw = password_verify($code, (string) $p['hash']); $mlSess(function () use ($okPw) { if ($okPw) unset($_SESSION['vault_otp']); else $_SESSION['vault_otp']['tries']++; }); } }
         else $okPw = password_verify((string) ($in['password'] ?? ''), (string) $V['hash']);
         if (!$okPw) { $G[$k][] = time(); wi_write('vault_guard.json', $G); wi_log('vault_bad_password', ['account' => $aid]); wi_json(['ok' => false, 'error' => 'Wrong password.'], 403); }
-        unset($G[$k]); wi_write('vault_guard.json', $G); $mlSess(function () use ($aid) { $_SESSION['vault'][$aid] = time() + 1800; }); wi_log('vault_unlock', ['account' => $aid]); wi_json(['ok' => true]);
+        unset($G[$k]); wi_write('vault_guard.json', $G); $mlSess(function () use ($aid) { $_SESSION['vault'][$aid] = time() + 1800; }); @set_time_limit(300); wf_vault_migrate($aid); wi_log('vault_unlock', ['account' => $aid]); wi_json(['ok' => true]);
     }
     if (!$edit) wi_json(['ok' => false, 'error' => 'You do not have permission to change the library.'], 403);
     if ($api === 'media_vault_set') {
@@ -54,10 +54,24 @@ if (in_array($api, ['media_vault', 'media_vault_set', 'media_vault_unlock', 'med
         $do = (string) ($in['do'] ?? ''); if (!in_array($do, ['hide', 'show'], true)) wi_json(['ok' => false, 'error' => 'Unknown action.'], 422);
         if (!$has) wi_json(['ok' => false, 'need_password' => true, 'error' => 'Set a password first.'], 422);
         if (!$mlVaultOn($aid)) wi_json(['ok' => false, 'need_unlock' => true, 'error' => 'Enter the password first.'], 403);
-        $keys = array_values(array_filter(array_slice((array) ($in['keys'] ?? []), 0, 300), fn($k) => $mlOk((string) $k, $aid)));
-        wi_update('media_meta.json', function ($M) use ($aid, $keys, $do) { foreach ($keys as $k) { if ($do === 'hide') $M[$aid][$k]['vault'] = 1; else unset($M[$aid][$k]['vault']); } return $M; });
-        wi_log('vault_' . $do, ['account' => $aid, 'count' => count($keys)]); wi_json(['ok' => true, 'count' => count($keys)]);
+        @set_time_limit(300); $vf = wf_vault_files($aid); $done = 0; $err = '';
+        foreach (array_slice((array) ($in['keys'] ?? []), 0, 300) as $k) { $k = (string) $k;
+            try { if ($do === 'hide') { if (!$mlOk($k, $aid)) continue; $e = wf_vault_hide($aid, $k); } else { if (!isset($vf[$k])) continue; $e = wf_vault_show($aid, $k); } } catch (Throwable $x) { $e = $x->getMessage(); }
+            if ($e === '') { $done++; wi_update('media_meta.json', function ($M) use ($aid, $k, $do) { if ($do === 'hide') $M[$aid][$k]['vault'] = 1; else unset($M[$aid][$k]['vault']); return $M; }); } else $err = $e; }
+        wi_log('vault_' . $do, ['account' => $aid, 'count' => $done]); wi_json($done || !$err ? ['ok' => true, 'count' => $done] + ($err ? ['warning' => $err] : []) : ['ok' => false, 'error' => $err]);
     }
+}
+if ($api === 'media_vault_file') { // one private file, decrypted while the folder is open (with byte ranges, so audio and video can seek)
+    $acc = wi_current(); $aid = (string) ($acc['id'] ?? ''); $k = (string) ($_GET['k'] ?? ''); $m = $aid !== '' ? (wf_vault_files($aid)[$k] ?? null) : null;
+    if (!$acc || !$m || !$mlVaultOn($aid)) { http_response_code(403); exit; }
+    $plain = wf_vault_open($aid, $k, (string) @file_get_contents(wf_vault_dir($aid) . '/' . $m['enc'])); if ($plain === null) { http_response_code(500); exit; }
+    $types = ['jpg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'ogg' => 'audio/ogg', 'opus' => 'audio/ogg', 'mp3' => 'audio/mpeg', 'm4a' => 'audio/mp4', 'aac' => 'audio/aac', 'wav' => 'audio/wav', 'mp4' => 'video/mp4', '3gp' => 'video/3gpp', 'mov' => 'video/quicktime', 'pdf' => 'application/pdf'];
+    $ext = strtolower(pathinfo($k, PATHINFO_EXTENSION)); $mime = $types[$ext] ?? 'application/octet-stream'; $len = strlen($plain); $from = 0; $to = $len - 1;
+    header('Content-Type: ' . $mime); header('X-Content-Type-Options: nosniff'); header('Cache-Control: private, no-store'); header('Accept-Ranges: bytes');
+    header(in_array(strtok($mime, '/'), ['audio', 'video'], true) ? "Content-Security-Policy: default-src 'none'; media-src 'self'; style-src 'unsafe-inline'" : "Content-Security-Policy: default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
+    if (!empty($_GET['dl'])) header('Content-Disposition: attachment; filename="' . preg_replace('/[^A-Za-z0-9._-]/', '_', basename($k)) . '"');
+    if (preg_match('/^bytes=(\d*)-(\d*)$/', (string) ($_SERVER['HTTP_RANGE'] ?? ''), $r) && ($r[1] !== '' || $r[2] !== '')) { if ($r[1] === '') { $from = max(0, $len - (int) $r[2]); } else { $from = (int) $r[1]; if ($r[2] !== '') $to = min($to, (int) $r[2]); } if ($from > $to) { http_response_code(416); header('Content-Range: bytes */' . $len); exit; } http_response_code(206); header("Content-Range: bytes $from-$to/$len"); }
+    header('Content-Length: ' . ($to - $from + 1)); echo substr($plain, $from, $to - $from + 1); exit;
 }
 if ($api === 'media_lib') { // the index of this number's media
     $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number.']); $aid = (string) $acc['id']; $root = dirname(__DIR__, 3) . '/storage/';
@@ -67,12 +81,13 @@ if ($api === 'media_lib') { // the index of this number's media
     foreach ((array) wi_read('uploads.json', []) as $f => $a) if ($a === $aid && is_file($root . 'inbox_uploads/' . $f)) $items['inbox_uploads/' . $f] = $root . 'inbox_uploads/' . $f;
     $bin = !empty($_GET['bin']); // the deleted ones (they can be put back)
     $vaultMode = !empty($_GET['vault']) && $mlVaultOn($aid); $vaultN = 0; // the private ones: shown only after the password
+    $vfiles = wf_vault_files($aid); if ($vaultMode) $items = array_fill_keys(array_keys($vfiles), ''); else $vaultN = count($vfiles); // the private files are only in the encrypted folder
     $out = []; $other = ['count' => 0, 'size' => 0]; // the other side (in Deleted, or still in the library) is only counted
-    foreach ($items as $key => $p) { $m = (array) ($meta[$key] ?? []); $inV = !empty($m['vault']); if ($inV && !$vaultMode) { $vaultN++; continue; } if (!$inV && $vaultMode) continue; if ($vaultMode && !empty($m['hidden'])) continue;
-        if (!$vaultMode && !empty($m['hidden']) !== $bin) { $other['count']++; $other['size'] += (int) filesize($p); continue; }
+    foreach ($items as $key => $p) { $m = (array) ($meta[$key] ?? []); $inV = isset($vfiles[$key]); if ($inV && !$vaultMode) continue; if (!$inV && $vaultMode) continue; if ($vaultMode && !empty($m['hidden'])) continue;
+        if (!$vaultMode && !empty($m['hidden']) !== $bin) { $other['count']++; $other['size'] += (int) @filesize($p); continue; }
         $rk = (string) ($real[$key] ?? ''); $kind = in_array($rk, ['sticker', 'image', 'gif', 'video', 'voice', 'audio', 'document'], true) ? $rk : $mlKind($key);
         if ($kind === 'document' && $mlKind($key) !== 'document') $kind = $mlKind($key); // an audio / photo sent as a file is still shown by what it is
-        $out[] = ['key' => $key, 'kind' => $kind, 'size' => (int) filesize($p), 'at' => date('c', (int) filemtime($p)), 'title' => (string) ($m['title'] ?? ''), 'caption' => (string) ($m['caption'] ?? ''), 'name' => (string) ($names[$key] ?? ''), 'code' => (string) ($m['code'] ?? ''), 'mid' => (string) (((array) ($senders[$key] ?? []))['m'] ?? ''), 'from' => (function () use ($senders, $key, $cust) { $x = (array) ($senders[$key] ?? []); if (!empty($x['o'])) return 'You'; $ph = (string) ($x['p'] ?? ''); return (string) (($cust[$ph]['name'] ?? '') ?: (($x['n'] ?? '') ?: ($ph !== '' ? '+' . $ph : ''))); })(),
+        $out[] = ['key' => $key, 'kind' => $kind, 'size' => $vaultMode ? (int) $vfiles[$key]['size'] : (int) filesize($p), 'at' => $vaultMode ? (string) $vfiles[$key]['at'] : date('c', (int) filemtime($p)), 'title' => (string) ($m['title'] ?? ''), 'caption' => (string) ($m['caption'] ?? ''), 'name' => (string) ($names[$key] ?? ''), 'code' => (string) ($m['code'] ?? ''), 'mid' => (string) (((array) ($senders[$key] ?? []))['m'] ?? ''), 'from' => (function () use ($senders, $key, $cust) { $x = (array) ($senders[$key] ?? []); if (!empty($x['o'])) return 'You'; $ph = (string) ($x['p'] ?? ''); return (string) (($cust[$ph]['name'] ?? '') ?: (($x['n'] ?? '') ?: ($ph !== '' ? '+' . $ph : ''))); })(),
             'folder' => (string) ($m['folder'] ?? ''), 'jid' => (string) ($fromChat[$key] ?? ''), 'chat' => (string) ($chatNames[(string) ($fromChat[$key] ?? '')] ?? ''), 'tags' => array_values((array) ($m['tags'] ?? [])), 'fav' => !empty($m['fav']), 'used' => (int) ($m['used'] ?? 0), 'youtube' => $m['youtube'] ?? null]; }
     usort($out, fn($a, $b) => [$b['fav'], $b['at']] <=> [$a['fav'], $a['at']]);
     wi_json(['ok' => true, 'vault' => $vaultMode, 'vault_count' => $vaultN, 'items' => $out, 'bin' => $bin ? null : $other, 'folders' => array_values(array_unique(array_filter(array_column($out, 'folder'))))]);

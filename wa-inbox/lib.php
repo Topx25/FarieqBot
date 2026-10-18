@@ -589,7 +589,7 @@ function wi_api_page(string $api): string {
     static $map = null;
     if ($map === null) { $map = [];
         foreach (['inbox' => 'chats thread chat_media send send_media media_send forward_text delete_msg delete_chat trash trash_restore export group_add group_invite_send group_admin_list group_removed send_invoice chat_invoices notes meta_set summarize reply_fill inv_reminder suggest_reply react fetch_media meta contact events photo presence', 'search' => 'search', 'analytics' => 'stats analyze export',
-            'library' => 'library media_lib media_inventory media_meta media_folders media_bulk media_dupes media_zip media_youtube lib_ai lib_ai_best lib_ai_group lib_hide media_queue', 'audio' => 'audio_lib audio_meta', 'files' => 'files', 'ai' => 'ai_providers',
+            'library' => 'library media_lib media_inventory media_meta media_folders media_bulk media_dupes media_zip media_youtube lib_ai lib_ai_best lib_ai_group lib_hide media_queue media_vault media_vault_set media_vault_unlock media_vault_lock media_vault_move media_vault_otp media_vault_file lib_text_save lib_text_delete lib_upload youtube_connect', 'audio' => 'audio_lib audio_meta', 'files' => 'files', 'ai' => 'ai_providers',
             'broadcast' => 'broadcast broadcast_control broadcast_status lists', 'accounts' => 'accounts gateway gw_action qr relink',
             'cases' => 'case_cfg case_intake_cfg cases case case_new case_team case_set case_analyze case_export registry registry_set registry_ai registry_group group_monitor', 'groups' => 'groups group_detail group_view case_track',
             'numbers' => 'numbers', 'schedule' => 'schedule', 'programs' => 'programs program_save program_enroll', 'status' => 'status_upload status_post', 'health' => 'health',

@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.99.1', 'date' => '2026-10-18', 'title' => 'Private folder: files are encrypted on disk', 'changes' => [
+        'Private folder: a hidden file is now encrypted (AES-256-GCM, a key of its own for each number kept encrypted in the secrets table) and its plain copy is deleted. The encrypted copy lives in storage/vault/ and is decrypted only while the folder is open (password or WhatsApp code), streamed with seeking for audio and video. A tampered or swapped file refuses to open.',
+        'Taking a file out decrypts it back to where it was. Files hidden with the first version (only flagged) are encrypted the first time the folder is opened. Files up to 128 MB.',
+        'Backups must keep the installation key (.data/app.key) together with the database: without it the private files cannot be opened.',
+    ]],
     ['v' => '3.99.0', 'date' => '2026-10-17', 'title' => 'Media: private folder opened with a password or a WhatsApp code', 'changes' => [
         'Media: select files → "Hide in the private folder". They disappear from the library, the zip, the shortcuts and the bot commands until the folder is opened.',
         'The "🔐 Private folder" entry (with its count) is in the folders list. Opening it asks for the password, or a 6-digit code sent on WhatsApp to the signed-in user\'s phone (valid 5 minutes). The first time, a password is set. It stays open for 30 minutes or until "Lock".',
