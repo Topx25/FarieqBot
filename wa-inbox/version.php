@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.100.0', 'date' => '2026-10-18', 'title' => 'Chat screen: group members, member card, named icons', 'changes' => [
+        'Groups: a "Members" button in the chat header lists everyone in the group (admins first, with customer and chat marks) with a search box.',
+        'Groups: the name of a sender above a message is now a button. It (and every member in the list) opens the member card: name, number, admin, customer / case / program / message count, and buttons to message them privately (or start a private chat), mention them in the group, copy the number, open WhatsApp or their profile.',
+        'Chat screen: the header icons and the composer icons now carry their names (Chat list, Hide chat, Who sees it, Members, Group settings, Profile, Program, Add to group, Media, Delete chat, Export, Attach, Library, Quick replies). On phones only the icons show, with tooltips.',
+    ]],
     ['v' => '3.99.3', 'date' => '2026-10-18', 'title' => 'Forward dialog: the whole message, two columns', 'changes' => [
         'Forward to chats: the full message is shown — the box grows with the text (up to about half the screen, then scrolls) with a character count. On a wide screen the message is on one side and the chats on the other; on a phone they stack.',
         'Chats have a round tick that turns green when chosen, the chosen ones are chips above the list, and the Send button stays at the bottom.',

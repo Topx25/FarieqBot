@@ -1113,3 +1113,21 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .fw-ck.on{background:var(--brand,#0b7f70);border-color:var(--brand,#0b7f70)}
 .fw-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;bottom:0;background:var(--card,#fff);padding-top:10px;border-top:1px solid var(--line)}
 @media (max-width:760px){.fw{grid-template-columns:1fr}.fw-right{position:static}.fw-list{max-height:34vh}}
+
+/* Chat screen: icons with names, members of a group, the card of a member (Topx1.Host) */
+.icon-btn.lbl{display:inline-flex;align-items:center;gap:6px;width:auto;height:auto;padding:5px 10px;border-radius:10px;text-decoration:none}
+.icon-btn.lbl em{font-style:normal;font-size:12.5px;font-weight:600;color:var(--ink-2)}.icon-btn.lbl span{font-size:16px;line-height:1}
+.icon-btn.primary-i{background:var(--brand-soft,#e0f2f1)}
+.th-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+@media (max-width:760px){.icon-btn.lbl em{display:none}}
+.via .who{border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--brand,#0b7f70);cursor:pointer}.via .who:hover{text-decoration:underline}
+.gm-dlg{width:min(520px,96vw);padding:0;border-radius:18px}
+.gm-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line)}
+.gm-body{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.gm-list{max-height:55vh;overflow:auto;border:1px solid var(--line);border-radius:14px}
+.gm-row{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:0;border-bottom:1px solid var(--line);background:none;cursor:pointer;text-align:start;color:inherit;font:inherit}.gm-row:hover{background:var(--surface-2)}
+.gm-row .grow{display:flex;flex-direction:column;min-width:0}.gm-row b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-card{display:flex;flex-direction:column;align-items:center;gap:4px;padding:16px;text-align:center}.gm-card .av{width:72px;height:72px;font-size:28px}
+.gm-facts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 14px}
+.gm-acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:14px}
+.attach-btn.lbl{display:inline-flex;align-items:center;gap:5px;width:auto;padding:6px 10px}.attach-btn.lbl em{font-style:normal;font-size:12px;font-weight:600}@media (max-width:760px){.attach-btn.lbl em{display:none}}

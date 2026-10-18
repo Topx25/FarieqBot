@@ -167,9 +167,9 @@
           <?php if (wi_can_reply()): ?>
           <div class="qr-pop" id="qr-pop" hidden></div>
           <form class="composer" id="composer" hidden>
-            <label class="attach-btn" title="Send a photo, audio or PDF">📎<input type="file" id="attach" accept="image/jpeg,image/png,image/webp,audio/*,.ogg,.mp3,.m4a,.wav,application/pdf" hidden></label>
-            <button type="button" class="attach-btn" id="ml-btn" title="Send from the media library">🖼️</button>
-            <button type="button" class="attach-btn" id="qr-btn" title="Quick replies (type / or #)">⚡</button>
+            <label class="attach-btn lbl" title="Send a photo, audio or PDF"><span>📎</span><em>Attach</em><input type="file" id="attach" accept="image/jpeg,image/png,image/webp,audio/*,.ogg,.mp3,.m4a,.wav,application/pdf" hidden></label>
+            <button type="button" class="attach-btn lbl" id="ml-btn" title="Send from the media library"><span>🖼️</span><em>Library</em></button>
+            <button type="button" class="attach-btn lbl" id="qr-btn" title="Quick replies (type / or #)"><span>⚡</span><em>Quick replies</em></button>
             <textarea id="reply" rows="1" maxlength="4000" placeholder="Type a reply… ( / for quick replies)" dir="auto"></textarea>
             <button class="btn primary" id="send-btn" title="Send">➤</button>
           </form>

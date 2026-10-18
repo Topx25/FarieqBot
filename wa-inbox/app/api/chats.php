@@ -232,6 +232,19 @@
     // Was this person removed from the group (by an admin)? Then WhatsApp refuses the public link; only an admin's add / personal invitation works.
     $grpRemoved = function (string $grp, string $jid): bool { $ids = array_values(array_filter([explode('@', $jid)[0], (string) (wi_gateway('/contact?jid=' . rawurlencode($jid))['phone'] ?? '')]));
         return wf_group_member_state(wi_current() ?: [], $grp, $ids) === 'removed'; }; // removed by an admin (not left by themselves)
+    if ($api === 'group_members') { // who is in a group: name, number, admin, customer, and the private chat with them when there is one
+        $grp = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($_GET['group'] ?? '')); $acc = wi_current(); $aid = (string) ($acc['id'] ?? '');
+        $mm = wi_gateway('/groups/members?jid=' . rawurlencode($grp)); if (empty($mm['ok'])) wi_json(['ok' => false, 'error' => (string) ($mm['error'] ?? 'Could not read the group.')]);
+        $known = []; foreach ((array) (wi_read('known_members.json', [])[$aid][$grp]['members'] ?? []) as $k) $known[(string) ($k['p'] ?? '')] = (string) ($k['n'] ?? '');
+        $cust = wi_customers(); $priv = [];
+        foreach ((array) (wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long'))['chats'] ?? []) as $c) { if (!empty($c['group'])) continue; $ph = preg_replace('/\D/', '', (string) ($c['phone'] ?? '')); if ($ph === '' && str_ends_with((string) $c['jid'], '@s.whatsapp.net')) $ph = explode('@', (string) $c['jid'])[0]; if ($ph !== '') $priv[$ph] = (string) $c['jid']; }
+        $out = [];
+        foreach ((array) ($mm['members'] ?? []) as $x) { $ph = preg_replace('/\D/', '', (string) ($x['phone'] ?? '')); $lid = !empty($x['is_lid']) || $ph === '';
+            $out[] = ['phone' => $ph, 'name' => (string) ($x['name'] ?? '') ?: ($known[$ph] ?? ''), 'admin' => !empty($x['admin']), 'lid' => $lid, 'customer' => $ph !== '' && isset($cust[$ph]) ? (string) ($cust[$ph]['name'] ?? '') : null, 'chat' => $ph !== '' ? ($priv[$ph] ?? null) : null, 'jid' => $ph !== '' ? $ph . '@s.whatsapp.net' : ''];
+        }
+        usort($out, fn($a, $b) => [!$a['admin'], mb_strtolower($a['name'] ?: $a['phone'])] <=> [!$b['admin'], mb_strtolower($b['name'] ?: $b['phone'])]);
+        wi_json(['ok' => true, 'members' => $out, 'count' => count($out)]);
+    }
     if ($api === 'group_removed') { $grp = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($_GET['group'] ?? '')); wi_json(['ok' => true, 'removed' => $grpRemoved($grp, preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($_GET['jid'] ?? '')))]); }
     if ($api === 'group_admin_list') { $g = wi_gateway('/groups');
         wi_json(['ok' => !empty($g['ok']), 'error' => $g['error'] ?? '', 'groups' => array_values(array_map(fn($x) => ['jid' => $x['jid'], 'name' => $x['name'], 'members' => $x['members']], array_filter((array) ($g['groups'] ?? []), fn($x) => !empty($x['i_am_admin'])))), 'left' => max(0, (int) wi_sys('group_add_day') - (int) (wi_read('group_adds.json', [])[(string) (wi_current()['id'] ?? '')][date('Y-m-d')] ?? 0))]); }
