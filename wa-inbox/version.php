@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.99.2', 'date' => '2026-10-18', 'title' => 'Forward dialog: readable message box', 'changes' => [
+        'Forward to chats: the message box was a narrow strip showing two lines; it now uses the full width, is taller (resizable), and the chosen chats are outlined.',
+    ]],
     ['v' => '3.99.1', 'date' => '2026-10-18', 'title' => 'Private folder: files are encrypted on disk', 'changes' => [
         'Private folder: a hidden file is now encrypted (AES-256-GCM, a key of its own for each number kept encrypted in the secrets table) and its plain copy is deleted. The encrypted copy lives in storage/vault/ and is decrypted only while the folder is open (password or WhatsApp code), streamed with seeking for audio and video. A tampered or swapped file refuses to open.',
         'Taking a file out decrypts it back to where it was. Files hidden with the first version (only flagged) are encrypted the first time the folder is opened. Files up to 128 MB.',

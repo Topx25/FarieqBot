@@ -274,7 +274,7 @@ document.addEventListener('keydown', function (e) {
       var it = isText ? null : meta(key), size = 0; keys.forEach(function (k) { size += +meta(k).size || 0; });
       var label = function (c) { return c.name || ('+' + (c.phone || String(c.jid).split('@')[0])); };
       // what is sent: a compact card (file thumbnail, name, kind and size — or the text)
-      var what = isText ? '<div class="fw-item"><span class="fw-ic">💬</span><div class="grow"><b>' + T('Message') + '</b><textarea id="mlf-c" rows="3" dir="auto">' + esc(caption || '') + '</textarea></div></div>'
+      var what = isText ? '<div class="fw-item"><span class="fw-ic">💬</span><div class="grow"><b>' + T('Message') + '</b><textarea id="mlf-c" rows="6" dir="auto">' + esc(caption || '') + '</textarea></div></div>'
         : many ? '<div class="fw-item"><span class="fw-ic">📦</span><div class="grow"><b>' + keys.length + ' ' + T('files') + '</b><small class="muted">' + (size ? mlSize(size) + ' · ' : '') + T('files — each is sent with its own caption') + '</small></div></div>'
         : '<div class="fw-item"><div class="fw-th">' + (it.kind === 'voice' || it.kind === 'audio' ? '<span class="fw-ic">' + (it.kind === 'voice' ? '🎙️' : '🎧') + '</span>' : mlThumb(it)) + '</div><div class="grow"><b dir="auto">' + esc(mlName(it) || T(it.kind === 'document' ? 'Document' : 'Audio')) + '</b><small class="muted">' + (it.size ? mlSize(it.size) : '') + '</small>'
           + (it.kind === 'voice' || it.kind === 'audio' ? '<audio controls preload="none" src="' + mlUrl(key) + '"></audio>' : '') + '<textarea id="mlf-c" rows="2" dir="auto" placeholder="' + esc(T('Caption')) + '">' + esc(caption || '') + '</textarea></div></div>';
