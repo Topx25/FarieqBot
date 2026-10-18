@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.100.1', 'date' => '2026-10-18', 'title' => 'Chat header: actions in their own row', 'changes' => [
+        'Fixed: with the icon names added, the action buttons took the whole header and squeezed the chat name into a thin column. The actions now sit in their own row under the name; the name, number and badges keep their room.',
+    ]],
     ['v' => '3.100.0', 'date' => '2026-10-18', 'title' => 'Chat screen: group members, member card, named icons', 'changes' => [
         'Groups: a "Members" button in the chat header lists everyone in the group (admins first, with customer and chat marks) with a search box.',
         'Groups: the name of a sender above a message is now a button. It (and every member in the list) opens the member card: name, number, admin, customer / case / program / message count, and buttons to message them privately (or start a private chat), mention them in the group, copy the number, open WhatsApp or their profile.',

@@ -1131,3 +1131,11 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .gm-facts{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:0 14px}
 .gm-acts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:14px}
 .attach-btn.lbl{display:inline-flex;align-items:center;gap:5px;width:auto;padding:6px 10px}.attach-btn.lbl em{font-style:normal;font-size:12px;font-weight:600}@media (max-width:760px){.attach-btn.lbl em{display:none}}
+
+/* Chat header: the named actions sit in their own row under the name, so the name keeps its room (Topx1.Host) */
+.thread-h .th-top{flex-wrap:wrap;row-gap:8px}
+.thread-h .th-top>.th-id{flex:1 1 240px;min-width:200px}
+.thread-h .th-acts{flex:1 1 100%;order:9;justify-content:flex-start;flex-wrap:wrap;gap:6px;padding-top:6px;border-top:1px dashed var(--line)}
+.thread-h .th-acts .icon-btn.lbl{width:auto;height:32px;display:inline-flex;grid-template-columns:none;padding:0 10px;font-size:13px}
+.thread-h .th-acts .icon-btn.lbl em{font-size:12px}
+.thread-h .th-acts .export{display:inline-flex}
