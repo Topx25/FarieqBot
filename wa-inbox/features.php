@@ -1,6 +1,6 @@
 <?php
 // Features are split into modules (one file per area, see modules/). This file only loads them and routes API calls.
-foreach (['core', 'backup', 'snapshots', 'system', 'msg_templates', 'prompts', 'learning', 'learn_clean', 'guide_grow', 'case_cfg', 'case_intake', 'lib_cmds', 'lib_texts', 'media_vault', 'staff_chat', 'bot_roles', 'client_backup', 'clients', 'business', 'cases', 'programs', 'drive', 'report', 'registry', 'bot_learning', 'bot_runner', 'meetings', 'home', 'sharing', 'ai_activity', 'chat_tools', 'groups', 'numbers', 'facebook', 'status', 'health', 'customer'] as $wf_mod) require_once __DIR__ . '/modules/' . $wf_mod . '.php';
+foreach (['core', 'backup', 'snapshots', 'system', 'msg_templates', 'prompts', 'learning', 'learn_clean', 'guide_grow', 'case_cfg', 'case_intake', 'lib_cmds', 'lib_texts', 'media_vault', 'staff_chat', 'bot_roles', 'client_backup', 'clients', 'business', 'cases', 'programs', 'drive', 'report', 'registry', 'bot_learning', 'bot_runner', 'sys_guide', 'meetings', 'home', 'sharing', 'ai_activity', 'chat_tools', 'groups', 'numbers', 'facebook', 'status', 'health', 'customer'] as $wf_mod) require_once __DIR__ . '/modules/' . $wf_mod . '.php';
 unset($wf_mod);
 /** Each area handles its own API names and answers (exits); a name nobody handles returns here, as before. */
 function wi_features_api(string $api): void {

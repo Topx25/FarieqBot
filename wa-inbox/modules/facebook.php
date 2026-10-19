@@ -4,7 +4,7 @@
 
 /* ---------- accounts and settings ---------- */
 function wf_fb_is(?array $acc): bool { return $acc && ($acc['channel'] ?? '') === 'fb'; }
-function wf_fb_cfg(string $aid): array { return (array) (wi_read('fb.json', [])[$aid] ?? []) + ['page_id' => '', 'page_name' => '', 'app_id' => '', 'graph' => 'v21.0', 'verify' => '', 'ok_at' => '', 'error' => '', 'hook_at' => '']; }
+function wf_fb_cfg(string $aid): array { return (array) (wi_read('fb.json', [])[$aid] ?? []) + ['page_id' => '', 'page_name' => '', 'app_id' => '', 'graph' => 'v26.0', 'verify' => '', 'ok_at' => '', 'error' => '', 'hook_at' => '']; }
 function wf_fb_cfg_set(string $aid, array $set): void { wi_update('fb.json', function ($F) use ($aid, $set) { $F[$aid] = $set + (array) ($F[$aid] ?? []); return $F; }); }
 function wf_fb_token(string $aid): string { return (string) wi_secret('fb_page_token:' . $aid, ''); }
 function wf_fb_secret(string $aid): string { return (string) wi_secret('fb_app_secret:' . $aid, ''); }

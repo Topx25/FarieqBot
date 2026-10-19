@@ -29,6 +29,7 @@ function wf_clean_gcfg(array $g): array {
         'text' => mb_substr(trim((string) ($g['text'] ?? '')), 0, 2000), 'cooldown' => max(1, min(720, (int) ($g['cooldown'] ?? 24))), 'name' => mb_substr((string) ($g['name'] ?? ''), 0, 120),
         'welcome' => !empty($g['welcome']) && $g['welcome'] !== '0', 'welcome_text' => mb_substr(trim((string) ($g['welcome_text'] ?? '')), 0, 2000),
         'learn' => !empty($g['learn']) && $g['learn'] !== '0',
+        'guide' => !empty($g['guide']) && $g['guide'] !== '0', 'guide_text' => mb_substr(trim((string) ($g['guide_text'] ?? '')), 0, 3000), // system help group: explains the system by the asker's permissions
         'fun' => !empty($g['fun']) && $g['fun'] !== '0', // warm-up mode allowed here (turned on from the phone)
         // Reception gate: "woman / man" → the member is asked for a recording; the recording → the reviewers are tagged
         'approve' => !empty($g['approve']) && $g['approve'] !== '0', // join requests approved automatically
@@ -174,6 +175,15 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 $reply = strtr((string) $g['text'], ['{name}' => (string) ($m['from_name'] ?? ''), '{group}' => (string) ($x['name'] ?? '')]);
                 $log += ['reply' => $reply, 'confidence' => 1, 'model' => 'fixed message'];
                 $ok = true; $st['gfixed'][$x['jid']][$who] = time();
+            } elseif (!empty($g['guide'])) { // a system help group: explains the system by what the asker's account may open
+                $hist = []; foreach (array_slice($rows, max(0, $i - 80), 80) as $hm) { $ht = trim((string) ($hm['text'] ?? '')); if ($ht === '') continue;
+                    if (($hm['dir'] ?? '') === 'in' && wf_phone($hm['from'] ?? '') === $who) $hist[] = ['from' => 'customer', 'text' => $ht];
+                    elseif (($hm['via'] ?? '') === 'bot' && str_starts_with($ht, '@' . $who)) $hist[] = ['from' => 'bot', 'text' => trim(mb_substr($ht, mb_strlen('@' . $who)))]; }
+                $r = wf_sysguide_answer($acc, $text, $who, array_slice($hist, -8), (string) ($g['guide_text'] ?? ''));
+                if (empty($r['ok'])) continue;
+                $log += ['reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'role' => 'guide'];
+                $ok = $r['handoff'] || $r['confidence'] >= 0.5;
+                if ($r['handoff']) $log['why'] = 'handed over to a person';
             } else {
                 // Only this person's talk with the bot: their own messages and the bot's replies to them (other members' chatter mixed the names up)
                 $hist = []; foreach (array_slice($rows, max(0, $i - 80), 80) as $hm) { $ht = trim((string) ($hm['text'] ?? '')); if ($ht === '') continue;

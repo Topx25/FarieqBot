@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.107.0', 'date' => '2026-10-19', 'title' => 'System help group', 'changes' => [
+        'Bot → Groups: a group can be marked "System help". Members who ask how to do something in the system get step-by-step answers from the product manual.',
+        'The asker is found by their mobile number among the users; only the pages their permissions open are explained (view-only pages say so), and a page closed to them is named with "ask the owner for access". An unknown number gets the general manual.',
+        'The group card has a notes box for the owner\'s own rules and page names. The Facebook channel now calls Graph API v26.0.',
+    ]],
     ['v' => '3.106.0', 'date' => '2026-10-19', 'title' => 'Facebook Messenger', 'changes' => [
         'New channel: connect a Facebook page (Accounts → Add Facebook page). Its Messenger chats arrive in the same inbox and the reply box, bot, library, tags, notes, team assignment and search work on them like on a number.',
         'The page card shows the webhook address and verify code to paste in the app; the page is subscribed to messages, postbacks, echoes, reads and reactions. Photos, videos, voice notes and files are saved with the chat.',
