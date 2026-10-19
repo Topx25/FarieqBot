@@ -577,6 +577,7 @@
             <div class="row wrap">
               <button class="btn primary sm">Save</button>
               <button class="btn ghost sm" type="submit" form="sw-<?= wi_e($a['id']) ?>">Open</button>
+              <?php if (!wf_fb_is($a) && (($fbA = wf_fb_app(wf_fb_scope_for((string) $_SESSION['email'])))['app_id'] !== '')): ?><a class="btn fb-btn sm" href="?fb_connect=1&amp;acc=<?= wi_e(rawurlencode((string) $a['id'])) ?>" title="Connect a Facebook page to this number: it answers with this number's knowledge"><span>f</span> <span>Facebook</span></a><?php endif; ?>
               <?php if (empty($a['main']) && (wi_is_super() || strtolower((string) ($a['owner'] ?? '')) !== strtolower((string) $_SESSION['email']))): // a user's own number is re-linked, not deleted ?><button class="btn danger sm" type="submit" form="del-<?= wi_e($a['id']) ?>" onclick="return confirm('Remove this account? Its gateway stops; its archive stays on the server.')">Remove</button><?php endif; ?>
             </div>
           </div>
@@ -622,7 +623,7 @@
             <?php else: ?><button class="btn fb-btn" disabled><span>f</span> <span>Continue with Facebook</span></button><?php endif; ?>
           </div>
           <?php if (!$fbReady): ?><p class="fb-note muted small"><?= wi_is_super() ? 'Set up the Facebook app once below; after that everyone connects with the button.' : 'The Facebook sign-in is not set up yet. Ask the administrator, or set up an app of your own below.' ?></p><?php endif; ?>
-          <?php if ($fbPages): ?><div class="fb-linked"><?php foreach ($fbPages as $fpa): $fpc = wf_fb_cfg((string) $fpa['id']); ?><span class="fb-chip <?= $fpc['error'] === '' ? 'ok' : 'bad' ?>" title="<?= wi_e($fpc['error']) ?>"><?= $fpc['error'] === '' ? '●' : '!' ?> <?= wi_e((string) $fpa['name']) ?></span><?php endforeach; ?></div><?php endif; ?>
+          <?php if ($fbPages): ?><div class="fb-linked"><?php foreach ($fbPages as $fpa): $fpc = wf_fb_cfg((string) $fpa['id']); ?><span class="fb-chip <?= $fpc['error'] === '' ? 'ok' : 'bad' ?>" title="<?= wi_e($fpc['error']) ?>"><?= $fpc['error'] === '' ? '●' : '!' ?> <?= wi_e((string) $fpa['name']) ?><?php if (($fpp = wf_fb_parent($fpa))): ?> <small class="muted">↔ <?= wi_e((string) $fpp['name']) ?></small><?php endif; ?></span><?php endforeach; ?></div><?php endif; ?>
           <details class="fb-setup" <?= !$fbReady && (wi_is_super() || $fbOwn['app_id'] !== '') ? 'open' : '' ?>>
             <summary><?= wi_is_super() ? 'Facebook app settings (once, by the administrator)' : 'Use an app of your own (optional)' ?></summary>
           <div class="fb-steps">

@@ -4,7 +4,7 @@
 
 /* ---------- accounts and settings ---------- */
 function wf_fb_is(?array $acc): bool { return $acc && ($acc['channel'] ?? '') === 'fb'; }
-function wf_fb_cfg(string $aid): array { return (array) (wi_read('fb.json', [])[$aid] ?? []) + ['page_id' => '', 'page_name' => '', 'app_id' => '', 'graph' => 'v26.0', 'verify' => '', 'ok_at' => '', 'error' => '', 'hook_at' => '', 'comment_bot' => 'off', 'comment_public' => 1, 'comment_private' => 0, 'app_scope' => '', 'via' => '']; }
+function wf_fb_cfg(string $aid): array { return (array) (wi_read('fb.json', [])[$aid] ?? []) + ['page_id' => '', 'page_name' => '', 'app_id' => '', 'graph' => 'v26.0', 'verify' => '', 'ok_at' => '', 'error' => '', 'hook_at' => '', 'comment_bot' => 'off', 'comment_public' => 1, 'comment_private' => 0, 'app_scope' => '', 'via' => '', 'parent' => '']; }
 function wf_fb_cfg_set(string $aid, array $set): void { wi_update('fb.json', function ($F) use ($aid, $set) { $F[$aid] = $set + (array) ($F[$aid] ?? []); return $F; }); }
 function wf_fb_token(string $aid): string { return (string) wi_secret('fb_page_token:' . $aid, ''); }
 function wf_fb_secret(string $aid): string { return (string) wi_secret('fb_app_secret:' . $aid, ''); }
@@ -17,6 +17,9 @@ function wf_fb_account_for_page(string $pageId): ?array {
     foreach (wi_accounts() as $a) if (wf_fb_is($a) && wf_fb_cfg((string) $a['id'])['page_id'] === $pageId) return $a;
     return null;
 }
+
+/** The number a Facebook page is linked to (its business knowledge is used for the page's replies), or null. */
+function wf_fb_parent(?array $acc): ?array { if (!wf_fb_is($acc)) return null; $p = (string) wf_fb_cfg((string) $acc['id'])['parent']; $all = wi_accounts(); return $p !== '' && isset($all[$p]) && !wf_fb_is($all[$p]) ? $all[$p] : null; }
 
 /* ---------- Graph calls ---------- */
 function wf_fb_graph(string $aid, string $method, string $path, array $params = [], ?array $file = null): array {
@@ -113,7 +116,8 @@ function wf_fb_take(array $acc, array $ev, string $pageId): void {
 function wf_fb_entry(array $acc, array $en): void {
     $aid = (string) $acc['id']; $pid = (string) ($en['id'] ?? '');
     foreach ((array) ($en['changes'] ?? []) as $chg) { if (($chg['field'] ?? '') === 'feed') { try { wf_fb_feed_take($acc, (array) ($chg['value'] ?? []), $pid); } catch (Throwable $e) { wi_log('fb_hook_error', ['account' => $aid, 'error' => $e->getMessage()]); } } }
-    foreach ((array) ($en['messaging'] ?? []) as $ev) { try { wf_fb_take($acc, (array) $ev, $pid); } catch (Throwable $e) { wi_log('fb_hook_error', ['account' => $aid, 'error' => $e->getMessage()]); } }
+    $in = false; foreach ((array) ($en['messaging'] ?? []) as $ev) { try { wf_fb_take($acc, (array) $ev, $pid); if (isset($ev['message']) && empty($ev['message']['is_echo'])) $in = true; } catch (Throwable $e) { wi_log('fb_hook_error', ['account' => $aid, 'error' => $e->getMessage()]); } }
+    if ($in && function_exists('wf_bot_tick') && wf_bot_run_cfg($aid)['mode'] !== 'off') { try { wf_bot_tick($acc, true); } catch (Throwable $e) {} } // the bot answers at once, like a number's instant trigger
 }
 function wf_fb_answer_ok(): void { http_response_code(200); header('Content-Length: 2'); echo 'ok'; flush(); if (function_exists('fastcgi_finish_request')) fastcgi_finish_request(); ignore_user_abort(true); @set_time_limit(120); }
 /** The public entry: Facebook verifies the address (GET) and then posts events (POST, signed). "app-…" = the app's one address (every page of the app); otherwise one page's own address. */

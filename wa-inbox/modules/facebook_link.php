@@ -33,7 +33,7 @@ function wf_fb_oauth_start(): void {
     $scope = wf_fb_scope_for((string) ($_SESSION['email'] ?? '')); $app = wf_fb_app($scope);
     if ($app['app_id'] === '' || $app['secret'] === '') { wi_flash('Save the Facebook app (App ID and App secret) first.', 'bad'); header('Location: ?p=accounts'); exit; }
     $state = bin2hex(random_bytes(16));
-    wi_update('fb_states.json', function ($S) use ($state, $scope) { foreach ($S as $k => $x) if (time() - (int) $x['at'] > 900) unset($S[$k]); $S[$state] = ['email' => strtolower((string) $_SESSION['email']), 'scope' => $scope, 'at' => time(), 'acc' => (string) ($_GET['acc'] ?? '')]; return $S; });
+    wi_update('fb_states.json', function ($S) use ($state, $scope) { foreach ($S as $k => $x) if (time() - (int) $x['at'] > 900) unset($S[$k]); $S[$state] = ['email' => strtolower((string) $_SESSION['email']), 'scope' => $scope, 'at' => time(), 'acc' => preg_replace('/[^a-z0-9_-]/', '', (string) ($_GET['acc'] ?? ''))]; return $S; });
     header('Location: https://www.facebook.com/' . $app['graph'] . '/dialog/oauth?' . http_build_query(['client_id' => $app['app_id'], 'redirect_uri' => wf_fb_redirect_uri(), 'state' => $state, 'scope' => WF_FB_SCOPES, 'response_type' => 'code'])); exit;
 }
 function wf_fb_http_json(string $url): array { if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_FAKE_HTTP']) && is_callable($GLOBALS['WI_FAKE_HTTP'])) return ($GLOBALS['WI_FAKE_HTTP'])($url); // tests
@@ -55,7 +55,7 @@ function wf_fb_oauth_callback(): void {
     if (!$pages) $fail(isset($p['error']) ? 'Facebook: ' . mb_substr((string) $p['error']['message'], 0, 160) : 'No page found. Choose the pages to allow in Facebook\'s sign-in window.');
     $pk = bin2hex(random_bytes(12)); $meta = [];
     foreach ($pages as $x) { wi_secret_set('fb_pend:' . $pk . ':' . $x['id'], (string) $x['access_token']); $meta[] = ['id' => (string) $x['id'], 'name' => mb_substr((string) $x['name'], 0, 80)]; }
-    wi_update('fb_pending.json', function ($P) use ($pk, $meta, $mine) { foreach ($P as $k => $x) if (time() - (int) $x['at'] > 900) unset($P[$k]); $P[$pk] = ['email' => $mine['email'], 'scope' => $mine['scope'], 'pages' => $meta, 'at' => time()]; return $P; });
+    wi_update('fb_pending.json', function ($P) use ($pk, $meta, $mine) { foreach ($P as $k => $x) if (time() - (int) $x['at'] > 900) unset($P[$k]); $P[$pk] = ['email' => $mine['email'], 'scope' => $mine['scope'], 'pages' => $meta, 'at' => time(), 'acc' => (string) ($mine['acc'] ?? '')]; return $P; });
     header('Location: ?p=accounts&fb_pick=' . $pk . '#fb-pick'); exit;
 }
 function wf_fb_pending(string $pk): ?array { $P = (array) (wi_read('fb_pending.json', [])[$pk] ?? []); return $P && time() - (int) $P['at'] < 900 && strtolower((string) ($_SESSION['email'] ?? '')) === (string) $P['email'] ? $P : null; }
@@ -71,8 +71,10 @@ function wf_fb_pick_add(string $pk, array $ids): array {
             wi_save_accounts($accounts);
             if (!wi_is_super()) { $users = wi_users(); foreach ($users as &$uu) if (strtolower($uu['email']) === strtolower((string) $_SESSION['email'])) $uu['accounts'] = array_values(array_unique(array_merge((array) ($uu['accounts'] ?? []), [$aid]))); unset($uu); wi_save_users($users); }
             wi_log('account_add', ['account' => $aid, 'channel' => 'fb']); }
+        $par = (string) ($P['acc'] ?? ''); $parA = $par !== '' ? (wi_my_accounts()[$par] ?? null) : null; if (!$parA || wf_fb_is($parA) || !wi_can_manage($parA)) $par = ''; // the number whose "Connect Facebook" was pressed: the page answers with its knowledge
+        if ($par !== '' && !$acc) { $accounts = wi_accounts(); if (isset($accounts[$aid])) { $accounts[$aid]['owner'] = $parA['owner'] ?? $accounts[$aid]['owner']; wi_save_accounts($accounts); } }
         wi_secret_set('fb_page_token:' . $aid, $tok); $app = wf_fb_app((string) $P['scope']); wi_secret_set('fb_app_secret:' . $aid, $app['secret']);
-        wf_fb_cfg_set($aid, ['page_id' => $pid, 'page_name' => $row['name'], 'app_id' => $app['app_id'], 'app_scope' => (string) $P['scope'], 'via' => 'oauth', 'error' => '', 'verify' => $app['verify']]);
+        wf_fb_cfg_set($aid, ['page_id' => $pid, 'page_name' => $row['name'], 'app_id' => $app['app_id'], 'app_scope' => (string) $P['scope'], 'via' => 'oauth', 'parent' => $par !== '' ? $par : (string) wf_fb_cfg($aid)['parent'], 'error' => '', 'verify' => $app['verify']]);
         $r = wf_fb_connect($aid); if (empty($r['ok'])) $errs[] = $row['name'] . ': ' . (string) $r['error']; else $done[] = $row['name']; $_SESSION['acc'] = $aid; }
     wi_update('fb_pending.json', function ($X) use ($pk) { unset($X[$pk]); return $X; });
     foreach ($P['pages'] as $x) wi_secret_set('fb_pend:' . $pk . ':' . $x['id'], '');

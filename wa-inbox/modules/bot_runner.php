@@ -283,7 +283,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
     if (in_array($c['scope'], ['both', 'groups'], true)) { try { $did = array_merge($did, wf_bot_groups($acc, $c, $st, $team, $ch['chats'] ?? [])); } catch (Throwable $e) {} }
     foreach (($c['scope'] === 'groups' ? [] : ($ch['chats'] ?? [])) as $x) {
         if ($n >= 2) break;
-        if (!empty($x['group']) || !str_ends_with((string) $x['jid'], '@s.whatsapp.net') && !str_ends_with((string) $x['jid'], '@lid')) continue;
+        if (!empty($x['group']) || !str_ends_with((string) $x['jid'], '@s.whatsapp.net') && !str_ends_with((string) $x['jid'], '@lid') && !str_ends_with((string) $x['jid'], '@fb')) continue; // @fb: a Facebook page's Messenger chat
         $last = $x['last'] ?? []; if (($last['dir'] ?? '') !== 'in') continue;
         $lt = strtotime((string) ($last['time'] ?? '')); if (!$lt || (!isset($retry[$x['jid']]) && ($lt < $since || $lt < time() - 3 * 3600))) continue;
         $again = isset($retry[$x['jid']]); unset($st['retry'][$x['jid']]);

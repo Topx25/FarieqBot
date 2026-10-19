@@ -152,6 +152,7 @@ function wf_fast_model(bool $bulk = false): string {
 }
 /** What the bot WOULD answer (nothing is sent). $prefer = "provider:model" to force a model (compare). */
 function wf_bot_answer(array $acc, string $text, array $history = [], string $prefer = '', ?array $card = null, array $opt = []): array {
+    if (function_exists('wf_fb_parent') && ($pa = wf_fb_parent($acc))) $acc = $pa; // a Facebook page linked to a number answers with that number's knowledge (profile, library, learning, rules)
     $aid = (string) $acc['id']; $cfg = wf_bot_cfg($aid); $avoid = array_values(array_filter((array) ($opt['avoid'] ?? [])));
     // 1) Answer cache: the same general question answered well before → reused, no AI call, no tokens.
     if (!$prefer && !$avoid && ($opt['role'] ?? 'bot') === 'bot' && mb_strlen(trim($text)) >= 12 && (count($history) <= 2 || wf_cache_standalone($text)) && ($hit = wf_cache_find($aid, $text))) {
