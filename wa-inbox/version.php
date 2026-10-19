@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.108.4', 'date' => '2026-10-19', 'title' => 'Faster group replies', 'changes' => [
+        'A System-help group no longer waits for an admin who is talking with the member (up to 10 minutes) and waits at most 10 seconds between two replies to the same person.',
+    ]],
     ['v' => '3.108.3', 'date' => '2026-10-19', 'title' => 'Visitors: remove on the Nth entry, tags show the mobile number', 'changes' => [
         'Visitors list: "Remove the person on this entry number" (0 = never). On that entry the person is accepted (join requests approved by the group setting) and removed again at once, with an optional text. Team members are never removed.',
         'The tag of a returning visitor, and of the person a group reply answers, now shows the mobile number instead of the long WhatsApp ID, when the group\'s member list knows it.',

@@ -168,12 +168,12 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             if (!$mentioned && wf_is_ack($aid, $text)) continue; // "تمام" / "الحمد لله": a talk ending, not a question
             $toOther = (!empty($m['quote_from']) && wf_phone((string) $m['quote_from']) !== $me) || array_diff(array_map('wf_phone', (array) ($m['mentions'] ?? [])), [$me]);
             if (!$mentioned && $toOther && !$fun) continue; // STRICT: a message to another member is not for the bot
-            $lastTo = max(array_merge([0], (array) ($st['gwho'][$x['jid']][$who] ?? []))); if (!$mentioned && time() - $lastTo < (int) ($fun ? $c['fun_gap'] : $c['group_gap'])) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
+            $lastTo = max(array_merge([0], (array) ($st['gwho'][$x['jid']][$who] ?? []))); if (!$mentioned && time() - $lastTo < (int) ($fun ? $c['fun_gap'] : (!empty($g['guide']) ? min(10, (int) $c['group_gap']) : $c['group_gap']))) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
             $trig = $fun ? 'all' : ($g['trigger'] ?? 'mention');
             if ($trig === 'mention' && !$mentioned) continue;
             if ($trig === 'questions' && !$mentioned && !wf_is_question($text) && (empty($g['guide']) || (count(wf_words($text)) < 3 && mb_strpos($text, '#') === false))) continue; // a help group lets the model decide whether a statement ("I can't open the page") is a request for help
             // An admin is talking with this member: the bot waits until the admin has been quiet for "human_wait" minutes, then answers.
-            if (!$adminAsks && $gwait > 0 && ($aAt = $adminWith($who)) && time() - $aAt < $gwait) { $st['gq'][$x['jid']][$who] = $m; continue; }
+            if (!$adminAsks && empty($g['guide']) && $gwait > 0 && ($aAt = $adminWith($who)) && time() - $aAt < $gwait) { $st['gq'][$x['jid']][$who] = $m; continue; }
             unset($st['gq'][$x['jid']][$who]);
             $log = ['jid' => $x['jid'], 'name' => ($x['name'] ?? '') . ' · ' . ($m['from_name'] ?? ('+' . $who)), 'q' => mb_substr($text, 0, 400), 'at' => date('c'), 'group' => true];
             if (($g['mode'] ?? 'ai') === 'fixed') {
