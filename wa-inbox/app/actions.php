@@ -107,6 +107,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         catch (Throwable $e) { wi_flash($e->getMessage(), 'bad'); }
         header('Location: ?p=accounts'); exit;
     }
+    if ($do === 'add_fb' || $do === 'fb_connect') { // Facebook page (Messenger): same permission as adding a number
+        $accs = wi_accounts(); $owned = array_filter($accs, fn($a) => !empty($a['owner']) && strtolower($a['owner']) === strtolower((string) $_SESSION['email']));
+        if ($do === 'add_fb') {
+            if (!((wi_is_admin() && empty(wi_me()['own_number'])) || (wi_can_link_own() && count($owned) < ((wi_me()['role'] ?? '') === 'client' ? wi_client_max_numbers(wi_me()) : 1)))) { wi_flash('You reached the numbers of your plan. Upgrade your plan or ask us for more.', 'bad'); header('Location: ?p=accounts'); exit; }
+            $r = wf_fb_add(trim((string) ($_POST['name'] ?? '')), ['token' => $_POST['token'] ?? '', 'secret' => $_POST['secret'] ?? '', 'page_id' => $_POST['page_id'] ?? '', 'app_id' => $_POST['app_id'] ?? ''], wi_is_super() ? null : (string) $_SESSION['email']);
+            if (!empty($r['id']) && !wi_is_super()) { $users = wi_users(); foreach ($users as &$uu) if (strtolower($uu['email']) === strtolower((string) $_SESSION['email'])) $uu['accounts'] = array_values(array_unique(array_merge((array) ($uu['accounts'] ?? []), [$r['id']]))); unset($uu); wi_save_users($users); }
+            if (!empty($r['id'])) { $_SESSION['acc'] = $r['id']; wi_log('account_add', ['account' => $r['id'], 'channel' => 'fb']); }
+            wi_flash(!empty($r['ok']) ? 'Facebook page connected. Add the address and the code below to the app\'s webhook so messages arrive.' : (!empty($r['id']) ? 'The page was saved but is not connected yet: ' . $r['error'] : (string) $r['error']), !empty($r['ok']) ? 'ok' : 'bad');
+        } else {
+            $t = $accs[(string) ($_POST['acc'] ?? '')] ?? null;
+            if (!$t || !wf_fb_is($t) || !(wi_is_super() || wi_can_manage($t))) wi_flash('Not allowed for this number.', 'bad');
+            else {
+                if (trim((string) ($_POST['token'] ?? '')) !== '') wi_secret_set('fb_page_token:' . $t['id'], trim((string) $_POST['token']));
+                if (trim((string) ($_POST['secret'] ?? '')) !== '') wi_secret_set('fb_app_secret:' . $t['id'], trim((string) $_POST['secret']));
+                $r = wf_fb_connect((string) $t['id']); wi_flash(!empty($r['ok']) ? 'Connected to the page: ' . $r['page'] : (string) $r['error'], !empty($r['ok']) ? 'ok' : 'bad');
+            }
+        }
+        header('Location: ?p=accounts'); exit;
+    }
     if (in_array($do, ['add_account', 'update_account', 'delete_account'], true)) {
         $accounts = wi_accounts();
         $target = $accounts[(string) ($_POST['acc'] ?? '')] ?? null;

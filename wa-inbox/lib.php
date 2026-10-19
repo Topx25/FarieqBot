@@ -704,6 +704,7 @@ function wi_gateway(string $path, ?array $post = null, $acc = null): array {
     if (is_string($acc)) { $all = wi_accounts(); $acc = $all[$acc] ?? null; }
     if ($acc === null) $acc = wi_current();
     if (!$acc) return ['ok' => false, 'error' => 'No WhatsApp account available for this user.'];
+    if (($acc['channel'] ?? '') === 'fb' && function_exists('wf_fb_gateway')) return wf_fb_gateway($path, $post, $acc); // a Facebook page: answered by the Messenger channel, no phone gateway
     $token = (string) ($acc['token'] ?? '');
     if ($token === '') return ['ok' => false, 'error' => 'Gateway token missing.'];
     $ch = curl_init('http://127.0.0.1:' . (int) $acc['port'] . $path); // the token travels in the Authorization header, never in the address

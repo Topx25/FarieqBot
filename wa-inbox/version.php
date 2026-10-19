@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.106.0', 'date' => '2026-10-19', 'title' => 'Facebook Messenger', 'changes' => [
+        'New channel: connect a Facebook page (Accounts → Add Facebook page). Its Messenger chats arrive in the same inbox and the reply box, bot, library, tags, notes, team assignment and search work on them like on a number.',
+        'The page card shows the webhook address and verify code to paste in the app; the page is subscribed to messages, postbacks, echoes, reads and reactions. Photos, videos, voice notes and files are saved with the chat.',
+        'Messenger rules are kept: a page answers within 24 hours of the person\'s last message, and a person (not the bot) can still reply up to 7 days later; a clear message says when the window has closed.',
+    ]],
     ['v' => '3.105.1', 'date' => '2026-10-19', 'title' => 'Bot: fewer made-up details', 'changes' => [
         'The bot\'s quick model is chosen from reliable families first (DeepSeek flash, Gemini flash, GLM flash); the "lite" models, which were measured weakest, come last. Measured on 14 real questions the four candidates were within noise of each other (overall 3.99–4.19), so the fix is not one model.',
         'Experimental or unnamed models of the providers (beam, space-bunny, big-pickle, omen, jev, test, argon, contributor) are listed but never picked automatically.',

@@ -7,6 +7,7 @@ if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy
 // The website (PHP-FPM) and the background jobs run as the account user: the data stays private to it (0700 / 0600).
 
 if (isset($_GET['m']) && !isset($_GET['api'])) { require __DIR__ . '/features.php'; wf_meet_page(preg_replace('/[^a-z0-9-]/', '', strtolower((string) $_GET['m']))); } // public meeting gateway (no login)
+if (isset($_GET['fb_hook'])) { require __DIR__ . '/features.php'; wf_fb_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['fb_hook']))); exit; } // Facebook calls this (verified by the app secret)
 if (isset($_GET['bot_hook'])) {
     // Instant bot trigger from the WhatsApp gateway (server-to-server, checked by the bridge token).
     require __DIR__ . '/features.php';

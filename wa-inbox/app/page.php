@@ -541,6 +541,21 @@
           <button class="btn primary">🔁 Move the chats</button></form></details>
       <?php endif; ?>
       <section class="acc-grid" id="acc-grid">
+        <?php foreach ($accs as $a): if (!wf_fb_is($a)) continue; $fc = wf_fb_cfg((string) $a['id']); ?>
+        <form method="post" class="card acc fb-card" autocomplete="off">
+          <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="fb_connect"><input type="hidden" name="acc" value="<?= wi_e($a['id']) ?>">
+          <div class="card-h"><h2>💬 <?= wi_e((string) $a['name']) ?> — Facebook <?= $fc['error'] === '' && $fc['ok_at'] !== '' ? '✅' : '⚠️' ?></h2></div>
+          <div class="pad stack">
+            <?php if ($fc['error'] !== ''): ?><p class="muted small"><?= wi_e($fc['error']) ?></p><?php endif; ?>
+            <label>Webhook address<input readonly value="<?= wi_e(wf_fb_hook_url((string) $a['id'])) ?>" onclick="this.select()"></label>
+            <label>Verify code<input readonly value="<?= wi_e($fc['verify']) ?>" onclick="this.select()"></label>
+            <p class="muted small">Page: <?= wi_e($fc['page_name'] !== '' ? $fc['page_name'] : $fc['page_id']) ?> · last message from Facebook: <?= wi_e($fc['hook_at'] !== '' ? $fc['hook_at'] : '—') ?></p>
+            <label>New page access token (optional)<input name="token" type="password"></label>
+            <label>New app secret (optional)<input name="secret" type="password"></label>
+            <button class="btn primary sm">Check the connection</button>
+          </div>
+        </form>
+        <?php endforeach; ?>
         <?php foreach ($accs as $a): ?>
         <form method="post" class="card acc" data-acc="<?= wi_e($a['id']) ?>">
           <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="update_account"><input type="hidden" name="acc" value="<?= wi_e($a['id']) ?>">
@@ -575,6 +590,20 @@
             <?php if (wi_is_super()): ?><label class="check"><input type="checkbox" name="payments" value="1"> Payment bot (receipts + your approval)</label><?php endif; ?>
             <p class="muted small">After adding, the QR appears on the Link page. Scan it from the new phone: WhatsApp → Linked devices → Link a device.</p>
             <button class="btn primary">Add account</button>
+          </div>
+        </form>
+        <?php endif; ?>
+        <?php if (wi_is_admin() || (wi_can_link_own() && !$owns)): ?>
+        <form method="post" class="card acc add" id="add-fb" autocomplete="off">
+          <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="add_fb">
+          <div class="card-h"><h2>➕ Add Facebook page (Messenger)</h2></div>
+          <div class="pad stack">
+            <label>Name<input name="name" required maxlength="60"></label>
+            <label>Page access token<input name="token" type="password" required></label>
+            <label>App secret<input name="secret" type="password" required></label>
+            <label>Page ID (optional)<input name="page_id" inputmode="numeric"></label>
+            <p class="muted small">Messages of the page's inbox arrive here and every inbox tool works on them: replies, bot, library, tags, notes and team. After adding, copy the webhook address and code shown on the page card into the app's Messenger settings.</p>
+            <button class="btn primary">Add page</button>
           </div>
         </form>
         <?php endif; ?>
