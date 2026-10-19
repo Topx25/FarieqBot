@@ -451,6 +451,8 @@ return [
     'Team member welcome: sent before their first message in a chat' => 'ترحيب الموظف: بيتبعت قبل أول رسالة ليه في الشات',
     'Reload models' => 'تحديث الموديلات',
     'Reload only the list of models — quick' => 'يحدّث قايمة الموديلات بس — سريع',
+    'Inbox' => 'المحادثات',
+    'Analytics' => 'التحليلات',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. A short name' => 'مثلًا: اسم قصير',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',

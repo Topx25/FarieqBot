@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.102.0', 'date' => '2026-10-19', 'title' => 'Users editor: clearer permissions', 'changes' => [
+        'Users → edit: each page\'s access is now three labelled pills — None, View, Edit — coloured grey / blue / green, and the whole row takes the colour of its state (the icons-only control was hard to read).',
+        'The feature cards (bot, meetings, cases…) are real switches: off is grey, on is green with the knob moved, and the card is tinted.',
+        'Role cards show the chosen role clearly; the dialog no longer leaves a blank area under the buttons, and the Save buttons stay in view. "Inbox" and "Analytics" in the page list are translated.',
+    ]],
     ['v' => '3.101.2', 'date' => '2026-10-19', 'title' => 'AI providers: every model is listed', 'changes' => [
         'OpenCode Zen: with a key the service lists only 32 of its 85 models. The page now shows the whole published catalogue (free and paid) next to the key\'s own list; models not in the key\'s list say so.',
         'OpenCode Go: two models that were hidden (another API route / experimental) are listed with a ⚠️ note; they are never picked automatically, only by hand.',
