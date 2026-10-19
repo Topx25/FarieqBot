@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.111.1', 'date' => '2026-10-19', 'title' => 'Facebook pages card: one clean card', 'changes' => [
+        'Accounts: the Facebook part is one card across the page with three steps (the app, the addresses to paste with Copy buttons, Connect with Facebook) and a state badge; adding a page by hand is folded under "Advanced".',
+        'The browser no longer fills a saved e-mail into App ID / Page ID or a saved password into the secret fields; the titles show in Arabic.',
+    ]],
     ['v' => '3.111.0', 'date' => '2026-10-19', 'title' => 'Facebook: connect with Facebook', 'changes' => [
         'Accounts → "Connect Facebook pages": save the Facebook app once (App ID and App secret), then "Connect with Facebook" opens Facebook\'s sign-in; the pages the person manages are listed to pick from, and each becomes an account with its token stored encrypted and its webhook subscribed. A client may save an app of their own; otherwise the system\'s app is used.',
         'The app has one webhook address for all its pages (events are routed by the page ID, checked with the app secret); the card shows it with the OAuth redirect address, the verify code, and the deauthorize and data-deletion addresses to paste in the app settings. Adding a page by hand with a token stays available.',

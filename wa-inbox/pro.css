@@ -43,3 +43,29 @@ h1{font-weight:600;letter-spacing:0}
 .nav-h{font-weight:600;letter-spacing:0}
 .page-tabs a,.lib-nav a,.page-tabs .pt-title{font-weight:600}
 .sec-tile{border-radius:999px}
+/* Facebook pages: one card, three steps, copy rows, the manual way folded away */
+.fb-hub{grid-column:1/-1}
+.fb-hub .card-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fb-state{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.fb-state.on{background:var(--brand-soft,#e1f3f0);color:var(--brand-2,#075e53)}
+.fb-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;padding:16px 18px}
+.fb-step{border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.fb-step h3{margin:0;font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+.fb-n{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font-size:12px;font-weight:700;background:var(--brand);color:#fff;flex:none}
+.fb-step p{margin:0}
+.fb-step .btn.primary{align-self:flex-start}
+.fb-copy{display:flex;flex-direction:column;gap:4px}
+.fb-copy-l{font-size:12px;color:var(--muted)}
+.fb-copy-r{display:flex;gap:6px}
+.fb-copy-r input{flex:1;min-width:0;font-size:12.5px;background:var(--surface-2)}
+.fb-pick{margin:16px 18px 0;padding:14px 16px;border:1px solid var(--brand);border-radius:12px;display:flex;flex-direction:column;gap:10px}
+.fb-pick h3{margin:0;font-size:14.5px;font-weight:600}
+.fb-pick-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.fb-pick-i{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.fb-pick-i small{margin-inline-start:auto}
+.fb-manual{margin:0 18px 16px;border-top:1px solid var(--line);padding-top:12px}
+.fb-manual summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:600}
+.fb-manual-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px;align-items:end}
+.fb-manual-f p,.fb-manual-f .btn{grid-column:1/-1}
+.fb-manual-f .btn{justify-self:start}
+@media (max-width:760px){.fb-steps{padding:12px}.fb-pick,.fb-manual{margin-inline:12px}}

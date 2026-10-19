@@ -598,51 +598,63 @@
         <?php endif; ?>
         <?php if (wi_is_admin() || (wi_can_link_own() && !$owns)): ?>
         <?php if (wi_is_admin() || wi_can_link_own()):
-          $fbScope = wi_is_super() ? '' : strtolower((string) $_SESSION['email']); $fbOwn = wf_fb_app($fbScope); $fbUse = $fbOwn['app_id'] !== '' ? $fbOwn : wf_fb_app(''); $fbPk = (string) ($_GET['fb_pick'] ?? ''); $fbPend = $fbPk !== '' ? wf_fb_pending($fbPk) : null; ?>
-        <?php if ($fbPend): ?>
-        <form method="post" class="card acc add" id="fb-pick">
-          <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="fb_pick_add"><input type="hidden" name="pk" value="<?= wi_e($fbPk) ?>">
-          <div class="card-h"><h2>📘 Choose the Facebook pages to connect</h2></div>
-          <div class="pad stack">
+          $fbScope = wi_is_super() ? '' : strtolower((string) $_SESSION['email']); $fbOwn = wf_fb_app($fbScope); $fbSys = $fbScope !== '' ? wf_fb_app('') : $fbOwn; $fbReady = ($fbOwn['app_id'] !== '' && $fbOwn['secret'] !== '') || ($fbScope !== '' && $fbSys['app_id'] !== '');
+          $fbPk = (string) ($_GET['fb_pick'] ?? ''); $fbPend = $fbPk !== '' ? wf_fb_pending($fbPk) : null;
+          $fbCopy = function (string $label, string $val) { return '<div class="fb-copy"><span class="fb-copy-l">' . wi_e($label) . '</span><div class="fb-copy-r"><input readonly dir="ltr" value="' . wi_e($val) . '" onclick="this.select()"><button type="button" class="btn ghost sm" onclick="var i=this.previousElementSibling;i.select();(navigator.clipboard?navigator.clipboard.writeText(i.value):Promise.reject()).catch(function(){document.execCommand(\'copy\')});this.textContent=\'✓\'">Copy</button></div></div>'; }; ?>
+        <section class="card acc fb-hub" id="fb-hub">
+          <div class="card-h"><h2><span>📘</span> <span>Facebook pages</span></h2><span class="fb-state <?= $fbReady ? 'on' : '' ?>"><?= $fbReady ? 'App ready' : 'App not set' ?></span></div>
+          <?php if ($fbPend): ?>
+          <form method="post" class="fb-pick" id="fb-pick">
+            <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="fb_pick_add"><input type="hidden" name="pk" value="<?= wi_e($fbPk) ?>">
+            <h3>Choose the Facebook pages to connect</h3>
+            <div class="fb-pick-list">
             <?php foreach ($fbPend['pages'] as $fx): $fbHave = wf_fb_account_for_page($fx['id']); ?>
-              <label class="check"><input type="checkbox" name="pages[]" value="<?= wi_e($fx['id']) ?>" checked> <?= wi_e($fx['name']) ?><?= $fbHave ? ' — already linked (its token is renewed)' : '' ?></label>
+              <label class="fb-pick-i"><input type="checkbox" name="pages[]" value="<?= wi_e($fx['id']) ?>" checked><b dir="auto"><?= wi_e($fx['name']) ?></b><?php if ($fbHave): ?><small class="muted">already linked (its token is renewed)</small><?php endif; ?></label>
             <?php endforeach; ?>
+            </div>
             <button class="btn primary">Connect the chosen pages</button>
+          </form>
+          <?php endif; ?>
+          <div class="fb-steps">
+            <form method="post" class="fb-step" autocomplete="off">
+              <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="fb_app_save">
+              <h3><span class="fb-n">1</span> <span>The Facebook app</span></h3>
+              <p class="muted small"><?= $fbScope !== '' && $fbSys['app_id'] !== '' && $fbOwn['app_id'] === '' ? 'Optional: the system\'s app is used unless you save your own.' : 'From developers.facebook.com → your app → Settings → Basic.' ?></p>
+              <label>App ID<input name="fb_appid" inputmode="numeric" pattern="[0-9]*" dir="ltr" autocomplete="off" data-lpignore="true" data-1p-ignore value="<?= wi_e($fbOwn['app_id']) ?>"></label>
+              <label>App secret<input name="fb_appsecret" type="password" dir="ltr" autocomplete="new-password" data-lpignore="true" data-1p-ignore placeholder="<?= $fbOwn['secret'] !== '' ? '••••••••  saved — leave empty to keep it' : '' ?>"></label>
+              <button class="btn ghost sm">Save the app</button>
+            </form>
+            <div class="fb-step">
+              <h3><span class="fb-n">2</span> <span>Paste these in the app</span></h3>
+              <?php if ($fbOwn['app_id'] !== ''): ?>
+                <?= $fbCopy('Valid OAuth Redirect URI (Facebook Login → Settings)', wf_fb_redirect_uri()) ?>
+                <?= $fbCopy('Webhooks → Page: callback URL', wf_fb_app_hook_url($fbOwn)) ?>
+                <?= $fbCopy('Verify token', $fbOwn['verify']) ?>
+                <?= $fbCopy('Deauthorize callback URL', wf_fb_base_url() . 'index.php?fb_deauth=1') ?>
+                <?= $fbCopy('Data deletion request URL', wf_fb_base_url() . 'index.php?fb_delete=1') ?>
+                <p class="muted small">Webhook fields: messages, messaging_postbacks, message_echoes, message_reads, message_reactions, feed</p>
+              <?php else: ?><p class="muted small"><?= $fbScope !== '' && $fbSys['app_id'] !== '' ? 'Nothing to paste: the system\'s app is already set up.' : 'Save the app first: the addresses appear here.' ?></p><?php endif; ?>
+            </div>
+            <div class="fb-step">
+              <h3><span class="fb-n">3</span> <span>Connect your pages</span></h3>
+              <p class="muted small">Facebook asks you to sign in and to choose the pages; each chosen page joins your accounts, with its messages, comments, posts and numbers.</p>
+              <?php if ($fbReady): ?><a class="btn primary" href="?fb_connect=1"><span>📘</span> <span>Connect with Facebook</span></a><?php else: ?><button class="btn primary" disabled>Connect with Facebook</button><?php endif; ?>
+            </div>
           </div>
-        </form>
+          <details class="fb-manual">
+            <summary>Advanced: add a page by hand (page token and app secret)</summary>
+            <form method="post" class="fb-manual-f" autocomplete="off">
+              <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="add_fb">
+              <label>Name<input name="name" required maxlength="60" autocomplete="off"></label>
+              <label>Page access token<input name="token" type="password" dir="ltr" required autocomplete="new-password" data-lpignore="true" data-1p-ignore></label>
+              <label>App secret<input name="secret" type="password" dir="ltr" required autocomplete="new-password" data-lpignore="true" data-1p-ignore></label>
+              <label>Page ID (optional)<input name="fb_pageid" inputmode="numeric" pattern="[0-9]*" dir="ltr" autocomplete="off" data-lpignore="true" data-1p-ignore></label>
+              <p class="muted small">After adding, the page's card shows its own webhook address and verify token to paste in the app.</p>
+              <button class="btn primary sm">Add page</button>
+            </form>
+          </details>
+        </section>
         <?php endif; ?>
-        <form method="post" class="card acc add" id="fb-app" autocomplete="off">
-          <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="fb_app_save">
-          <div class="card-h"><h2>📘 Connect Facebook pages</h2></div>
-          <div class="pad stack">
-            <label>App ID<input name="app_id" inputmode="numeric" value="<?= wi_e($fbOwn['app_id']) ?>"></label>
-            <label>App secret <small class="muted"><?= $fbOwn['secret'] !== '' ? '— saved (leave empty to keep it)' : '' ?></small><input name="app_secret" type="password"></label>
-            <button class="btn ghost sm">Save the app</button>
-            <?php if ($fbOwn['app_id'] !== ''): ?>
-              <p class="muted small">In the app's settings (Facebook Login → Valid OAuth Redirect URIs) add:</p><input readonly value="<?= wi_e(wf_fb_redirect_uri()) ?>" onclick="this.select()">
-              <p class="muted small">Webhooks → Page: callback address and verify code (fields: messages, messaging_postbacks, message_echoes, message_reads, message_reactions, feed):</p>
-              <input readonly value="<?= wi_e(wf_fb_app_hook_url($fbOwn)) ?>" onclick="this.select()"><input readonly value="<?= wi_e($fbOwn['verify']) ?>" onclick="this.select()">
-              <p class="muted small">Deauthorize and data deletion addresses (Settings → Advanced):</p>
-              <input readonly value="<?= wi_e(wf_fb_base_url() . 'index.php?fb_deauth=1') ?>" onclick="this.select()"><input readonly value="<?= wi_e(wf_fb_base_url() . 'index.php?fb_delete=1') ?>" onclick="this.select()">
-              <a class="btn primary" href="?fb_connect=1">Connect with Facebook</a>
-            <?php elseif (!wi_is_super() && wf_fb_app('')['app_id'] !== ''): ?>
-              <p class="muted small">No app of your own saved: the system's app is used.</p><a class="btn primary" href="?fb_connect=1">Connect with Facebook</a>
-            <?php endif; ?>
-          </div>
-        </form>
-        <?php endif; ?>
-        <form method="post" class="card acc add" id="add-fb" autocomplete="off">
-          <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="add_fb">
-          <div class="card-h"><h2>➕ Add a Facebook page by hand (token and secret)</h2></div>
-          <div class="pad stack">
-            <label>Name<input name="name" required maxlength="60"></label>
-            <label>Page access token<input name="token" type="password" required></label>
-            <label>App secret<input name="secret" type="password" required></label>
-            <label>Page ID (optional)<input name="page_id" inputmode="numeric"></label>
-            <p class="muted small">Messages of the page's inbox arrive here and every inbox tool works on them: replies, bot, library, tags, notes and team. After adding, copy the webhook address and code shown on the page card into the app's Messenger settings.</p>
-            <button class="btn primary">Add page</button>
-          </div>
-        </form>
         <?php endif; ?>
       </section>
 
