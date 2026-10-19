@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.110.1', 'date' => '2026-10-19', 'title' => 'Facebook: page stories, Messenger mark', 'changes' => [
+        'Posts tab: "Publish as a story" posts a photo or an MP4 video as a story of the page (shown for 24 hours). A photo is uploaded unpublished and then published as a story; a video goes through Facebook\'s three steps (start, upload, finish).',
+        'Conversations from a Facebook page carry a "Messenger" mark in the chat list.',
+    ]],
     ['v' => '3.110.0', 'date' => '2026-10-19', 'title' => 'Facebook: posts and the page\'s numbers', 'changes' => [
         'The Facebook page now has three tabs: Comments, Posts and Numbers.',
         'Posts: write a post (text, link, photo or MP4 video), publish now or schedule it (at least 10 minutes ahead), see the published and scheduled posts with their reactions, comments and shares, edit the text and delete.',

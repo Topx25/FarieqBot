@@ -69,6 +69,24 @@ function wf_fb_comment_act(string $aid, string $id, string $act, string $text = 
     return ['ok' => false, 'error' => 'Unknown action.'];
 }
 
+/** A story of the page. A photo: uploaded unpublished, then published as a story. A video: Facebook's three steps (start, upload, finish). */
+function wf_fb_story(string $aid, string $abs): array {
+    $mime = mime_content_type($abs) ?: ''; $pid = wf_fb_cfg($aid)['page_id'] ?: 'me';
+    if (strpos($mime, 'image/') === 0) {
+        $up = wf_fb_graph($aid, 'POST', $pid . '/photos', ['published' => 'false'], ['path' => $abs, 'mime' => $mime, 'name' => basename($abs), 'field' => 'source']); if (empty($up['ok']) || empty($up['id'])) return $up + ['ok' => false];
+        return wf_fb_graph($aid, 'POST', $pid . '/photo_stories', ['photo_id' => (string) $up['id']]);
+    }
+    if ($mime !== 'video/mp4') return ['ok' => false, 'error' => 'Only photos and MP4 videos.'];
+    $st = wf_fb_graph($aid, 'POST', $pid . '/video_stories', ['upload_phase' => 'start']); if (empty($st['ok']) || empty($st['video_id']) || empty($st['upload_url'])) return $st + ['ok' => false, 'error' => $st['error'] ?? 'Facebook did not start the upload.'];
+    if (PHP_SAPI !== 'cli' || !isset($GLOBALS['WI_FAKE_GRAPH'])) { // the file itself goes to the upload address Facebook gave
+        $ch = curl_init((string) $st['upload_url']); curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => file_get_contents($abs), CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 300, CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+            CURLOPT_HTTPHEADER => ['Authorization: OAuth ' . wf_fb_token($aid), 'offset: 0', 'file_size: ' . filesize($abs)]]);
+        $raw = curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE); curl_close($ch); $j = json_decode((string) $raw, true);
+        if ($code >= 400 || !is_array($j) || empty($j['success'])) return ['ok' => false, 'error' => (string) ($j['debug_info']['message'] ?? 'The video upload to Facebook failed.')];
+    }
+    return wf_fb_graph($aid, 'POST', $pid . '/video_stories', ['upload_phase' => 'finish', 'video_id' => (string) $st['video_id']]);
+}
+
 /* ---------- API ---------- */
 function wf_api_fbfeed(string $api): void {
     if (!in_array($api, ['fb_comments', 'fb_comment_act', 'fb_cfg', 'fb_posts', 'fb_post_act', 'fb_upload', 'fb_insights'], true)) return;
@@ -97,6 +115,10 @@ function wf_api_fbfeed(string $api): void {
         wi_json(['ok' => true, 'scheduled' => array_map(fn($x) => $map($x, true), (array) ($sch['data'] ?? [])), 'posts' => array_map(fn($x) => $map($x, false), (array) ($pub['data'] ?? []))]);
     }
     if ($api === 'fb_post_act') { $in = wf_post(); $act = (string) ($in['act'] ?? ''); $id = preg_replace('/[^0-9A-Za-z_]/', '', (string) ($in['id'] ?? '')); $text = trim((string) ($in['text'] ?? ''));
+        if ($act === 'story') { // a story of the page (photo or video), visible for 24 hours
+            $att = (string) ($in['attachment'] ?? ''); $abs = dirname(__DIR__, 2) . '/storage/' . $att;
+            if ($att === '' || strpos($att, '..') !== false || !preg_match('#^inbox_uploads/fbpost_[A-Za-z0-9_.]+$#', $att) || !is_file($abs)) wi_json(['ok' => false, 'error' => 'A story needs a photo or a video.']);
+            $r = wf_fb_story($aid, $abs); if (empty($r['ok'])) wi_json(['ok' => false, 'error' => (string) ($r['error'] ?? 'Facebook refused the request.')]); wi_log('fb_story', ['account' => $aid]); wi_json(['ok' => true, 'id' => (string) ($r['post_id'] ?? '')]); }
         if ($act === 'create') { $att = (string) ($in['attachment'] ?? ''); $link = trim((string) ($in['link'] ?? '')); $at = (int) ($in['at'] ?? 0);
             if ($text === '' && $att === '' && $link === '') wi_json(['ok' => false, 'error' => 'Write the post or add a photo, video or link.']);
             if ($link !== '' && !preg_match('#^https?://#i', $link)) wi_json(['ok' => false, 'error' => 'The link must start with http:// or https://.']);

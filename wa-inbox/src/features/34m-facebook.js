@@ -65,11 +65,12 @@
       var pane = document.getElementById('fb-pane-p');
       pane.innerHTML = '<div class="card"><h3>✍️ ' + T('New post') + '</h3><label>' + T('Text') + '<textarea id="fp-text" rows="4" dir="auto"></textarea></label>'
         + '<label>' + T('Link (optional)') + '<input id="fp-link" dir="ltr" placeholder="https://"></label><label>' + T('Photo or video (optional)') + '<input type="file" id="fp-file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4"></label>'
+        + '<label class="check"><input type="checkbox" id="fp-story"> ' + T('Publish as a story (a photo or an MP4 video, shown for 24 hours)') + '</label>'
         + '<label>' + T('When (empty = now; at least 10 minutes ahead)') + '<input type="datetime-local" id="fp-at"></label><div class="row"><button class="btn primary" id="fp-go">📘 ' + T('Publish') + '</button><span class="muted small" id="fp-msg"></span></div></div>'
         + '<div id="fp-list"><div class="empty">' + T('Loading…') + '</div></div>';
       document.getElementById('fp-go').onclick = function () {
         var b = this, msg = document.getElementById('fp-msg'), f = document.getElementById('fp-file').files[0], at = document.getElementById('fp-at').value;
-        var send = function (att) { post('fb_post_act', { act: 'create', text: document.getElementById('fp-text').value, link: document.getElementById('fp-link').value, attachment: att || '', at: at ? Math.floor(new Date(at).getTime() / 1000) : 0 }).then(function (r) {
+        var send = function (att) { post('fb_post_act', { act: document.getElementById('fp-story').checked ? 'story' : 'create', text: document.getElementById('fp-text').value, link: document.getElementById('fp-link').value, attachment: att || '', at: at ? Math.floor(new Date(at).getTime() / 1000) : 0 }).then(function (r) {
           b.disabled = false; msg.textContent = r && r.ok ? T('Done') : ((r && r.error) || T('Failed'));
           if (r && r.ok) { document.getElementById('fp-text').value = ''; document.getElementById('fp-link').value = ''; document.getElementById('fp-file').value = ''; document.getElementById('fp-at').value = ''; fbPostList(); } }); };
         b.disabled = true; msg.textContent = T('Working…');
