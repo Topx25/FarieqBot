@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.107.4', 'date' => '2026-10-19', 'title' => 'Help group teaches the bot\'s commands', 'changes' => [
+        'In a System-help group, a "#…" message that no command of the system handles (a typo, a wrong word) is answered with the exact correct command and an example, taken from the number\'s own command list (the "#menu" text). Commands that work are left to the system as before.',
+    ]],
     ['v' => '3.107.3', 'date' => '2026-10-19', 'title' => 'Help group answers statements of need', 'changes' => [
         'In a System-help group set to "Questions only", a message such as "I cannot open the page" is also considered (the model decides whether it is a request for help); one- and two-word messages are still ignored.',
     ]],
