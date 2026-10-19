@@ -350,7 +350,7 @@ function wi_owned_accounts(string $email): array { $e = strtolower($email); retu
 function wi_team_role_defaults(): array {
     return [
         'lead' => ['pages' => ['inbox' => 'edit', 'search' => 'edit', 'customer' => 'edit', 'numbers' => 'edit', 'groups' => 'edit', 'broadcast' => 'edit', 'status' => 'edit', 'schedule' => 'edit', 'programs' => 'edit',
-            'meetings' => 'edit', 'library' => 'edit', 'audio' => 'edit', 'files' => 'edit', 'analytics' => 'view', 'cases' => 'edit', 'botrun' => 'edit', 'botgroup' => 'edit', 'bot' => 'view', 'learning' => 'view', 'health' => 'view'],
+            'meetings' => 'edit', 'library' => 'edit', 'audio' => 'edit', 'files' => 'edit', 'analytics' => 'view', 'cases' => 'edit', 'botrun' => 'edit', 'botgroup' => 'edit', 'bot' => 'view', 'learning' => 'view', 'health' => 'view', 'facebook' => 'edit'],
             'chat' => array_fill_keys(WI_CHAT_PERMS, true)],
         'agent' => ['pages' => ['inbox' => 'edit', 'search' => 'view', 'customer' => 'view', 'library' => 'view', 'audio' => 'view', 'files' => 'view', 'cases' => 'edit', 'meetings' => 'view'],
             'chat' => ['reply' => true, 'media' => true, 'notes' => true, 'labels' => true, 'assign' => false, 'groups' => false, 'quick' => false, 'export' => false, 'invoices' => false, 'delete_msg' => false, 'delete_chat' => false]],
@@ -494,6 +494,7 @@ function wi_menu_registry(): array {
         ['id' => 'comm', 'title' => 'Communication', 'items' => [
             ['key' => 'inbox', 'icon' => '💬', 'label' => 'Conversations', 'who' => 'all', 'pages' => ['inbox', 'search']],
             ['key' => 'groups', 'icon' => '👥', 'label' => 'Groups', 'who' => 'all'],
+            ['key' => 'facebook', 'icon' => '📘', 'label' => 'Facebook comments', 'who' => 'all'],
             ['key' => 'meetings', 'icon' => '🎥', 'label' => 'Meetings', 'who' => 'all'],
             ['key' => 'broadcast', 'icon' => '📣', 'label' => 'Broadcast', 'who' => 'manager']]],
         ['id' => 'cases', 'title' => 'Cases & follow-up', 'items' => [
@@ -535,7 +536,7 @@ function wi_menu_can(string $who, bool $manager): bool {
 }
 function wi_page_names(): array {
     return ['inbox' => 'Inbox', 'search' => 'Search', 'library' => 'Library', 'audio' => 'Audio', 'files' => 'Files', 'analytics' => 'Analytics', 'numbers' => 'Numbers',
-        'cases' => 'Cases', 'groups' => 'Groups', 'customer' => 'Customer profile', 'schedule' => 'Scheduling', 'programs' => 'Programs', 'status' => 'Status posts',
+        'cases' => 'Cases', 'groups' => 'Groups', 'customer' => 'Customer profile', 'schedule' => 'Scheduling', 'programs' => 'Programs', 'status' => 'Status posts', 'facebook' => 'Facebook',
         'meetings' => 'Meetings', 'learning' => 'Learning', 'bot' => 'Bot learning', 'botrun' => 'Bot', 'botgroup' => 'Group bot', 'broadcast' => 'Broadcast',
         'health' => 'Number health', 'business' => 'Business settings', 'report' => 'Daily report', 'backup' => 'Backup', 'ai' => 'AI providers', 'settings' => 'Settings', 'accounts' => 'WhatsApp numbers'];
 }
@@ -592,7 +593,7 @@ function wi_api_page(string $api): string {
             'library' => 'library media_lib media_inventory media_meta media_folders media_bulk media_dupes media_zip media_youtube lib_ai lib_ai_best lib_ai_group lib_hide media_queue media_vault media_vault_set media_vault_unlock media_vault_lock media_vault_move media_vault_otp media_vault_file lib_text_save lib_text_delete lib_upload youtube_connect', 'audio' => 'audio_lib audio_meta', 'files' => 'files', 'ai' => 'ai_providers',
             'broadcast' => 'broadcast broadcast_control broadcast_status lists', 'accounts' => 'accounts gateway gw_action qr relink',
             'cases' => 'case_cfg case_intake_cfg cases case case_new case_team case_set case_analyze case_export registry registry_set registry_ai registry_group group_monitor', 'groups' => 'groups group_detail group_view case_track',
-            'numbers' => 'numbers', 'schedule' => 'schedule', 'programs' => 'programs program_save program_enroll', 'status' => 'status_upload status_post', 'health' => 'health',
+            'numbers' => 'numbers', 'facebook' => 'fb_comments fb_comment_act fb_cfg', 'schedule' => 'schedule', 'programs' => 'programs program_save program_enroll', 'status' => 'status_upload status_post', 'health' => 'health',
             'report' => 'report_cfg', 'backup' => 'backup_cfg', 'business' => 'business_cfg', 'customer' => 'customer', 'settings' => 'settings_overview',
             'learning' => 'learn_guide learn_cache learn_suggest learn_docs learn_rules learn_drive learn_clean learn_grow ai_prompts', 'bot' => 'learn_state learn_build kb_table kb_bulk kb_set bot_test bot_eval bot_rate bot_profile bot_cfg', 'botrun' => 'bot_run bot_chats bot_pause bot_team bot_draft bot_health bot_retry bot_join_cfg bot_roles', 'botgroup' => 'bot_group bot_group_set'] as $pg => $list)
             foreach (explode(' ', $list) as $a) $map[$a] = $pg; }

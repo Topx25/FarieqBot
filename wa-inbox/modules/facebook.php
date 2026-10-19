@@ -4,7 +4,7 @@
 
 /* ---------- accounts and settings ---------- */
 function wf_fb_is(?array $acc): bool { return $acc && ($acc['channel'] ?? '') === 'fb'; }
-function wf_fb_cfg(string $aid): array { return (array) (wi_read('fb.json', [])[$aid] ?? []) + ['page_id' => '', 'page_name' => '', 'app_id' => '', 'graph' => 'v26.0', 'verify' => '', 'ok_at' => '', 'error' => '', 'hook_at' => '']; }
+function wf_fb_cfg(string $aid): array { return (array) (wi_read('fb.json', [])[$aid] ?? []) + ['page_id' => '', 'page_name' => '', 'app_id' => '', 'graph' => 'v26.0', 'verify' => '', 'ok_at' => '', 'error' => '', 'hook_at' => '', 'comment_bot' => 'off', 'comment_public' => 1, 'comment_private' => 0]; }
 function wf_fb_cfg_set(string $aid, array $set): void { wi_update('fb.json', function ($F) use ($aid, $set) { $F[$aid] = $set + (array) ($F[$aid] ?? []); return $F; }); }
 function wf_fb_token(string $aid): string { return (string) wi_secret('fb_page_token:' . $aid, ''); }
 function wf_fb_secret(string $aid): string { return (string) wi_secret('fb_app_secret:' . $aid, ''); }
@@ -20,10 +20,11 @@ function wf_fb_account_for_page(string $pageId): ?array {
 
 /* ---------- Graph calls ---------- */
 function wf_fb_graph(string $aid, string $method, string $path, array $params = [], ?array $file = null): array {
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_FAKE_GRAPH']) && is_callable($GLOBALS['WI_FAKE_GRAPH'])) return ($GLOBALS['WI_FAKE_GRAPH'])($method, $path, $params); // tests: nothing leaves the server
     $c = wf_fb_cfg($aid); $tok = wf_fb_token($aid); if ($tok === '') return ['ok' => false, 'error' => 'The page token is missing.'];
     $url = 'https://graph.facebook.com/' . $c['graph'] . '/' . ltrim($path, '/');
     $ch = curl_init(); $opt = [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60, CURLOPT_CONNECTTIMEOUT => 8, CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $tok]];
-    if ($method === 'GET') $url .= ($params ? '?' . http_build_query($params) : '');
+    if ($method === 'GET' || $method === 'DELETE') { $url .= ($params ? '?' . http_build_query($params) : ''); if ($method === 'DELETE') $opt[CURLOPT_CUSTOMREQUEST] = 'DELETE'; }
     else { $opt[CURLOPT_POST] = true; if ($file) { $f = $params; foreach ($f as $k => $v) if (is_array($v)) $f[$k] = json_encode($v, JSON_UNESCAPED_UNICODE); $f['filedata'] = new CURLFile($file['path'], $file['mime'], $file['name']); $opt[CURLOPT_POSTFIELDS] = $f; }
         else { $opt[CURLOPT_POSTFIELDS] = json_encode($params, JSON_UNESCAPED_UNICODE); $opt[CURLOPT_HTTPHEADER][] = 'Content-Type: application/json'; } }
     $opt[CURLOPT_URL] = $url; curl_setopt_array($ch, $opt); $raw = curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE); curl_close($ch);
@@ -120,6 +121,7 @@ function wf_fb_hook(string $aid): void {
     $in = json_decode($raw, true); if (!is_array($in) || ($in['object'] ?? '') !== 'page') return;
     wf_fb_cfg_set($aid, ['hook_at' => gmdate('c')]);
     foreach ((array) ($in['entry'] ?? []) as $en) { $pid = (string) ($en['id'] ?? ''); if ($pid !== $c['page_id']) continue;
+        foreach ((array) ($en['changes'] ?? []) as $chg) { if (($chg['field'] ?? '') === 'feed') { try { wf_fb_feed_take($acc, (array) ($chg['value'] ?? []), $pid); } catch (Throwable $e) { wi_log('fb_hook_error', ['account' => $aid, 'error' => $e->getMessage()]); } } }
         foreach ((array) ($en['messaging'] ?? []) as $ev) { try { wf_fb_take($acc, (array) $ev, $pid); } catch (Throwable $e) { wi_log('fb_hook_error', ['account' => $aid, 'error' => $e->getMessage()]); } } }
 }
 
@@ -206,7 +208,7 @@ function wf_fb_connect(string $aid): array {
     $c = wf_fb_cfg($aid); $me = wf_fb_graph($aid, 'GET', 'me', ['fields' => 'id,name']);
     if (empty($me['ok'])) { wf_fb_cfg_set($aid, ['error' => (string) $me['error']]); return $me; }
     if ($c['page_id'] !== '' && (string) $me['id'] !== $c['page_id']) { $e = 'The token belongs to another page.'; wf_fb_cfg_set($aid, ['error' => $e]); return ['ok' => false, 'error' => $e]; }
-    $sub = wf_fb_graph($aid, 'POST', $me['id'] . '/subscribed_apps', ['subscribed_fields' => 'messages,messaging_postbacks,message_echoes,message_reads,message_reactions']);
+    $sub = wf_fb_graph($aid, 'POST', $me['id'] . '/subscribed_apps', ['subscribed_fields' => 'messages,messaging_postbacks,message_echoes,message_reads,message_reactions,feed']);
     if (empty($sub['ok'])) { wf_fb_cfg_set($aid, ['page_id' => (string) $me['id'], 'page_name' => (string) ($me['name'] ?? ''), 'error' => (string) $sub['error']]); return $sub; }
     wf_fb_cfg_set($aid, ['page_id' => (string) $me['id'], 'page_name' => (string) ($me['name'] ?? ''), 'error' => '', 'ok_at' => gmdate('c')]);
     return ['ok' => true, 'page' => (string) ($me['name'] ?? '')];

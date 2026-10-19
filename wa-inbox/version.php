@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.109.0', 'date' => '2026-10-19', 'title' => 'Facebook: comments', 'changes' => [
+        'New page "Facebook comments" (Communication): the comments on the page\'s posts in one list with the post they belong to, search and filters (new, bot drafts, replied, hidden). Reply under the comment, reply privately (one per comment, within 7 days; it also shows in the person\'s Messenger chat), hide or show, delete and like.',
+        'The bot can answer comments: off, suggest only (a draft waits for a person) or automatic, under the comment, privately, or both; it stays silent when it is not sure. The page is subscribed to the "feed" webhook field when it is checked.',
+        'Built from Meta\'s documentation and tested with simulated events; check it with a real page before relying on it.',
+    ]],
     ['v' => '3.108.4', 'date' => '2026-10-19', 'title' => 'Faster group replies', 'changes' => [
         'A System-help group no longer waits for an admin who is talking with the member (up to 10 minutes) and waits at most 10 seconds between two replies to the same person.',
     ]],

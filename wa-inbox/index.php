@@ -78,8 +78,8 @@ if (!wi_my_accounts() && wi_can_link_own() && !wi_is_super() && !in_array($page,
 }
 if (wi_logged_in() && isset($_GET['acc']) && isset(wi_my_accounts()[(string) $_GET['acc']])) $_SESSION['acc'] = (string) $_GET['acc']; // links that open a page for a given number
 if ($page === 'clients' && !wi_is_super()) $page = 'dashboard'; // subscriptions are the super admin's
-if (!in_array($page, ['business', 'clients', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning'], true)) $page = 'dashboard';
-$fxPages = ['business', 'learning', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings'];
+if (!in_array($page, ['business', 'clients', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook'], true)) $page = 'dashboard';
+$fxPages = ['business', 'learning', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'facebook'];
 $autoPages = ['schedule', 'programs', 'status'];
 $sysPages = ['health', 'report', 'backup'];
 $versions = (array) require __DIR__ . '/version.php';
