@@ -20,6 +20,7 @@
           + '<div class="ai-move"><button class="link-btn" data-up ' + (i ? '' : 'disabled') + '>▲</button><button class="link-btn" data-down ' + (i < AP.length - 1 ? '' : 'disabled') + '>▼</button></div></div>'
           + checks + (h.reason && !h.ok ? '<div class="small bad-t">⏳ ' + esc(h.reason) + '</div>' : '')
           + '<div class="ai-f"><input type="checkbox" data-f="enabled" hidden ' + (p.enabled ? 'checked' : '') + '>'
+          + (p.base_editable ? '<label class="ai-url">' + T('Address (for a key of an organisation add ?workspace=wrkspc_…)') + '<input data-f="base_url" dir="ltr" value="' + esc(p.base_url || '') + '" placeholder="https://api.anthropic.com?workspace=wrkspc_…"></label>' : '')
           + (p.custom ? '<label>' + T('Name') + '<input data-f="name" maxlength="40" value="' + esc(p.name && p.name.indexOf('Custom') !== 0 ? p.name : '') + '" placeholder="FlexAI"></label><label class="ai-url">Base URL<input data-f="base_url" dir="ltr" value="' + esc(p.base_url || '') + '" placeholder="https://…/v1"></label>' : '')
           + '<label>' + T('API key') + '<input type="password" data-f="api_key" autocomplete="off" placeholder="' + (p.has_key ? '•••••••• ' + T('saved — type to replace') : esc(p.key_hint)) + '"></label>'
           + '<label>' + T('Extra keys (one per line) — used in turn when a key reaches its limit. Start a line with paid: or free: to say which plan that key is on') + (p.extra_keys ? ' <small class="muted">🔑 ' + fmt(p.extra_keys) + ' ' + T('extra keys saved') + ' · <button type="button" class="link-btn" data-clear-extra>' + T('remove them') + '</button></small>' : '') + '<textarea data-f="extra_keys" rows="2" dir="ltr" autocomplete="off" placeholder="' + esc(p.key_hint || '') + '"></textarea></label>'
@@ -44,7 +45,7 @@
       var order = AP.map(function (p) { return p.id; }), i = order.indexOf(id);
       function f(n) { return card.querySelector('[data-f="' + n + '"]'); }
       var body = { id: id, enabled: f('enabled').checked ? 1 : 0, api_key: f('api_key').value.trim(), extra_keys: (f('extra_keys') || { value: '' }).value.trim(), model: f('model').value, plan: f('plan').value, daily_limit: Number(f('daily_limit').value || 0), order: order };
-      if (f('base_url')) { body.base_url = f('base_url').value.trim(); body.name = f('name').value.trim(); }
+      if (f('base_url')) { body.base_url = f('base_url').value.trim(); if (f('name')) body.name = f('name').value.trim(); }
       if (b.hasAttribute('data-up') || b.hasAttribute('data-down')) { var k = b.hasAttribute('data-up') ? i - 1 : i + 1; order.splice(k, 0, order.splice(i, 1)[0]); body.order = order; delete body.api_key; }
       else if (b.hasAttribute('data-toggle')) { var cur = AP[i]; if (cur.enabled && !confirm(T('Deactivate this provider? It will no longer be used.'))) return; if (!cur.enabled && !cur.has_key && !cur.key_optional && !body.api_key) { st.textContent = '⚠️ ' + T('Add an API key first.'); f('api_key').focus(); return; } body.enabled = cur.enabled ? 0 : 1; delete body.api_key; }
       else if (b.hasAttribute('data-clear-extra')) { if (!confirm(T('Remove the extra keys?'))) return; body.clear_extra = 1; }

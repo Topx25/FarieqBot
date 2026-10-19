@@ -879,6 +879,9 @@ function wi_ai_call(array $body, int $timeout = 90): array {
         if (!empty($cat[$id]['custom'])) { $url = rtrim(trim((string) ($body['base_url'] ?? ($old['base_url'] ?? ''))), '/');
             if ($url !== '' && !preg_match('#^https://[a-z0-9.-]+(:\d+)?(/[\w./-]*)?$#i', $url)) return ['ok' => false, 'error' => 'Base URL must start with https:// (e.g. https://api.example.com/v1).'];
             $config['providers'][$id]['base_url'] = $url; $config['providers'][$id]['name'] = mb_substr(trim((string) ($body['name'] ?? ($old['name'] ?? ''))), 0, 40); }
+        if (!empty($cat[$id]['base_editable'])) { $url = trim((string) ($body['base_url'] ?? ($old['base_url'] ?? ''))); // Anthropic: the address, with ?workspace=wrkspc_… for an organisation's key
+            if ($url !== '' && !preg_match('#^https://api\.anthropic\.com/?(\?workspace=[A-Za-z0-9_]+)?$#', $url)) return ['ok' => false, 'error' => 'The address must be https://api.anthropic.com or https://api.anthropic.com?workspace=wrkspc_…'];
+            $config['providers'][$id]['base_url'] = $url; }
         if (isset($body['order']) && is_array($body['order'])) $config['order'] = $eng->normalize_order($body['order']);
         // Extra keys of the same provider: used one after the other when a key reaches its limit
         $extra = !empty($body['clear_extra']) ? [] : (array) ($old['extra_keys'] ?? []); $plain = array_map([$eng, 'decrypt'], $extra);

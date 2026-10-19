@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.103.0', 'date' => '2026-10-19', 'title' => 'AI providers: Anthropic Claude', 'changes' => [
+        'New provider "Anthropic Claude" (Messages API): paste the key in its card, turn it on, press "Test & refresh models". Its Claude models are listed, read images, and are billed per token, so its plan is always paid. Nothing is sent with a temperature (current models refuse it).',
+        'A key of an organisation needs its workspace: write the address as https://api.anthropic.com?workspace=wrkspc_… in the new "Address" field of the card. Extra keys, the daily limit and the quick "Reload models" work as for the other providers.',
+    ]],
     ['v' => '3.102.1', 'date' => '2026-10-19', 'title' => 'AI providers: a free key and a paid key together', 'changes' => [
         'A provider with several keys had one plan for all of them: with a paid key the free key was asked paid models (refused, and the key rested for a day for nothing), with a free plan the paid key never used its models. Every extra key can now carry its own plan — write "paid:KEY" or "free:KEY" on its line (a plain key follows the provider\'s plan).',
         'Free keys are tried first, each only with free models; a paid key is used last, when the free ones are resting, with all models.',

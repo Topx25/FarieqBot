@@ -119,6 +119,21 @@ class WiAiProviders
                 'color' => '#6467f2',
                 'per_model_limits' => true,
             ),
+            'anthropic' => array(
+                'name' => 'Anthropic Claude',
+                'tagline' => 'Paid · Claude models (needs credit on the Anthropic console)',
+                'api' => 'anthropic',
+                'base_url' => 'https://api.anthropic.com',
+                'default_model' => 'claude-sonnet-5-5',
+                'json_mode' => false,
+                'paid_only' => true, // there is no free tier: the plan is always paid
+                'base_editable' => true, // a key of an organisation needs its workspace: https://api.anthropic.com?workspace=wrkspc_…
+                'signup_url' => 'https://console.anthropic.com/',
+                'usage_url' => 'https://console.anthropic.com/settings/usage',
+                'key_hint' => 'sk-ant-…',
+                'color' => '#d97757',
+                'zero_quota_hint' => 'The Anthropic balance is empty. Add credit in the Anthropic console (Plans & billing).',
+            ),
             'opencode' => array(
                 'name' => 'OpenCode Zen',
                 'models_public' => true, // the full list is published without a key; the key's own list is shorter (what the account may use)
@@ -213,10 +228,12 @@ class WiAiProviders
             $state = $this->get_state($id);
             $plan_setting = isset($row['plan']) && in_array($row['plan'], array('free', 'paid'), true) ? $row['plan'] : 'auto';
             $plan = $plan_setting !== 'auto' ? $plan_setting : ($state && $state['detected_plan'] ? $state['detected_plan'] : 'free');
+            if( !empty($catalog[$id]['paid_only']) ) { $plan = 'paid'; $plan_setting = 'paid'; }
             $model_setting = isset($row['model']) ? trim((string) $row['model']) : '';
             $auto = $model_setting === '' || $model_setting === 'auto';
             $best = $state ? ($plan === 'paid' ? $state['best_paid'] : $state['best_free']) : '';
             $custom = !empty($catalog[$id]['custom']) ? array_filter(array('name' => isset($row['name']) ? trim((string) $row['name']) : '', 'base_url' => isset($row['base_url']) ? rtrim(trim((string) $row['base_url']), '/') : '')) : array();
+            if( !empty($catalog[$id]['base_editable']) && !empty($row['base_url']) ) $custom = array('base_url' => rtrim(trim((string) $row['base_url']), '/'));
             $provider = array_merge($catalog[$id], $custom, array(
                 'id' => $id,
                 'enabled' => !empty($row['enabled']),
@@ -538,7 +555,15 @@ class WiAiProviders
         if( $api_key === '' && empty($provider['key_optional']) ) return array('ok'=>false, 'status'=>0, 'error'=>'API key is missing.'); // free models of some gateways need no key
         if( !$this->model_allowed($provider, $model) ) return array('ok'=>false, 'status'=>0, 'error'=>'Paid models are not allowed on a free plan.');
 
-        if( $provider['api'] === 'gemini' ) {
+        if( $provider['api'] === 'anthropic' ) {
+            // Messages API: the key goes in x-api-key; no temperature is sent (current models refuse it); max_tokens is required.
+            $content = array(array('type'=>'text', 'text'=>$prompt));
+            if( $image_data !== null ) array_unshift($content, array('type'=>'image', 'source'=>array('type'=>'base64', 'media_type'=>$mime, 'data'=>base64_encode($image_data))));
+            list($abase) = $this->anthropic_base($provider);
+            $url = $abase.'/v1/messages';
+            $body = array('model'=>$model, 'max_tokens'=>max($max_tokens, 1024), 'messages'=>array(array('role'=>'user', 'content'=>$content)));
+            $headers = $this->anthropic_headers($provider, $api_key);
+        } elseif( $provider['api'] === 'gemini' ) {
             $parts = array(array('text'=>$prompt));
             if( $image_data !== null ) $parts[] = array('inline_data'=>array('mime_type'=>$mime, 'data'=>base64_encode($image_data)));
             $generation = array('temperature'=>0, 'maxOutputTokens'=>$max_tokens);
@@ -586,6 +611,9 @@ class WiAiProviders
             if( isset($decoded['usageMetadata']) ) {
                 $tokens_in = isset($decoded['usageMetadata']['promptTokenCount']) ? (int) $decoded['usageMetadata']['promptTokenCount'] : 0;
                 $tokens_out = isset($decoded['usageMetadata']['candidatesTokenCount']) ? (int) $decoded['usageMetadata']['candidatesTokenCount'] : 0;
+            } elseif( isset($decoded['usage']) && $provider['api'] === 'anthropic' ) {
+                $tokens_in = (int) (isset($decoded['usage']['input_tokens']) ? $decoded['usage']['input_tokens'] : 0);
+                $tokens_out = (int) (isset($decoded['usage']['output_tokens']) ? $decoded['usage']['output_tokens'] : 0);
             } elseif( isset($decoded['usage']) ) {
                 $tokens_in = isset($decoded['usage']['prompt_tokens']) ? (int) $decoded['usage']['prompt_tokens'] : 0;
                 $tokens_out = isset($decoded['usage']['completion_tokens']) ? (int) $decoded['usage']['completion_tokens'] : 0;
@@ -606,7 +634,10 @@ class WiAiProviders
         $this->record_status($provider, $http, $latency, $model);
         if( !$http['ok'] ) return array('ok'=>false, 'status'=>$http['status'], 'error'=>$http['error'], 'latency_ms'=>$latency, 'zero_quota'=>!empty($http['zero_quota']));
 
-        if( $provider['api'] === 'gemini' ) {
+        if( $provider['api'] === 'anthropic' ) {
+            $text = '';
+            if( isset($decoded['content']) && is_array($decoded['content']) ) foreach( $decoded['content'] as $blk ) if( isset($blk['type'], $blk['text']) && $blk['type'] === 'text' ) $text .= $blk['text'];
+        } elseif( $provider['api'] === 'gemini' ) {
             $text = '';
             if( isset($decoded['candidates'][0]['content']['parts']) && is_array($decoded['candidates'][0]['content']['parts']) ) {
                 foreach( $decoded['candidates'][0]['content']['parts'] as $part ) {
@@ -628,6 +659,7 @@ class WiAiProviders
             if( isset($decoded['candidates'][0]['finishReason']) ) $why = $decoded['candidates'][0]['finishReason'];
             elseif( isset($decoded['promptFeedback']['blockReason']) ) $why = 'blocked: '.$decoded['promptFeedback']['blockReason'];
             elseif( isset($decoded['choices'][0]['finish_reason']) ) $why = $decoded['choices'][0]['finish_reason'];
+            elseif( isset($decoded['stop_reason']) ) $why = (string) $decoded['stop_reason'];
             return array('ok'=>false, 'status'=>$http['status'], 'error'=>'Empty response'.($why !== '' ? ' ('.$why.')' : '').'.', 'latency_ms'=>$latency, 'finish'=>$why);
         }
         return array('ok'=>true, 'status'=>$http['status'], 'text'=>$text, 'latency_ms'=>$latency);
@@ -807,6 +839,22 @@ class WiAiProviders
         return $r;
     }
 
+    /** Anthropic: the address without its query, and the workspace id written as ?workspace=wrkspc_… (a key of an organisation needs it). */
+    protected function anthropic_base($provider)
+    {
+        $base = (string) $provider['base_url']; $ws = '';
+        if( strpos($base, '?') !== false ) { $q = substr($base, strpos($base, '?') + 1); $base = substr($base, 0, strpos($base, '?')); parse_str($q, $parts); $ws = isset($parts['workspace']) ? preg_replace('/[^A-Za-z0-9_]/', '', (string) $parts['workspace']) : ''; }
+        return array(rtrim($base, '/'), $ws);
+    }
+
+    protected function anthropic_headers($provider, $api_key)
+    {
+        list($base, $ws) = $this->anthropic_base($provider);
+        $h = array('Content-Type: application/json', 'x-api-key: '.$api_key, 'anthropic-version: 2023-06-01');
+        if( $ws !== '' ) $h[] = 'anthropic-workspace-id: '.$ws;
+        return $h;
+    }
+
     /** Fetch and rank a provider's chat models (image support flagged, not filtered). */
     public function fetch_models($provider, $api_key, $public_pass = false)
     {
@@ -819,7 +867,10 @@ class WiAiProviders
             usort($own['models'], function($a, $b) { if( $a['score'] == $b['score'] ) return strcmp($a['id'], $b['id']); return $a['score'] < $b['score'] ? 1 : -1; });
             return $own;
         }
-        if( $provider['api'] === 'gemini' ) {
+        if( $provider['api'] === 'anthropic' ) {
+            list($abase) = $this->anthropic_base($provider);
+            $http = $this->http('GET', $abase.'/v1/models?limit=1000', $this->anthropic_headers($provider, $api_key), null, 20);
+        } elseif( $provider['api'] === 'gemini' ) {
             $http = $this->http('GET', rtrim($provider['base_url'], '/').'/models?pageSize=1000', array('x-goog-api-key: '.$api_key), null, 20);
         } else {
             $url = isset($provider['models_url']) ? $provider['models_url'] : rtrim($provider['base_url'], '/').'/models';
@@ -866,6 +917,11 @@ class WiAiProviders
                 if( !$meta['free'] ) $meta['note'] = 'billing usually required';
                 $meta['name'] = isset($row['displayName']) ? $row['displayName'] : $id;
                 $meta['context'] = isset($row['inputTokenLimit']) ? (int) $row['inputTokenLimit'] : null;
+                break;
+            case 'anthropic':
+                if( !preg_match('/^claude/', $n) ) return null;
+                $meta['vision'] = true; $meta['free'] = false; $meta['note'] = 'billed per token';
+                $meta['name'] = isset($row['display_name']) && $row['display_name'] ? $row['display_name'] : $id;
                 break;
             case 'groq':
                 if( isset($row['active']) && !$row['active'] ) return null;
@@ -1160,7 +1216,8 @@ class WiAiProviders
         return array(
             'health' => $health,
             'name' => $p['name'],
-            'base_url' => !empty($p['custom']) ? $p['base_url'] : null,
+            'base_url' => !empty($p['custom']) || !empty($p['base_editable']) ? $p['base_url'] : null,
+            'base_editable' => !empty($p['base_editable']),
             'custom' => !empty($p['custom']),
             'checks' => $state && !empty($state['checks_json']) ? json_decode($state['checks_json'], true) : null,
             'id' => $id,
