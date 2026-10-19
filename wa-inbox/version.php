@@ -5,6 +5,12 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.110.0', 'date' => '2026-10-19', 'title' => 'Facebook: posts and the page\'s numbers', 'changes' => [
+        'The Facebook page now has three tabs: Comments, Posts and Numbers.',
+        'Posts: write a post (text, link, photo or MP4 video), publish now or schedule it (at least 10 minutes ahead), see the published and scheduled posts with their reactions, comments and shares, edit the text and delete.',
+        'Numbers: followers and page likes, and the last 28 days of media views, people who viewed, post engagements, page visits and new followers. Only the metrics Meta still offers are asked, one by one, so a retired metric shows "not available" and does not hide the others.',
+        'Built from Meta\'s documentation and tested with simulated answers; check it with a real page.',
+    ]],
     ['v' => '3.109.0', 'date' => '2026-10-19', 'title' => 'Facebook: comments', 'changes' => [
         'New page "Facebook comments" (Communication): the comments on the page\'s posts in one list with the post they belong to, search and filters (new, bot drafts, replied, hidden). Reply under the comment, reply privately (one per comment, within 7 days; it also shows in the person\'s Messenger chat), hide or show, delete and like.',
         'The bot can answer comments: off, suggest only (a draft waits for a person) or automatic, under the comment, privately, or both; it stays silent when it is not sure. The page is subscribed to the "feed" webhook field when it is checked.',

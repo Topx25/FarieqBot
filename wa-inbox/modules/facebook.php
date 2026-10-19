@@ -25,7 +25,7 @@ function wf_fb_graph(string $aid, string $method, string $path, array $params = 
     $url = 'https://graph.facebook.com/' . $c['graph'] . '/' . ltrim($path, '/');
     $ch = curl_init(); $opt = [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 60, CURLOPT_CONNECTTIMEOUT => 8, CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $tok]];
     if ($method === 'GET' || $method === 'DELETE') { $url .= ($params ? '?' . http_build_query($params) : ''); if ($method === 'DELETE') $opt[CURLOPT_CUSTOMREQUEST] = 'DELETE'; }
-    else { $opt[CURLOPT_POST] = true; if ($file) { $f = $params; foreach ($f as $k => $v) if (is_array($v)) $f[$k] = json_encode($v, JSON_UNESCAPED_UNICODE); $f['filedata'] = new CURLFile($file['path'], $file['mime'], $file['name']); $opt[CURLOPT_POSTFIELDS] = $f; }
+    else { $opt[CURLOPT_POST] = true; if ($file) { $f = $params; foreach ($f as $k => $v) if (is_array($v)) $f[$k] = json_encode($v, JSON_UNESCAPED_UNICODE); $f[$file['field'] ?? 'filedata'] = new CURLFile($file['path'], $file['mime'], $file['name']); $opt[CURLOPT_POSTFIELDS] = $f; }
         else { $opt[CURLOPT_POSTFIELDS] = json_encode($params, JSON_UNESCAPED_UNICODE); $opt[CURLOPT_HTTPHEADER][] = 'Content-Type: application/json'; } }
     $opt[CURLOPT_URL] = $url; curl_setopt_array($ch, $opt); $raw = curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE); curl_close($ch);
     $r = json_decode((string) $raw, true);

@@ -71,13 +71,56 @@ function wf_fb_comment_act(string $aid, string $id, string $act, string $text = 
 
 /* ---------- API ---------- */
 function wf_api_fbfeed(string $api): void {
-    if (!in_array($api, ['fb_comments', 'fb_comment_act', 'fb_cfg'], true)) return;
+    if (!in_array($api, ['fb_comments', 'fb_comment_act', 'fb_cfg', 'fb_posts', 'fb_post_act', 'fb_upload', 'fb_insights'], true)) return;
     $acc = wi_current(); if (!wf_fb_is($acc)) wi_json(['ok' => false, 'error' => 'Open a Facebook page from the numbers list first.']);
     $aid = (string) $acc['id'];
     if ($api === 'fb_cfg') {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') { $in = wf_post(); wf_admin();
             wf_fb_cfg_set($aid, ['comment_bot' => in_array($in['comment_bot'] ?? '', ['off', 'draft', 'auto'], true) ? $in['comment_bot'] : 'off', 'comment_public' => !empty($in['comment_public']) ? 1 : 0, 'comment_private' => !empty($in['comment_private']) ? 1 : 0]); wi_log('fb_cfg', ['account' => $aid]); }
         $c = wf_fb_cfg($aid); wi_json(['ok' => true, 'cfg' => ['comment_bot' => $c['comment_bot'], 'comment_public' => (int) $c['comment_public'], 'comment_private' => (int) $c['comment_private']], 'connected' => $c['error'] === '' && $c['ok_at'] !== '']);
+    }
+    if ($api === 'fb_upload') { // a photo or video for a post
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') wi_json(['ok' => false, 'error' => 'POST only.'], 405); wi_check_csrf();
+        $f = $_FILES['file'] ?? null; if (!$f || ($f['error'] ?? 1) !== UPLOAD_ERR_OK || !is_uploaded_file($f['tmp_name'])) wi_json(['ok' => false, 'error' => 'Upload failed.'], 422);
+        if ($f['size'] > (int) wi_sys('max_send_mb') * 1048576) wi_json(['ok' => false, 'error' => 'The file is larger than the allowed size (' . (int) wi_sys('max_send_mb') . ' MB).'], 422);
+        $types = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif', 'video/mp4' => 'mp4']; $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
+        if (!isset($types[$mime])) wi_json(['ok' => false, 'error' => 'Only photos (JPG, PNG, WEBP, GIF) and MP4 videos.'], 422);
+        $name = 'fbpost_' . date('Ymd_His') . '_' . bin2hex(random_bytes(5)) . '.' . $types[$mime]; $dir = dirname(__DIR__, 2) . '/storage/inbox_uploads/'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        move_uploaded_file($f['tmp_name'], $dir . $name); @chmod($dir . $name, 0644); wi_json(['ok' => true, 'attachment' => 'inbox_uploads/' . $name]);
+    }
+    if ($api === 'fb_posts') {
+        $fields = 'id,message,created_time,permalink_url,full_picture,shares,reactions.summary(true).limit(0),comments.summary(true).limit(0)';
+        $pub = wf_fb_graph($aid, 'GET', 'me/posts', ['fields' => $fields, 'limit' => 25]); if (empty($pub['ok'])) wi_json(['ok' => false, 'error' => (string) ($pub['error'] ?? 'Facebook refused the request.')]);
+        $sch = wf_fb_graph($aid, 'GET', 'me/scheduled_posts', ['fields' => 'id,message,scheduled_publish_time,full_picture,permalink_url', 'limit' => 25]);
+        $map = fn($x, $sched) => ['id' => (string) $x['id'], 'text' => (string) ($x['message'] ?? ''), 'time' => $sched ? gmdate('c', (int) ($x['scheduled_publish_time'] ?? 0)) : (string) ($x['created_time'] ?? ''), 'url' => (string) ($x['permalink_url'] ?? ''), 'pic' => (string) ($x['full_picture'] ?? ''),
+            'reactions' => (int) ($x['reactions']['summary']['total_count'] ?? 0), 'comments' => (int) ($x['comments']['summary']['total_count'] ?? 0), 'shares' => (int) ($x['shares']['count'] ?? 0), 'scheduled' => $sched];
+        wi_json(['ok' => true, 'scheduled' => array_map(fn($x) => $map($x, true), (array) ($sch['data'] ?? [])), 'posts' => array_map(fn($x) => $map($x, false), (array) ($pub['data'] ?? []))]);
+    }
+    if ($api === 'fb_post_act') { $in = wf_post(); $act = (string) ($in['act'] ?? ''); $id = preg_replace('/[^0-9A-Za-z_]/', '', (string) ($in['id'] ?? '')); $text = trim((string) ($in['text'] ?? ''));
+        if ($act === 'create') { $att = (string) ($in['attachment'] ?? ''); $link = trim((string) ($in['link'] ?? '')); $at = (int) ($in['at'] ?? 0);
+            if ($text === '' && $att === '' && $link === '') wi_json(['ok' => false, 'error' => 'Write the post or add a photo, video or link.']);
+            if ($link !== '' && !preg_match('#^https?://#i', $link)) wi_json(['ok' => false, 'error' => 'The link must start with http:// or https://.']);
+            $sched = $at > time() + 600 ? ['published' => false, 'scheduled_publish_time' => $at] : [];
+            if ($at > 0 && !$sched) wi_json(['ok' => false, 'error' => 'A scheduled time must be at least 10 minutes from now.']);
+            if ($att !== '') { $abs = dirname(__DIR__, 2) . '/storage/' . $att; if (strpos($att, '..') !== false || !preg_match('#^inbox_uploads/fbpost_[A-Za-z0-9_.]+$#', $att) || !is_file($abs)) wi_json(['ok' => false, 'error' => 'File not found.']);
+                $mime = mime_content_type($abs) ?: ''; $vid = strpos($mime, 'video/') === 0;
+                $r = wf_fb_graph($aid, 'POST', $vid ? 'me/videos' : 'me/photos', ($vid ? ['description' => $text] : ['caption' => $text]) + $sched, ['path' => $abs, 'mime' => $mime, 'name' => basename($abs), 'field' => 'source']); }
+            else $r = wf_fb_graph($aid, 'POST', 'me/feed', ['message' => $text] + ($link !== '' ? ['link' => $link] : []) + $sched);
+            if (empty($r['ok'])) wi_json(['ok' => false, 'error' => (string) ($r['error'] ?? 'Facebook refused the request.')]); wi_log('fb_post', ['account' => $aid, 'scheduled' => (bool) $sched]); wi_json(['ok' => true, 'id' => (string) ($r['post_id'] ?? $r['id'] ?? '')]); }
+        if ($id === '') wi_json(['ok' => false, 'error' => 'Post not found.']);
+        if ($act === 'edit') { if ($text === '') wi_json(['ok' => false, 'error' => 'Write the post.']); $r = wf_fb_graph($aid, 'POST', $id, ['message' => $text]); }
+        elseif ($act === 'delete') $r = wf_fb_graph($aid, 'DELETE', $id);
+        else wi_json(['ok' => false, 'error' => 'Unknown action.']);
+        wi_json(!empty($r['ok']) ? ['ok' => true] : ['ok' => false, 'error' => (string) ($r['error'] ?? 'Facebook refused the request.')]);
+    }
+    if ($api === 'fb_insights') { // Meta retired the old reach / impressions metrics (2025-2026): only the current ones are asked, one by one, so a metric Meta no longer offers does not hide the others
+        $me = wf_fb_graph($aid, 'GET', 'me', ['fields' => 'name,followers_count,fan_count,link']); $days = 28; $out = [];
+        foreach (['page_media_view' => 'Media views', 'page_total_media_view_unique' => 'People who viewed', 'page_post_engagements' => 'Post engagements', 'page_views_total' => 'Page visits', 'page_daily_follows' => 'New followers'] as $m => $label) {
+            $r = wf_fb_graph($aid, 'GET', 'me/insights', ['metric' => $m, 'period' => 'day', 'since' => time() - $days * 86400, 'until' => time()]);
+            if (empty($r['ok'])) { $out[] = ['metric' => $m, 'label' => $label, 'ok' => false, 'error' => (string) ($r['error'] ?? '')]; continue; }
+            $vals = array_map(fn($v) => (float) (is_array($v['value'] ?? 0) ? array_sum($v['value']) : ($v['value'] ?? 0)), (array) ($r['data'][0]['values'] ?? []));
+            $out[] = ['metric' => $m, 'label' => $label, 'ok' => true, 'series' => $vals, 'total' => array_sum($vals), 'last7' => array_sum(array_slice($vals, -7))]; }
+        wi_json(['ok' => true, 'page' => ['name' => (string) ($me['name'] ?? ''), 'followers' => (int) ($me['followers_count'] ?? 0), 'likes' => (int) ($me['fan_count'] ?? 0), 'url' => (string) ($me['link'] ?? '')], 'metrics' => $out, 'days' => $days]);
     }
     if ($api === 'fb_comment_act') { $in = wf_post(); $r = wf_fb_comment_act($aid, preg_replace('/[^0-9A-Za-z_]/', '', (string) ($in['id'] ?? '')), (string) ($in['act'] ?? ''), (string) ($in['text'] ?? ''));
         if (empty($r['ok'])) wi_json(['ok' => false, 'error' => (string) ($r['error'] ?? 'Facebook refused the request.')]); wi_json(['ok' => true, 'row' => wf_fb_comments($aid)[$in['id']] ?? null]); }
