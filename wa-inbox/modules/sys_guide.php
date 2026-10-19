@@ -38,6 +38,8 @@ function wf_sysguide_user(string $phone): ?array {
     foreach (wi_users() as $u) { if (empty($u['active'])) continue; $q = preg_replace('/\D/', '', (string) ($u['phone'] ?? '')); if (strlen($q) >= 8 && substr($q, -9) === $tail) return $u; }
     return null;
 }
+/** The Arabic screen's word for a menu label (the interface dictionary), '' when there is none. */
+function wf_sysguide_ar(string $label): string { static $d = null; $d ??= (array) require __DIR__ . '/../i18n.php'; return (string) ($d[$label] ?? $d[str_replace('&', '&amp;', $label)] ?? ''); }
 /** Runs $fn as if $u were signed in (permission checks read the session), then puts the session back. */
 function wf_sysguide_as(array $u, callable $fn) {
     $had = array_key_exists('_SESSION', $GLOBALS) ? $_SESSION : null; $_SESSION = ['email' => (string) $u['email']] + (array) $had;
@@ -57,12 +59,12 @@ function wf_sysguide_prompt(array $acc, string $text, array $hist, ?array $u, st
     $aid = (string) $acc['id']; $man = wf_sysguide_manual() + []; foreach (wf_sysguide_cfg($aid)['pages'] as $k => $v) if (trim((string) $v) !== '') $man[$k] = trim((string) $v); // a number's own wording replaces the manual's
     $allow = []; $deny = []; $who = 'UNKNOWN: this mobile number is not linked to any user, so you cannot know what they may do.';
     if ($u) { $who = 'USER: ' . ($u['name'] ?? $u['email']) . ' — role: ' . ($u['role'] ?? ''); $pm = wf_sysguide_perms($u);
-        foreach ($pm as $k => $x) { if ($x['perm'] === '') $deny[] = $x['label']; else $allow[] = '### ' . $x['label'] . ' (' . ($x['perm'] === 'edit' ? 'can change' : 'view only') . ")\n" . ($man[$k] ?? '(no manual text)'); } }
+        foreach ($pm as $k => $x) { if ($x['perm'] === '') $deny[] = $x['label']; else $allow[] = '### ' . $x['label'] . (($ar = wf_sysguide_ar($x['label'])) !== '' ? ' — on an Arabic screen: «' . $ar . '»' : '') . ' (' . ($x['perm'] === 'edit' ? 'can change' : 'view only') . ")\n" . ($man[$k] ?? '(no manual text)'); } }
     else foreach ($man as $k => $v) $allow[] = '### ' . $k . "\n" . $v;
     $h = ''; foreach ($hist as $m) $h .= ($m['from'] === 'bot' ? 'You: ' : 'Person: ') . mb_substr((string) $m['text'], 0, 500) . "\n";
     return "You are the help desk of a business messaging system, answering a team member in a WhatsApp group. Explain how to do what they ask, step by step, using ONLY the manual below.\n"
         . "RULES:\n- Reply in the person's own language and dialect; short (a few lines), numbered steps when there are steps, plain words, no markdown headings.\n"
-        . "- Only explain pages listed under PAGES THEY CAN OPEN. If the page is view-only for them, say they can look but not change it.\n"
+        . "- Name a page the way it appears on the person's screen: when you write Arabic, use the Arabic name given after «on an Arabic screen».\n- Only explain pages listed under PAGES THEY CAN OPEN. If the page is view-only for them, say they can look but not change it.\n"
         . "- If they ask about a page listed under CLOSED TO THEM, tell them politely that their account has no access to it and that the owner or admin can give it to them from the Users page; do not explain how to use it.\n"
         . "- Never invent a button, page or setting that is not in the manual. If you are not sure, ask one short question or say you will pass it to the admin (handoff=true).\n"
         . "- If the message is not about using the system, set confidence below 0.3 and reply with an empty string.\n"
