@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.105.1', 'date' => '2026-10-19', 'title' => 'Bot: fewer made-up details', 'changes' => [
+        'The bot\'s quick model is chosen from reliable families first (DeepSeek flash, Gemini flash, GLM flash); the "lite" models, which were measured weakest, come last. Measured on 14 real questions the four candidates were within noise of each other (overall 3.99–4.19), so the fix is not one model.',
+        'Experimental or unnamed models of the providers (beam, space-bunny, big-pickle, omen, jev, test, argon, contributor) are listed but never picked automatically.',
+        'New reply rule: never mention a symptom, family member, place, step or past event about the person unless it is in their card or the recent messages; a greeting, thanks or a short comment gets a short natural reply, with no health questions and no new instructions.',
+    ]],
     ['v' => '3.105.0', 'date' => '2026-10-19', 'title' => 'One calm look for every page', 'changes' => [
         'Design: the same flat, quiet look on every page — cards with a thin line and no shadow, lighter weights, headers without the coloured gradient, outline buttons with one solid colour for the main action, flat number tiles (no coloured blobs), thin row dividers in lists and tables. The dashboard follows the approved mockup: a plain greeting card, four number tiles, the chart, the items that need attention, and the numbers and bot status.',
     ]],

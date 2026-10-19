@@ -346,6 +346,7 @@ class WiAiProviders
         $plan = $plan !== null ? $plan : (isset($provider['plan']) ? $provider['plan'] : 'free');
         if( trim((string) $model) === '' ) return false;
         if( !empty($provider['skip_models']) && preg_match($provider['skip_models'], strtolower((string) $model)) ) return false; // listed for choosing by hand only
+        if( preg_match('/(^|[-_])(beam|space-bunny|big-pickle|omen|jev|test)([-_.]|$)|contributor|argon/i', (string) $model) ) return false; // experimental or unnamed models: listed, never picked automatically
         if( !empty($provider['free_only_suffix']) && $plan !== 'paid' ) {
             $suffix = $provider['free_only_suffix'];
             return substr((string) $model, -strlen($suffix)) === $suffix;
