@@ -204,7 +204,7 @@ function wf_cmd_menu(string $aid): string {
     if (!empty($w['list'])) $B[] = $f((string) ($h['sec_lists'] ?? '')) . "\n\n" . $item('list', (string) $w['list']);
     $lib = []; if (function_exists('wf_libcmd_words')) foreach (wf_libcmd_words($aid) as $k => $c) if ($k !== 'menu' && ($x = $item($k, (string) $c)) !== '') $lib[] = $x;
     if ($lib) $B[] = $f((string) ($h['sec_library'] ?? '')) . "\n\n" . implode("\n\n", $lib);
-    // the files' shortcuts (#رقية-الاثيري → the recording) and the quick replies' keywords
+    // the files' shortcuts (#shortcut-name → the recording) and the quick replies' keywords
     $codes = []; foreach ((array) (wi_read('media_meta.json', [])[$aid] ?? []) as $m) if (trim((string) ($m['code'] ?? '')) !== '' && empty($m['hidden'])) $codes[] = '• ' . $m['code'] . (trim((string) ($m['title'] ?? '')) !== '' ? ' — ' . $m['title'] : '');
     $more = fn(array $L) => count($L) > 30 ? implode("\n", array_slice($L, 0, 30)) . "\n" . str_replace('{n}', (string) (count($L) - 30), (string) ($h['more'] ?? '')) : implode("\n", $L);
     if ($codes) $B[] = $f((string) ($h['sec_files'] ?? '')) . "\n" . $more($codes);

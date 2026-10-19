@@ -1311,8 +1311,8 @@ document.addEventListener('keydown', function (e) {
     list$.addEventListener('click', function (e) {
       var an = e.target.closest('[data-aname]');
       if (an) { var x = itemOf(an), key = x.attachment; var d = mlDialog('<div class="ml-head"><b>✏️ ' + T('Name & shortcut') + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div><div class="ml-fw">'
-          + '<label>' + T('Name') + '<input id="ln-t" dir="auto" maxlength="80" value="' + esc(x.title || '') + '" placeholder="' + esc(T('e.g. Ruqyah Al-Athiri')) + '"></label>'
-          + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="ln-c" dir="auto" maxlength="60" value="' + esc(x.code || '') + '" placeholder="' + esc(T('#ruqyah-name')) + '"></label>'
+          + '<label>' + T('Name') + '<input id="ln-t" dir="auto" maxlength="80" value="' + esc(x.title || '') + '" placeholder="' + esc(T('e.g. A short name')) + '"></label>'
+          + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="ln-c" dir="auto" maxlength="60" value="' + esc(x.code || '') + '" placeholder="' + esc(T('#shortcut-name')) + '"></label>'
           + '<div class="row"><button type="button" class="btn primary" id="ln-go">💾 ' + T('Save') + '</button><span class="muted small" id="ln-m"></span></div></div>');
         d.onclick = function (ev) { if (ev.target.closest('[data-mlx]')) { d.close(); return; } if (!ev.target.closest('#ln-go')) return;
           var sent = { title: document.getElementById('ln-t').value.trim(), code: document.getElementById('ln-c').value.trim() };
@@ -1456,7 +1456,7 @@ document.addEventListener('keydown', function (e) {
         + '<label>' + T('Section') + '<select id="lt-sec">' + secs.map(function (x) { return '<option value="' + esc(x[0]) + '"' + (x[0] === t.section ? ' selected' : '') + '>' + x[1] + ' ' + esc(x[0]) + '</option>'; }).join('') + '</select></label>'
         + '<label>' + T('Title') + '<input id="lt-title" dir="auto" maxlength="120" value="' + esc(t.title) + '"></label>'
         + '<label>' + T('Topic') + '<input id="lt-topic" dir="auto" maxlength="60" list="lt-topics" value="' + esc(t.topic) + '"><datalist id="lt-topics">' + Object.keys(tps).map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist></label>'
-        + '<label>' + T('Tag — write it in any chat or group and the text is sent') + '<input id="lt-code" dir="auto" maxlength="60" value="' + esc(t.code) + '" placeholder="' + esc(T('#ruqyah-name')) + '"></label>'
+        + '<label>' + T('Tag — write it in any chat or group and the text is sent') + '<input id="lt-code" dir="auto" maxlength="60" value="' + esc(t.code) + '" placeholder="' + esc(T('#shortcut-name')) + '"></label>'
         + '<label>' + T('Keywords — separated by commas') + '<input id="lt-kw" dir="auto" maxlength="300" value="' + esc(t.keywords) + '"></label>'
         + '<label>' + T('Text') + '<textarea id="lt-text" rows="8" dir="auto">' + esc(t.text) + '</textarea></label>'
         + '<div class="lt-cover"><b>' + T('Cover') + '</b><div id="lt-prev"></div><input type="file" id="lt-file" accept="image/jpeg,image/png,image/webp"><button type="button" class="chip-btn sm" id="lt-rm">✕ ' + T('Remove cover') + '</button></div>'
@@ -1485,8 +1485,8 @@ document.addEventListener('keydown', function (e) {
     document.addEventListener('click', function (e) { var b = e.target.closest('[data-lname]'); if (!b || typeof mlLoad !== 'function') return; var key = b.dataset.lname;
       mlLoad(true).then(function (items) { var it = items.filter(function (i) { return i.key === key; })[0] || { title: '', code: '' };
         var d = mlDialog('<div class="ml-head"><b>✏️ ' + T('Name & shortcut') + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div><div class="ml-fw">'
-          + '<label>' + T('Name') + '<input id="ln-t" dir="auto" maxlength="80" value="' + esc(it.title || '') + '" placeholder="' + esc(T('e.g. Ruqyah Al-Athiri')) + '"></label>'
-          + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="ln-c" dir="auto" maxlength="60" value="' + esc(it.code || '') + '" placeholder="' + esc(T('#ruqyah-name')) + '"></label>'
+          + '<label>' + T('Name') + '<input id="ln-t" dir="auto" maxlength="80" value="' + esc(it.title || '') + '" placeholder="' + esc(T('e.g. A short name')) + '"></label>'
+          + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="ln-c" dir="auto" maxlength="60" value="' + esc(it.code || '') + '" placeholder="' + esc(T('#shortcut-name')) + '"></label>'
           + '<div class="row"><button type="button" class="btn primary" id="ln-go">💾 ' + T('Save') + '</button><span class="muted small" id="ln-m"></span></div></div>');
         d.onclick = function (ev) { if (ev.target.closest('[data-mlx]')) { d.close(); return; } if (!ev.target.closest('#ln-go')) return;
           var sent = { title: document.getElementById('ln-t').value.trim(), code: document.getElementById('ln-c').value.trim() };
@@ -1950,7 +1950,7 @@ document.addEventListener('keydown', function (e) {
       p.innerHTML = '<button type="button" class="ml-ed-x" id="me-x" aria-label="' + esc(T('Close')) + '">✕</button><div class="ml-prev big">' + (it.kind === 'audio' || it.kind === 'voice' ? '<audio controls src="' + mlUrl(it.key) + '"></audio>' : it.kind === 'video' || it.kind === 'gif' ? '<video controls src="' + mlUrl(it.key) + '"></video>' : mlThumb(it)) + '</div>'
         + (it.from || it.chat ? '<div class="ml-owner" dir="auto">' + (it.from ? '<a href="' + mlChatHref(it) + '">👤 ' + esc(it.from === 'You' ? T('You') : it.from) + '</a>' : '') + (it.chat ? ' · <a href="' + mlChatHref(it) + '">💬 ' + esc(it.chat) + '</a>' : '') + '</div>' : '')
         + '<div class="ml-form"><label>' + T('Title') + '<input id="me-t" value="' + esc(it.title) + '" dir="auto" maxlength="80"></label>'
-        + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="me-code" value="' + esc(it.code || '') + '" dir="auto" maxlength="60" placeholder="' + esc(T('#ruqyah-name')) + '"></label>'
+        + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="me-code" value="' + esc(it.code || '') + '" dir="auto" maxlength="60" placeholder="' + esc(T('#shortcut-name')) + '"></label>'
         + '<label>' + T('Caption (sent with it)') + '<textarea id="me-c" rows="4" dir="auto" maxlength="1000">' + esc(it.caption) + '</textarea></label>'
         + '<div class="row wrap"><label>' + T('Folder') + '<select id="me-f"><option value="">📥 ' + T('Not in a folder') + '</option>' + mfolders.map(function (f) { return '<option value="' + esc(f) + '"' + (it.folder === f ? ' selected' : '') + '>' + esc(f.replace(/\//g, ' › ')) + '</option>'; }).join('') + '</select></label>'
         + '<label>' + T('Tags') + '<input id="me-g" value="' + esc(it.tags.join('، ')) + '" dir="auto" placeholder="' + esc(T('separated by commas')) + '"></label></div>'

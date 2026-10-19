@@ -102,8 +102,8 @@
     list$.addEventListener('click', function (e) {
       var an = e.target.closest('[data-aname]');
       if (an) { var x = itemOf(an), key = x.attachment; var d = mlDialog('<div class="ml-head"><b>✏️ ' + T('Name & shortcut') + '</b><button type="button" class="btn ghost sm" data-mlx>✕</button></div><div class="ml-fw">'
-          + '<label>' + T('Name') + '<input id="ln-t" dir="auto" maxlength="80" value="' + esc(x.title || '') + '" placeholder="' + esc(T('e.g. Ruqyah Al-Athiri')) + '"></label>'
-          + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="ln-c" dir="auto" maxlength="60" value="' + esc(x.code || '') + '" placeholder="' + esc(T('#ruqyah-name')) + '"></label>'
+          + '<label>' + T('Name') + '<input id="ln-t" dir="auto" maxlength="80" value="' + esc(x.title || '') + '" placeholder="' + esc(T('e.g. A short name')) + '"></label>'
+          + '<label>' + T('Shortcut — write it in any chat or group and the file is sent') + '<input id="ln-c" dir="auto" maxlength="60" value="' + esc(x.code || '') + '" placeholder="' + esc(T('#shortcut-name')) + '"></label>'
           + '<div class="row"><button type="button" class="btn primary" id="ln-go">💾 ' + T('Save') + '</button><span class="muted small" id="ln-m"></span></div></div>');
         d.onclick = function (ev) { if (ev.target.closest('[data-mlx]')) { d.close(); return; } if (!ev.target.closest('#ln-go')) return;
           var sent = { title: document.getElementById('ln-t').value.trim(), code: document.getElementById('ln-c').value.trim() };

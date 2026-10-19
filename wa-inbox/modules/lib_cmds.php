@@ -100,7 +100,7 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
     wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => $cmd]);
 }
 
-/* ---------- File shortcuts: a library file has its own code ("#رقية-الاثيري"); writing it in a chat or group sends the file ---------- */
+/* ---------- File shortcuts: a library file has its own code ("#shortcut-name"); writing it in a chat or group sends the file ---------- */
 function wf_media_code_clean(string $c): string { $c = trim(preg_replace('/\s+/u', '-', trim($c))); if ($c === '') return ''; return mb_substr(str_starts_with($c, '#') ? $c : '#' . $c, 0, 60); }
 /** Why a tag cannot be used (a section tag, a quick reply's keyword or another file's shortcut already has it), or ''. */
 function wf_tag_taken(string $aid, string $tag, string $exceptKey = '', bool $skipSections = false): string {

@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.101.1', 'date' => '2026-10-19', 'title' => 'Neutral examples and wording', 'changes' => [
+        'Examples, placeholders and notes no longer use a real person\'s name or a real address: the shortcut example is now "#shortcut-name", the sample name is "A short name", and the release notes name no domain, number or tool.',
+    ]],
     ['v' => '3.101.0', 'date' => '2026-10-19', 'title' => 'Staff chat prefix and welcome message', 'changes' => [
         'A team member\'s replies from the dashboard now go out with their name in front — "name: the message" — in private chats and groups, also in the caption of a file. The format is a message template (Messages settings: staff_prefix).',
         'The first time a team member writes in a chat — even an old chat — a welcome message that introduces them (name and business) is sent before their message. It is sent once per team member per private chat; the text is a template (staff_welcome).',
@@ -310,7 +313,7 @@ return [
     ]],
     ['v' => '3.76.0', 'date' => '2026-10-14', 'title' => 'New bot brain', 'changes' => [
         'Healing numbers: one reply prompt (bot_brain) where the model picks the mode itself (healer, support, dreams, teacher, assistant) instead of keyword routing, takes the healers\' closest real answers as the main truth (same method and counts, nothing added), answers first and hands over only when nothing covers it. Danger words still stop the bot before the AI. Switch per number: bot setting brain.',
-        'Measured with a new bot test (.claude/qa/bot_eval.php: 24 real questions with the healer\'s answer, graded by a model): correct 2.79 → 4.13, helpful 3.88 → 4.67, style 4.13 → 4.75, grounded 4.25 → 4.46, overall 4.01 → 4.60, median reply 11 s → 7 s.',
+        'Measured with a new bot test (the bot test suite: 24 real questions with the healer\'s answer, graded by a model): correct 2.79 → 4.13, helpful 3.88 → 4.67, style 4.13 → 4.75, grounded 4.25 → 4.46, overall 4.01 → 4.60, median reply 11 s → 7 s.',
     ]],
     ['v' => '3.75.0', 'date' => '2026-10-14', 'title' => 'Data, media and WhatsApp sessions private to the account', 'changes' => [
         'Checked on the panel itself that PHP-FPM runs as the account user (it read a file private to the account). Then: the data folder, the media folders (inbox_media, uploads, payment receipts) and the WhatsApp session folders are private to the account (0700 / 0600); the request-time loop that opened the data folders to everyone is gone and everything the app creates is private. Panel, install lock, bot hook, gateways, minute jobs and QA checked after each step.',
@@ -352,7 +355,7 @@ return [
         'The page linked app.js, features.js and app.css with an empty version (?v=), so phones kept old copies after updates (English words, missing buttons). The links now carry each file\'s change time.',
     ]],
     ['v' => '3.71.0', 'date' => '2026-10-14', 'title' => 'File shortcuts', 'changes' => [
-        'A library file (recordings first) can have a name and a shortcut such as #رقية-الاثيري (media_meta code, unique per number; spelling variants and -/space alike). Writing the shortcut alone in a group, in a private chat (the customer) or from the bot\'s own phone in any chat sends the file there with its caption — no AI. Set it from ✏️ Name & shortcut on the recordings/library cards or in the media library editor.',
+        'A library file (recordings first) can have a name and a shortcut such as #shortcut-name (media_meta code, unique per number; spelling variants and -/space alike). Writing the shortcut alone in a group, in a private chat (the customer) or from the bot\'s own phone in any chat sends the file there with its caption — no AI. Set it from ✏️ Name & shortcut on the recordings/library cards or in the media library editor.',
     ]],
     ['v' => '3.70.4', 'date' => '2026-10-14', 'title' => 'Security: meetings and Google separated per client', 'changes' => [
         'Meetings: a meeting is reachable only through numbers the user may use (wf_meet_acc_ok); being listed as host or creator no longer opens another tenant\'s meeting (Meet link, guest names and phones, open/close, approvals); a meeting can no longer be saved without a number; a client can open/close its own meetings. The settings overview (operator\'s Google, users, AI, backups) is super admin only.',
@@ -446,7 +449,7 @@ return [
         'All 21 closures that captured every local variable (get_defined_vars + extract) in the bot runner, bot learning, guide growth, library cleaning and the worker now name exactly what they use.',
     ]],
     ['v' => '3.63.5', 'date' => '2026-10-13', 'title' => 'Restructuring step 0: tests without the gateways', 'changes' => [
-        'wi_gateway accepts a stand-in in CLI tests ($GLOBALS[WI_FAKE_GATEWAY]): calls are recorded and answered locally, nothing reaches WhatsApp. New .claude/qa/unit.php runs the domain functions in-process in under a second (keywords and spelling, case targets, role words, library matching, case IDs without saving, follower, sending through the stand-in). wi_case_numbers can run without saving the counter.',
+        'wi_gateway accepts a stand-in in CLI tests ($GLOBALS[WI_FAKE_GATEWAY]): calls are recorded and answered locally, nothing reaches WhatsApp. A new unit test suite runs the domain functions in-process in under a second (keywords and spelling, case targets, role words, library matching, case IDs without saving, follower, sending through the stand-in). wi_case_numbers can run without saving the counter.',
     ]],
     ['v' => '3.63.4', 'date' => '2026-10-13', 'title' => 'Library sends are queued in the gateway', 'changes' => [
         'The host kept the page waiting until every file was sent (the early reply was buffered). media_send and forward_text now hand the list to the gateway (new POST /chat/send-batch, max 30, queue of 300) and answer at once; the gateway sends them one by one 3–6 s apart, retrying once after the per-minute limit.',
@@ -615,7 +618,7 @@ return [
         'The super admin can give it to a client by hand: Clients → Edit plan → «Allow the spiritual type».',
     ]],
     ['v' => '3.51.1', 'date' => '2026-10-12', 'title' => 'Test suite (QA agent) and two fixes it found', 'changes' => [
-        'A «qa-tester» agent in Claude (outside the product) tests every page and API as every person — syntax, private numbers, employee limits — and reports failures with step, cause and fix. No test code ships with the product.',
+        'An automated tester (outside the product) tests every page and API as every person — syntax, private numbers, employee limits — and reports failures with step, cause and fix. No test code ships with the product.',
         'Fix (found by the tests): the "What\'s new" page broke the cache-busting of app.js / features.js (a loop variable overwrote it), so browsers could keep old scripts after an update.',
         'Fix (found by the tests): the Clients page warned for a client without an end date.',
         'JSON APIs read the request body through one helper (wi_input) so the tests can call them.',
@@ -890,7 +893,7 @@ return [
     ]],
     ['v' => '3.24.0', 'date' => '2026-10-10', 'title' => 'System settings instead of fixed values', 'changes' => [
         'Settings → System (super admin): product name and logo, device name, dashboard address, cookie path, time zone, country code and local prefix, sign-out / login-code / lock limits, Drive backup folder, AI bridge address.',
-        'Removed from the code: the inv.iptvpro.org address (alerts, reminders, report, meetings, Google sign-in), the server IP of the bridge, Africa/Cairo, the Egypt-only phone rule, "WhatsApp Inbox" in titles, login code, exports and packages.',
+        'Removed from the code: the fixed installation address (alerts, reminders, report, meetings, Google sign-in), the server IP of the bridge, Africa/Cairo, the Egypt-only phone rule, "WhatsApp Inbox" in titles, login code, exports and packages.',
         'This installation keeps its current values (saved as its settings).',
     ]],
     ['v' => '3.23.0', 'date' => '2026-10-10', 'title' => 'All AI instructions are editable', 'changes' => [

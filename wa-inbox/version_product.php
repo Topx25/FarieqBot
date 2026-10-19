@@ -25,7 +25,7 @@ return [
         'en' => ['Library inventory', ['Every file, shortcut, size, quick reply and program, always up to date, downloadable as Excel; also in WhatsApp.']]],
     ['v' => '3.73', 'date' => '2026-10-14', 'ar' => ['شكل جديد لإعادة التوجيه والإرسال', ['كارت للملف (صورة أو تشغيل، الاسم، الحجم، الكابشن)، بحث ومحادثات وجروبات بالصورة والاسم، واللي اخترتهم ظاهرين فوق، وزرار إرسال ثابت تحت.']],
         'en' => ['New forward and send dialog', ['A card of the file, recipients with photos and names, the chosen ones on top and a fixed send button.']]],
-    ['v' => '3.71', 'date' => '2026-10-14', 'ar' => ['اختصار لكل ملف صوتي', ['اكتب اسم واختصار لأي تسجيل (زي #رقية-الاثيري)، ولما حد يكتب الاختصار في محادثة أو جروب أو من موبايل البوت، الملف بيتبعت على طول.']],
+    ['v' => '3.71', 'date' => '2026-10-14', 'ar' => ['اختصار لكل ملف صوتي', ['اكتب اسم واختصار لأي تسجيل (زي #اسم-الاختصار)، ولما حد يكتب الاختصار في محادثة أو جروب أو من موبايل البوت، الملف بيتبعت على طول.']],
         'en' => ['A shortcut for every recording', ['Give a recording a name and a shortcut; writing it in a chat or group sends the file.']]],
     ['v' => '3.70', 'date' => '2026-10-13', 'ar' => ['البوت بيكمّل الحوار ويستنى المعالج لما يدخل', ['لو الحوار شغال بين البوت والعميل بيكمّل على طول. لو المعالج أو المشرف دخل وسكت: البوت يستنى 5 دقايق، يبعت رسالة انتظار، وبعد 5 دقايق كمان يكمّل هو.']],
         'en' => ['The bot keeps the conversation going', ['When a team member steps in and stops, the bot waits, sends a hold message, then carries on.']]],

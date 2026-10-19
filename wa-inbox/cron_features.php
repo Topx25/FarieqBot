@@ -101,7 +101,7 @@ try {
         preg_match('/^VmRSS:\s+(\d+)/m', $st, $r); preg_match('/^Threads:\s+(\d+)/m', $st, $t); preg_match('/^Name:\s+(\S+)/m', $st, $n);
         $kb = (int) ($r[1] ?? 0); $mem += $kb; $procs++; $threads += (int) ($t[1] ?? 1);
         $nm = $n[1] ?? '?'; $cl = (string) @file_get_contents(dirname($sf) . '/cmdline');
-        $nm = str_contains($cl, 'server.js') ? 'WhatsApp gateways' : (preg_match('/^\d+\.\d+\.\d+/', $nm) ? 'Maintenance session' : ($nm === 'php' || str_contains($cl, 'php') ? 'PHP (dashboard and jobs)' : $nm));
+        $nm = str_contains($cl, 'server.js') ? 'WhatsApp gateways' : (preg_match('/^\d+\.\d+\.\d+/', $nm) ? 'Maintenance tools' : ($nm === 'php' || str_contains($cl, 'php') ? 'PHP (dashboard and jobs)' : $nm));
         $top[$nm] = ($top[$nm] ?? 0) + $kb;
     }
     arsort($top);
