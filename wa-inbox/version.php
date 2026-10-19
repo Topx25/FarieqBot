@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.101.0', 'date' => '2026-10-19', 'title' => 'Staff chat prefix and welcome message', 'changes' => [
+        'A team member\'s replies from the dashboard now go out with their name in front — "Youssef: the message" — in private chats and groups, also in the caption of a file. The format is a message template (Messages settings: staff_prefix).',
+        'The first time a team member writes in a chat — even an old chat — a welcome message that introduces them (name and business) is sent before their message. It is sent once per team member per private chat; the text is a template (staff_welcome).',
+        'Users → each user: "Name shown in chats", "Add their name before every reply" and "A welcome message before their first reply in each chat". Employees and supervisors have both on unless changed; new users start with both ticked; owners and admins are not affected unless you turn them on.',
+    ]],
     ['v' => '3.100.6', 'date' => '2026-10-19', 'title' => 'Library editors can add texts and upload files', 'changes' => [
         'Fixed: saving a text in the Library showed "Not allowed for this number" for a team member who could edit the library. Adding, editing and deleting your texts and uploading files now follow the library permission (edit); the number\'s owner and admins keep full access, view-only users are still refused.',
     ]],

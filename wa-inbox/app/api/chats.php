@@ -108,7 +108,9 @@
         @chmod($dir . '/' . $name, 0644);
         $jid = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($_POST['jid'] ?? ''));
         $upAid = (string) (wi_current()['id'] ?? ''); wi_update('uploads.json', function ($U) use ($name, $upAid) { $U[$name] = $upAid; return $U; }); // which number sent it (only its people may open it)
-        $r = wi_send_or_queue(['jid' => $jid, 'text' => trim((string) ($_POST['text'] ?? '')), 'attachment' => 'inbox_uploads/' . $name,
+        $spm = wf_staff_prepare(wi_current() ?: [], $jid, wi_me(), trim((string) ($_POST['text'] ?? '')));
+        if ($spm['welcome'] !== '') { $rw = wi_send_or_queue(['jid' => $jid, 'text' => $spm['welcome'], 'by' => (string) $_SESSION['email']]); if (!empty($rw['ok'])) wf_staff_mark((string) (wi_current()['id'] ?? ''), $jid, (string) $_SESSION['email']); }
+        $r = wi_send_or_queue(['jid' => $jid, 'text' => $spm['text'], 'attachment' => 'inbox_uploads/' . $name,
             'file_name' => mb_substr(basename((string) $f['name']), 0, 120), 'by' => (string) $_SESSION['email']]);
         wi_log('chat_send_media', ['account' => wi_current()['id'] ?? '', 'jid' => $jid, 'type' => $mime, 'ok' => !empty($r['ok'])]);
         wi_json($r);
@@ -223,7 +225,9 @@
         $jid = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($in['jid'] ?? ''));
         $text = trim((string) ($in['text'] ?? ''));
         if (preg_match('#^/(stop|start)$#i', $text, $cm)) { require_once dirname(__DIR__, 2) . '/features.php'; wf_bot_pause((string) (wi_current()['id'] ?? ''), $jid, strtolower($cm[1]) === 'stop', (string) $_SESSION['email']); wi_json(['ok' => true, 'bot' => strtolower($cm[1])]); }
-        $r = wi_send_or_queue(['jid' => $jid, 'text' => $text, 'by' => (string) $_SESSION['email'], 'quote_id' => preg_replace('/[^0-9A-Za-z_-]/', '', (string) ($in['quote_id'] ?? '')) ?: null]);
+        $sp = wf_staff_prepare(wi_current() ?: [], $jid, wi_me(), $text); // the employee's name in front, and a welcome before their first message in this chat
+        if ($sp['welcome'] !== '') { $rw = wi_send_or_queue(['jid' => $jid, 'text' => $sp['welcome'], 'by' => (string) $_SESSION['email']]); if (!empty($rw['ok'])) wf_staff_mark((string) (wi_current()['id'] ?? ''), $jid, (string) $_SESSION['email']); }
+        $r = wi_send_or_queue(['jid' => $jid, 'text' => $sp['text'], 'by' => (string) $_SESSION['email'], 'quote_id' => preg_replace('/[^0-9A-Za-z_-]/', '', (string) ($in['quote_id'] ?? '')) ?: null]);
         wi_log('chat_send', ['account' => wi_current()['id'] ?? '', 'jid' => $jid, 'ok' => !empty($r['ok'])]);
         wi_json($r);
     }

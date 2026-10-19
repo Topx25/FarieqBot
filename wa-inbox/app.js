@@ -1746,7 +1746,7 @@ document.addEventListener('keydown', function (e) {
       f('uf-sum').innerHTML = '<b>✅ ' + T('This user will be able to') + '</b><ul>' + L.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>'; }
     function open(edit) { form.reset(); f('uf-do').value = edit ? 'update_user' : 'add_user'; f('uf-email').readOnly = !!edit;
       f('uf-pw').required = !edit; f('uf-pw-l').querySelector('span').textContent = edit ? T('New password (optional)') : T('Password (at least 10 characters)');
-      f('uf-title').textContent = edit ? T('Edit') + ' — ' + edit : T('Add user'); if (!edit) applyDefaults(); sync(); dlg.showModal(); }
+      f('uf-title').textContent = edit ? T('Edit') + ' — ' + edit : T('Add user'); if (!edit) { applyDefaults(); f('uf-cprefix').checked = true; f('uf-cwelcome').checked = true; } sync(); dlg.showModal(); }
     // A client's panel: a new supervisor / employee starts with the saved defaults of that role.
     var DEF = JSON.parse(dlg.getAttribute('data-defaults') || '{}');
     function fillPerms(pgs, chat) { [].forEach.call(form.querySelectorAll('input[data-pg]'), function (x) { x.checked = ((pgs || {})[x.dataset.pg] || '') === x.value; });
@@ -1760,7 +1760,7 @@ document.addEventListener('keydown', function (e) {
       [].forEach.call(form.querySelectorAll('input[data-pg][value="' + b.dataset.all + '"]'), function (x) { x.checked = true; }); summary(); });
     [].forEach.call(dlg.querySelectorAll('[data-close]'), function (b) { b.addEventListener('click', function () { dlg.close(); }); });
     document.addEventListener('click', function (e) { var b = e.target.closest('[data-edit]'); if (!b) return; open(b.getAttribute('data-edit'));
-      f('uf-email').value = b.getAttribute('data-edit'); f('uf-name').value = b.getAttribute('data-name') || ''; f('uf-phone').value = b.getAttribute('data-phone');
+      f('uf-email').value = b.getAttribute('data-edit'); f('uf-name').value = b.getAttribute('data-name') || ''; f('uf-phone').value = b.getAttribute('data-phone'); f('uf-chatname').value = b.getAttribute('data-cname') || ''; f('uf-cprefix').checked = !!b.getAttribute('data-cprefix'); f('uf-cwelcome').checked = !!b.getAttribute('data-cwelcome');
       var rr = form.querySelector('input[name="role"][value="' + b.getAttribute('data-role') + '"]'); if (rr) rr.checked = true;
       var fl = JSON.parse(b.getAttribute('data-flags') || '{}'); [].forEach.call(form.querySelectorAll('[data-flag]'), function (i) { i.checked = !!fl[i.dataset.flag]; });
       if (fl.own) { f('uf-own').checked = true; } else { f('uf-pick').checked = true; }

@@ -195,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($hit) { wi_save_users($all); wi_flash($do === 'client_toggle' ? 'Updated.' : 'Saved.', 'ok'); } else wi_flash('Client not found.', 'bad');
         header('Location: ?p=clients' . (!empty($_POST['f']) ? '&f=' . rawurlencode((string) $_POST['f']) : '')); exit;
     }
+    $chatId = function (array $u): array { if (!isset($_POST['chat_sent'])) return $u; $u['chat_name'] = trim(mb_substr((string) ($_POST['chat_name'] ?? ''), 0, 40)); $u['chat_prefix'] = !empty($_POST['chat_prefix']); $u['chat_welcome'] = !empty($_POST['chat_welcome']); return $u; }; // name in chats, "add my name", welcome
     // A client manages their own team only: supervisors and employees on their own numbers, within their seats and their own plan.
     if (in_array($do, ['add_user', 'update_user', 'delete_user', 'team_roles'], true) && (wi_me()['role'] ?? '') === 'client' && empty($_SESSION['imp_from'])) {
         $me = wi_me(); $mail = strtolower((string) $me['email']); $users = wi_users(); $email = strtolower(trim((string) ($_POST['email'] ?? '')));
@@ -217,15 +218,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (strlen($pw) < 10) $back('Password must be at least 10 characters.', 'bad');
             if ($phone === '') $back('Invalid WhatsApp number.', 'bad');
             $users[] = ['email' => $email, 'name' => trim(mb_substr((string) ($_POST['name'] ?? ''), 0, 80)), 'phone' => $phone, 'role' => $role, 'tenant' => $mail, 'created_by' => $mail,
-                'accounts' => $accs, 'pages' => $pagesIn(), 'chat' => $chatIn($role), 'password_hash' => password_hash($pw, PASSWORD_DEFAULT), 'active' => true, 'created_at' => date('c')];
+                'accounts' => $accs, 'pages' => $pagesIn(), 'chat' => $chatIn($role), 'password_hash' => password_hash($pw, PASSWORD_DEFAULT), 'active' => true, 'created_at' => date('c')]; $users[count($users) - 1] = $chatId($users[count($users) - 1]);
             wi_save_users($users); wi_log('team_add', ['target' => $email, 'role' => $role]); $back('User added.');
         }
         if ($do === 'update_user') {
             foreach ($users as &$u) { if (strtolower((string) $u['email']) !== $email) continue;
                 if (isset($_POST['name'])) $u['name'] = trim(mb_substr((string) $_POST['name'], 0, 80));
+                $u = $chatId($u);
                 if (($pw = (string) ($_POST['password'] ?? '')) !== '') { if (strlen($pw) < 10) $back('Password must be at least 10 characters.', 'bad'); $u['password_hash'] = password_hash($pw, PASSWORD_DEFAULT); }
                 if (($ph = trim((string) ($_POST['phone'] ?? ''))) !== '') { $n = wi_norm_phone($ph); if ($n === '') $back('Invalid WhatsApp number.', 'bad'); $u['phone'] = $n; }
-                $u['role'] = $role; $u['accounts'] = $accs; $u['pages'] = $pagesIn(); $u['chat'] = $chatIn($role); $u['active'] = !isset($_POST['active_sent']) || !empty($_POST['active']); }
+                $u['role'] = $role; $u['accounts'] = $accs; $u['pages'] = $pagesIn(); $u['chat'] = $chatIn($role); $u['active'] = !isset($_POST['active_sent']) || !empty($_POST['active']); $u = $chatId($u); }
             unset($u); wi_save_users($users); wi_log('team_update', ['target' => $email, 'role' => $role]); $back('Updated.');
         }
         wi_save_users(array_filter($users, fn($u) => strtolower((string) $u['email']) !== $email));
@@ -265,7 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'can_reply' => !empty($_POST['can_reply']) || ($_POST['num_src'] ?? '') === 'own' || ($_POST['role'] ?? '') === 'client',
                     'can_link' => !empty($_POST['can_link']) || ($_POST['num_src'] ?? '') === 'own' || ($_POST['role'] ?? '') === 'client',
                     'own_number' => ($_POST['num_src'] ?? '') === 'own' || ($_POST['role'] ?? '') === 'client', // links exactly one number of their own
-                    'password_hash' => password_hash($pw, PASSWORD_DEFAULT), 'active' => true, 'created_at' => date('c')];
+                    'password_hash' => password_hash($pw, PASSWORD_DEFAULT), 'active' => true, 'created_at' => date('c')]; $users[count($users) - 1] = $chatId($users[count($users) - 1]);
                 wi_save_users($users); wi_log('user_add', ['target' => $email]); wi_flash('User added.', 'ok');
             }
         } elseif ($do === 'update_user') {
