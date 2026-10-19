@@ -29,6 +29,8 @@ function wf_clean_gcfg(array $g): array {
         'text' => mb_substr(trim((string) ($g['text'] ?? '')), 0, 2000), 'cooldown' => max(1, min(720, (int) ($g['cooldown'] ?? 24))), 'name' => mb_substr((string) ($g['name'] ?? ''), 0, 120),
         'welcome' => !empty($g['welcome']) && $g['welcome'] !== '0', 'welcome_text' => mb_substr(trim((string) ($g['welcome_text'] ?? '')), 0, 2000),
         'learn' => !empty($g['learn']) && $g['learn'] !== '0',
+        'visitors' => !empty($g['visitors']) && $g['visitors'] !== '0', 'bye' => !empty($g['bye']) && $g['bye'] !== '0', 'bye_text' => mb_substr(trim((string) ($g['bye_text'] ?? '')), 0, 1500), // visitors list: farewell to a person who leaves before answering
+        'revisit' => !empty($g['revisit']) && $g['revisit'] !== '0', 'revisit_text' => mb_substr(trim((string) ($g['revisit_text'] ?? '')), 0, 2000), 'revisit_days' => max(0, min(365, (int) ($g['revisit_days'] ?? 3))), // a person who comes back
         'guide' => !empty($g['guide']) && $g['guide'] !== '0', 'guide_text' => mb_substr(trim((string) ($g['guide_text'] ?? '')), 0, 3000), // system help group: explains the system by the asker's permissions
         'fun' => !empty($g['fun']) && $g['fun'] !== '0', // warm-up mode allowed here (turned on from the phone)
         // Reception gate: "woman / man" → the member is asked for a recording; the recording → the reviewers are tagged
@@ -148,6 +150,9 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
         foreach ($pend as $w => $_) $st['gwho'][$x['jid']][$w] = array_values(array_filter((array) ($st['gwho'][$x['jid']][$w] ?? []), fn($t) => $t > $hourAgo));
         $lastAns = []; foreach ($pend as $w => $_) { $ts = (array) ($st['gwho'][$x['jid']][$w] ?? []); $lastAns[$w] = $ts ? max($ts) : 0; }
         uksort($pend, fn($p, $q) => $lastAns[$p] <=> $lastAns[$q]);
+        // Messages that tag the bot (or reply to it) are answered first, then the rest of the recent talk, each group of them in fair order.
+        $isMen = fn($m) => $me !== '' && (in_array($me, array_map('wf_phone', (array) ($m['mentions'] ?? [])), true) || wf_phone($m['quote_from'] ?? '') === $me);
+        $order = array_flip(array_keys($pend)); uksort($pend, fn($p, $q) => ((int) $isMen($pend[$q][1])) <=> ((int) $isMen($pend[$p][1])) ?: $order[$p] <=> $order[$q]);
         $fun = !empty($g['fun']) && wf_fun_on($aid); // warm-up mode: the owner typed the word on the phone — light chat with everyone in this group
         foreach ($pend as $pw => [$i, $m]) {
             if ($n >= 3) break; $r = [];
@@ -181,8 +186,8 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                     if (($hm['dir'] ?? '') === 'in' && wf_phone($hm['from'] ?? '') === $who) $hist[] = ['from' => 'customer', 'text' => $ht];
                     elseif (($hm['via'] ?? '') === 'bot' && str_starts_with($ht, '@' . $who)) $hist[] = ['from' => 'bot', 'text' => trim(mb_substr($ht, mb_strlen('@' . $who)))]; }
                 $r = wf_sysguide_answer($acc, $text, $who, array_slice($hist, -8), (string) ($g['guide_text'] ?? ''));
-                if (empty($r['ok'])) continue;
-                $log += ['reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'role' => 'guide'];
+                if (empty($r['ok']) || !empty($r['handoff'])) continue; // a help group never pings the admins for what it cannot answer
+                $log += ['reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => false, 'model' => $r['task']['model'] ?? '', 'role' => 'guide'];
                 $ok = $r['handoff'] || $r['confidence'] >= 0.5;
                 if ($r['handoff']) $log['why'] = 'handed over to a person';
             } else {

@@ -167,6 +167,7 @@ foreach (wi_accounts() as $ra) try { wf_client_rules_ensure($ra); } catch (Throw
 /* ---- 4c) Clients: usage counters (hourly) and reminders before a subscription ends ---- */
 try { wf_intake_due($accounts); } catch (Throwable $e) {}
 try { wf_gate_due($accounts); } catch (Throwable $e) {}
+try { wf_vis_due($accounts); } catch (Throwable $e) {} // visitors lists: farewell for those who leave unanswered, a note when someone comes back
 try { wi_outbox_flush(); } catch (Throwable $e) {} // replies written while a number was offline // reception groups: reminder, last notice, removal
 try { wf_cases_number_backfill(); } catch (Throwable $e) {} // older cases get their ID // cases from a group whose writer did not answer in time
 try { if ((int) date('i') === 7 || !wi_read('usage.json', [])) wf_usage_refresh(); if ((int) date('i') === 30) wf_client_reminders($tellAdmins); } catch (Throwable $e) {}
