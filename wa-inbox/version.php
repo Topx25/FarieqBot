@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.108.1', 'date' => '2026-10-19', 'title' => 'Farewell: until the recording is sent', 'changes' => [
+        'The farewell was skipped for anyone who had written anything in the reception group. It is now posted for a person who leaves before sending the recording (and was not moved on).',
+    ]],
     ['v' => '3.108.0', 'date' => '2026-10-19', 'title' => 'Visitors list, farewell and returning visitors', 'changes' => [
         'Bot → Groups: a group can keep a visitors list built from its joins and leaves (also the past ones). The list is shown under "Visitors of the groups".',
         'Farewell: a person who leaves the group before answering the reception questions gets the farewell text of the group posted in it.',

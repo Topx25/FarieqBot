@@ -2,7 +2,7 @@
 /* ---------- Visitors of the treatment groups ----------
  * A group can keep a list of the people who come in ("Visitors list" in the group's settings). The list is built from the group's join
  * and leave events, so it also covers the past. Two optional messages, both written in the group's settings (nothing is built in):
- *  - farewell: a person leaves the group before ever answering the reception questions → the farewell text is posted in the group;
+ *  - farewell: a person leaves the group before finishing the reception steps (no recording sent, not moved on) → the farewell text is posted in the group;
  *  - returning: a person comes in again after at least "days between visits" → the returning text is posted with the person and the
  *    group's admins tagged. Moves between our own groups on the same day are one visit, not two.
  * Texts: {name} the person, {mention} their tag, {group} the group's name, {count} the number of visits. */
@@ -42,7 +42,7 @@ function wf_vis_due(array $accounts): void {
                     if (strpos((string) $g['revisit_text'], '{mention}') === false) $txt = '@' . $m . ' ' . $txt;
                     $r = wi_gateway('/chat/send', ['jid' => $gjid, 'text' => trim($txt . ($adt !== '' ? "\n" . $adt : '')), 'mentions' => array_merge([$mj[0] ?? $m . '@s.whatsapp.net'], $adj), 'by' => 'bot', 'via' => 'bot'], $acc);
                     wi_log('visitor_return', ['account' => $aid, 'group' => $gjid, 'visits' => count($p['visits']), 'sent' => !empty($r['ok'])]); $sent++;
-                } elseif ($act === 'remove' && ($e['by'] ?? '') === $m && !empty($g['bye']) && trim((string) $g['bye_text']) !== '' && empty($gate[$gjid][$m]['r']) && empty($gate[$gjid][$m]['a']) && empty($gate[$gjid][$m]['v']) && empty($p['bye'][$gjid])) {
+                } elseif ($act === 'remove' && ($e['by'] ?? '') === $m && !empty($g['bye']) && trim((string) $g['bye_text']) !== '' && empty($gate[$gjid][$m]['v']) && empty($gate[$gjid][$m]['moved']) && empty($p['bye'][$gjid])) {
                     $txt = strtr((string) $g['bye_text'], ['{name}' => $name, '{mention}' => $name, '{group}' => (string) ($g['name'] ?? ''), '{count}' => (string) count($p['visits'])]);
                     $r = wi_gateway('/chat/send', ['jid' => $gjid, 'text' => $txt, 'by' => 'bot', 'via' => 'bot'], $acc);
                     if (!empty($r['ok'])) { $p['bye'][$gjid] = $ts; $S['people'][$m] = $p; }
