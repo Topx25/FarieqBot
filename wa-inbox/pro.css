@@ -1,0 +1,45 @@
+/* ===== Pro layer: one calm look for every page (flat surfaces, hairlines, restrained weight and colour) (Topx1.Host) ===== */
+:root{--pro-r:12px}
+.card,.lcard,.mcard,.vcard,.kpi,.sec-tile,.ux-card,.ai-card,.fl-card{box-shadow:none!important}
+.card{border:1px solid var(--line);border-radius:var(--pro-r)}
+.card-h{padding:14px 18px}.card-h h2{font-size:15px;font-weight:600}
+h1{font-weight:600;letter-spacing:0}
+.hero{background:var(--surface,#fff)!important;color:var(--ink)!important;border:1px solid var(--line);border-radius:var(--pro-r);padding:18px 22px;box-shadow:none!important}
+.hero h1{font-size:22px;font-weight:600;color:var(--ink)!important}.hero p,.hero .muted{color:var(--muted)!important}
+.hero .hero-ic{background:var(--surface-2);box-shadow:none;border-radius:10px}
+/* buttons: quiet by default, one solid colour for the main action */
+.btn{font-weight:600;border-radius:10px;padding:9px 16px}
+.btn.primary{background:var(--brand);box-shadow:none;border-color:transparent;color:#fff}.btn.primary:hover{filter:brightness(.95)}
+.btn.ghost,.chip-btn{background:transparent;border:1px solid var(--line);color:var(--ink-2);font-weight:600}
+.btn.ghost:hover,.chip-btn:hover{background:var(--surface-2)}
+.chip-btn{border-radius:10px}
+.chip-btn.on{background:var(--brand-soft,#e1f3f0);color:var(--brand-2,#075e53);border-color:var(--brand,#0b7f70)}
+.seg button{font-weight:600}
+/* numbers */
+.kpi{background:var(--surface-2,#f6f8f7);border:0;border-radius:10px;padding:14px 16px;min-height:0}
+.kpi::after,.kpi .k-ic{display:none}
+.kpi small{font-weight:500;font-size:13px;color:var(--muted)}
+.kpi b{font-size:26px;font-weight:600}
+.kpis>div{background:var(--surface-2);border:0;border-radius:10px}
+/* dashboard */
+.home .h-hero{background:var(--surface,#fff)!important;color:var(--ink)!important;border:1px solid var(--line);border-radius:var(--pro-r);box-shadow:none!important;padding:18px 22px}
+.home .h-hero h1,.home .h-hello h1{color:var(--ink)!important;font-size:22px;font-weight:600}
+.home .h-hero small,.home .h-hero p,.home .h-hero .muted{color:var(--muted)!important}
+.home .h-acc{background:var(--surface-2)!important;border:1px solid var(--line)!important;color:var(--ink)!important;border-radius:10px!important;backdrop-filter:none}
+.home .h-acc:hover{background:var(--surface)!important;transform:none}
+.home .h-qbtn,.home .h-quick a{background:transparent!important;border:1px solid var(--line)!important;color:var(--ink-2)!important;border-radius:10px;font-weight:600}
+.home .h-qbtn:hover,.home .h-quick a:hover{background:var(--surface-2)!important}
+.home .h-kpis{gap:12px}
+.home .h-grid{gap:12px}
+.home .h-short a{background:transparent;border:1px solid var(--line);border-radius:10px;font-weight:600;box-shadow:none}
+.home .h-short a:hover{background:var(--surface-2)}
+.h-list>*,.top-list>*{border-radius:0;border-bottom:1px solid var(--line);background:transparent}
+.h-list>*:last-child,.top-list>*:last-child{border-bottom:0}
+/* tables and rows */
+.tbl th{background:var(--surface-2);font-weight:600;color:var(--ink-2);font-size:12.5px}
+.tbl td,.tbl th{border-bottom:1px solid var(--line)}
+.badge,.pill{font-weight:600}
+/* section titles in the menu and tabs */
+.nav-h{font-weight:600;letter-spacing:0}
+.page-tabs a,.lib-nav a,.page-tabs .pt-title{font-weight:600}
+.sec-tile{border-radius:999px}

@@ -89,6 +89,6 @@ if (in_array($page, ['link', 'accounts', 'gateway', 'broadcast'], true) && !$man
 $cur = wi_current();
 $mine = wi_my_accounts();
 $me = wi_me();
-$v = preg_replace('/[^0-9.]/', '', (string) (((array) require __DIR__ . '/version.php')[0]['v'] ?? '')) . '.' . ((int) @filemtime(__DIR__ . '/app.js') + (int) @filemtime(__DIR__ . '/app.css') + (int) @filemtime(__DIR__ . '/features.js') + (int) @filemtime(__DIR__ . '/theme.css'));
+$v = preg_replace('/[^0-9.]/', '', (string) (((array) require __DIR__ . '/version.php')[0]['v'] ?? '')) . '.' . ((int) @filemtime(__DIR__ . '/app.js') + (int) @filemtime(__DIR__ . '/app.css') + (int) @filemtime(__DIR__ . '/features.js') + (int) @filemtime(__DIR__ . '/theme.css') + (int) @filemtime(__DIR__ . '/pro.css'));
 require_once __DIR__ . '/features.php'; // page parts (menu labels, library categories, examples) read the business profile
 require __DIR__ . '/app/page.php';    // the page
