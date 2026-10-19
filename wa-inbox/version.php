@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.111.2', 'date' => '2026-10-19', 'title' => 'Facebook: one button to connect', 'changes' => [
+        'Accounts → Facebook pages: a "Continue with Facebook" button on top; the person signs in, picks the pages, and everything comes in by itself (like the Google sign-in). The connected pages show as chips (red when a page needs to be connected again).',
+        'The app settings (App ID, secret, addresses to paste) are folded under "Facebook app settings", done once by the administrator; a client sees only the button, with an optional app of their own.',
+    ]],
     ['v' => '3.111.1', 'date' => '2026-10-19', 'title' => 'Facebook pages card: one clean card', 'changes' => [
         'Accounts: the Facebook part is one card across the page with three steps (the app, the addresses to paste with Copy buttons, Connect with Facebook) and a state badge; adding a page by hand is folded under "Advanced".',
         'The browser no longer fills a saved e-mail into App ID / Page ID or a saved password into the secret fields; the titles show in Arabic.',

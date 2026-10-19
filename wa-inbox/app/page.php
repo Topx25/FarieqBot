@@ -615,6 +615,16 @@
             <button class="btn primary">Connect the chosen pages</button>
           </form>
           <?php endif; ?>
+          <?php $fbPages = array_filter(wi_my_accounts(), 'wf_fb_is'); ?>
+          <div class="fb-main">
+            <div class="fb-main-t"><b>Sign in with Facebook and choose your pages</b><p class="muted small">One button: Facebook asks you to sign in and to pick the pages; their messages, comments, posts and numbers come in by themselves. Nothing to copy or type.</p></div>
+            <?php if ($fbReady): ?><a class="btn fb-btn" href="?fb_connect=1"><span>f</span> <span>Continue with Facebook</span></a>
+            <?php else: ?><button class="btn fb-btn" disabled><span>f</span> <span>Continue with Facebook</span></button><?php endif; ?>
+          </div>
+          <?php if (!$fbReady): ?><p class="fb-note muted small"><?= wi_is_super() ? 'Set up the Facebook app once below; after that everyone connects with the button.' : 'The Facebook sign-in is not set up yet. Ask the administrator, or set up an app of your own below.' ?></p><?php endif; ?>
+          <?php if ($fbPages): ?><div class="fb-linked"><?php foreach ($fbPages as $fpa): $fpc = wf_fb_cfg((string) $fpa['id']); ?><span class="fb-chip <?= $fpc['error'] === '' ? 'ok' : 'bad' ?>" title="<?= wi_e($fpc['error']) ?>"><?= $fpc['error'] === '' ? '●' : '!' ?> <?= wi_e((string) $fpa['name']) ?></span><?php endforeach; ?></div><?php endif; ?>
+          <details class="fb-setup" <?= !$fbReady && (wi_is_super() || $fbOwn['app_id'] !== '') ? 'open' : '' ?>>
+            <summary><?= wi_is_super() ? 'Facebook app settings (once, by the administrator)' : 'Use an app of your own (optional)' ?></summary>
           <div class="fb-steps">
             <form method="post" class="fb-step" autocomplete="off">
               <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="fb_app_save">
@@ -635,12 +645,8 @@
                 <p class="muted small">Webhook fields: messages, messaging_postbacks, message_echoes, message_reads, message_reactions, feed</p>
               <?php else: ?><p class="muted small"><?= $fbScope !== '' && $fbSys['app_id'] !== '' ? 'Nothing to paste: the system\'s app is already set up.' : 'Save the app first: the addresses appear here.' ?></p><?php endif; ?>
             </div>
-            <div class="fb-step">
-              <h3><span class="fb-n">3</span> <span>Connect your pages</span></h3>
-              <p class="muted small">Facebook asks you to sign in and to choose the pages; each chosen page joins your accounts, with its messages, comments, posts and numbers.</p>
-              <?php if ($fbReady): ?><a class="btn primary" href="?fb_connect=1"><span>📘</span> <span>Connect with Facebook</span></a><?php else: ?><button class="btn primary" disabled>Connect with Facebook</button><?php endif; ?>
-            </div>
           </div>
+          </details>
           <details class="fb-manual">
             <summary>Advanced: add a page by hand (page token and app secret)</summary>
             <form method="post" class="fb-manual-f" autocomplete="off">
