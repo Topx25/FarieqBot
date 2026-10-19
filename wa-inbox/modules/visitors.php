@@ -3,8 +3,8 @@
  * A group can keep a list of the people who come in ("Visitors list" in the group's settings). The list is built from the group's join
  * and leave events, so it also covers the past. Two optional messages, both written in the group's settings (nothing is built in):
  *  - farewell: a person leaves the group before finishing the reception steps (no recording sent, not moved on) → the farewell text is posted in the group;
- *  - returning: a person comes in again after at least "days between visits" → the returning text is posted with the person and the
- *    group's admins tagged. Moves between our own groups on the same day are one visit, not two.
+ *  - returning: a person comes in again after leaving → the returning text is posted with the person and the
+ *    group's admins tagged. Joining another of our groups within "days between visits" of leaving one is a move, not a visit.
  * Texts: {name} the person, {mention} their tag, {group} the group's name, {count} the number of visits. */
 
 function wf_vis_state(string $aid): array { return (array) (wi_read('visitors.json', [])[$aid] ?? []) + ['people' => [], 'cur' => []]; }
@@ -26,8 +26,10 @@ function wf_vis_due(array $accounts): void {
                 $t = (string) $e['time']; if (!$boot && $t <= $cur) continue; $act = (string) ($e['action'] ?? ''); $m = preg_replace('/\D/', '', (string) ($e['member'] ?? '')); if ($m === '' || !in_array($act, ['add', 'remove'], true)) { $cur = max($cur, $t); continue; }
                 $ts = strtotime($t); $p = (array) ($S['people'][$m] ?? ['visits' => [], 'left' => []]); $new = false;
                 if ($act === 'add') {
-                    $lastEnd = max(0, ...array_merge([0], array_column((array) $p['left'], 't'), array_column((array) $p['visits'], 't')));
-                    if (!$p['visits'] || $ts - $lastEnd >= $gap) { $p['visits'][] = ['t' => $ts, 'g' => $gjid]; $new = true; } // a join within the gap of the last visit or leave is the same visit (a move between groups)
+                    $lv = (array) end($p['visits']); $ll = $p['left'] ? (array) end($p['left']) : []; $leftSince = $ll && (int) $ll['t'] >= (int) ($lv['t'] ?? 0);
+                    // A new visit: the first join; or a join after the person has left. Coming back to the same group always counts; going to another of our groups
+                    // within the days between visits is a move, not a visit; a second "add" without a leave in between is the same visit.
+                    if (!$p['visits'] || ($leftSince && ((string) $ll['g'] === $gjid || $ts - (int) $ll['t'] >= $gap))) { $p['visits'][] = ['t' => $ts, 'g' => $gjid]; $new = true; }
                 } else if (($e['by'] ?? '') === $m || ($e['by'] ?? '') === '') $p['left'][] = ['t' => $ts, 'g' => $gjid];
                 if (!empty($gate[$gjid][$m]['n']) && empty($p['name'])) $p['name'] = (string) $gate[$gjid][$m]['n'];
                 $S['people'][$m] = $p; $dirty = true; $cur = max($cur, $t);

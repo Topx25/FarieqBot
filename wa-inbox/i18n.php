@@ -150,7 +150,7 @@ return [
     'No message for a returning person' => 'بدون رسالة للعائد',
     'Message to a person who comes back (the group admins are tagged)' => 'رسالة لمن يعود (مع منشن لمديري الجروب)',
     'Returning text — {mention} = the person, {name}, {group}, {count} = number of visits' => 'نص العودة — {mention} = الشخص، {name}، {group}، {count} = عدد الزيارات',
-    'Days between two visits (a join sooner than this is the same visit)' => 'أيام بين زيارتين (دخول أسرع من كده يعتبر نفس الزيارة)',
+    'Days within which joining another of our groups after leaving one is a move, not a new visit' => 'أيام يعتبر فيها الدخول لجروب تاني من جروباتنا بعد الخروج من جروب نقلاً مش زيارة جديدة',
     'Visitors of the groups' => 'زوار الجروبات',
     'No visitors yet' => 'لا يوجد زوار بعد',
     'Turn on "Keep a visitors list" for a group first' => 'فعّل "احتفظ بقائمة زوار" لجروب أولاً',

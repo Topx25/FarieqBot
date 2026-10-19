@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.108.2', 'date' => '2026-10-19', 'title' => 'Returning visitor: any join after a leave', 'changes' => [
+        'A person who leaves a group with a visitors list and comes back to the same group is a returning visitor at once (the returning text is posted with the person and the admins tagged). The "days" setting now only decides when joining another of our groups after leaving one is a move and not a new visit.',
+    ]],
     ['v' => '3.108.1', 'date' => '2026-10-19', 'title' => 'Farewell: until the recording is sent', 'changes' => [
         'The farewell was skipped for anyone who had written anything in the reception group. It is now posted for a person who leaves before sending the recording (and was not moved on).',
     ]],
