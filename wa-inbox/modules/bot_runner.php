@@ -156,7 +156,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             $mentioned = $me !== '' && (in_array($me, array_map('wf_phone', (array) ($m['mentions'] ?? [])), true) || wf_phone($m['quote_from'] ?? '') === $me);
             // A group admin is answered when they ask a question or tag the bot — not while they answer someone else (a reply or a tag of another member).
             $adminAsks = isset($team[$who]) && $mentioned; // STRICT: healers and admins talk among themselves — the bot answers them only when they tag it or reply to it
-            if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun) || $text === '' || !wf_words($text)) continue;
+            if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun && empty($g['guide'])) || $text === '' || !wf_words($text)) continue;
             if (function_exists('wf_intake_is_cmd') && wf_intake_is_cmd($aid, $text)) continue; // a case command in a group that does not run commands: not a chat message, the bot stays quiet
             if (!$mentioned && wf_is_ack($aid, $text)) continue; // "تمام" / "الحمد لله": a talk ending, not a question
             $toOther = (!empty($m['quote_from']) && wf_phone((string) $m['quote_from']) !== $me) || array_diff(array_map('wf_phone', (array) ($m['mentions'] ?? [])), [$me]);
