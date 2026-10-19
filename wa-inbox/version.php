@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.107.5', 'date' => '2026-10-19', 'title' => 'Bot: no hourly cap when set to 0', 'changes' => [
+        'Bot settings: "Max automatic replies per hour" and "Most bot replies in one chat per hour" accept 0 = no limit (they stopped at 1, and the first was capped at 60).',
+        'New setting "Most replies to one person in a group per hour" (0 = no limit); it was fixed at 4 inside the code. The gap between two replies to the same person (2 minutes) is unchanged.',
+        'This number\'s three limits are set to 0.',
+    ]],
     ['v' => '3.107.4', 'date' => '2026-10-19', 'title' => 'Help group teaches the bot\'s commands', 'changes' => [
         'In a System-help group, a "#…" message that no command of the system handles (a typo, a wrong word) is answered with the exact correct command and an example, taken from the number\'s own command list (the "#menu" text). Commands that work are left to the system as before.',
     ]],

@@ -4,7 +4,7 @@
 /* ---------- Bot runner (cron): drafts or automatic replies, with safety limits ---------- */
 function wf_bot_run_cfg(string $aid): array {
     return ((wi_read('bot.json', [])[$aid]['run'] ?? []) + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'dream_wait' => 120, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
-        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5,
+        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5,
         'scope' => 'private', 'groups_mode' => 'selected', 'groups' => [], 'group_default' => ['mode' => 'ai', 'trigger' => 'mention', 'text' => '', 'cooldown' => 24]]);
 }
 /** Chats where the bot is paused with /stop (until /start). */
@@ -151,7 +151,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
         $fun = !empty($g['fun']) && wf_fun_on($aid); // warm-up mode: the owner typed the word on the phone — light chat with everyone in this group
         foreach ($pend as $pw => [$i, $m]) {
             if ($n >= 3) break; $r = [];
-            if (count($st['gwho'][$x['jid']][$pw] ?? []) >= 4) continue; // this person already got 4 replies this hour — give others a turn
+            if ((int) $c['group_person_hour'] > 0 && count($st['gwho'][$x['jid']][$pw] ?? []) >= (int) $c['group_person_hour']) continue; // the cap per person per hour in a group (0 = none): give others a turn
             $who = wf_phone($m['from'] ?? ''); $text = trim((string) ($m['text'] ?? ''));
             if ($who !== '' && !isset($team[$who]) && $text !== '' && !wf_words($text) && ($g['trigger'] ?? 'mention') === 'all' && $c['mode'] === 'auto') { wf_bot_emoji($acc, (string) $x['jid'], (string) ($m['id'] ?? ''), $text, false); continue; } // only emojis in a group: a reaction, no message
             $mentioned = $me !== '' && (in_array($me, array_map('wf_phone', (array) ($m['mentions'] ?? [])), true) || wf_phone($m['quote_from'] ?? '') === $me);
@@ -227,7 +227,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 if ($mentions) $log['reply'] .= "\n" . implode(' ', array_map(fn($j) => '@' . explode('@', $j)[0], $mentions));
             }
             $hh = (int) date('G'); $inH = $c['from'] <= $c['to'] ? ($hh >= $c['from'] && $hh < $c['to']) : ($hh >= $c['from'] || $hh < $c['to']);
-            if ($c['mode'] === 'auto' && $ok && $inH && count($st['sent']) < $c['per_hour']) {
+            if ($c['mode'] === 'auto' && $ok && $inH && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour'])) {
                 // every group reply tags the person it answers, so replies to different people never get mixed up
                 $askJ = $who . (strlen($who) >= 14 ? '@lid' : '@s.whatsapp.net'); $gtext = '@' . $who . ' ' . wf_bot_style($log['reply'], $aid, (string) $x['jid'], true);
                 $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => $gtext, 'by' => 'bot', 'via' => 'bot', 'quote_id' => $m['id'] ?? null, 'mentions' => array_values(array_unique(array_merge([$askJ], $mentions)))], $acc); wf_bot_intro_done(!empty($s['ok']));
@@ -251,7 +251,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
     wi_ctx_set('ai_acc', $acc); // AI calls of this number use its owner's keys (a client) or the system's
     $aid = (string) $acc['id']; $c = wf_bot_run_cfg($aid);
     // A new number warms up: fewer replies per hour until the chosen date (less risk of a WhatsApp block).
-    if (!empty($c['warmup_until']) && strtotime((string) $c['warmup_until']) > time()) $c['per_hour'] = min((int) $c['per_hour'], max(1, (int) $c['warmup_per_hour']));
+    if (!empty($c['warmup_until']) && strtotime((string) $c['warmup_until']) > time()) $c['per_hour'] = (int) $c['per_hour'] > 0 ? min((int) $c['per_hour'], max(1, (int) $c['warmup_per_hour'])) : max(1, (int) $c['warmup_per_hour']);
     if ($c['mode'] === 'off' || empty($acc['enabled'])) return ['skipped' => 'off'];
     // One run at a time per number (the instant hook and the every-minute check can meet).
     // The instant trigger waits its turn (up to 2 minutes) instead of giving up.
@@ -308,7 +308,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         if ($sw && in_array($tn, $sw, true)) { wi_update('bot_paused.json', function ($P) use ($aid, $x) { $P[$aid][$x['jid']] = ['at' => date('c'), 'by' => 'customer asked to stop']; return $P; }); $skip($x, 'customer asked to stop — bot paused here', $text); continue; }
         // Per-chat limit and the bot's own recent replies here (used against repeating itself).
         $mine = []; $hourN = 0; foreach ($rows as $m) if ($m['dir'] === 'out' && ($m['via'] ?? '') === 'bot') { $mine[] = (string) ($m['text'] ?? ''); if (strtotime((string) $m['time']) > time() - 3600) $hourN++; }
-        if (!$isTest && !$again && $hourN >= max(1, (int) $c['chat_per_hour'])) { $skip($x, 'limit of bot replies per chat per hour', $text); continue; }
+        if (!$isTest && !$again && (int) $c['chat_per_hour'] > 0 && $hourN >= (int) $c['chat_per_hour']) { $skip($x, 'limit of bot replies per chat per hour', $text); continue; }
         $mine = array_slice($mine, -3);
         if ((string) ($last['id'] ?? '') === '') foreach (array_reverse($rows) as $m) if (($m['dir'] ?? '') === 'in') { $last['id'] = (string) ($m['id'] ?? ''); break; } // the chat list has no message id: reactions and quotes need it
         if ($c['mode'] === 'auto' && function_exists('wf_media_code_send') && wf_media_code_send($acc, (string) $x['jid'], $text, (string) ($last['id'] ?? ''))) { // a file's shortcut: the file, no AI
@@ -348,12 +348,12 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         }
         // Handing over to a person: the polite "someone from the team will answer" reply is still sent,
         // then the bot steps back from this chat so it never talks over the team.
-        $handoffSend = $r['handoff'] && $c['mode'] === 'auto' && $inHours && count($st['sent']) < $c['per_hour'];
+        $handoffSend = $r['handoff'] && $c['mode'] === 'auto' && $inHours && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour']);
         // A short clarifying question is always safe to send (it states no facts), even with low confidence.
         $clarify = !empty($r['clarify']) || (mb_strlen($r['reply']) < 220 && preg_match('/[؟?]\s*$/u', trim($r['reply'])) && $r['confidence'] >= 0.3);
         $minConf = in_array($role, ['dreams', 'support', 'healer'], true) ? min((float) $c['min_conf'], 0.65) : (float) $c['min_conf']; // an interpretation or a caring reply is never certain: the roles send from 0.65
-        $send = $c['mode'] === 'auto' && $inHours && count($st['sent']) < $c['per_hour'] && ($handoffSend || $clarify || $r['confidence'] >= $minConf);
-        $why = $c['mode'] !== 'auto' ? 'suggest-only mode' : (!$inHours ? 'outside working hours' : (count($st['sent']) >= $c['per_hour'] ? 'hourly limit' : ($r['handoff'] ? 'handed over to a person' : ($r['confidence'] < $c['min_conf'] ? 'low confidence' : ''))));
+        $send = $c['mode'] === 'auto' && $inHours && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour']) && ($handoffSend || $clarify || $r['confidence'] >= $minConf);
+        $why = $c['mode'] !== 'auto' ? 'suggest-only mode' : (!$inHours ? 'outside working hours' : (((int) $c['per_hour'] > 0 && count($st['sent']) >= (int) $c['per_hour']) ? 'hourly limit' : ($r['handoff'] ? 'handed over to a person' : ($r['confidence'] < $c['min_conf'] ? 'low confidence' : ''))));
         $log = ['role' => $role, 'jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => mb_substr($text, 0, 600), 'reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'at' => date('c')];
         if ($send) {
             $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => wf_bot_style($r['reply'], $aid, $isTest ? '' : (string) $x['jid']), 'by' => 'bot', 'via' => 'bot', 'typing_ms' => (int) round(1000 * min(max(1, (float) $c['typing_max']), max((float) $c['typing_min'], mb_strlen($r['reply']) / 25) * (0.85 + mt_rand(0, 30) / 100)))], $acc); wf_bot_intro_done(!empty($s['ok']));
@@ -470,7 +470,7 @@ function wf_api_bot_health(string $api): void {
     usort($waiting, fn($a, $b) => strcmp((string) $b['at'], (string) $a['at']));
     $sent = count(array_filter((array) ($S['sent'] ?? []), fn($t) => $t > time() - 3600));
     $tickAge = !empty($S['last_tick']) ? time() - strtotime($S['last_tick']) : null;
-    $state = $c['mode'] === 'off' ? 'off' : (empty($h['connected']) ? 'disconnected' : ($tickAge === null || $tickAge > 180 ? 'not running' : ($sent >= (int) $c['per_hour'] ? 'hourly limit' : 'ok')));
+    $state = $c['mode'] === 'off' ? 'off' : (empty($h['connected']) ? 'disconnected' : ($tickAge === null || $tickAge > 180 ? 'not running' : (((int) $c['per_hour'] > 0 && $sent >= (int) $c['per_hour']) ? 'hourly limit' : 'ok')));
     wi_json(['ok' => true, 'state' => $state, 'mode' => $c['mode'], 'connected' => !empty($h['connected']), 'last_tick' => $S['last_tick'] ?? null, 'last_sent' => $S['last_sent'] ?? null,
         'sent_hour' => $sent, 'per_hour' => (int) $c['per_hour'], 'waiting' => array_slice($waiting, 0, 50)]);
 }
