@@ -140,6 +140,8 @@ return [
     'Open' => 'فتح',
     'Remove' => 'حذف',
     '➕ Add WhatsApp account' => '➕ إضافة حساب واتساب',
+    'Help manual (what the help groups explain)' => 'دليل المساعدة (اللي بتشرحه جروبات المساعدة)',
+    'Leave a page empty to use the built-in text. What you write replaces it for this number.' => 'سيب الصفحة فاضية علشان يستخدم النص الجاهز. اللي تكتبه بيحل محله لهذا الرقم.',
     'System help' => 'مساعدة النظام',
     'Not a help group' => 'ليس جروب مساعدة',
     'Explain the system to members, by what their account may open' => 'يشرح النظام للأعضاء حسب الصفحات اللي حسابهم يفتحها',

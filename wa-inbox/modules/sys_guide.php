@@ -80,3 +80,16 @@ function wf_sysguide_answer(array $acc, string $text, string $phone, array $hist
     $reply = trim((string) ($d['reply'] ?? '')); $conf = max(0.0, min(1.0, (float) ($d['confidence'] ?? 0)));
     return ['ok' => !empty($ai['ok']) && $reply !== '', 'reply' => $reply, 'confidence' => $conf, 'handoff' => !empty($d['handoff']), 'clarify' => false, 'task' => $ai['task'] ?? [], 'user' => $u ? (string) $u['email'] : ''];
 }
+
+/** Bot → Groups → Help manual: read and change the page texts the help groups use (per number). */
+function wf_api_sysguide(string $api): void {
+    if ($api !== 'sysguide') return;
+    $aid = wf_aid(); if ($aid === '') wi_json(['ok' => false, 'error' => 'No number.']);
+    $man = wf_sysguide_manual();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') { $in = wf_post(); wf_admin(); $pages = [];
+        foreach ((array) ($in['pages'] ?? []) as $k => $v) { $k = (string) $k; $v = mb_substr(trim((string) $v), 0, 2500); if (isset($man[$k]) && $v !== '') $pages[$k] = $v; }
+        wi_update('sys_guide.json', function ($G) use ($aid, $pages) { $G[$aid] = ['pages' => $pages]; return $G; }); wi_log('sysguide_save', ['account' => $aid, 'pages' => count($pages)]);
+    }
+    $labels = []; foreach (wi_menu() as $sec) foreach ($sec['items'] as $it) $labels[$it['key']] = (string) $it['label'];
+    wi_json(['ok' => true, 'keys' => array_keys($man), 'labels' => $labels, 'manual' => $man, 'pages' => wf_sysguide_cfg($aid)['pages']]);
+}

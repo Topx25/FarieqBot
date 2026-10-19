@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.107.2', 'date' => '2026-10-19', 'title' => 'Help manual you can edit; cleaner change log', 'changes' => [
+        'Bot → Groups → Help manual: every page text the help groups explain can be rewritten per number (empty = the built-in text).',
+        'Reception gate: the words that mean a woman or a man are now saved in the group\'s own settings. They used to come only from the spiritual-healing business type, so after a number was switched to another type the gate stopped recognising the answer.',
+        'Old change-log lines no longer name people, numbers or organisations.',
+    ]],
     ['v' => '3.107.1', 'date' => '2026-10-19', 'title' => 'Welcome messages no longer get lost', 'changes' => [
         'The welcome of a group was marked as "already welcomed" before it was sent, and it built the whole chat list just to find the group\'s name; on a busy server that step could run out of time, so the member was marked and never welcomed (nobody was welcomed again for 7 days). Members are now marked only after the welcome is sent (or saved as a draft), and the saved group name is used.',
     ]],
@@ -639,7 +644,7 @@ return [
     ]],
     ['v' => '3.54.2', 'date' => '2026-10-12', 'title' => 'Bot: never answers the system\'s own messages, never invents names', 'changes' => [
         'The bot recognises the messages the system sends by itself (login code, alerts, reports, reminders, subscription notices — from the message templates, in both languages) and never answers them, even from a test number. Before, the login codes sent from the main number to جندي الله\'s number got bot replies.',
-        'New message-style rule: call the person only by the name the system knows (or the one they gave in the chat); never guess or reuse another name (the bot had called the main number «زياد»).',
+        'New message-style rule: call the person only by the name the system knows (or the one they gave in the chat); never guess or reuse another name (the bot had called a person by another person\'s name).',
     ]],
     ['v' => '3.54.1', 'date' => '2026-10-12', 'title' => 'Chat list from memory', 'changes' => [
         'The gateway keeps the chat list ready and rebuilds it only after a new message is archived (or every 2 minutes for names): on the busiest number it went from about 380 ms to a few ms.',
@@ -687,8 +692,8 @@ return [
     ]],
     ['v' => '3.50.0', 'date' => '2026-10-11', 'title' => 'Private numbers (fixed production rule)', 'changes' => [
         'A number that has an owner is private: only its owner and the owner\'s own team see it — its chats, files, cases, library, settings and every word of it. Not the super admin, not other admins. "Sign in as" refuses users of a private number the person may not see.',
-        'Owners: Main number → Hany Ahmed, جندي الله → جندي الله, Support Team → Support Team. Hany\'s access to Support Team was removed.',
-        'Quick replies, label names and the people a chat can be assigned to are private per owner: the four ruqyah replies belong to جندي الله; the main number starts with its own empty list.',
+        'Owners: every number now has an owner, and an owner\'s access to another owner\'s number was removed.',
+        'Quick replies, label names and the people a chat can be assigned to are private per owner; a new number starts with its own empty list.',
         'The main number can have an owner (config main_owner).',
     ]],
     ['v' => '3.49.1', 'date' => '2026-10-11', 'title' => 'Business settings: library sections', 'changes' => [
@@ -696,7 +701,7 @@ return [
     ]],
     ['v' => '3.49.0', 'date' => '2026-10-11', 'title' => 'IT support business type; numbers set to their real business', 'changes' => [
         'New business type «IT — technical support»: tickets (🎫 التذاكر) new → being solved → waiting for the customer → solved, support wording (problem, details, cause / fix, support group, maintenance plans) and a support library (fixes, guides, network and internet, policies and prices, FAQ).',
-        'Main number and Support Team are now IT support; جندي الله stays ruqyah. The main number has its own rules file (wa-local/rules.main.json), so جندي الله keeps the shared ruqyah library.',
+        'The main number has its own rules file (wa-local/rules.main.json), so the other owners keep their shared library.',
         'Switching the type in Business settings also rewrites that number\'s library and content rules (healing goes back to the shared ones); restart its gateway to apply.',
     ]],
     ['v' => '3.48.1', 'date' => '2026-10-11', 'title' => 'Client numbers: their own library and content rules', 'changes' => [
@@ -714,7 +719,7 @@ return [
         '"# تحصين" (with a space after #) is understood like "#تحصين".',
     ]],
     ['v' => '3.47.3', 'date' => '2026-10-10', 'title' => '#تحصين works in the groups', 'changes' => [
-        'The members\' keyword «تحصين» is set on «البرنامج التحصيني اليومي» (main number and cases number).',
+        'The members\' keyword is set on the daily program (main number and cases number).',
         'A members\' keyword also turns your own message typed on the phone (#تحصين) into the full reply.',
     ]],
     ['v' => '3.47.2', 'date' => '2026-10-10', 'title' => 'Marital status list without repeats', 'changes' => [
