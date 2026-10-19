@@ -13,6 +13,13 @@ function wf_vis_groups(string $aid): array {
     foreach ((array) ($c['groups'] ?? []) as $jid => $g) { $g = wf_bot_group_cfg($c, (string) $jid); if ($g && !empty($g['visitors'])) $out[(string) $jid] = $g; }
     return $out;
 }
+/** The mobile number of a group member known by a WhatsApp ID (a long "lid"): ['phone' => ..., 'name' => ...] from the group's member list, kept for a minute. '' phone when unknown. */
+function wf_group_member_phone(array $acc, string $gjid, string $id): array {
+    static $cache = []; $k = (string) $acc['id'] . '|' . $gjid; $id = preg_replace('/\D/', '', $id);
+    if (!isset($cache[$k]) || $cache[$k]['at'] < time() - 60) $cache[$k] = ['at' => time(), 'm' => (array) (wi_gateway('/groups/members?jid=' . rawurlencode($gjid), null, $acc)['members'] ?? [])];
+    foreach ($cache[$k]['m'] as $x) if ($id !== '' && ($id === preg_replace('/\D/', '', (string) ($x['lid'] ?? '')) || $id === preg_replace('/\D/', '', (string) ($x['jid'] ?? '')) || $id === preg_replace('/\D/', '', (string) ($x['phone'] ?? '')))) return ['phone' => preg_replace('/\D/', '', (string) ($x['phone'] ?? '')), 'name' => (string) ($x['name'] ?? '')];
+    return ['phone' => '', 'name' => ''];
+}
 /** Runs every minute: new join / leave events of the groups that keep a list. */
 function wf_vis_due(array $accounts): void {
     foreach ($accounts as $acc) {
@@ -35,14 +42,23 @@ function wf_vis_due(array $accounts): void {
                 $S['people'][$m] = $p; $dirty = true; $cur = max($cur, $t);
                 if ($boot || $c['mode'] !== 'auto' || $sent >= 4 || $ts < time() - 3 * 3600) continue; // history only builds the list; late events are not announced
                 $name = (string) ($p['name'] ?? '') !== '' ? (string) $p['name'] : '+' . $m;
+                $kickAt = (int) ($g['revisit_kick'] ?? 0);
+                if ($act === 'add' && $new && $kickAt > 0 && count($p['visits']) >= $kickAt && !isset(wf_team($acc, (array) ($c['groups'] ?? []))[$m])) { // the Nth entry: accepted (join requests are approved by the group setting) and removed again
+                    $kj = ''; for ($try = 0; $try < 2 && $kj === ''; $try++) { if ($try) sleep(3); foreach ((array) (wi_gateway('/groups/members?jid=' . rawurlencode($gjid), null, $acc)['members'] ?? []) as $x) if (in_array($m, [preg_replace('/\D/', '', (string) ($x['lid'] ?? '')), preg_replace('/\D/', '', (string) ($x['jid'] ?? '')), preg_replace('/\D/', '', (string) ($x['phone'] ?? ''))], true) && empty($x['admin'])) { $kj = (string) $x['jid']; break; } }
+                    $r = $kj !== '' ? wi_gateway('/groups/remove', ['group' => $gjid, 'jid' => $kj], $acc) : ['ok' => false];
+                    if (empty($r['ok'])) { $p['kick_try'] = ($p['kick_try'] ?? 0) + 1; }
+                    else if (trim((string) ($g['kick_text'] ?? '')) !== '') wi_gateway('/chat/send', ['jid' => $gjid, 'text' => strtr((string) $g['kick_text'], ['{name}' => $name, '{mention}' => $name, '{count}' => (string) count($p['visits'])]), 'by' => 'bot', 'via' => 'bot'], $acc);
+                    $S['people'][$m] = $p; wi_log('visitor_kick', ['account' => $aid, 'group' => $gjid, 'visits' => count($p['visits']), 'removed' => !empty($r['ok'])]); continue;
+                }
                 if ($act === 'add' && $new && count($p['visits']) >= 2 && !empty($g['revisit']) && trim((string) $g['revisit_text']) !== '') {
                     if ($names === null) { $names = []; foreach ((array) (wi_gateway('/groups', null, $acc)['groups'] ?? []) as $x) $names[(string) ($x['id'] ?? $x['jid'] ?? '')] = (string) ($x['subject'] ?? $x['name'] ?? ''); }
-                    $mm = (array) (wi_gateway('/groups/members?jid=' . rawurlencode($gjid), null, $acc)['members'] ?? []); $mj = array_values(array_filter(array_map(fn($x) => (string) ($x['jid'] ?? $x['id'] ?? ''), array_filter($mm, fn($x) => preg_replace('/\D/', '', (string) ($x['phone'] ?? $x['jid'] ?? '')) === $m))));
+                    $mm = (array) (wi_gateway('/groups/members?jid=' . rawurlencode($gjid), null, $acc)['members'] ?? []); $who = wf_group_member_phone($acc, $gjid, $m); $ph = $who['phone'] !== '' ? $who['phone'] : $m; // the tag shows the mobile number, not the long WhatsApp ID
+                    if (empty($p['name']) && $who['name'] !== '') $name = $who['name'];
                     $adm = array_values(array_filter($mm, fn($x) => !empty($x['admin']) && empty($x['is_lid'])));
                     $adj = array_map(fn($x) => wf_phone((string) $x['phone']) . '@s.whatsapp.net', array_slice($adm, 0, 8)); $adt = implode(' ', array_map(fn($j) => '@' . explode('@', $j)[0], $adj));
-                    $txt = strtr((string) $g['revisit_text'], ['{name}' => $name, '{mention}' => '@' . $m, '{group}' => $names[$gjid] ?? (string) ($g['name'] ?? ''), '{count}' => (string) count($p['visits'])]);
-                    if (strpos((string) $g['revisit_text'], '{mention}') === false) $txt = '@' . $m . ' ' . $txt;
-                    $r = wi_gateway('/chat/send', ['jid' => $gjid, 'text' => trim($txt . ($adt !== '' ? "\n" . $adt : '')), 'mentions' => array_merge([$mj[0] ?? $m . '@s.whatsapp.net'], $adj), 'by' => 'bot', 'via' => 'bot'], $acc);
+                    $txt = strtr((string) $g['revisit_text'], ['{name}' => $name, '{mention}' => '@' . $ph, '{group}' => $names[$gjid] ?? (string) ($g['name'] ?? ''), '{count}' => (string) count($p['visits'])]);
+                    if (strpos((string) $g['revisit_text'], '{mention}') === false) $txt = '@' . $ph . ' ' . $txt;
+                    $r = wi_gateway('/chat/send', ['jid' => $gjid, 'text' => trim($txt . ($adt !== '' ? "\n" . $adt : '')), 'mentions' => array_merge([$ph . '@s.whatsapp.net'], $adj), 'by' => 'bot', 'via' => 'bot'], $acc);
                     wi_log('visitor_return', ['account' => $aid, 'group' => $gjid, 'visits' => count($p['visits']), 'sent' => !empty($r['ok'])]); $sent++;
                 } elseif ($act === 'remove' && ($e['by'] ?? '') === $m && !empty($g['bye']) && trim((string) $g['bye_text']) !== '' && empty($gate[$gjid][$m]['v']) && empty($gate[$gjid][$m]['moved']) && empty($p['bye'][$gjid])) {
                     $txt = strtr((string) $g['bye_text'], ['{name}' => $name, '{mention}' => $name, '{group}' => (string) ($g['name'] ?? ''), '{count}' => (string) count($p['visits'])]);

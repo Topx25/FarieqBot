@@ -30,7 +30,7 @@ function wf_clean_gcfg(array $g): array {
         'welcome' => !empty($g['welcome']) && $g['welcome'] !== '0', 'welcome_text' => mb_substr(trim((string) ($g['welcome_text'] ?? '')), 0, 2000),
         'learn' => !empty($g['learn']) && $g['learn'] !== '0',
         'visitors' => !empty($g['visitors']) && $g['visitors'] !== '0', 'bye' => !empty($g['bye']) && $g['bye'] !== '0', 'bye_text' => mb_substr(trim((string) ($g['bye_text'] ?? '')), 0, 1500), // visitors list: farewell to a person who leaves before answering
-        'revisit' => !empty($g['revisit']) && $g['revisit'] !== '0', 'revisit_text' => mb_substr(trim((string) ($g['revisit_text'] ?? '')), 0, 2000), 'revisit_days' => max(0, min(365, (int) ($g['revisit_days'] ?? 3))), // a person who comes back
+        'revisit' => !empty($g['revisit']) && $g['revisit'] !== '0', 'revisit_text' => mb_substr(trim((string) ($g['revisit_text'] ?? '')), 0, 2000), 'revisit_days' => max(0, min(365, (int) ($g['revisit_days'] ?? 3))), 'revisit_kick' => max(0, min(50, (int) ($g['revisit_kick'] ?? 0))), 'kick_text' => mb_substr(trim((string) ($g['kick_text'] ?? '')), 0, 1000), // a person who comes back
         'guide' => !empty($g['guide']) && $g['guide'] !== '0', 'guide_text' => mb_substr(trim((string) ($g['guide_text'] ?? '')), 0, 3000), // system help group: explains the system by the asker's permissions
         'fun' => !empty($g['fun']) && $g['fun'] !== '0', // warm-up mode allowed here (turned on from the phone)
         // Reception gate: "woman / man" → the member is asked for a recording; the recording → the reviewers are tagged
@@ -158,6 +158,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             if ($n >= 3) break; $r = [];
             if ((int) $c['group_person_hour'] > 0 && count($st['gwho'][$x['jid']][$pw] ?? []) >= (int) $c['group_person_hour']) continue; // the cap per person per hour in a group (0 = none): give others a turn
             $who = wf_phone($m['from'] ?? ''); $text = trim((string) ($m['text'] ?? ''));
+            $wTags = [$who]; if (strlen($who) >= 14 && function_exists('wf_group_member_phone') && ($pn0 = wf_group_member_phone($acc, (string) $x['jid'], $who)['phone']) !== '') $wTags[] = $pn0; // the bot's replies to this person start with their tag (mobile number or long ID)
             if ($who !== '' && !isset($team[$who]) && $text !== '' && !wf_words($text) && ($g['trigger'] ?? 'mention') === 'all' && $c['mode'] === 'auto') { wf_bot_emoji($acc, (string) $x['jid'], (string) ($m['id'] ?? ''), $text, false); continue; } // only emojis in a group: a reaction, no message
             $mentioned = $me !== '' && (in_array($me, array_map('wf_phone', (array) ($m['mentions'] ?? [])), true) || wf_phone($m['quote_from'] ?? '') === $me);
             // A group admin is answered when they ask a question or tag the bot — not while they answer someone else (a reply or a tag of another member).
@@ -184,7 +185,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             } elseif (!empty($g['guide'])) { // a system help group: explains the system by what the asker's account may open
                 $hist = []; foreach (array_slice($rows, max(0, $i - 80), 80) as $hm) { $ht = trim((string) ($hm['text'] ?? '')); if ($ht === '') continue;
                     if (($hm['dir'] ?? '') === 'in' && wf_phone($hm['from'] ?? '') === $who) $hist[] = ['from' => 'customer', 'text' => $ht];
-                    elseif (($hm['via'] ?? '') === 'bot' && str_starts_with($ht, '@' . $who)) $hist[] = ['from' => 'bot', 'text' => trim(mb_substr($ht, mb_strlen('@' . $who)))]; }
+                    elseif (($hm['via'] ?? '') === 'bot' && ($tg = array_values(array_filter($wTags, fn($t) => str_starts_with($ht, '@' . $t)))[0] ?? '') !== '') $hist[] = ['from' => 'bot', 'text' => trim(mb_substr($ht, mb_strlen('@' . $tg)))]; }
                 $r = wf_sysguide_answer($acc, $text, $who, array_slice($hist, -8), (string) ($g['guide_text'] ?? ''));
                 if (empty($r['ok']) || !empty($r['handoff'])) continue; // a help group never pings the admins for what it cannot answer
                 $log += ['reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => false, 'model' => $r['task']['model'] ?? '', 'role' => 'guide'];
@@ -194,7 +195,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 // Only this person's talk with the bot: their own messages and the bot's replies to them (other members' chatter mixed the names up)
                 $hist = []; foreach (array_slice($rows, max(0, $i - 80), 80) as $hm) { $ht = trim((string) ($hm['text'] ?? '')); if ($ht === '') continue;
                     if (($hm['dir'] ?? '') === 'in' && wf_phone($hm['from'] ?? '') === $who) $hist[] = ['from' => 'customer', 'text' => $ht];
-                    elseif (($hm['via'] ?? '') === 'bot' && str_starts_with($ht, '@' . $who)) $hist[] = ['from' => 'bot', 'text' => trim(mb_substr($ht, mb_strlen('@' . $who)))]; }
+                    elseif (($hm['via'] ?? '') === 'bot' && ($tg = array_values(array_filter($wTags, fn($t) => str_starts_with($ht, '@' . $t)))[0] ?? '') !== '') $hist[] = ['from' => 'bot', 'text' => trim(mb_substr($ht, mb_strlen('@' . $tg)))]; }
                 $hist = array_slice($hist, -8);
                 $card = wf_customer_card($acc, $who . '@s.whatsapp.net');
                 // Groups: the group's role (healer and ruqyah teacher by default), or the role this person's words call; the person keeps it for a while
@@ -234,7 +235,8 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             $hh = (int) date('G'); $inH = $c['from'] <= $c['to'] ? ($hh >= $c['from'] && $hh < $c['to']) : ($hh >= $c['from'] || $hh < $c['to']);
             if ($c['mode'] === 'auto' && $ok && $inH && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour'])) {
                 // every group reply tags the person it answers, so replies to different people never get mixed up
-                $askJ = $who . (strlen($who) >= 14 ? '@lid' : '@s.whatsapp.net'); $gtext = '@' . $who . ' ' . wf_bot_style($log['reply'], $aid, (string) $x['jid'], true);
+                $tagNum = $who; if (strlen($who) >= 14 && function_exists('wf_group_member_phone') && ($pn = wf_group_member_phone($acc, (string) $x['jid'], $who)['phone']) !== '') $tagNum = $pn; // the tag shows the mobile number, not the long WhatsApp ID
+                $askJ = $tagNum . (strlen($tagNum) >= 14 ? '@lid' : '@s.whatsapp.net'); $gtext = '@' . $tagNum . ' ' . wf_bot_style($log['reply'], $aid, (string) $x['jid'], true);
                 $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => $gtext, 'by' => 'bot', 'via' => 'bot', 'quote_id' => $m['id'] ?? null, 'mentions' => array_values(array_unique(array_merge([$askJ], $mentions)))], $acc); wf_bot_intro_done(!empty($s['ok']));
                 $log['result'] = !empty($s['ok']) ? (!empty($r['handoff']) ? 'handoff' : 'sent') : 'send_failed'; if (!empty($s['ok'])) { $st['sent'][] = time(); $st['gwho'][$x['jid']][$who][] = time(); } else $log['error'] = $s['error'] ?? '';
                 if (!empty($s['ok']) && function_exists('wf_role_note')) wf_role_note($aid, $who, (string) ($log['role'] ?? 'bot'), $text, (string) $log['reply'], (string) ($x['name'] ?? ''));

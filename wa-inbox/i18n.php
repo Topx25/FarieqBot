@@ -156,6 +156,8 @@ return [
     'Turn on "Keep a visitors list" for a group first' => 'فعّل "احتفظ بقائمة زوار" لجروب أولاً',
     'Visits' => 'الزيارات',
     'Last visit' => 'آخر زيارة',
+    'Remove the person on this entry number, after accepting them (0 = never)' => 'حذف الشخص عند رقم الدخول ده بعد قبوله (0 = بدون)',
+    'Text posted when the person is removed — {name}' => 'نص يُنشر عند حذف الشخص — {name}',
     'System help' => 'مساعدة النظام',
     'Not a help group' => 'ليس جروب مساعدة',
     'Explain the system to members, by what their account may open' => 'يشرح النظام للأعضاء حسب الصفحات اللي حسابهم يفتحها',
