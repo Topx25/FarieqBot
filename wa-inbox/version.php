@@ -643,7 +643,7 @@ return [
         'Gateway: a number may send files from its own media folder only (never another number\'s); videos are sent as videos with their caption.',
     ]],
     ['v' => '3.54.2', 'date' => '2026-10-12', 'title' => 'Bot: never answers the system\'s own messages, never invents names', 'changes' => [
-        'The bot recognises the messages the system sends by itself (login code, alerts, reports, reminders, subscription notices — from the message templates, in both languages) and never answers them, even from a test number. Before, the login codes sent from the main number to جندي الله\'s number got bot replies.',
+        'The bot recognises the messages the system sends by itself (login code, alerts, reports, reminders, subscription notices — from the message templates, in both languages) and never answers them, even from a test number. Before, login codes sent between two numbers of the system got bot replies.',
         'New message-style rule: call the person only by the name the system knows (or the one they gave in the chat); never guess or reuse another name (the bot had called a person by another person\'s name).',
     ]],
     ['v' => '3.54.1', 'date' => '2026-10-12', 'title' => 'Chat list from memory', 'changes' => [
