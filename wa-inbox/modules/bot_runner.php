@@ -89,20 +89,21 @@ function wf_bot_welcome(array $acc, string $gjid, array $members): array {
     foreach ($members as $m) { $m = (string) $m; $num = wf_phone(explode('@', $m)[0]); if ($num === '') continue; $jids[] = $num . '@' . (str_ends_with($m, '@lid') ? 'lid' : 's.whatsapp.net'); $tags[] = '@' . $num; }
     if (!$jids) return ['skipped' => 'no members'];
     // A member welcomed in this group during the last 7 days is not welcomed again (left and joined back, or the join event came twice).
-    $fresh = []; $now = time();
-    wi_update('welcomed.json', function ($W) use ($aid, $gjid, $jids, $now, &$fresh) { foreach ($jids as $j) if ((int) ($W[$aid][$gjid][$j] ?? 0) < $now - 7 * 86400) { $fresh[] = $j; $W[$aid][$gjid][$j] = $now; }
-        $W[$aid][$gjid] = array_filter((array) ($W[$aid][$gjid] ?? []), fn($t) => $t > $now - 30 * 86400); return $W; });
+    // Members are only marked as welcomed once the welcome is really sent (or saved as a draft): a failure in between used to mark them and lose the message.
+    $fresh = []; $now = time(); $W = (array) (wi_read('welcomed.json', [])[$aid][$gjid] ?? []);
+    foreach ($jids as $j) if ((int) ($W[$j] ?? 0) < $now - 7 * 86400) $fresh[] = $j;
     if (!$fresh) return ['skipped' => 'already welcomed'];
     $jids = $fresh; $tags = array_map(fn($j) => '@' . explode('@', $j)[0], $fresh);
-    $names = wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long') , null, $acc); $gname = '';
-    foreach ($names['chats'] ?? [] as $x) if ($x['jid'] === $gjid) $gname = (string) ($x['name'] ?? '');
+    $gname = trim((string) ($g['name'] ?? '')); // the group's name is saved with its settings: no need to build the whole chat list for it
+    if ($gname === '' && strpos((string) $g['welcome_text'], '{group}') !== false) { $names = wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long'), null, $acc); foreach ($names['chats'] ?? [] as $x) if ($x['jid'] === $gjid) $gname = (string) ($x['name'] ?? ''); }
+    $markWelcomed = function () use ($aid, $gjid, $jids, $now) { wi_update('welcomed.json', function ($W) use ($aid, $gjid, $jids, $now) { foreach ($jids as $j) $W[$aid][$gjid][$j] = $now; $W[$aid][$gjid] = array_filter((array) ($W[$aid][$gjid] ?? []), fn($t) => $t > $now - 30 * 86400); return $W; }); };
     $text = strtr((string) $g['welcome_text'], ['{mention}' => implode(' ', $tags), '{group}' => $gname, '{name}' => implode(' ', $tags)]);
     if (strpos((string) $g['welcome_text'], '{mention}') === false && strpos((string) $g['welcome_text'], '{name}') === false) $text = implode(' ', $tags) . "\n" . $text; // always tag them
     $log = ['jid' => $gjid, 'name' => $gname . ' · ' . T_W('welcome'), 'q' => '➕ ' . implode(' ', $tags), 'reply' => $text, 'confidence' => 1, 'model' => 'welcome', 'at' => date('c'), 'group' => true];
     if ($c['mode'] === 'auto') {
         $r = wi_gateway('/chat/send', ['jid' => $gjid, 'text' => wf_bot_style($text, $aid), 'mentions' => $jids, 'by' => 'bot', 'via' => 'bot'], $acc);
-        $log['result'] = !empty($r['ok']) ? 'sent' : 'send_failed'; if (empty($r['ok'])) $log['error'] = $r['error'] ?? '';
-    } else { $log['result'] = 'draft'; $log['why'] = 'suggest-only mode'; wi_update('bot_drafts.json', function ($d) use ($aid, $gjid, $log) { $d[$aid][$gjid] = $log; return $d; }); }
+        $log['result'] = !empty($r['ok']) ? 'sent' : 'send_failed'; if (empty($r['ok'])) $log['error'] = $r['error'] ?? ''; else $markWelcomed();
+    } else { $markWelcomed(); $log['result'] = 'draft'; $log['why'] = 'suggest-only mode'; wi_update('bot_drafts.json', function ($d) use ($aid, $gjid, $log) { $d[$aid][$gjid] = $log; return $d; }); }
     wi_bot_log_add($aid, $log);
     return $log;
 }

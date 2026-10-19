@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.107.1', 'date' => '2026-10-19', 'title' => 'Welcome messages no longer get lost', 'changes' => [
+        'The welcome of a group was marked as "already welcomed" before it was sent, and it built the whole chat list just to find the group\'s name; on a busy server that step could run out of time, so the member was marked and never welcomed (nobody was welcomed again for 7 days). Members are now marked only after the welcome is sent (or saved as a draft), and the saved group name is used.',
+    ]],
     ['v' => '3.107.0', 'date' => '2026-10-19', 'title' => 'System help group', 'changes' => [
         'Bot → Groups: a group can be marked "System help". Members who ask how to do something in the system get step-by-step answers from the product manual.',
         'The asker is found by their mobile number among the users; only the pages their permissions open are explained (view-only pages say so), and a page closed to them is named with "ask the owner for access". An unknown number gets the general manual.',
