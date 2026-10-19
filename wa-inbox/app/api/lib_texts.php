@@ -3,7 +3,7 @@
     if ($api === 'lib_text_save' || $api === 'lib_text_delete' || $api === 'lib_upload') {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') wi_json(['ok' => false, 'error' => 'POST only.'], 405);
         wi_check_csrf(); $acc = wi_current(); $aid = (string) ($acc['id'] ?? '');
-        if (!$acc || !wi_can_manage($acc)) wi_json(['ok' => false, 'error' => 'Not allowed for this number.'], 403);
+        if (!$acc || !(wi_can_manage($acc) || wi_page_perm('library') === 'edit')) wi_json(['ok' => false, 'error' => 'Not allowed for this number.'], 403); // the owner, or anyone who may edit the library
     }
     if ($api === 'lib_text_save') {
         $in = json_decode(wi_input(), true) ?: []; $id = preg_replace('/[^a-f0-9]/', '', (string) ($in['id'] ?? ''));
