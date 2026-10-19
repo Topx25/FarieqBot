@@ -6,7 +6,7 @@ declare(strict_types=1);
  */
 return [
     ['v' => '3.101.0', 'date' => '2026-10-19', 'title' => 'Staff chat prefix and welcome message', 'changes' => [
-        'A team member\'s replies from the dashboard now go out with their name in front — "Youssef: the message" — in private chats and groups, also in the caption of a file. The format is a message template (Messages settings: staff_prefix).',
+        'A team member\'s replies from the dashboard now go out with their name in front — "name: the message" — in private chats and groups, also in the caption of a file. The format is a message template (Messages settings: staff_prefix).',
         'The first time a team member writes in a chat — even an old chat — a welcome message that introduces them (name and business) is sent before their message. It is sent once per team member per private chat; the text is a template (staff_welcome).',
         'Users → each user: "Name shown in chats", "Add their name before every reply" and "A welcome message before their first reply in each chat". Employees and supervisors have both on unless changed; new users start with both ticked; owners and admins are not affected unless you turn them on.',
     ]],

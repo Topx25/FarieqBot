@@ -1,6 +1,6 @@
 <?php
 /* ---------- Staff chat identity (Topx1.Host) ----------
- * A team member's replies from the dashboard go out with their name in front ("يوسف: the message"), and the first time they write in a chat —
+ * A team member's replies from the dashboard go out with their name in front ("name: the message"), and the first time they write in a chat —
  * even an old one — a welcome message that introduces them goes first. Both the format and the welcome text are message templates (Messages
  * settings); the name, "add my name" and "welcome" are set per user (Users). Employees and supervisors have both on unless it is changed. */
 
