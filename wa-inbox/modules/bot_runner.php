@@ -165,7 +165,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             $lastTo = max(array_merge([0], (array) ($st['gwho'][$x['jid']][$who] ?? []))); if (!$mentioned && time() - $lastTo < (int) ($fun ? $c['fun_gap'] : $c['group_gap'])) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
             $trig = $fun ? 'all' : ($g['trigger'] ?? 'mention');
             if ($trig === 'mention' && !$mentioned) continue;
-            if ($trig === 'questions' && !$mentioned && !wf_is_question($text)) continue;
+            if ($trig === 'questions' && !$mentioned && !wf_is_question($text) && (empty($g['guide']) || count(wf_words($text)) < 3)) continue; // a help group lets the model decide whether a statement ("I can't open the page") is a request for help
             // An admin is talking with this member: the bot waits until the admin has been quiet for "human_wait" minutes, then answers.
             if (!$adminAsks && $gwait > 0 && ($aAt = $adminWith($who)) && time() - $aAt < $gwait) { $st['gq'][$x['jid']][$who] = $m; continue; }
             unset($st['gq'][$x['jid']][$who]);

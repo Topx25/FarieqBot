@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.107.3', 'date' => '2026-10-19', 'title' => 'Help group answers statements of need', 'changes' => [
+        'In a System-help group set to "Questions only", a message such as "I cannot open the page" is also considered (the model decides whether it is a request for help); one- and two-word messages are still ignored.',
+    ]],
     ['v' => '3.107.2', 'date' => '2026-10-19', 'title' => 'Help manual you can edit; cleaner change log', 'changes' => [
         'Bot → Groups → Help manual: every page text the help groups explain can be rewritten per number (empty = the built-in text).',
         'Reception gate: the words that mean a woman or a man are now saved in the group\'s own settings. They used to come only from the spiritual-healing business type, so after a number was switched to another type the gate stopped recognising the answer.',
