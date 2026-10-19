@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.102.1', 'date' => '2026-10-19', 'title' => 'AI providers: a free key and a paid key together', 'changes' => [
+        'A provider with several keys had one plan for all of them: with a paid key the free key was asked paid models (refused, and the key rested for a day for nothing), with a free plan the paid key never used its models. Every extra key can now carry its own plan — write "paid:KEY" or "free:KEY" on its line (a plain key follows the provider\'s plan).',
+        'Free keys are tried first, each only with free models; a paid key is used last, when the free ones are resting, with all models.',
+    ]],
     ['v' => '3.102.0', 'date' => '2026-10-19', 'title' => 'Users editor: clearer permissions', 'changes' => [
         'Users → edit: each page\'s access is now three labelled pills — None, View, Edit — coloured grey / blue / green, and the whole row takes the colour of its state (the icons-only control was hard to read).',
         'The feature cards (bot, meetings, cases…) are real switches: off is grey, on is green with the knob moved, and the card is tinted.',

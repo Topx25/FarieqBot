@@ -882,7 +882,9 @@ function wi_ai_call(array $body, int $timeout = 90): array {
         if (isset($body['order']) && is_array($body['order'])) $config['order'] = $eng->normalize_order($body['order']);
         // Extra keys of the same provider: used one after the other when a key reaches its limit
         $extra = !empty($body['clear_extra']) ? [] : (array) ($old['extra_keys'] ?? []); $plain = array_map([$eng, 'decrypt'], $extra);
-        foreach (preg_split('/[\s,]+/', (string) ($body['extra_keys'] ?? '')) as $k) { $k = trim($k); if ($k !== '' && strlen($k) <= 300 && !in_array($k, $plain, true) && $k !== $eng->decrypt((string) $config['providers'][$id]['api_key'])) { $extra[] = $eng->encrypt($k); $plain[] = $k; } }
+        $bare = fn(string $x): string => (string) preg_replace('/^(free|paid):/', '', $x); $main = $eng->decrypt((string) $config['providers'][$id]['api_key']); $plainBare = array_map($bare, $plain);
+        foreach (preg_split('/[\s,]+/', (string) ($body['extra_keys'] ?? '')) as $k) { $k = trim($k); $kb = $bare($k); // "paid:KEY" / "free:KEY": this key's own plan (a provider may have a free and a paid key)
+            if ($kb !== '' && strlen($k) <= 306 && !in_array($kb, $plainBare, true) && $kb !== $main) { $extra[] = $eng->encrypt($k); $plain[] = $k; $plainBare[] = $kb; } }
         if ($extra) $config['providers'][$id]['extra_keys'] = array_slice($extra, 0, 10);
         $eng->save_config($config);
         if ($key !== '') { @set_time_limit(120); $eng->refresh($id); }

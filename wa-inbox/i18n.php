@@ -453,6 +453,7 @@ return [
     'Reload only the list of models — quick' => 'يحدّث قايمة الموديلات بس — سريع',
     'Inbox' => 'المحادثات',
     'Analytics' => 'التحليلات',
+    'Extra keys (one per line) — used in turn when a key reaches its limit. Start a line with paid: or free: to say which plan that key is on' => 'مفاتيح إضافية (واحد في كل سطر) — بتتستخدم بالدور لما مفتاح يوصل للحد. ابدأ السطر بـ paid: أو free: عشان تحدد خطة المفتاح ده',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. A short name' => 'مثلًا: اسم قصير',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',

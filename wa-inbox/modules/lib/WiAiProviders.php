@@ -222,7 +222,8 @@ class WiAiProviders
                 'enabled' => !empty($row['enabled']),
                 'has_key' => !empty($row['api_key']),
                 'api_key' => $this->decrypt(isset($row['api_key']) ? $row['api_key'] : ''),
-                'api_keys' => array_values(array_filter(array_merge(array($this->decrypt(isset($row['api_key']) ? $row['api_key'] : '')), array_map(array($this, 'decrypt'), (array) (isset($row['extra_keys']) ? $row['extra_keys'] : array()))))),
+                'api_keys' => $this->split_keys($this->decrypt(isset($row['api_key']) ? $row['api_key'] : ''), (array) (isset($row['extra_keys']) ? $row['extra_keys'] : array()))[0],
+                'key_plans' => $this->split_keys($this->decrypt(isset($row['api_key']) ? $row['api_key'] : ''), (array) (isset($row['extra_keys']) ? $row['extra_keys'] : array()))[1],
                 'extra_keys' => count((array) (isset($row['extra_keys']) ? $row['extra_keys'] : array())),
                 'plan_setting' => $plan_setting,
                 'plan' => $plan,
@@ -427,15 +428,33 @@ class WiAiProviders
     }
 
     /** One provider's model chain. array('ok'=>true, 'data', 'provider', 'model') or array('ok'=>false). */
+    /** The main key and the extra keys as plain keys, and the plan some keys carry ("paid:KEY" / "free:KEY") by the key's short hash. */
+    protected function split_keys($main, $extra_encrypted)
+    {
+        $keys = array(); $plans = array();
+        if( $main !== '' ) $keys[] = $main;
+        foreach( $extra_encrypted as $e ) {
+            $x = $this->decrypt($e); $pl = null;
+            if( preg_match('/^(free|paid):(.+)$/s', $x, $m) ) { $pl = $m[1]; $x = $m[2]; }
+            if( $x === '' ) continue;
+            $keys[] = $x; if( $pl ) $plans[substr(md5($x), 0, 10)] = $pl;
+        }
+        return array($keys, $plans);
+    }
+
     /** One provider: its keys one after the other — a key that reached its limit (or was refused) rests and the next key takes over. */
     protected function try_provider($id, $provider, $prompt, $image_data, $mime)
     {
         $keys = !empty($provider['api_keys']) ? $provider['api_keys'] : array($provider['api_key']);
         if( count($keys) <= 1 ) return $this->try_provider_key($id, $provider, $prompt, $image_data, $mime);
         $cool = wi_read('ai_key_cool.json', array()); $ck = $this->scope.'|'.$id; $now = time(); $r = array('ok'=>false);
-        foreach( $keys as $i => $k ) {
-            $kh = substr(md5($k), 0, 10); if( isset($cool[$ck][$kh]) && $cool[$ck][$kh] > $now ) continue; // resting
-            $provider['api_key'] = $k;
+        // Every key has its own plan: a free key only asks free models (a paid model would be refused and the key wrongly rested), a paid key may use all.
+        // Free keys go first, so the paid key is only used when they are resting.
+        $plan_of = function($k) use ($provider) { $kp = isset($provider['key_plans'][substr(md5($k), 0, 10)]) ? $provider['key_plans'][substr(md5($k), 0, 10)] : $provider['plan']; return $kp === 'paid' ? 'paid' : 'free'; };
+        $order = array_keys($keys); usort($order, function($a, $b) use ($keys, $plan_of) { $pa = $plan_of($keys[$a]) === 'paid' ? 1 : 0; $pb = $plan_of($keys[$b]) === 'paid' ? 1 : 0; return $pa === $pb ? $a - $b : $pa - $pb; });
+        foreach( $order as $i ) {
+            $k = $keys[$i]; $kh = substr(md5($k), 0, 10); if( isset($cool[$ck][$kh]) && $cool[$ck][$kh] > $now ) continue; // resting
+            $provider['api_key'] = $k; $provider['plan'] = $plan_of($k);
             $r = $this->try_provider_key($id, $provider, $prompt, $image_data, $mime);
             if( !empty($r['ok']) ) return $r;
             $st = isset($r['status']) ? (int) $r['status'] : 0;
