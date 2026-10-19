@@ -8,6 +8,8 @@ if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy
 
 if (isset($_GET['m']) && !isset($_GET['api'])) { require __DIR__ . '/features.php'; wf_meet_page(preg_replace('/[^a-z0-9-]/', '', strtolower((string) $_GET['m']))); } // public meeting gateway (no login)
 if (isset($_GET['fb_hook'])) { require __DIR__ . '/features.php'; wf_fb_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['fb_hook']))); exit; } // Facebook calls this (verified by the app secret)
+if (isset($_GET['fb_deauth']) || isset($_GET['fb_delete'])) { require __DIR__ . '/features.php'; wf_fb_user_callback(isset($_GET['fb_deauth']) ? 'deauth' : 'delete'); } // Facebook's "app removed" / "delete my data" calls (signed)
+if (isset($_GET['fb_deleted'])) { header('Content-Type: text/plain; charset=utf-8'); exit('Your data deletion request was received. Reference: ' . preg_replace('/[^a-f0-9]/', '', (string) $_GET['fb_deleted'])); }
 if (isset($_GET['bot_hook'])) {
     // Instant bot trigger from the WhatsApp gateway (server-to-server, checked by the bridge token).
     require __DIR__ . '/features.php';
@@ -64,6 +66,8 @@ if (isset($_GET['bot_hook'])) {
     exit;
 }
 if (isset($_GET['drive_cb'])) { require __DIR__ . '/features.php'; wf_drive_callback(); }
+if (isset($_GET['fb_connect'])) { require __DIR__ . '/features.php'; wf_fb_oauth_start(); }
+if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; wf_fb_oauth_callback(); }
 require __DIR__ . '/app/api.php';     // JSON API (?api=…)
 
 require __DIR__ . '/app/actions.php'; // form actions (POST)

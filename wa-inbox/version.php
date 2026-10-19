@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.111.0', 'date' => '2026-10-19', 'title' => 'Facebook: connect with Facebook', 'changes' => [
+        'Accounts → "Connect Facebook pages": save the Facebook app once (App ID and App secret), then "Connect with Facebook" opens Facebook\'s sign-in; the pages the person manages are listed to pick from, and each becomes an account with its token stored encrypted and its webhook subscribed. A client may save an app of their own; otherwise the system\'s app is used.',
+        'The app has one webhook address for all its pages (events are routed by the page ID, checked with the app secret); the card shows it with the OAuth redirect address, the verify code, and the deauthorize and data-deletion addresses to paste in the app settings. Adding a page by hand with a token stays available.',
+        'A page whose token expired or was revoked shows "Connect the page again", and "Reconnect with Facebook" renews it.',
+    ]],
     ['v' => '3.110.1', 'date' => '2026-10-19', 'title' => 'Facebook: page stories, Messenger mark', 'changes' => [
         'Posts tab: "Publish as a story" posts a photo or an MP4 video as a story of the page (shown for 24 hours). A photo is uploaded unpublished and then published as a story; a video goes through Facebook\'s three steps (start, upload, finish).',
         'Conversations from a Facebook page carry a "Messenger" mark in the chat list.',

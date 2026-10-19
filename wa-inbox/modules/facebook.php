@@ -4,7 +4,7 @@
 
 /* ---------- accounts and settings ---------- */
 function wf_fb_is(?array $acc): bool { return $acc && ($acc['channel'] ?? '') === 'fb'; }
-function wf_fb_cfg(string $aid): array { return (array) (wi_read('fb.json', [])[$aid] ?? []) + ['page_id' => '', 'page_name' => '', 'app_id' => '', 'graph' => 'v26.0', 'verify' => '', 'ok_at' => '', 'error' => '', 'hook_at' => '', 'comment_bot' => 'off', 'comment_public' => 1, 'comment_private' => 0]; }
+function wf_fb_cfg(string $aid): array { return (array) (wi_read('fb.json', [])[$aid] ?? []) + ['page_id' => '', 'page_name' => '', 'app_id' => '', 'graph' => 'v26.0', 'verify' => '', 'ok_at' => '', 'error' => '', 'hook_at' => '', 'comment_bot' => 'off', 'comment_public' => 1, 'comment_private' => 0, 'app_scope' => '', 'via' => '']; }
 function wf_fb_cfg_set(string $aid, array $set): void { wi_update('fb.json', function ($F) use ($aid, $set) { $F[$aid] = $set + (array) ($F[$aid] ?? []); return $F; }); }
 function wf_fb_token(string $aid): string { return (string) wi_secret('fb_page_token:' . $aid, ''); }
 function wf_fb_secret(string $aid): string { return (string) wi_secret('fb_app_secret:' . $aid, ''); }
@@ -30,6 +30,7 @@ function wf_fb_graph(string $aid, string $method, string $path, array $params = 
     $opt[CURLOPT_URL] = $url; curl_setopt_array($ch, $opt); $raw = curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE); curl_close($ch);
     $r = json_decode((string) $raw, true);
     if (!is_array($r)) return ['ok' => false, 'error' => 'Facebook did not answer.'];
+    if (isset($r['error']) && (int) ($r['error']['code'] ?? 0) === 190) wf_fb_cfg_set($aid, ['error' => 'The page token expired or was revoked. Connect the page again.']);
     if (isset($r['error'])) return ['ok' => false, 'error' => (string) ($r['error']['message'] ?? 'Facebook refused the request.'), 'code' => (int) ($r['error']['code'] ?? 0), 'sub' => (int) ($r['error']['error_subcode'] ?? 0)];
     return ['ok' => $code < 400] + $r;
 }
@@ -108,7 +109,16 @@ function wf_fb_take(array $acc, array $ev, string $pageId): void {
     if (isset($ev['read'])) { wi_update('fb_read.json', function ($R) use ($aid, $psid, $ts) { $R[$aid][$psid] = $ts; return $R; }); }
 }
 /** The public entry: Facebook verifies the address (GET) and then posts events (POST, signed). */
+/** The events of one webhook entry (one page), handed to the right handlers. */
+function wf_fb_entry(array $acc, array $en): void {
+    $aid = (string) $acc['id']; $pid = (string) ($en['id'] ?? '');
+    foreach ((array) ($en['changes'] ?? []) as $chg) { if (($chg['field'] ?? '') === 'feed') { try { wf_fb_feed_take($acc, (array) ($chg['value'] ?? []), $pid); } catch (Throwable $e) { wi_log('fb_hook_error', ['account' => $aid, 'error' => $e->getMessage()]); } } }
+    foreach ((array) ($en['messaging'] ?? []) as $ev) { try { wf_fb_take($acc, (array) $ev, $pid); } catch (Throwable $e) { wi_log('fb_hook_error', ['account' => $aid, 'error' => $e->getMessage()]); } }
+}
+function wf_fb_answer_ok(): void { http_response_code(200); header('Content-Length: 2'); echo 'ok'; flush(); if (function_exists('fastcgi_finish_request')) fastcgi_finish_request(); ignore_user_abort(true); @set_time_limit(120); }
+/** The public entry: Facebook verifies the address (GET) and then posts events (POST, signed). "app-…" = the app's one address (every page of the app); otherwise one page's own address. */
 function wf_fb_hook(string $aid): void {
+    if (strpos($aid, 'app-') === 0) { wf_fb_hook_app(substr($aid, 4)); return; }
     $acc = wi_accounts()[$aid] ?? null; if (!wf_fb_is($acc)) { http_response_code(404); exit; }
     $c = wf_fb_cfg($aid);
     if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -117,12 +127,22 @@ function wf_fb_hook(string $aid): void {
     }
     $raw = wi_input(); $sec = wf_fb_secret($aid); $sig = (string) ($_SERVER['HTTP_X_HUB_SIGNATURE_256'] ?? '');
     if ($sec === '' || !hash_equals('sha256=' . hash_hmac('sha256', $raw, $sec), $sig)) { http_response_code(403); exit; }
-    http_response_code(200); header('Content-Length: 2'); echo 'ok'; flush(); if (function_exists('fastcgi_finish_request')) fastcgi_finish_request(); ignore_user_abort(true); @set_time_limit(120);
+    wf_fb_answer_ok();
     $in = json_decode($raw, true); if (!is_array($in) || ($in['object'] ?? '') !== 'page') return;
     wf_fb_cfg_set($aid, ['hook_at' => gmdate('c')]);
-    foreach ((array) ($in['entry'] ?? []) as $en) { $pid = (string) ($en['id'] ?? ''); if ($pid !== $c['page_id']) continue;
-        foreach ((array) ($en['changes'] ?? []) as $chg) { if (($chg['field'] ?? '') === 'feed') { try { wf_fb_feed_take($acc, (array) ($chg['value'] ?? []), $pid); } catch (Throwable $e) { wi_log('fb_hook_error', ['account' => $aid, 'error' => $e->getMessage()]); } } }
-        foreach ((array) ($en['messaging'] ?? []) as $ev) { try { wf_fb_take($acc, (array) $ev, $pid); } catch (Throwable $e) { wi_log('fb_hook_error', ['account' => $aid, 'error' => $e->getMessage()]); } } }
+    foreach ((array) ($in['entry'] ?? []) as $en) if ((string) ($en['id'] ?? '') === $c['page_id']) wf_fb_entry($acc, (array) $en);
+}
+function wf_fb_hook_app(string $key): void {
+    $scope = wf_fb_scope_by_key($key); if ($scope === null) { http_response_code(404); exit; } $app = wf_fb_app($scope);
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        if (($_GET['hub_mode'] ?? $_GET['hub.mode'] ?? '') === 'subscribe' && $app['verify'] !== '' && hash_equals($app['verify'], (string) ($_GET['hub_verify_token'] ?? $_GET['hub.verify_token'] ?? ''))) { header('Content-Type: text/plain'); echo (string) ($_GET['hub_challenge'] ?? $_GET['hub.challenge'] ?? ''); exit; }
+        http_response_code(403); exit;
+    }
+    $raw = wi_input(); $sig = (string) ($_SERVER['HTTP_X_HUB_SIGNATURE_256'] ?? '');
+    if ($app['secret'] === '' || !hash_equals('sha256=' . hash_hmac('sha256', $raw, $app['secret']), $sig)) { http_response_code(403); exit; }
+    wf_fb_answer_ok();
+    $in = json_decode($raw, true); if (!is_array($in) || ($in['object'] ?? '') !== 'page') return;
+    foreach ((array) ($in['entry'] ?? []) as $en) { $acc = wf_fb_account_for_page((string) ($en['id'] ?? '')); if (!$acc || wf_fb_cfg((string) $acc['id'])['app_scope'] !== $scope) continue; wf_fb_cfg_set((string) $acc['id'], ['hook_at' => gmdate('c')]); wf_fb_entry($acc, (array) $en); }
 }
 
 /* ---------- sending ---------- */

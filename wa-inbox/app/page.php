@@ -547,8 +547,11 @@
           <div class="card-h"><h2>💬 <?= wi_e((string) $a['name']) ?> — Facebook <?= $fc['error'] === '' && $fc['ok_at'] !== '' ? '✅' : '⚠️' ?></h2></div>
           <div class="pad stack">
             <?php if ($fc['error'] !== ''): ?><p class="muted small"><?= wi_e($fc['error']) ?></p><?php endif; ?>
+            <?php if ($fc['via'] === 'oauth'): ?><p class="muted small">Connected through the Facebook app — the app's webhook address (above) serves this page.</p><a class="btn ghost sm" href="?fb_connect=1">Reconnect with Facebook</a>
+            <?php else: ?>
             <label>Webhook address<input readonly value="<?= wi_e(wf_fb_hook_url((string) $a['id'])) ?>" onclick="this.select()"></label>
             <label>Verify code<input readonly value="<?= wi_e($fc['verify']) ?>" onclick="this.select()"></label>
+            <?php endif; ?>
             <p class="muted small">Page: <?= wi_e($fc['page_name'] !== '' ? $fc['page_name'] : $fc['page_id']) ?> · last message from Facebook: <?= wi_e($fc['hook_at'] !== '' ? $fc['hook_at'] : '—') ?></p>
             <label>New page access token (optional)<input name="token" type="password"></label>
             <label>New app secret (optional)<input name="secret" type="password"></label>
@@ -594,9 +597,43 @@
         </form>
         <?php endif; ?>
         <?php if (wi_is_admin() || (wi_can_link_own() && !$owns)): ?>
+        <?php if (wi_is_admin() || wi_can_link_own()):
+          $fbScope = wi_is_super() ? '' : strtolower((string) $_SESSION['email']); $fbOwn = wf_fb_app($fbScope); $fbUse = $fbOwn['app_id'] !== '' ? $fbOwn : wf_fb_app(''); $fbPk = (string) ($_GET['fb_pick'] ?? ''); $fbPend = $fbPk !== '' ? wf_fb_pending($fbPk) : null; ?>
+        <?php if ($fbPend): ?>
+        <form method="post" class="card acc add" id="fb-pick">
+          <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="fb_pick_add"><input type="hidden" name="pk" value="<?= wi_e($fbPk) ?>">
+          <div class="card-h"><h2>📘 Choose the Facebook pages to connect</h2></div>
+          <div class="pad stack">
+            <?php foreach ($fbPend['pages'] as $fx): $fbHave = wf_fb_account_for_page($fx['id']); ?>
+              <label class="check"><input type="checkbox" name="pages[]" value="<?= wi_e($fx['id']) ?>" checked> <?= wi_e($fx['name']) ?><?= $fbHave ? ' — already linked (its token is renewed)' : '' ?></label>
+            <?php endforeach; ?>
+            <button class="btn primary">Connect the chosen pages</button>
+          </div>
+        </form>
+        <?php endif; ?>
+        <form method="post" class="card acc add" id="fb-app" autocomplete="off">
+          <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="fb_app_save">
+          <div class="card-h"><h2>📘 Connect Facebook pages</h2></div>
+          <div class="pad stack">
+            <label>App ID<input name="app_id" inputmode="numeric" value="<?= wi_e($fbOwn['app_id']) ?>"></label>
+            <label>App secret <small class="muted"><?= $fbOwn['secret'] !== '' ? '— saved (leave empty to keep it)' : '' ?></small><input name="app_secret" type="password"></label>
+            <button class="btn ghost sm">Save the app</button>
+            <?php if ($fbOwn['app_id'] !== ''): ?>
+              <p class="muted small">In the app's settings (Facebook Login → Valid OAuth Redirect URIs) add:</p><input readonly value="<?= wi_e(wf_fb_redirect_uri()) ?>" onclick="this.select()">
+              <p class="muted small">Webhooks → Page: callback address and verify code (fields: messages, messaging_postbacks, message_echoes, message_reads, message_reactions, feed):</p>
+              <input readonly value="<?= wi_e(wf_fb_app_hook_url($fbOwn)) ?>" onclick="this.select()"><input readonly value="<?= wi_e($fbOwn['verify']) ?>" onclick="this.select()">
+              <p class="muted small">Deauthorize and data deletion addresses (Settings → Advanced):</p>
+              <input readonly value="<?= wi_e(wf_fb_base_url() . 'index.php?fb_deauth=1') ?>" onclick="this.select()"><input readonly value="<?= wi_e(wf_fb_base_url() . 'index.php?fb_delete=1') ?>" onclick="this.select()">
+              <a class="btn primary" href="?fb_connect=1">Connect with Facebook</a>
+            <?php elseif (!wi_is_super() && wf_fb_app('')['app_id'] !== ''): ?>
+              <p class="muted small">No app of your own saved: the system's app is used.</p><a class="btn primary" href="?fb_connect=1">Connect with Facebook</a>
+            <?php endif; ?>
+          </div>
+        </form>
+        <?php endif; ?>
         <form method="post" class="card acc add" id="add-fb" autocomplete="off">
           <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="add_fb">
-          <div class="card-h"><h2>➕ Add Facebook page (Messenger)</h2></div>
+          <div class="card-h"><h2>➕ Add a Facebook page by hand (token and secret)</h2></div>
           <div class="pad stack">
             <label>Name<input name="name" required maxlength="60"></label>
             <label>Page access token<input name="token" type="password" required></label>

@@ -107,6 +107,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         catch (Throwable $e) { wi_flash($e->getMessage(), 'bad'); }
         header('Location: ?p=accounts'); exit;
     }
+    if ($do === 'fb_app_save' || $do === 'fb_pick_add') { // the Facebook app, and the pages picked after "Connect with Facebook"
+        $may = (wi_is_admin() && empty(wi_me()['own_number'])) || wi_can_link_own();
+        if (!$may) { wi_flash('Not allowed for this number.', 'bad'); header('Location: ?p=accounts'); exit; }
+        if ($do === 'fb_app_save') { $r = wf_fb_app_save(wi_is_super() ? '' : strtolower((string) $_SESSION['email']), (string) ($_POST['app_id'] ?? ''), (string) ($_POST['app_secret'] ?? '')); wi_flash(!empty($r['ok']) ? 'Facebook app saved. Now connect your pages.' : (string) $r['error'], !empty($r['ok']) ? 'ok' : 'bad'); }
+        else { $r = wf_fb_pick_add((string) ($_POST['pk'] ?? ''), array_map('strval', (array) ($_POST['pages'] ?? [])));
+            wi_flash(!empty($r['ok']) ? 'Connected: ' . implode(', ', $r['done']) . ($r['errors'] ? ' — ' . implode(' · ', $r['errors']) : '') : (string) $r['error'], !empty($r['ok']) && !$r['errors'] ? 'ok' : 'bad'); }
+        header('Location: ?p=accounts'); exit;
+    }
     if ($do === 'add_fb' || $do === 'fb_connect') { // Facebook page (Messenger): same permission as adding a number
         $accs = wi_accounts(); $owned = array_filter($accs, fn($a) => !empty($a['owner']) && strtolower($a['owner']) === strtolower((string) $_SESSION['email']));
         if ($do === 'add_fb') {
