@@ -719,7 +719,8 @@ class WiAiProviders
         $listing = $this->fetch_models($provider, $key);
         if( !$listing['ok'] ) {
             $st = $this->status_from_http($listing['status']);
-            $check('key', false, $st === 'invalid_key' ? 'API key rejected' : 'Could not reach the provider', 'HTTP '.$listing['status'].' · '.$listing['error']);
+            $hint = ($id === 'anthropic' && $listing['status'] == 400 && stripos((string) $listing['error'], 'workspace') !== false) ? ' — Write the workspace id (wrkspc_…) in the Workspace ID field of this card, press Save, then test again.' : '';
+            $check('key', false, $st === 'invalid_key' ? 'API key rejected' : 'Could not reach the provider', 'HTTP '.$listing['status'].' · '.$listing['error'].$hint);
             $this->save_state($id, array('status'=>$st, 'message'=>$listing['error'], 'checked_at'=>$now, 'checks_json'=>json_encode(array('items'=>$checks, 'at'=>$now))));
             return $this->public_state($id);
         }

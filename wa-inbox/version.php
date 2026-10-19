@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.103.1', 'date' => '2026-10-19', 'title' => 'Anthropic: workspace id field', 'changes' => [
+        'Anthropic Claude: a key of an organisation was refused ("not scoped to a workspace"). The card now has a "Workspace ID" field — write the wrkspc_… id alone — and the address typed there is saved before "Test & refresh models" (it used to be lost when only the test button was pressed). The error now says what to do.',
+    ]],
     ['v' => '3.103.0', 'date' => '2026-10-19', 'title' => 'AI providers: Anthropic Claude', 'changes' => [
         'New provider "Anthropic Claude" (Messages API): paste the key in its card, turn it on, press "Test & refresh models". Its Claude models are listed, read images, and are billed per token, so its plan is always paid. Nothing is sent with a temperature (current models refuse it).',
         'A key of an organisation needs its workspace: write the address as https://api.anthropic.com?workspace=wrkspc_… in the new "Address" field of the card. Extra keys, the daily limit and the quick "Reload models" work as for the other providers.',

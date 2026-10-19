@@ -455,6 +455,7 @@ return [
     'Analytics' => 'التحليلات',
     'Extra keys (one per line) — used in turn when a key reaches its limit. Start a line with paid: or free: to say which plan that key is on' => 'مفاتيح إضافية (واحد في كل سطر) — بتتستخدم بالدور لما مفتاح يوصل للحد. ابدأ السطر بـ paid: أو free: عشان تحدد خطة المفتاح ده',
     'Address (for a key of an organisation add ?workspace=wrkspc_…)' => 'العنوان (لمفتاح منظمة زوّد ?workspace=wrkspc_…)',
+    'Workspace ID — needed when the key belongs to an organisation (starts with wrkspc_)' => 'معرّف الـWorkspace — مطلوب لما المفتاح بتاع منظمة (بيبدأ بـ wrkspc_)',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. A short name' => 'مثلًا: اسم قصير',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',
