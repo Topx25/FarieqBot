@@ -1189,3 +1189,12 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .ux-rc:has(input:checked)::after{content:'✓';position:absolute;top:8px;inset-inline-end:10px;color:var(--brand,#0b7f70);font-weight:800}
 .ux-rc .ux-ri{font-size:26px}
 .ux-step h3{font-size:16px}
+
+/* AI providers: every key is its own card (key, model, plan) (Topx1.Host) */
+.ai-keys{grid-column:1 / -1;display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface-2,#f4f7f6)}
+.ai-kh{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.ai-krow{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card,#fff)}
+.ai-kt{display:flex;align-items:center;gap:8px;margin-bottom:6px}.ai-kt .link-btn{margin-inline-start:auto}
+.ai-kg{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px}.ai-kg label{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.ai-km{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+@media (max-width:760px){.ai-kg{grid-template-columns:1fr}}

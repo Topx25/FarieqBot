@@ -883,12 +883,32 @@ function wi_ai_call(array $body, int $timeout = 90): array {
             if ($url !== '' && !preg_match('#^https://api\.anthropic\.com/?(\?workspace=[A-Za-z0-9_]+)?$#', $url)) return ['ok' => false, 'error' => 'The address must be https://api.anthropic.com or https://api.anthropic.com?workspace=wrkspc_…'];
             $config['providers'][$id]['base_url'] = $url; }
         if (isset($body['order']) && is_array($body['order'])) $config['order'] = $eng->normalize_order($body['order']);
-        // Extra keys of the same provider: used one after the other when a key reaches its limit
-        $extra = !empty($body['clear_extra']) ? [] : (array) ($old['extra_keys'] ?? []); $plain = array_map([$eng, 'decrypt'], $extra);
-        $bare = fn(string $x): string => (string) preg_replace('/^(free|paid):/', '', $x); $main = $eng->decrypt((string) $config['providers'][$id]['api_key']); $plainBare = array_map($bare, $plain);
-        foreach (preg_split('/[\s,]+/', (string) ($body['extra_keys'] ?? '')) as $k) { $k = trim($k); $kb = $bare($k); // "paid:KEY" / "free:KEY": this key's own plan (a provider may have a free and a paid key)
-            if ($kb !== '' && strlen($k) <= 306 && !in_array($kb, $plainBare, true) && $kb !== $main) { $extra[] = $eng->encrypt($k); $plain[] = $k; $plainBare[] = $kb; } }
-        if ($extra) $config['providers'][$id]['extra_keys'] = array_slice($extra, 0, 10);
+        // Extra keys of the same provider: each one is its own — a key, a model and a plan like the main key. "keys" is the whole list (a key missing from it is removed);
+        // an entry with an id and no key text keeps its saved key. key_mode: failover (the next key when one reaches its limit) or together (the keys share the requests).
+        $oldKeys = (array) ($old['keys'] ?? []);
+        if (!$oldKeys && !empty($old['extra_keys'])) foreach ((array) $old['extra_keys'] as $e) { $x = $eng->decrypt((string) $e); $pl = 'auto'; if (preg_match('/^(free|paid):(.+)$/s', $x, $m0)) { $pl = $m0[1]; $x = $m0[2]; } if ($x !== '') $oldKeys[] = ['id' => substr(md5($x), 0, 8), 'key' => $e, 'plan' => $pl, 'model' => 'auto']; }
+        $byId = []; foreach ($oldKeys as $ok) $byId[(string) ($ok['id'] ?? '')] = $ok;
+        if (!empty($body['clear_extra'])) { $newKeys = []; }
+        elseif (isset($body['keys']) && is_array($body['keys'])) {
+            $newKeys = []; $seen = [$eng->decrypt((string) $config['providers'][$id]['api_key']) => 1];
+            foreach (array_slice($body['keys'], 0, 10) as $kk) { if (!is_array($kk)) continue; $kid = preg_replace('/[^a-f0-9]/', '', (string) ($kk['id'] ?? '')); $txt = trim((string) ($kk['api_key'] ?? '')); $txt = (string) preg_replace('/^(free|paid):/', '', $txt);
+                $prev = $kid !== '' ? ($byId[$kid] ?? null) : null;
+                if ($txt !== '') { if (strlen($txt) > 300 || isset($seen[$txt])) continue; $enc = $eng->encrypt($txt); $plainKey = $txt; }
+                elseif ($prev) { $enc = (string) $prev['key']; $plainKey = $eng->decrypt($enc); if (preg_match('/^(free|paid):(.+)$/s', $plainKey, $m1)) $plainKey = $m1[2]; }
+                else continue;
+                if (isset($seen[$plainKey])) continue; $seen[$plainKey] = 1;
+                $kmodel = preg_replace('/[^A-Za-z0-9_.:\/@-]+/', '', trim((string) ($kk['model'] ?? 'auto')));
+                $newKeys[] = ['id' => $kid !== '' && $prev ? $kid : substr(bin2hex(random_bytes(4)), 0, 8), 'key' => $enc, 'model' => $kmodel === '' ? 'auto' : $kmodel, 'plan' => in_array($kk['plan'] ?? '', ['free', 'paid'], true) ? $kk['plan'] : 'auto'];
+            }
+        } else { $newKeys = $oldKeys; }
+        // the old way: a text of keys, one per line ("paid:KEY" / "free:KEY") — still accepted
+        foreach (preg_split('/[\s,]+/', (string) ($body['extra_keys'] ?? '')) as $k) { $k = trim($k); $pl = 'auto'; if (preg_match('/^(free|paid):(.+)$/s', $k, $m2)) { $pl = $m2[1]; $k = $m2[2]; }
+            $dup = false; foreach ($newKeys as $nk) { $pn = $eng->decrypt((string) $nk['key']); if (preg_match('/^(free|paid):(.+)$/s', $pn, $m3)) $pn = $m3[2]; if ($pn === $k) $dup = true; }
+            if ($k !== '' && strlen($k) <= 300 && !$dup && $k !== $eng->decrypt((string) $config['providers'][$id]['api_key'])) $newKeys[] = ['id' => substr(bin2hex(random_bytes(4)), 0, 8), 'key' => $eng->encrypt($k), 'model' => 'auto', 'plan' => $pl]; }
+        $newKeys = array_slice($newKeys, 0, 10);
+        if ($newKeys) $config['providers'][$id]['keys'] = $newKeys; else unset($config['providers'][$id]['keys']);
+        unset($config['providers'][$id]['extra_keys']); // everything is in "keys" now
+        $config['providers'][$id]['key_mode'] = in_array($body['key_mode'] ?? ($old['key_mode'] ?? ''), ['failover', 'together'], true) ? ($body['key_mode'] ?? $old['key_mode']) : 'failover';
         $eng->save_config($config);
         if ($key !== '') { @set_time_limit(120); $eng->refresh($id); }
     }

@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.104.0', 'date' => '2026-10-19', 'title' => 'AI providers: every key is its own', 'changes' => [
+        'A provider\'s extra keys are no longer one text box: each key is its own card with its own input box, its own model and its own plan (auto / free / paid), exactly like the main key. "Add another key" adds one, "Remove this key" removes it, and a saved key stays hidden (type only to replace it).',
+        'New choice "When there are several keys": one after the other (the next key takes over when one reaches its limit — the old behaviour) or all together (each request starts at the next key, so the keys share the work and fall through to the others if one is resting).',
+        'The Test button saves what is typed in the card first. Keys written the old way ("paid:KEY") are read as keys on their plan.',
+    ]],
     ['v' => '3.103.1', 'date' => '2026-10-19', 'title' => 'Anthropic: workspace id field', 'changes' => [
         'Anthropic Claude: a key of an organisation was refused ("not scoped to a workspace"). The card now has a "Workspace ID" field — write the wrkspc_… id alone — and the address typed there is saved before "Test & refresh models" (it used to be lost when only the test button was pressed). The error now says what to do.',
     ]],
