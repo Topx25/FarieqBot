@@ -5,6 +5,12 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.101.2', 'date' => '2026-10-19', 'title' => 'AI providers: every model is listed', 'changes' => [
+        'OpenCode Zen: with a key the service lists only 32 of its 85 models. The page now shows the whole published catalogue (free and paid) next to the key\'s own list; models not in the key\'s list say so.',
+        'OpenCode Go: two models that were hidden (another API route / experimental) are listed with a ⚠️ note; they are never picked automatically, only by hand.',
+        'The stored list was cut at 300 models (OpenRouter has 470+, Kilo 400+): the limit is now 1500.',
+        'Model lists are reloaded once a day for every provider (the list used to change only when the whole key test was run — OpenCode Zen showed a 5-day-old list of 45). Each provider card has a quick "Reload models" button that reloads only the list, with no key or model test.',
+    ]],
     ['v' => '3.101.1', 'date' => '2026-10-19', 'title' => 'Neutral examples and wording', 'changes' => [
         'Examples, placeholders and notes no longer use a real person\'s name or a real address: the shortcut example is now "#shortcut-name", the sample name is "A short name", and the release notes name no domain, number or tool.',
     ]],

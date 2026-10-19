@@ -6,7 +6,7 @@
       document.getElementById('ai-list').innerHTML = AP.map(function (p, i) {
         var s = SL[p.status] || ['⚠️', p.status, 'bad'], h = p.health || {};
         var cool = p.cooldowns || {}, now = Date.now() / 1000;
-        function opt(m) { var id = m.id || m; return '<option value="' + esc(id) + '" ' + (p.model_setting === id ? 'selected' : '') + '>' + (m.vision ? '👁 ' : '') + esc(id) + (m.free === false ? ' 💲' : '') + (cool[id] > now ? ' ⏳' : '') + '</option>'; }
+        function opt(m) { var id = m.id || m; return '<option value="' + esc(id) + '" ' + (p.model_setting === id ? 'selected' : '') + '>' + (m.vision ? '👁 ' : '') + esc(id) + (m.free === false ? ' 💲' : '') + (m.avoid ? ' ⚠️' : '') + (cool[id] > now ? ' ⏳' : '') + '</option>'; }
         var ms = p.models || [], models = '<optgroup label="' + T('Read images (receipts)') + '">' + ms.filter(function (m) { return m.vision; }).map(opt).join('') + '</optgroup><optgroup label="' + T('Text only') + '">' + ms.filter(function (m) { return !m.vision; }).map(opt).join('') + '</optgroup>';
         var ck = (p.checks && p.checks.items) || [];
         var checks = ck.length ? '<ul class="ai-checks">' + ck.map(function (c) { return '<li class="' + (c.ok === true ? 'ok' : (c.ok === false ? 'no' : 'na')) + '"><b>' + (c.ok === true ? '✓' : (c.ok === false ? '✗' : '–')) + '</b><span><span dir="auto">' + esc(c.label) + '</span>' + (c.detail ? '<small dir="auto">' + esc(c.detail) + '</small>' : '') + '</span></li>'; }).join('') + '</ul>' + (p.checks.at ? '<div class="muted small">' + T('Last check') + ': ' + esc(when(p.checks.at, true)) + ' ' + esc(String(p.checks.at).slice(11, 16)) + ' · ' + fmt(ms.length) + ' ' + T('models') + '</div>' : '') : '<div class="muted small">' + T('Not checked yet — press “Test & refresh models”.') + '</div>';
@@ -27,7 +27,7 @@
           + '<label>' + T('Plan') + '<select data-f="plan">' + ['auto', 'free', 'paid'].map(function (x) { return '<option value="' + x + '" ' + (p.plan_setting === x ? 'selected' : '') + '>' + T(x === 'auto' ? 'Auto-detect' : (x === 'free' ? 'Free' : 'Paid')) + '</option>'; }).join('') + '</select></label>'
           + '<label>' + T('Daily limit (0 = none)') + '<input type="number" min="0" data-f="daily_limit" value="' + (p.daily_limit || 0) + '"></label></div>'
           + '<div class="ai-stats muted small">' + (p.latency_ms ? '<span>⚡ ' + fmt(p.latency_ms) + ' ms</span>' : '') + (u.today != null ? '<span>📊 ' + T('Today') + ': ' + fmt(u.today) + '</span>' : '') + (p.last_used_at ? '<span>🕐 ' + esc(when(p.last_used_at, true)) + '</span>' : '') + win + '</div>'
-          + '<div class="row wrap"><button class="btn sm" data-save>💾 ' + T('Save') + '</button><button class="chip-btn sm" data-refresh>🔄 ' + T('Test & refresh models') + '</button>'
+          + '<div class="row wrap"><button class="btn sm" data-save>💾 ' + T('Save') + '</button><button class="chip-btn sm" data-refresh>🔄 ' + T('Test & refresh models') + '</button>'+ '<button class="chip-btn sm" data-models title="' + esc(T('Reload only the list of models — quick')) + '">↻ ' + T('Reload models') + '</button>'
           + (p.has_key ? '<button class="link-btn" data-clear>🗑 ' + T('Remove key') + '</button>' : '') + '<a class="link small" href="' + esc(p.signup_url) + '" target="_blank" rel="noopener">🔑 ' + T('Get a free key') + '</a><span class="muted small" data-st></span></div></div>';
       }).join('') || '<div class="empty">' + T('Nothing found.') + '</div>';
     }
@@ -49,6 +49,7 @@
       else if (b.hasAttribute('data-toggle')) { var cur = AP[i]; if (cur.enabled && !confirm(T('Deactivate this provider? It will no longer be used.'))) return; if (!cur.enabled && !cur.has_key && !cur.key_optional && !body.api_key) { st.textContent = '⚠️ ' + T('Add an API key first.'); f('api_key').focus(); return; } body.enabled = cur.enabled ? 0 : 1; delete body.api_key; }
       else if (b.hasAttribute('data-clear-extra')) { if (!confirm(T('Remove the extra keys?'))) return; body.clear_extra = 1; }
       else if (b.hasAttribute('data-clear')) { if (!confirm(T('Remove the saved key?'))) return; body.clear_key = 1; body.enabled = 0; }
+      else if (b.hasAttribute('data-models')) body = { do: 'models', id: id };
       else if (b.hasAttribute('data-refresh')) { if (body.api_key) body.do = 'save'; else body = { do: 'refresh', id: id }; }
       else if (!b.hasAttribute('data-save')) return;
       b.disabled = true; st.textContent = b.hasAttribute('data-refresh') ? T('Checking key, plan and models… (up to 2 minutes)') : T('Working…');

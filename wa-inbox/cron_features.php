@@ -37,6 +37,11 @@ foreach ($S as &$s) {
 unset($s);
 if ($changed) wi_write('scheduled.json', $S);
 
+/* ---- 1b) The model lists of the AI providers are reloaded once a day (providers add and withdraw models) ---- */
+if ((int) date('i') === 25) { $mt = (array) wi_read('ai_models_at.json', []); if (time() - (int) ($mt['at'] ?? 0) > 20 * 3600) { wi_write('ai_models_at.json', ['at' => time()]);
+    try { require_once __DIR__ . '/modules/lib/WiAiProviders.php'; $aie = new WiAiProviders(wi_ai_scope()); $aic = $aie->stored_config();
+        foreach (array_keys($aie->providers()) as $pid) { @set_time_limit(60); $aie->refresh_models_only($pid); } } catch (Throwable $e) {} } } // every provider, enabled or not: the list is public for most
+
 /* ---- 2) Treatment programs: today's step, inside its hour, one per account per minute ---- */
 $E = wi_read('enrollments.json', []); $P = wi_read('programs.json', []); $changedE = false;
 foreach ($E as $aid => &$list) {

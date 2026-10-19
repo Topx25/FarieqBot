@@ -121,6 +121,7 @@ class WiAiProviders
             ),
             'opencode' => array(
                 'name' => 'OpenCode Zen',
+                'models_public' => true, // the full list is published without a key; the key's own list is shorter (what the account may use)
                 'tagline' => 'Needs Zen credit: its free models work only inside the OpenCode app',
                 'api' => 'openai',
                 'base_url' => 'https://opencode.ai/zen/v1',
@@ -136,6 +137,7 @@ class WiAiProviders
             ),
             'opencode_go' => array(
                 'name' => 'OpenCode Go',
+                'models_public' => true, // the full list is published without a key; the key's own list is shorter (what the account may use)
                 'tagline' => 'Subscription · every model of the plan included (monthly usage limits)',
                 'api' => 'openai',
                 'base_url' => 'https://opencode.ai/zen/go/v1',
@@ -323,6 +325,7 @@ class WiAiProviders
     {
         $plan = $plan !== null ? $plan : (isset($provider['plan']) ? $provider['plan'] : 'free');
         if( trim((string) $model) === '' ) return false;
+        if( !empty($provider['skip_models']) && preg_match($provider['skip_models'], strtolower((string) $model)) ) return false; // listed for choosing by hand only
         if( !empty($provider['free_only_suffix']) && $plan !== 'paid' ) {
             $suffix = $provider['free_only_suffix'];
             return substr((string) $model, -strlen($suffix)) === $suffix;
@@ -614,6 +617,28 @@ class WiAiProviders
     /* ------------------------------------------------------- models + refresh */
 
     /**
+     * Only the model list of a provider is reloaded (no key test, no text or image test): new models appear and withdrawn ones go.
+     * Several providers publish their list without a key; verified image support of a model already known is kept.
+     */
+    public function refresh_models_only($id)
+    {
+        $providers = $this->providers();
+        if( !isset($providers[$id]) || $providers[$id]['base_url'] === '' ) return array('ok'=>false, 'error'=>'Unknown provider.');
+        $provider = $providers[$id];
+        $listing = $this->fetch_models($provider, (string) $provider['api_key']);
+        if( !$listing['ok'] ) return array('ok'=>false, 'status'=>$listing['status'], 'error'=>$listing['error']);
+        $st = $this->get_state($id); $old = array();
+        foreach( (array) json_decode($st && $st['models_json'] ? $st['models_json'] : '[]', true) as $m ) if( isset($m['id']) ) $old[$m['id']] = $m;
+        $models = array();
+        foreach( $listing['models'] as $m ) {
+            if( isset($old[$m['id']]) && array_key_exists('vision', $old[$m['id']]) && $old[$m['id']]['vision'] !== null && $m['vision'] !== true ) { $m['vision'] = $old[$m['id']]['vision']; $m['score'] = $this->score_model($m) - ($m['vision'] === false ? 30 : 0); }
+            $models[] = $m;
+        }
+        $this->save_state($id, array('models_json' => json_encode(array_slice($models, 0, 1500))));
+        return array('ok'=>true, 'count'=>count($models), 'before'=>count($old));
+    }
+
+    /**
      * Full check of one provider: validate the key, load and rank the models,
      * detect the plan where the provider exposes it, ping the best model and
      * capture the quota headers. Saves and returns the provider's public state.
@@ -739,7 +764,7 @@ class WiAiProviders
             'latency_ms' => $ping['latency_ms'],
             'checked_at' => $now,
             'detected_plan' => $detected_plan,
-            'models_json' => json_encode(array_slice($models, 0, 300)),
+            'models_json' => json_encode(array_slice($models, 0, 1500)),
             'best_free' => $best_free,
             'best_paid' => $best_paid,
             'checks_json' => json_encode(array('items'=>$checks, 'tried'=>$tried, 'text_model'=>$text_ok, 'vision_model'=>$vis_ok, 'at'=>$now)),
@@ -764,8 +789,17 @@ class WiAiProviders
     }
 
     /** Fetch and rank a provider's chat models (image support flagged, not filtered). */
-    public function fetch_models($provider, $api_key)
+    public function fetch_models($provider, $api_key, $public_pass = false)
     {
+        if( !$public_pass && $api_key !== '' && !empty($provider['models_public']) ) { // the whole catalogue (free and paid) next to what the key itself lists
+            $own = $this->fetch_models($provider, $api_key, true); $all = $this->fetch_models($provider, '', true);
+            if( !$all['ok'] ) return $own;
+            if( !$own['ok'] ) return $all;
+            $have = array(); foreach( $own['models'] as $m ) $have[$m['id']] = true;
+            foreach( $all['models'] as $m ) if( !isset($have[$m['id']]) ) { if( $m['note'] === '' ) $m['note'] = 'not in your key\'s list'; $own['models'][] = $m; }
+            usort($own['models'], function($a, $b) { if( $a['score'] == $b['score'] ) return strcmp($a['id'], $b['id']); return $a['score'] < $b['score'] ? 1 : -1; });
+            return $own;
+        }
         if( $provider['api'] === 'gemini' ) {
             $http = $this->http('GET', rtrim($provider['base_url'], '/').'/models?pageSize=1000', array('x-goog-api-key: '.$api_key), null, 20);
         } else {
@@ -840,7 +874,7 @@ class WiAiProviders
                 $meta['name'] = isset($row['name']) ? $row['name'] : $id;
                 break;
         }
-        if( !empty($catalog[$provider_id]['skip_models']) && preg_match($catalog[$provider_id]['skip_models'], $n) ) return null;
+        if( !empty($catalog[$provider_id]['skip_models']) && preg_match($catalog[$provider_id]['skip_models'], $n) ) { $meta['avoid'] = true; $meta['note'] = 'other API route or experimental — never picked automatically'; } // listed, but not chosen by itself
         if( !empty($catalog[$provider_id]['free_pattern']) ) {
             $meta['free'] = (bool) preg_match($catalog[$provider_id]['free_pattern'], $id);
             if( !$meta['free'] && $meta['note'] === '' ) $meta['note'] = 'credit required';

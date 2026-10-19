@@ -867,7 +867,7 @@ function wi_ai_call(array $body, int $timeout = 90): array {
         $u = $eng->usage + ['ms' => (int) round((microtime(true) - $t0) * 1000), 'mode' => $eng->mode()];
         return !empty($r['ok']) ? ['ok' => true, 'data' => $r['data'], 'provider' => $r['provider'], 'model' => $r['model'], 'usage' => $u] : ['ok' => false, 'error' => $r['error'] ?? 'AI failed.', 'usage' => $u];
     }
-    if (!in_array($act, ['ai_list', 'ai_save', 'ai_refresh', 'ai_mode'], true)) return wi_bridge($body, $timeout); // invoice actions stay with the invoice system
+    if (!in_array($act, ['ai_list', 'ai_save', 'ai_refresh', 'ai_models', 'ai_mode'], true)) return wi_bridge($body, $timeout); // invoice actions stay with the invoice system
     $id = strtolower(trim((string) ($body['id'] ?? ''))); $config = $eng->stored_config();
     if ($act === 'ai_mode') { $config['mode'] = ($body['mode'] ?? '') === 'parallel' ? 'parallel' : 'sequential'; $eng->save_config($config); }
     elseif ($act !== 'ai_list' && !isset($cat[$id])) return ['ok' => false, 'error' => 'Unknown provider.'];
@@ -888,6 +888,7 @@ function wi_ai_call(array $body, int $timeout = 90): array {
         if ($key !== '') { @set_time_limit(120); $eng->refresh($id); }
     }
     if ($act === 'ai_refresh') { @set_time_limit(120); $eng->refresh($id); }
+    if ($act === 'ai_models') { @set_time_limit(120); $eng->refresh_models_only($id); } // only the list of models, quick
     $list = []; foreach ($eng->stored_config()['order'] as $pid) { $st = $eng->public_state($pid); if ($st) $list[] = $st + ['tagline' => $cat[$pid]['tagline'], 'color' => $cat[$pid]['color'], 'signup_url' => $cat[$pid]['signup_url'], 'key_hint' => $cat[$pid]['key_hint']]; }
     return ['ok' => true, 'providers' => $list, 'mode' => $eng->mode(), 'engine' => 'local'];
 }

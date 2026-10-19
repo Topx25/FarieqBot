@@ -7,7 +7,7 @@
         wi_check_csrf();
         @set_time_limit(150);
         $in = json_decode(wi_input(), true) ?: [];
-        $act = ['refresh' => 'ai_refresh', 'mode' => 'ai_mode'][$in['do'] ?? ''] ?? 'ai_save';
+        $act = ['refresh' => 'ai_refresh', 'models' => 'ai_models', 'mode' => 'ai_mode'][$in['do'] ?? ''] ?? 'ai_save';
         $body = ['action' => $act, 'id' => (string) ($in['id'] ?? ''), 'mode' => (string) ($in['mode'] ?? '')];
         if ($act === 'ai_save') foreach (['enabled', 'api_key', 'clear_key', 'extra_keys', 'clear_extra', 'model', 'plan', 'daily_limit', 'order', 'base_url', 'name'] as $k) if (isset($in[$k])) $body[$k] = $in[$k];
         $res = wi_ai_call($body, 140);

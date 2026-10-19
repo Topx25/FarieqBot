@@ -449,6 +449,8 @@ return [
     'A welcome message before their first reply in each chat' => 'رسالة ترحيب قبل أول رد ليه في كل شات',
     'Team member reply: how the name goes in front of a message' => 'رد الموظف: شكل الاسم قدّام الرسالة',
     'Team member welcome: sent before their first message in a chat' => 'ترحيب الموظف: بيتبعت قبل أول رسالة ليه في الشات',
+    'Reload models' => 'تحديث الموديلات',
+    'Reload only the list of models — quick' => 'يحدّث قايمة الموديلات بس — سريع',
     'Name & shortcut' => 'الاسم والاختصار',
     'e.g. A short name' => 'مثلًا: اسم قصير',
     'Shortcut — write it in any chat or group and the file is sent' => 'الاختصار — اكتبه في أي محادثة أو جروب والملف يتبعت',
