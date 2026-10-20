@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.113.1', 'date' => '2026-10-20', 'title' => 'The calm design layer really loads; clean legal addresses', 'changes' => [
+        'pro.css (the calm look of every page, moved there in 3.105) was refused by the folder\'s access rules, so the new design never reached the browser. It is now allowed.',
+        'Clean public addresses: /privacy, /terms and /data-deletion (Facebook asks for a plain page for the data deletion instructions).',
+    ]],
     ['v' => '3.113.0', 'date' => '2026-10-20', 'title' => 'Public privacy policy and terms pages', 'changes' => [
         'New public pages index.php?privacy and index.php?terms (no sign-in), asked for by Facebook and Google when an app is set up. Their text is written in Settings → System (empty = a built-in general text in English and Arabic, filled with the product name, the owner\'s name and the contact e-mail set there).',
     ]],
