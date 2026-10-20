@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.113.2', 'date' => '2026-10-20', 'title' => 'Fix: saving the Facebook app', 'changes' => [
+        'Saving the Facebook app, picking pages and adding a page by hand stopped with a server error (500): those forms ran before the Facebook part of the system was loaded. They load it now.',
+    ]],
     ['v' => '3.113.1', 'date' => '2026-10-20', 'title' => 'The calm design layer really loads; clean legal addresses', 'changes' => [
         'pro.css (the calm look of every page, moved there in 3.105) was refused by the folder\'s access rules, so the new design never reached the browser. It is now allowed.',
         'Clean public addresses: /privacy, /terms and /data-deletion (Facebook asks for a plain page for the data deletion instructions).',
