@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.113.4', 'date' => '2026-10-20', 'title' => 'Fix: connecting Facebook signed the person out', 'changes' => [
+        'Coming back from Facebook\'s sign-in is a step from another site, so the browser leaves out the (strict) sign-in cookie; the return started an empty session that replaced the person\'s, and they were signed out. The return now starts no session and opens the accounts page with a normal step, so the person stays signed in.',
+    ]],
     ['v' => '3.113.3', 'date' => '2026-10-20', 'title' => 'Facebook: Messenger works with the messaging permissions alone', 'changes' => [
         'Connecting a page no longer stops when Facebook gave only the messaging permissions: the page is known from the sign-in, it is subscribed to the messages (comments too when allowed), and its card lists the permissions Facebook did not give (checked with Facebook\'s token check), with what to do.',
     ]],

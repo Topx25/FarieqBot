@@ -2,6 +2,9 @@
 declare(strict_types=1);
 require __DIR__ . '/lib.php';
 if (!is_file(WI_DIR . '/installed.json') && !wi_users()) { header('Location: install.php'); exit; } // fresh copy: run the installer first
+// Facebook's sign-in comes back from another site, so the browser leaves out the (strict) session cookie: this return is handled
+// before any session starts — otherwise an empty session would replace the person's and sign them out.
+if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; wf_fb_oauth_callback(); }
 wi_boot();
 if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy(); header('Location: ./'); exit; } // another client's address
 // The website (PHP-FPM) and the background jobs run as the account user: the data stays private to it (0700 / 0600).
@@ -68,7 +71,6 @@ if (isset($_GET['bot_hook'])) {
 }
 if (isset($_GET['drive_cb'])) { require __DIR__ . '/features.php'; wf_drive_callback(); }
 if (isset($_GET['fb_connect'])) { require __DIR__ . '/features.php'; wf_fb_oauth_start(); }
-if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; wf_fb_oauth_callback(); }
 require __DIR__ . '/app/api.php';     // JSON API (?api=…)
 
 require __DIR__ . '/app/actions.php'; // form actions (POST)

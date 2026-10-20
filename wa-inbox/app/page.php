@@ -605,6 +605,7 @@
           $fbCopy = function (string $label, string $val) { return '<div class="fb-copy"><span class="fb-copy-l">' . wi_e($label) . '</span><div class="fb-copy-r"><input readonly dir="ltr" value="' . wi_e($val) . '" onclick="this.select()"><button type="button" class="btn ghost sm" onclick="var i=this.previousElementSibling;i.select();(navigator.clipboard?navigator.clipboard.writeText(i.value):Promise.reject()).catch(function(){document.execCommand(\'copy\')});this.textContent=\'✓\'">Copy</button></div></div>'; }; ?>
         <section class="card acc fb-hub" id="fb-hub">
           <div class="card-h"><h2><span>📘</span> <span>Facebook pages</span></h2><span class="fb-state <?= $fbReady ? 'on' : '' ?>"><?= $fbReady ? 'App ready' : 'App not set' ?></span></div>
+          <?php if (!empty($_GET['fb_err'])): ?><p class="alert bad" style="margin:12px 18px 0"><?= wi_e(wi_t(mb_substr((string) $_GET['fb_err'], 0, 300))) ?></p><?php endif; ?>
           <?php if ($fbPend): ?>
           <form method="post" class="fb-pick" id="fb-pick">
             <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="fb_pick_add"><input type="hidden" name="pk" value="<?= wi_e($fbPk) ?>">

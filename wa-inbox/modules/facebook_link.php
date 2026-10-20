@@ -38,10 +38,18 @@ function wf_fb_oauth_start(): void {
 }
 function wf_fb_http_json(string $url): array { if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_FAKE_HTTP']) && is_callable($GLOBALS['WI_FAKE_HTTP'])) return ($GLOBALS['WI_FAKE_HTTP'])($url); // tests
     $ch = curl_init($url); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_CONNECTTIMEOUT => 8]); $r = json_decode((string) curl_exec($ch), true); curl_close($ch); return is_array($r) ? $r : ['error' => ['message' => 'Facebook did not answer.']]; }
-/** Facebook sends the person back here (a top-level redirect, so the one-time state says who it is, not the session). */
+/** The page shown when Facebook sends the person back: it opens the accounts page with a normal (same-site) step, so the session cookie goes along. */
+function wf_fb_cb_page(string $msg, bool $ok): void {
+    header('Content-Type: text/html; charset=utf-8'); header('Cache-Control: no-store'); header('Referrer-Policy: no-referrer');
+    $to = './?p=accounts' . ($ok ? '#fb-pick' : '&fb_err=' . rawurlencode(mb_substr($msg, 0, 300)));
+    echo '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="refresh" content="0;url=' . wi_e($to) . '"><title>Facebook</title></head>'
+        . '<body style="font:16px system-ui,sans-serif;display:grid;place-items:center;min-height:90vh;margin:0"><p><a href="' . wi_e($to) . '">' . wi_e($ok ? 'Continue' : 'Back') . '</a></p><script>location.replace(' . json_encode($to) . ');</script></body></html>';
+    exit;
+}
+/** Facebook sends the person back here (from another site: the one-time state says who it is; no session is started here). */
 function wf_fb_oauth_callback(): void {
     $st = (string) ($_GET['state'] ?? ''); $S = (array) wi_read('fb_states.json', []); $mine = $st !== '' && isset($S[$st]) && time() - (int) $S[$st]['at'] < 900 ? $S[$st] : null;
-    $fail = function (string $m) { wi_flash($m, 'bad'); header('Location: ?p=accounts'); exit; };
+    $fail = function (string $m) { wf_fb_cb_page($m, false); };
     if (!$mine) $fail('The Facebook sign-in expired. Try again.');
     wi_update('fb_states.json', function ($A) use ($st) { unset($A[$st]); return $A; });
     if (isset($_GET['error']) || empty($_GET['code'])) $fail('Facebook did not give access: ' . mb_substr((string) ($_GET['error_description'] ?? $_GET['error'] ?? ''), 0, 160));
@@ -56,7 +64,7 @@ function wf_fb_oauth_callback(): void {
     $pk = bin2hex(random_bytes(12)); $meta = [];
     foreach ($pages as $x) { wi_secret_set('fb_pend:' . $pk . ':' . $x['id'], (string) $x['access_token']); $meta[] = ['id' => (string) $x['id'], 'name' => mb_substr((string) $x['name'], 0, 80)]; }
     wi_update('fb_pending.json', function ($P) use ($pk, $meta, $mine) { foreach ($P as $k => $x) if (time() - (int) $x['at'] > 900) unset($P[$k]); $P[$pk] = ['email' => $mine['email'], 'scope' => $mine['scope'], 'pages' => $meta, 'at' => time(), 'acc' => (string) ($mine['acc'] ?? '')]; return $P; });
-    header('Location: ?p=accounts&fb_pick=' . $pk . '#fb-pick'); exit;
+    wf_fb_cb_page('', true);
 }
 /** The newest unfinished Facebook sign-in of the signed-in person (the pick box shows even when the address lost its code). */
 function wf_fb_pending_mine(): string { $me = strtolower((string) ($_SESSION['email'] ?? '')); $best = ''; $at = 0;
