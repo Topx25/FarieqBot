@@ -110,4 +110,5 @@
     document.getElementById('fb-tabs').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; [].forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
       ['c', 'p', 'i'].forEach(function (k) { document.getElementById('fb-pane-' + k).hidden = k !== b.dataset.t; });
       if (b.dataset.t === 'p' && !fbPostsDone) { fbPostsDone = true; fbPosts(); } if (b.dataset.t === 'i') fbIns(); };
+      var fbT0 = new URLSearchParams(location.search).get('tab'); if (fbT0) { var fbB0 = document.querySelector('#fb-tabs [data-t="' + fbT0 + '"]'); if (fbB0) fbB0.click(); } // the Facebook menu opens a tab directly
   }

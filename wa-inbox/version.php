@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.115.0', 'date' => '2026-10-20', 'title' => 'Facebook section in the menu', 'changes' => [
+        'New menu section "Facebook": Messenger (the conversations of the Facebook pages only), Page comments, Page posts, Page numbers, and Connect pages. It shows once the user has a Facebook page; Connect pages shows to anyone who may link one.',
+        'These items open on a Facebook page automatically when a WhatsApp number is open, and each item is highlighted on its own tab.',
+    ]],
     ['v' => '3.114.0', 'date' => '2026-10-20', 'title' => 'Facebook: messages read from the page every minute; the bot answers on Messenger', 'changes' => [
         'Every minute each Facebook page\'s new Messenger messages are read from the page itself and saved (already known ones skipped), so messages arrive even while the Facebook app is not published (Facebook sends no live webhooks then) and a missed webhook is caught up. The bot answers what came in.',
         'Fix: the bot stopped on a Facebook page\'s first message (the page answered the library question without the list the bot reads). Tested on a real page: the message came in and the bot\'s reply was delivered on Messenger.',

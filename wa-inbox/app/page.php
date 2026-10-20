@@ -55,10 +55,10 @@
     </form>
     <?php $waPages = ['accounts', 'link', 'gateway']; $chatPages = ['inbox', 'search']; ?>
     <nav id="side-nav">
-      <?php foreach (wi_menu() as $sec): $vis = array_values(array_filter($sec['items'], fn($it) => !$it['hidden'] && (wi_menu_can($it['who'], (bool) $manager) || ($it['key'] === 'broadcast' && wi_is_team()))
+      <?php $hasFb = (bool) array_filter($mine, fn($fa) => ($fa['channel'] ?? '') === 'fb'); foreach (wi_menu() as $sec): $vis = array_values(array_filter($sec['items'], fn($it) => !$it['hidden'] && ($sec['id'] !== 'facebook' || $hasFb || $it['key'] === 'fb_connect') && (wi_menu_can($it['who'], (bool) $manager) || ($it['key'] === 'broadcast' && wi_is_team()))
         && ($it['key'] === 'dashboard' || !in_array($it['who'], ['all', 'manager'], true) || array_filter($it['pages'], fn($pg) => wi_page_perm($pg) !== '')))); // only what this user may open if (!$vis) continue; ?>
       <div class="nav-h"><?= wi_e($sec['title']) ?></div>
-      <?php foreach ($vis as $it): ?><a href="<?= wi_e($it['href'] ?? '?p=' . $it['key']) ?>" class="<?= in_array($page, $it['pages'], true) ? 'on' : '' ?>"><i><?= wi_e($it['icon']) ?></i><?= wi_e($it['label']) ?></a>
+      <?php foreach ($vis as $it): ?><a href="<?= wi_e($it['href'] ?? '?p=' . $it['key']) ?>" class="<?= in_array($page, $it['pages'], true) && !array_filter((array) ($it['q'] ?? []), fn($v, $k) => (string) ($_GET[$k] ?? '') !== $v, ARRAY_FILTER_USE_BOTH) ? 'on' : '' ?>"><i><?= wi_e($it['icon']) ?></i><?= wi_e($it['label']) ?></a>
       <?php endforeach; endforeach; ?>
     </nav>
     <div class="lang-switch side-lang"><a href="?p=<?= wi_e($page) ?>&amp;lang=en" class="<?= wi_lang() === 'en' ? 'on' : '' ?>">English</a><a href="?p=<?= wi_e($page) ?>&amp;lang=ar" class="<?= wi_lang() === 'ar' ? 'on' : '' ?>">العربية</a></div>

@@ -492,11 +492,16 @@ function wi_menu_registry(): array {
     return [
         ['id' => 'today', 'title' => 'Today', 'items' => [['key' => 'dashboard', 'href' => './', 'icon' => '🏠', 'label' => 'Dashboard', 'who' => 'all']]],
         ['id' => 'comm', 'title' => 'Communication', 'items' => [
-            ['key' => 'inbox', 'icon' => '💬', 'label' => 'Conversations', 'who' => 'all', 'pages' => ['inbox', 'search']],
+            ['key' => 'inbox', 'icon' => '💬', 'label' => 'Conversations', 'who' => 'all', 'pages' => ['inbox', 'search'], 'q' => ['ch' => '']],
             ['key' => 'groups', 'icon' => '👥', 'label' => 'Groups', 'who' => 'all'],
-            ['key' => 'facebook', 'icon' => '📘', 'label' => 'Facebook comments', 'who' => 'all'],
             ['key' => 'meetings', 'icon' => '🎥', 'label' => 'Meetings', 'who' => 'all'],
             ['key' => 'broadcast', 'icon' => '📣', 'label' => 'Broadcast', 'who' => 'manager']]],
+        ['id' => 'facebook', 'title' => 'Facebook', 'items' => [ // shown when the user has a Facebook page (Connect pages: to anyone who may link one)
+            ['key' => 'fb_messenger', 'icon' => '💬', 'label' => 'Messenger', 'who' => 'all', 'href' => '?p=inbox&ch=fb', 'pages' => ['inbox'], 'q' => ['ch' => 'fb']],
+            ['key' => 'facebook', 'icon' => '💭', 'label' => 'Page comments', 'who' => 'all', 'href' => '?p=facebook', 'pages' => ['facebook'], 'q' => ['tab' => '']],
+            ['key' => 'fb_posts', 'icon' => '📰', 'label' => 'Page posts', 'who' => 'all', 'href' => '?p=facebook&tab=p', 'pages' => ['facebook'], 'q' => ['tab' => 'p']],
+            ['key' => 'fb_numbers', 'icon' => '📈', 'label' => 'Page numbers', 'who' => 'all', 'href' => '?p=facebook&tab=i', 'pages' => ['facebook'], 'q' => ['tab' => 'i']],
+            ['key' => 'fb_connect', 'icon' => '🔗', 'label' => 'Connect pages', 'who' => 'manager', 'href' => '?p=accounts#fb-hub', 'pages' => ['accounts'], 'q' => ['fbx' => '1']]]],
         ['id' => 'cases', 'title' => 'Cases & follow-up', 'items' => [
             ['key' => 'cases', 'icon' => '🩺', 'label' => 'Cases', 'who' => 'all'],
             ['key' => 'schedule', 'icon' => '⏰', 'label' => 'Scheduling & programs', 'who' => 'all', 'pages' => ['schedule', 'programs', 'status']]]],

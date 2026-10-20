@@ -73,9 +73,11 @@
       wr(VK, view); applyView(); if (k === 'hidden') drawList(); if (k === 'all') loadChats(); });
     function toggleHidden(jid) { var i = hiddenChats.indexOf(jid); if (i === -1) hiddenChats.push(jid); else hiddenChats.splice(i, 1); wr(HK, hiddenChats); drawList(); }
     setTimeout(applyView, 0);
+    var chFilter = new URLSearchParams(location.search).get('ch') || '';
     function drawList() {
       var q = (document.getElementById('chat-q').value || '').toLowerCase();
       var html = chats.filter(function (c) {
+        if (chFilter === 'fb' && c.channel !== 'fb') return false; // the Facebook menu's Messenger: only the page conversations
         if (filter === 'customers' && !c.customer) return false;
         if (filter === 'others' && (c.customer || c.group)) return false;
         if (filter === 'groups' && !c.group) return false;

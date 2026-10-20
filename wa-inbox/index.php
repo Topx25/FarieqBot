@@ -83,7 +83,9 @@ if (!wi_my_accounts() && wi_can_link_own() && !wi_is_super() && !in_array($page,
     if (empty($_SESSION['own_hint'])) { $_SESSION['own_hint'] = 1; wi_flash('Welcome! Link your WhatsApp number to start: add it here, then scan the QR code with WhatsApp on your phone.', 'ok'); }
     header('Location: ?p=accounts'); exit;
 }
-if (wi_logged_in() && isset($_GET['acc']) && isset(wi_my_accounts()[(string) $_GET['acc']])) $_SESSION['acc'] = (string) $_GET['acc']; // links that open a page for a given number
+if (wi_logged_in() && isset($_GET['acc']) && isset(wi_my_accounts()[(string) $_GET['acc']])) $_SESSION['acc'] = (string) $_GET['acc'];
+// Facebook menu: Messenger and the page's comments / posts / numbers open on a Facebook page (the first one) when a number is open
+if (wi_logged_in() && (($_GET['ch'] ?? '') === 'fb' || $page === 'facebook') && ((wi_current()['channel'] ?? '') !== 'fb')) foreach (wi_my_accounts() as $fbId => $fbA) if (($fbA['channel'] ?? '') === 'fb') { $_SESSION['acc'] = (string) $fbId; break; } // links that open a page for a given number
 if ($page === 'clients' && !wi_is_super()) $page = 'dashboard'; // subscriptions are the super admin's
 if (!in_array($page, ['business', 'clients', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook'], true)) $page = 'dashboard';
 $fxPages = ['business', 'learning', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'facebook'];
