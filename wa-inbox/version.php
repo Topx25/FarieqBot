@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.112.1', 'date' => '2026-10-20', 'title' => 'Facebook Login for Business', 'changes' => [
+        'Facebook app settings: optional "Configuration ID". New Business-type apps use Facebook Login for Business, which asks for the permissions of a saved configuration instead of a list; when the ID is set, "Continue with Facebook" uses it.',
+    ]],
     ['v' => '3.112.0', 'date' => '2026-10-19', 'title' => 'Facebook: a button per number and per client', 'changes' => [
         'Every WhatsApp number\'s card has its own "Facebook" button: the pages picked after it are linked to that number, belong to the same owner, and the bot answers on them with that number\'s knowledge (business profile, library, learning, rules). Each client\'s button connects pages to that client only.',
         'The bot now answers Messenger chats too (they were skipped), at once when the message arrives, with the page\'s own bot settings.',

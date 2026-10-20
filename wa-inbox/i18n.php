@@ -258,6 +258,8 @@ return [
     'Facebook app settings (once, by the administrator)' => 'إعدادات تطبيق فيسبوك (مرة واحدة، من المسؤول)',
     'Use an app of your own (optional)' => 'استخدام تطبيق خاص بك (اختياري)',
     'Connect a Facebook page to this number: it answers with this number\'s knowledge' => 'اربط صفحة فيسبوك بالرقم ده: بترد بمعرفة الرقم ده',
+    'Configuration ID' => 'معرّف الإعداد (Configuration ID)',
+    '(Facebook Login for Business — Business apps)' => '(Facebook Login for Business — لتطبيقات Business)',
     'System help' => 'مساعدة النظام',
     'Not a help group' => 'ليس جروب مساعدة',
     'Explain the system to members, by what their account may open' => 'يشرح النظام للأعضاء حسب الصفحات اللي حسابهم يفتحها',

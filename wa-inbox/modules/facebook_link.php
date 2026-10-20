@@ -12,14 +12,14 @@ const WF_FB_SCOPES = 'pages_show_list,pages_messaging,pages_manage_metadata,page
 function wf_fb_scope_for(?string $email): string { $e = strtolower(trim((string) $email)); $A = (array) wi_read('fb_app.json', []); return $e !== '' && !empty($A[$e]['app_id']) ? $e : ''; }
 function wf_fb_app(string $scope): array {
     $A = (array) (wi_read('fb_app.json', [])[$scope] ?? []);
-    return ['scope' => $scope, 'app_id' => (string) ($A['app_id'] ?? ''), 'secret' => (string) wi_secret('fb_app_secret_app:' . $scope, ''), 'verify' => (string) ($A['verify'] ?? ''), 'key' => (string) ($A['key'] ?? ''), 'graph' => (string) ($A['graph'] ?? 'v26.0')];
+    return ['scope' => $scope, 'app_id' => (string) ($A['app_id'] ?? ''), 'secret' => (string) wi_secret('fb_app_secret_app:' . $scope, ''), 'verify' => (string) ($A['verify'] ?? ''), 'key' => (string) ($A['key'] ?? ''), 'graph' => (string) ($A['graph'] ?? 'v26.0'), 'config_id' => (string) ($A['config_id'] ?? '')];
 }
-function wf_fb_app_save(string $scope, string $appId, string $secret): array {
-    $appId = preg_replace('/\D/', '', $appId); $secret = trim($secret);
+function wf_fb_app_save(string $scope, string $appId, string $secret, string $configId = ''): array {
+    $appId = preg_replace('/\D/', '', $appId); $secret = trim($secret); $configId = preg_replace('/\D/', '', $configId);
     if ($appId === '') return ['ok' => false, 'error' => 'Write the App ID.'];
     $cur = wf_fb_app($scope); if ($secret === '' && $cur['secret'] === '') return ['ok' => false, 'error' => 'Write the App secret.'];
     if ($secret !== '') wi_secret_set('fb_app_secret_app:' . $scope, $secret);
-    wi_update('fb_app.json', function ($A) use ($scope, $appId) { $o = (array) ($A[$scope] ?? []); $A[$scope] = ['app_id' => $appId, 'verify' => $o['verify'] ?? bin2hex(random_bytes(12)), 'key' => $o['key'] ?? substr(bin2hex(random_bytes(6)), 0, 10), 'graph' => $o['graph'] ?? 'v26.0'] + $o; return $A; });
+    wi_update('fb_app.json', function ($A) use ($scope, $appId, $configId) { $o = (array) ($A[$scope] ?? []); $A[$scope] = ['app_id' => $appId, 'config_id' => $configId, 'verify' => $o['verify'] ?? bin2hex(random_bytes(12)), 'key' => $o['key'] ?? substr(bin2hex(random_bytes(6)), 0, 10), 'graph' => $o['graph'] ?? 'v26.0'] + $o; return $A; });
     return ['ok' => true];
 }
 function wf_fb_base_url(): string { $host = (string) ($_SERVER['HTTP_HOST'] ?? ''); $dir = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))), '/'); return $host === '' ? '' : 'https://' . $host . $dir . '/'; }
@@ -34,7 +34,7 @@ function wf_fb_oauth_start(): void {
     if ($app['app_id'] === '' || $app['secret'] === '') { wi_flash('Save the Facebook app (App ID and App secret) first.', 'bad'); header('Location: ?p=accounts'); exit; }
     $state = bin2hex(random_bytes(16));
     wi_update('fb_states.json', function ($S) use ($state, $scope) { foreach ($S as $k => $x) if (time() - (int) $x['at'] > 900) unset($S[$k]); $S[$state] = ['email' => strtolower((string) $_SESSION['email']), 'scope' => $scope, 'at' => time(), 'acc' => preg_replace('/[^a-z0-9_-]/', '', (string) ($_GET['acc'] ?? ''))]; return $S; });
-    header('Location: https://www.facebook.com/' . $app['graph'] . '/dialog/oauth?' . http_build_query(['client_id' => $app['app_id'], 'redirect_uri' => wf_fb_redirect_uri(), 'state' => $state, 'scope' => WF_FB_SCOPES, 'response_type' => 'code'])); exit;
+    header('Location: https://www.facebook.com/' . $app['graph'] . '/dialog/oauth?' . http_build_query(['client_id' => $app['app_id'], 'redirect_uri' => wf_fb_redirect_uri(), 'state' => $state, 'response_type' => 'code'] + ($app['config_id'] !== '' ? ['config_id' => $app['config_id']] : ['scope' => WF_FB_SCOPES]))); exit;
 }
 function wf_fb_http_json(string $url): array { if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_FAKE_HTTP']) && is_callable($GLOBALS['WI_FAKE_HTTP'])) return ($GLOBALS['WI_FAKE_HTTP'])($url); // tests
     $ch = curl_init($url); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_CONNECTTIMEOUT => 8]); $r = json_decode((string) curl_exec($ch), true); curl_close($ch); return is_array($r) ? $r : ['error' => ['message' => 'Facebook did not answer.']]; }

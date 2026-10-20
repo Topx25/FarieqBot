@@ -633,6 +633,7 @@
               <p class="muted small"><?= $fbScope !== '' && $fbSys['app_id'] !== '' && $fbOwn['app_id'] === '' ? 'Optional: the system\'s app is used unless you save your own.' : 'From developers.facebook.com → your app → Settings → Basic.' ?></p>
               <label>App ID<input name="fb_appid" inputmode="numeric" pattern="[0-9]*" dir="ltr" autocomplete="off" data-lpignore="true" data-1p-ignore value="<?= wi_e($fbOwn['app_id']) ?>"></label>
               <label>App secret<input name="fb_appsecret" type="password" dir="ltr" autocomplete="new-password" data-lpignore="true" data-1p-ignore placeholder="<?= $fbOwn['secret'] !== '' ? '••••••••  saved — leave empty to keep it' : '' ?>"></label>
+              <label>Configuration ID <small class="muted">(Facebook Login for Business — Business apps)</small><input name="fb_config" inputmode="numeric" pattern="[0-9]*" dir="ltr" autocomplete="off" data-lpignore="true" data-1p-ignore value="<?= wi_e($fbOwn['config_id']) ?>"></label>
               <button class="btn ghost sm">Save the app</button>
             </form>
             <div class="fb-step">
