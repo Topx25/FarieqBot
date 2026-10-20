@@ -58,6 +58,9 @@ function wf_fb_oauth_callback(): void {
     wi_update('fb_pending.json', function ($P) use ($pk, $meta, $mine) { foreach ($P as $k => $x) if (time() - (int) $x['at'] > 900) unset($P[$k]); $P[$pk] = ['email' => $mine['email'], 'scope' => $mine['scope'], 'pages' => $meta, 'at' => time(), 'acc' => (string) ($mine['acc'] ?? '')]; return $P; });
     header('Location: ?p=accounts&fb_pick=' . $pk . '#fb-pick'); exit;
 }
+/** The newest unfinished Facebook sign-in of the signed-in person (the pick box shows even when the address lost its code). */
+function wf_fb_pending_mine(): string { $me = strtolower((string) ($_SESSION['email'] ?? '')); $best = ''; $at = 0;
+    foreach ((array) wi_read('fb_pending.json', []) as $k => $p) if ((string) ($p['email'] ?? '') === $me && time() - (int) $p['at'] < 900 && (int) $p['at'] > $at) { $best = (string) $k; $at = (int) $p['at']; } return $best; }
 function wf_fb_pending(string $pk): ?array { $P = (array) (wi_read('fb_pending.json', [])[$pk] ?? []); return $P && time() - (int) $P['at'] < 900 && strtolower((string) ($_SESSION['email'] ?? '')) === (string) $P['email'] ? $P : null; }
 /** The picked pages become accounts (a page already linked just gets its new token). */
 function wf_fb_pick_add(string $pk, array $ids): array {

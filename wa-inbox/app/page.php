@@ -600,7 +600,7 @@
         <?php if (wi_is_admin() || (wi_can_link_own() && !$owns)): ?>
         <?php if (wi_is_admin() || wi_can_link_own()):
           $fbScope = wi_is_super() ? '' : strtolower((string) $_SESSION['email']); $fbOwn = wf_fb_app($fbScope); $fbSys = $fbScope !== '' ? wf_fb_app('') : $fbOwn; $fbReady = ($fbOwn['app_id'] !== '' && $fbOwn['secret'] !== '') || ($fbScope !== '' && $fbSys['app_id'] !== '');
-          $fbPk = (string) ($_GET['fb_pick'] ?? ''); $fbPend = $fbPk !== '' ? wf_fb_pending($fbPk) : null;
+          $fbPk = (string) ($_GET['fb_pick'] ?? ''); if ($fbPk === '' || !wf_fb_pending($fbPk)) $fbPk = wf_fb_pending_mine(); $fbPend = $fbPk !== '' ? wf_fb_pending($fbPk) : null;
           $fbCopy = function (string $label, string $val) { return '<div class="fb-copy"><span class="fb-copy-l">' . wi_e($label) . '</span><div class="fb-copy-r"><input readonly dir="ltr" value="' . wi_e($val) . '" onclick="this.select()"><button type="button" class="btn ghost sm" onclick="var i=this.previousElementSibling;i.select();(navigator.clipboard?navigator.clipboard.writeText(i.value):Promise.reject()).catch(function(){document.execCommand(\'copy\')});this.textContent=\'✓\'">Copy</button></div></div>'; }; ?>
         <section class="card acc fb-hub" id="fb-hub">
           <div class="card-h"><h2><span>📘</span> <span>Facebook pages</span></h2><span class="fb-state <?= $fbReady ? 'on' : '' ?>"><?= $fbReady ? 'App ready' : 'App not set' ?></span></div>
