@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.113.0', 'date' => '2026-10-20', 'title' => 'Public privacy policy and terms pages', 'changes' => [
+        'New public pages index.php?privacy and index.php?terms (no sign-in), asked for by Facebook and Google when an app is set up. Their text is written in Settings → System (empty = a built-in general text in English and Arabic, filled with the product name, the owner\'s name and the contact e-mail set there).',
+    ]],
     ['v' => '3.112.1', 'date' => '2026-10-20', 'title' => 'Facebook Login for Business', 'changes' => [
         'Facebook app settings: optional "Configuration ID". New Business-type apps use Facebook Login for Business, which asks for the permissions of a saved configuration instead of a list; when the ID is set, "Continue with Facebook" uses it.',
     ]],

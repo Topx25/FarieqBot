@@ -2,6 +2,8 @@
 /* ---------- Settings → System: values that differ per installation (brand, address, time zone, country, sign-in limits, bridge) ---------- */
 function wf_sys_fields(): array {
     return [
+        'legal_owner' => ['Owner name on the privacy policy and terms pages (empty = product name)', 'text'], 'legal_email' => ['Contact e-mail on those pages', 'text'],
+        'privacy_text' => ['Privacy policy page (index.php?privacy) — empty = the built-in text; "# " starts a heading', 'longtext'], 'terms_text' => ['Terms of service page (index.php?terms) — empty = the built-in text', 'longtext'],
         'brand_name' => ['Product name', 'text'], 'brand_logo' => ['Logo (emoji or short text)', 'text'], 'device_name' => ['Device name shown on linked phones', 'text'],
         'base_url' => ['Dashboard address (used in links sent on WhatsApp, Google sign-in, meetings)', 'url'], 'cookie_path' => ['Sign-in cookie path', 'text'],
         'timezone' => ['Time zone', 'tz'], 'country_code' => ['Country code for local numbers (e.g. 20, 966)', 'digits'], 'trunk_prefix' => ['Local prefix to drop (usually 0)', 'digits'],
@@ -24,7 +26,7 @@ function wf_api_system(string $api): void {
             if ($k === 'ai_engine' && !in_array($v, ['local', 'bridge'], true)) wi_json(['ok' => false, 'error' => 'AI engine must be local or bridge.']);
             if ($k === 'base_url' && $v !== '') $v = rtrim($v, '/') . '/';
             if ($k === 'cookie_path') $v = '/' . trim($v, '/') . (trim($v, '/') !== '' ? '/' : '');
-            $S[$k] = is_string($v) ? mb_substr($v, 0, 300) : $v; }
+            $S[$k] = is_string($v) ? mb_substr($v, 0, $type === 'longtext' ? 20000 : 300) : $v; }
         $c['system'] = $S; wi_write('config.json', $c); wi_log('system_settings_save', ['keys' => array_keys($in)]); wi_json(['ok' => true]); }
     $out = []; foreach ($F as $k => [$label, $type]) $out[] = ['key' => $k, 'label' => $label, 'type' => $type, 'value' => wi_sys($k), 'default' => wi_sys_defaults()[$k] ?? ''];
     wi_json(['ok' => true, 'fields' => $out, 'timezones' => timezone_identifiers_list()]);

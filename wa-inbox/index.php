@@ -8,6 +8,7 @@ if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy
 
 if (isset($_GET['m']) && !isset($_GET['api'])) { require __DIR__ . '/features.php'; wf_meet_page(preg_replace('/[^a-z0-9-]/', '', strtolower((string) $_GET['m']))); } // public meeting gateway (no login)
 if (isset($_GET['fb_hook'])) { require __DIR__ . '/features.php'; wf_fb_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['fb_hook']))); exit; } // Facebook calls this (verified by the app secret)
+if (isset($_GET['privacy']) || isset($_GET['terms'])) { require __DIR__ . '/features.php'; wf_legal_page(isset($_GET['terms']) ? 'terms' : 'privacy'); } // public privacy policy / terms (asked for by Facebook and Google)
 if (isset($_GET['fb_deauth']) || isset($_GET['fb_delete'])) { require __DIR__ . '/features.php'; wf_fb_user_callback(isset($_GET['fb_deauth']) ? 'deauth' : 'delete'); } // Facebook's "app removed" / "delete my data" calls (signed)
 if (isset($_GET['fb_deleted'])) { header('Content-Type: text/plain; charset=utf-8'); exit('Your data deletion request was received. Reference: ' . preg_replace('/[^a-f0-9]/', '', (string) $_GET['fb_deleted'])); }
 if (isset($_GET['bot_hook'])) {
