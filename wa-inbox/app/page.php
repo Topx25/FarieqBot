@@ -547,6 +547,7 @@
           <div class="card-h"><h2>💬 <?= wi_e((string) $a['name']) ?> — Facebook <?= $fc['error'] === '' && $fc['ok_at'] !== '' ? '✅' : '⚠️' ?></h2></div>
           <div class="pad stack">
             <?php if ($fc['error'] !== ''): ?><p class="muted small"><?= wi_e($fc['error']) ?></p><?php endif; ?>
+            <?php if (!empty($fc['missing'])): ?><p class="small fb-miss">⚠️ <span>Facebook did not give these permissions, so comments, posts and numbers stay off (messages work):</span> <code dir="ltr"><?= wi_e(implode(', ', (array) $fc['missing'])) ?></code> <span>Add them to the app's login configuration, then press Reconnect.</span></p><?php endif; ?>
             <?php if ($fc['via'] === 'oauth'): ?><p class="muted small">Connected through the Facebook app — the app's webhook address (above) serves this page.</p><a class="btn ghost sm" href="?fb_connect=1">Reconnect with Facebook</a>
             <?php else: ?>
             <label>Webhook address<input readonly value="<?= wi_e(wf_fb_hook_url((string) $a['id'])) ?>" onclick="this.select()"></label>
@@ -623,7 +624,7 @@
             <?php else: ?><button class="btn fb-btn" disabled><span>f</span> <span>Continue with Facebook</span></button><?php endif; ?>
           </div>
           <?php if (!$fbReady): ?><p class="fb-note muted small"><?= wi_is_super() ? 'Set up the Facebook app once below; after that everyone connects with the button.' : 'The Facebook sign-in is not set up yet. Ask the administrator, or set up an app of your own below.' ?></p><?php endif; ?>
-          <?php if ($fbPages): ?><div class="fb-linked"><?php foreach ($fbPages as $fpa): $fpc = wf_fb_cfg((string) $fpa['id']); ?><span class="fb-chip <?= $fpc['error'] === '' ? 'ok' : 'bad' ?>" title="<?= wi_e($fpc['error']) ?>"><?= $fpc['error'] === '' ? '●' : '!' ?> <?= wi_e((string) $fpa['name']) ?><?php if (($fpp = wf_fb_parent($fpa))): ?> <small class="muted">↔ <?= wi_e((string) $fpp['name']) ?></small><?php endif; ?></span><?php endforeach; ?></div><?php endif; ?>
+          <?php if ($fbPages): ?><div class="fb-linked"><?php foreach ($fbPages as $fpa): $fpc = wf_fb_cfg((string) $fpa['id']); ?><span class="fb-chip <?= $fpc['error'] === '' ? (empty($fpc['missing']) ? 'ok' : 'warn') : 'bad' ?>" title="<?= wi_e($fpc['error']) ?>"><?= $fpc['error'] === '' ? '●' : '!' ?> <?= wi_e((string) $fpa['name']) ?><?php if (($fpp = wf_fb_parent($fpa))): ?> <small class="muted">↔ <?= wi_e((string) $fpp['name']) ?></small><?php endif; ?></span><?php endforeach; ?></div><?php endif; ?>
           <details class="fb-setup" <?= !$fbReady && (wi_is_super() || $fbOwn['app_id'] !== '') ? 'open' : '' ?>>
             <summary><?= wi_is_super() ? 'Facebook app settings (once, by the administrator)' : 'Use an app of your own (optional)' ?></summary>
           <div class="fb-steps">

@@ -81,3 +81,5 @@ h1{font-weight:600;letter-spacing:0}
 .fb-setup{margin:0 18px 12px;border-top:1px solid var(--line);padding-top:12px}
 .fb-setup summary,.fb-manual summary{cursor:pointer;font-size:13px;color:var(--muted);font-weight:600}
 .fb-setup .fb-steps{padding:12px 0 0}
+.fb-chip.warn{color:#b45309;border-color:currentColor}
+.fb-miss{color:#b45309;margin:0}.fb-miss code{font-size:11.5px;word-break:break-word}

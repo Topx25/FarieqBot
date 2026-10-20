@@ -289,6 +289,8 @@ return [
     '# Security' => '# الأمان',
     'Access needs a sign-in with a one-time code; tokens and private files are encrypted; only the business\'s team sees its data.' => 'الدخول برمز لمرة واحدة، ورموز الوصول والملفات الخاصة مشفّرة، ولا يرى بيانات النشاط إلا فريقه.',
     '••••••••  saved — leave empty to keep it' => '••••••••  محفوظ — سيبه فاضي علشان يفضل زي ما هو',
+    'Facebook did not give these permissions, so comments, posts and numbers stay off (messages work):' => 'فيسبوك ما اداش الصلاحيات دي، فالكومنتات والمنشورات والأرقام مقفولة (الرسايل شغالة):',
+    'Add them to the app\'s login configuration, then press Reconnect.' => 'ضيفها لإعداد تسجيل الدخول في التطبيق، وبعدين اضغط إعادة الربط.',
     'System help' => 'مساعدة النظام',
     'Not a help group' => 'ليس جروب مساعدة',
     'Explain the system to members, by what their account may open' => 'يشرح النظام للأعضاء حسب الصفحات اللي حسابهم يفتحها',

@@ -4,7 +4,7 @@
 
 /* ---------- accounts and settings ---------- */
 function wf_fb_is(?array $acc): bool { return $acc && ($acc['channel'] ?? '') === 'fb'; }
-function wf_fb_cfg(string $aid): array { return (array) (wi_read('fb.json', [])[$aid] ?? []) + ['page_id' => '', 'page_name' => '', 'app_id' => '', 'graph' => 'v26.0', 'verify' => '', 'ok_at' => '', 'error' => '', 'hook_at' => '', 'comment_bot' => 'off', 'comment_public' => 1, 'comment_private' => 0, 'app_scope' => '', 'via' => '', 'parent' => '']; }
+function wf_fb_cfg(string $aid): array { return (array) (wi_read('fb.json', [])[$aid] ?? []) + ['page_id' => '', 'page_name' => '', 'app_id' => '', 'graph' => 'v26.0', 'verify' => '', 'ok_at' => '', 'error' => '', 'hook_at' => '', 'comment_bot' => 'off', 'comment_public' => 1, 'comment_private' => 0, 'app_scope' => '', 'via' => '', 'parent' => '', 'missing' => []]; }
 function wf_fb_cfg_set(string $aid, array $set): void { wi_update('fb.json', function ($F) use ($aid, $set) { $F[$aid] = $set + (array) ($F[$aid] ?? []); return $F; }); }
 function wf_fb_token(string $aid): string { return (string) wi_secret('fb_page_token:' . $aid, ''); }
 function wf_fb_secret(string $aid): string { return (string) wi_secret('fb_app_secret:' . $aid, ''); }
@@ -228,14 +228,26 @@ function wf_fb_gateway(string $path, ?array $post, array $acc): array {
 }
 
 /* ---------- connecting a page (settings) ---------- */
+/** The permissions the page token really has (Facebook's token check, with the app's own key); [] when it cannot be asked. */
+function wf_fb_token_scopes(string $aid): array {
+    $c = wf_fb_cfg($aid); if (!function_exists('wf_fb_app') || $c['app_scope'] === null) return []; $app = wf_fb_app((string) $c['app_scope']); if ($app['app_id'] === '' || $app['secret'] === '') return [];
+    $r = wf_fb_http_json('https://graph.facebook.com/' . $app['graph'] . '/debug_token?' . http_build_query(['input_token' => wf_fb_token($aid), 'access_token' => $app['app_id'] . '|' . $app['secret']]));
+    return array_values(array_map('strval', (array) ($r['data']['scopes'] ?? [])));
+}
+/** Checks the page token and subscribes the page to the webhook. Messages need only messaging permissions: when Facebook did not give the
+ *  reading / posting permissions, Messenger still works and the card lists what is missing (comments, posts and numbers need them). */
 function wf_fb_connect(string $aid): array {
     $c = wf_fb_cfg($aid); $me = wf_fb_graph($aid, 'GET', 'me', ['fields' => 'id,name']);
-    if (empty($me['ok'])) { wf_fb_cfg_set($aid, ['error' => (string) $me['error']]); return $me; }
+    if (empty($me['ok'])) { if ($c['page_id'] === '' || wf_fb_token($aid) === '') { wf_fb_cfg_set($aid, ['error' => (string) $me['error']]); return $me; } $me = ['ok' => true, 'id' => $c['page_id'], 'name' => $c['page_name']]; } // the page is known from the sign-in
     if ($c['page_id'] !== '' && (string) $me['id'] !== $c['page_id']) { $e = 'The token belongs to another page.'; wf_fb_cfg_set($aid, ['error' => $e]); return ['ok' => false, 'error' => $e]; }
     $sub = wf_fb_graph($aid, 'POST', $me['id'] . '/subscribed_apps', ['subscribed_fields' => 'messages,messaging_postbacks,message_echoes,message_reads,message_reactions,feed']);
+    if (empty($sub['ok'])) $sub = wf_fb_graph($aid, 'POST', $me['id'] . '/subscribed_apps', ['subscribed_fields' => 'messages,messaging_postbacks,message_echoes,message_reads,message_reactions']); // without the comments, when that permission is missing
     if (empty($sub['ok'])) { wf_fb_cfg_set($aid, ['page_id' => (string) $me['id'], 'page_name' => (string) ($me['name'] ?? ''), 'error' => (string) $sub['error']]); return $sub; }
-    wf_fb_cfg_set($aid, ['page_id' => (string) $me['id'], 'page_name' => (string) ($me['name'] ?? ''), 'error' => '', 'ok_at' => gmdate('c')]);
-    return ['ok' => true, 'page' => (string) ($me['name'] ?? '')];
+    $have = function_exists('wf_fb_http_json') ? wf_fb_token_scopes($aid) : [];
+    $need = ['pages_messaging', 'pages_manage_metadata', 'pages_read_engagement', 'pages_read_user_content', 'pages_manage_posts', 'pages_manage_engagement', 'read_insights'];
+    $missing = $have ? array_values(array_diff($need, $have)) : [];
+    wf_fb_cfg_set($aid, ['page_id' => (string) $me['id'], 'page_name' => (string) ($me['name'] ?? ''), 'error' => '', 'ok_at' => gmdate('c'), 'missing' => $missing]);
+    return ['ok' => true, 'page' => (string) ($me['name'] ?? ''), 'missing' => $missing];
 }
 function wf_fb_add(string $name, array $in, ?string $owner): array {
     $tok = trim((string) ($in['token'] ?? '')); $sec = trim((string) ($in['secret'] ?? ''));

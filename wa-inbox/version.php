@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.113.3', 'date' => '2026-10-20', 'title' => 'Facebook: Messenger works with the messaging permissions alone', 'changes' => [
+        'Connecting a page no longer stops when Facebook gave only the messaging permissions: the page is known from the sign-in, it is subscribed to the messages (comments too when allowed), and its card lists the permissions Facebook did not give (checked with Facebook\'s token check), with what to do.',
+    ]],
     ['v' => '3.113.2', 'date' => '2026-10-20', 'title' => 'Fix: saving the Facebook app', 'changes' => [
         'Saving the Facebook app, picking pages and adding a page by hand stopped with a server error (500): those forms ran before the Facebook part of the system was loaded. They load it now.',
     ]],
