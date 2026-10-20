@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.113.5', 'date' => '2026-10-20', 'title' => 'Secrets: a new value is read at once; clearing really clears', 'changes' => [
+        'A secret saved during a request (a renewed Facebook page token) was still read with its old value until the next request, so the page card kept listing permissions Facebook had already given. The new value is read at once.',
+        'Saving an empty secret now removes it (it did nothing before): Google Drive "disconnect" really forgets its token, and finished Facebook sign-ins leave no token behind. Leftover Facebook test and expired sign-in secrets were removed.',
+    ]],
     ['v' => '3.113.4', 'date' => '2026-10-20', 'title' => 'Fix: connecting Facebook signed the person out', 'changes' => [
         'Coming back from Facebook\'s sign-in is a step from another site, so the browser leaves out the (strict) sign-in cookie; the return started an empty session that replaced the person\'s, and they were signed out. The return now starts no session and opens the accounts page with a normal step, so the person stays signed in.',
     ]],

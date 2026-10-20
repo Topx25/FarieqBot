@@ -43,7 +43,9 @@ function wi_secrets_install(): void {
     $m->query("CREATE TABLE IF NOT EXISTS wi_secrets (name VARCHAR(120) NOT NULL PRIMARY KEY, value_enc TEXT NOT NULL, updated_at DATETIME NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 function wi_secret_set(string $name, string $value): bool {
-    $m = wi_db(); if (!$m || $value === '') return false; wi_secrets_install();
+    unset($GLOBALS['WI_SECRET_CACHE'][$name]); // the next read sees the new value (it was read once per request before)
+    $m = wi_db(); if (!$m) return false; wi_secrets_install();
+    if ($value === '') { $st = $m->prepare("DELETE FROM wi_secrets WHERE name = ?"); $st->bind_param('s', $name); return $st->execute(); } // empty = removed
     $iv = random_bytes(12); $tag = ''; $ct = openssl_encrypt($value, 'aes-256-gcm', wi_secret_key(), OPENSSL_RAW_DATA, $iv, $tag); if ($ct === false) return false;
     $enc = 'v1:' . base64_encode($iv . $tag . $ct);
     $st = $m->prepare("INSERT INTO wi_secrets (name, value_enc, updated_at) VALUES (?,?,NOW()) ON DUPLICATE KEY UPDATE value_enc = VALUES(value_enc), updated_at = NOW()");
@@ -51,7 +53,7 @@ function wi_secret_set(string $name, string $value): bool {
 }
 /** The secret from the database; when it is not there yet, the old value ($fallback) is saved there encrypted and returned. */
 function wi_secret(string $name, string $fallback = ''): string {
-    static $cache = [];
+    $cache = &$GLOBALS['WI_SECRET_CACHE']; $cache ??= [];
     if (isset($cache[$name])) return $cache[$name];
     $m = wi_db(); $val = '';
     if ($m) { wi_secrets_install(); $st = $m->prepare("SELECT value_enc FROM wi_secrets WHERE name = ?"); $st->bind_param('s', $name); $st->execute(); $row = $st->get_result()->fetch_row();
