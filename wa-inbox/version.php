@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.114.0', 'date' => '2026-10-20', 'title' => 'Facebook: messages read from the page every minute; the bot answers on Messenger', 'changes' => [
+        'Every minute each Facebook page\'s new Messenger messages are read from the page itself and saved (already known ones skipped), so messages arrive even while the Facebook app is not published (Facebook sends no live webhooks then) and a missed webhook is caught up. The bot answers what came in.',
+        'Fix: the bot stopped on a Facebook page\'s first message (the page answered the library question without the list the bot reads). Tested on a real page: the message came in and the bot\'s reply was delivered on Messenger.',
+    ]],
     ['v' => '3.113.5', 'date' => '2026-10-20', 'title' => 'Secrets: a new value is read at once; clearing really clears', 'changes' => [
         'A secret saved during a request (a renewed Facebook page token) was still read with its old value until the next request, so the page card kept listing permissions Facebook had already given. The new value is read at once.',
         'Saving an empty secret now removes it (it did nothing before): Google Drive "disconnect" really forgets its token, and finished Facebook sign-ins leave no token behind. Leftover Facebook test and expired sign-in secrets were removed.',

@@ -149,6 +149,37 @@ function wf_fb_hook_app(string $key): void {
     foreach ((array) ($in['entry'] ?? []) as $en) { $acc = wf_fb_account_for_page((string) ($en['id'] ?? '')); if (!$acc || wf_fb_cfg((string) $acc['id'])['app_scope'] !== $scope) continue; wf_fb_cfg_set((string) $acc['id'], ['hook_at' => gmdate('c')]); wf_fb_entry($acc, (array) $en); }
 }
 
+/* ---------- catching up: the page's conversations read from Facebook ---------- */
+/** New Messenger messages read from the page itself (every minute): they arrive even when Facebook sends no webhook (an app not published yet)
+ *  or when a webhook was missed. Already-known messages are skipped by their ID. Returns how many new incoming messages were saved. */
+function wf_fb_sync(array $acc): int {
+    $aid = (string) $acc['id']; $c = wf_fb_cfg($aid); $pid = $c['page_id']; if ($pid === '' || $c['error'] !== '' || wf_fb_token($aid) === '') return 0;
+    $since = (int) ($c['sync_at'] ?? 0) ?: time() - 86400;
+    $r = wf_fb_graph($aid, 'GET', 'me/conversations', ['fields' => 'updated_time,participants,messages.limit(25){id,message,from,created_time,attachments{mime_type,name,image_data,video_data,file_url}}', 'limit' => 15]);
+    if (empty($r['ok'])) return 0; $new = 0; $newest = $since;
+    foreach ((array) ($r['data'] ?? []) as $conv) {
+        $ut = strtotime((string) ($conv['updated_time'] ?? '')) ?: 0; if ($ut < $since - 120) continue; $newest = max($newest, $ut);
+        $psid = ''; foreach ((array) ($conv['participants']['data'] ?? []) as $pp) if ((string) ($pp['id'] ?? '') !== $pid) { $psid = (string) $pp['id']; $pname = (string) ($pp['name'] ?? ''); }
+        if ($psid === '') continue; $jid = $psid . '@fb';
+        $known = []; foreach (wf_fb_rows($aid, ['jid' => $jid, 'limit' => 200]) as $o) if (!empty($o['id'])) $known[$o['id']] = 1;
+        foreach (array_reverse((array) ($conv['messages']['data'] ?? [])) as $m) {
+            $mid = (string) ($m['id'] ?? ''); if ($mid === '' || isset($known[$mid])) continue; $ts = strtotime((string) ($m['created_time'] ?? '')) ?: time(); if ($ts < $since - 120) continue;
+            $out = (string) ($m['from']['id'] ?? '') === $pid; $text = trim((string) ($m['message'] ?? ''));
+            $row = ['dir' => $out ? 'out' : 'in', 'jid' => $jid, 'phone' => $psid, 'id' => $mid, 'ts' => $ts] + ($out ? ['via' => 'page'] : ['name' => (string) ($m['from']['name'] ?? $pname)]);
+            $att = (array) ($m['attachments']['data'][0] ?? []);
+            if ($att) { $mime = (string) ($att['mime_type'] ?? ''); $url = (string) ($att['image_data']['url'] ?? $att['video_data']['url'] ?? $att['file_url'] ?? ''); $k = strpos($mime, 'image/') === 0 ? 'image' : (strpos($mime, 'video/') === 0 ? 'video' : (strpos($mime, 'audio/') === 0 ? 'voice' : 'document'));
+                wf_fb_append($aid, $row + ['kind' => $k, 'text' => $text, 'attachment' => wf_fb_save_media($aid, $url, $mid, $k === 'voice' ? 'audio' : $k), 'file_name' => (string) ($att['name'] ?? '')]); }
+            elseif ($text !== '') wf_fb_append($aid, $row + ['kind' => 'text', 'text' => $text]); else continue;
+            if (!$out) $new++; } }
+    wf_fb_cfg_set($aid, ['sync_at' => $newest]);
+    return $new;
+}
+/** Every minute (cron): each Facebook page is caught up, and the bot answers what came in. */
+function wf_fb_sync_all(): void {
+    foreach (wi_accounts() as $acc) { if (!wf_fb_is($acc) || empty($acc['enabled'])) continue;
+        try { if (wf_fb_sync($acc) > 0 && function_exists('wf_bot_tick') && wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off') wf_bot_tick($acc, true); } catch (Throwable $e) { wi_log('fb_sync_error', ['account' => $acc['id'], 'error' => $e->getMessage()]); } }
+}
+
 /* ---------- sending ---------- */
 function wf_fb_last_in(string $aid, string $jid): int { foreach (wf_fb_rows($aid, ['jid' => $jid, 'limit' => 400]) as $r) if (($r['dir'] ?? '') === 'in') return strtotime((string) $r['time']) ?: 0; return 0; }
 function wf_fb_send_one(string $aid, string $psid, array $message, int $lastIn, bool $bot): array {
@@ -222,7 +253,7 @@ function wf_fb_gateway(string $path, ?array $post, array $acc): array {
         case '/chat/delete': case '/chat/delete-msg':
             wf_fb_append($aid, ['dir' => 'deleted', 'jid' => (string) ($post['jid'] ?? ''), 'id' => (string) ($post['id'] ?? '')]); return ['ok' => true];
         case '/groups': case '/groups/members': case '/groups/events': return ['ok' => true, 'groups' => [], 'members' => [], 'events' => []];
-        case '/library': return ['ok' => true, 'items' => []];
+        case '/library': return ['ok' => true, 'items' => [], 'groups' => [], 'sections' => []]; // a page has no phone library of its own (its number's library is used through the linked number)
     }
     return ['ok' => false, 'error' => 'This is not available on a Facebook page.'];
 }

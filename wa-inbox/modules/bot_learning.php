@@ -57,7 +57,7 @@ function wf_retrieve(array $acc, string $text, int $n = 6): array {
     }
     $cf = WI_DIR . '/cache_lib_' . preg_replace('/\W/', '', (string) $acc['id']) . '.json';
     $lib = (is_file($cf) && filemtime($cf) > time() - 600) ? (json_decode((string) file_get_contents($cf), true) ?: []) : [];
-    if (!$lib) { $lib = wi_gateway('/library?' . http_build_query(['type' => 'sections', 'group' => '1', 'min' => 60]), null, $acc); if (!empty($lib['ok'])) { file_put_contents($cf, json_encode(['groups' => array_values(array_filter($lib['groups'], fn($g) => empty($g['audio'])))], JSON_UNESCAPED_UNICODE)); @chmod($cf, 0600); } } // library cached 10 min
+    if (!$lib) { $lib = wi_gateway('/library?' . http_build_query(['type' => 'sections', 'group' => '1', 'min' => 60]), null, $acc); if (!empty($lib['ok'])) { file_put_contents($cf, json_encode(['groups' => array_values(array_filter((array) ($lib['groups'] ?? []), fn($g) => empty($g['audio'])))], JSON_UNESCAPED_UNICODE)); @chmod($cf, 0600); } } // library cached 10 min
     foreach ($lib['groups'] ?? [] as $g) {
         if (!empty($g['audio'])) continue;
         $hit = count(array_intersect_key(array_flip(wf_words(($g['title'] ?? '') . ' ' . mb_substr((string) $g['best']['text'], 0, 1200))), $want));
