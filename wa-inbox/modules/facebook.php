@@ -263,6 +263,9 @@ function wf_fb_gateway(string $path, ?array $post, array $acc): array {
 function wf_fb_token_scopes(string $aid): array {
     $c = wf_fb_cfg($aid); if (!function_exists('wf_fb_app') || $c['app_scope'] === null) return []; $app = wf_fb_app((string) $c['app_scope']); if ($app['app_id'] === '' || $app['secret'] === '') return [];
     $r = wf_fb_http_json('https://graph.facebook.com/' . $app['graph'] . '/debug_token?' . http_build_query(['input_token' => wf_fb_token($aid), 'access_token' => $app['app_id'] . '|' . $app['secret']]));
+    $uid = (string) ($r['data']['user_id'] ?? ''); // the Facebook account the page was connected with
+    if ($uid !== '' && ($uid !== (string) ($c['fb_user_id'] ?? '') || (string) ($c['fb_user'] ?? '') === '')) { $u = wf_fb_http_json('https://graph.facebook.com/' . $app['graph'] . '/' . rawurlencode($uid) . '?' . http_build_query(['fields' => 'name', 'access_token' => $app['app_id'] . '|' . $app['secret']]));
+        wf_fb_cfg_set($aid, ['fb_user_id' => $uid, 'fb_user' => mb_substr((string) ($u['name'] ?? ($uid === (string) ($c['fb_user_id'] ?? '') ? ($c['fb_user'] ?? '') : '')), 0, 80)]); }
     return array_values(array_map('strval', (array) ($r['data']['scopes'] ?? [])));
 }
 /** Checks the page token and subscribes the page to the webhook. Messages need only messaging permissions: when Facebook did not give the

@@ -61,9 +61,10 @@ function wf_fb_oauth_callback(): void {
     $p = wf_fb_http_json($g . 'me/accounts?' . http_build_query(['fields' => 'id,name,access_token,tasks', 'limit' => 100, 'access_token' => $tok]));
     $pages = array_values(array_filter((array) ($p['data'] ?? []), fn($x) => !empty($x['id']) && !empty($x['access_token'])));
     if (!$pages) $fail(isset($p['error']) ? 'Facebook: ' . mb_substr((string) $p['error']['message'], 0, 160) : 'No page found. Choose the pages to allow in Facebook\'s sign-in window.');
+    $u = wf_fb_http_json($g . 'me?' . http_build_query(['fields' => 'id,name', 'access_token' => $tok])); $user = ['id' => (string) ($u['id'] ?? ''), 'name' => mb_substr((string) ($u['name'] ?? ''), 0, 80)]; // the Facebook account that signed in (shown beside its pages)
     $pk = bin2hex(random_bytes(12)); $meta = [];
     foreach ($pages as $x) { wi_secret_set('fb_pend:' . $pk . ':' . $x['id'], (string) $x['access_token']); $meta[] = ['id' => (string) $x['id'], 'name' => mb_substr((string) $x['name'], 0, 80)]; }
-    wi_update('fb_pending.json', function ($P) use ($pk, $meta, $mine) { foreach ($P as $k => $x) if (time() - (int) $x['at'] > 900) unset($P[$k]); $P[$pk] = ['email' => $mine['email'], 'scope' => $mine['scope'], 'pages' => $meta, 'at' => time(), 'acc' => (string) ($mine['acc'] ?? '')]; return $P; });
+    wi_update('fb_pending.json', function ($P) use ($pk, $meta, $mine) { foreach ($P as $k => $x) if (time() - (int) $x['at'] > 900) unset($P[$k]); $P[$pk] = ['email' => $mine['email'], 'scope' => $mine['scope'], 'pages' => $meta, 'at' => time(), 'acc' => (string) ($mine['acc'] ?? ''), 'user' => $user]; return $P; });
     wf_fb_cb_page('', true);
 }
 /** The newest unfinished Facebook sign-in of the signed-in person (the pick box shows even when the address lost its code). */
@@ -85,7 +86,7 @@ function wf_fb_pick_add(string $pk, array $ids): array {
         $par = (string) ($P['acc'] ?? ''); $parA = $par !== '' ? (wi_my_accounts()[$par] ?? null) : null; if (!$parA || wf_fb_is($parA) || !wi_can_manage($parA)) $par = ''; // the number whose "Connect Facebook" was pressed: the page answers with its knowledge
         if ($par !== '' && !$acc) { $accounts = wi_accounts(); if (isset($accounts[$aid])) { $accounts[$aid]['owner'] = $parA['owner'] ?? $accounts[$aid]['owner']; wi_save_accounts($accounts); } }
         wi_secret_set('fb_page_token:' . $aid, $tok); $app = wf_fb_app((string) $P['scope']); wi_secret_set('fb_app_secret:' . $aid, $app['secret']);
-        wf_fb_cfg_set($aid, ['page_id' => $pid, 'page_name' => $row['name'], 'app_id' => $app['app_id'], 'app_scope' => (string) $P['scope'], 'via' => 'oauth', 'parent' => $par !== '' ? $par : (string) wf_fb_cfg($aid)['parent'], 'error' => '', 'verify' => $app['verify']]);
+        wf_fb_cfg_set($aid, ['page_id' => $pid, 'page_name' => $row['name'], 'app_id' => $app['app_id'], 'app_scope' => (string) $P['scope'], 'via' => 'oauth', 'parent' => $par !== '' ? $par : (string) wf_fb_cfg($aid)['parent'], 'error' => '', 'verify' => $app['verify']] + (($P['user']['id'] ?? '') !== '' ? ['fb_user_id' => (string) $P['user']['id'], 'fb_user' => (string) $P['user']['name']] : []));
         $r = wf_fb_connect($aid); if (empty($r['ok'])) $errs[] = $row['name'] . ': ' . (string) $r['error']; else $done[] = $row['name']; $_SESSION['acc'] = $aid; }
     wi_update('fb_pending.json', function ($X) use ($pk) { unset($X[$pk]); return $X; });
     foreach ($P['pages'] as $x) wi_secret_set('fb_pend:' . $pk . ':' . $x['id'], '');

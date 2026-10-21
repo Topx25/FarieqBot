@@ -72,7 +72,9 @@
       document.getElementById('fp-go').onclick = function () {
         var b = this, msg = document.getElementById('fp-msg'), f = document.getElementById('fp-file').files[0], at = document.getElementById('fp-at').value;
         var send = function (att) { post('fb_post_act', { act: document.getElementById('fp-story').checked ? 'story' : 'create', text: document.getElementById('fp-text').value, link: document.getElementById('fp-link').value, attachment: att || '', at: at ? Math.floor(new Date(at).getTime() / 1000) : 0 }).then(function (r) {
-          b.disabled = false; msg.textContent = r && r.ok ? T('Done') : ((r && r.error) || T('Failed'));
+          b.disabled = false;
+          if (r && r.ok) { var ok = r.scheduled ? '🕒 ' + T('Scheduled on the page') : (r.published || r.url ? '✅ ' + T('Published on the page') : '✅ ' + T('Sent to Facebook')); msg.innerHTML = '<b>' + esc(ok) + '</b>' + (r.url ? ' <a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(T('Open on Facebook')) + ' ↗</a>' : ''); toast(ok); }
+          else msg.textContent = (r && r.error) || T('Failed');
           if (r && r.ok) { document.getElementById('fp-text').value = ''; document.getElementById('fp-link').value = ''; document.getElementById('fp-file').value = ''; document.getElementById('fp-at').value = ''; fbPostList(); } }); };
         b.disabled = true; msg.textContent = T('Working…');
         if (!f) { send(''); return; }

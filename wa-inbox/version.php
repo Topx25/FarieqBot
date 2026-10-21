@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.124.1', 'date' => '2026-10-21', 'title' => 'Facebook: the linked account shown beside its page; a clear confirmation after publishing', 'changes' => [
+        'Accounts → Facebook pages: each page now shows the Facebook account it was connected with next to the page name. It is saved at sign-in, and filled in for pages already connected.',
+        'Publishing a post now confirms clearly (published / scheduled) and gives a link to open the post on Facebook, read back from Facebook itself.',
+    ]],
     ['v' => '3.124.0', 'date' => '2026-10-21', 'title' => 'Learn from treatment groups while saving tokens', 'changes' => [
         'Bot → Learn: a new "Learn from groups, saving tokens" card. Exchanges of the chosen groups (by words in the group name, each group can be left out) are collected and cleaned with no AI: weak answers, questions already known and repeated questions are left out.',
         'A free model shortens each exchange into one line, and a strong model reads only those short lines to make knowledge items for review — far fewer tokens. Runs every hour within daily caps (strong / free calls), all editable.',

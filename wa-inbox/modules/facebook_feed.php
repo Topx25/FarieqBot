@@ -149,7 +149,9 @@ function wf_api_fbfeed(string $api): void {
                 $mime = mime_content_type($abs) ?: ''; $vid = strpos($mime, 'video/') === 0;
                 $r = wf_fb_graph($aid, 'POST', $vid ? 'me/videos' : 'me/photos', ($vid ? ['description' => $text] : ['caption' => $text]) + $sched, ['path' => $abs, 'mime' => $mime, 'name' => basename($abs), 'field' => 'source']); }
             else $r = wf_fb_graph($aid, 'POST', 'me/feed', ['message' => $text] + ($link !== '' ? ['link' => $link] : []) + $sched);
-            if (empty($r['ok'])) wi_json(['ok' => false, 'error' => (string) ($r['error'] ?? 'Facebook refused the request.')]); wi_log('fb_post', ['account' => $aid, 'scheduled' => (bool) $sched]); wi_json(['ok' => true, 'id' => (string) ($r['post_id'] ?? $r['id'] ?? '')]); }
+            if (empty($r['ok'])) wi_json(['ok' => false, 'error' => (string) ($r['error'] ?? 'Facebook refused the request.')]); wi_log('fb_post', ['account' => $aid, 'scheduled' => (bool) $sched]);
+            $pid = (string) ($r['post_id'] ?? $r['id'] ?? ''); $chk = $pid !== '' && !$sched ? wf_fb_graph($aid, 'GET', $pid, ['fields' => 'permalink_url,is_published']) : []; // read back from Facebook: the confirmation shows the real post
+            wi_json(['ok' => true, 'id' => $pid, 'scheduled' => (bool) $sched, 'url' => (string) ($chk['permalink_url'] ?? ''), 'published' => !empty($chk['is_published'])]); }
         if ($id === '') wi_json(['ok' => false, 'error' => 'Post not found.']);
         if ($act === 'edit') { if ($text === '') wi_json(['ok' => false, 'error' => 'Write the post.']); $r = wf_fb_graph($aid, 'POST', $id, ['message' => $text]); }
         elseif ($act === 'delete') $r = wf_fb_graph($aid, 'DELETE', $id);
