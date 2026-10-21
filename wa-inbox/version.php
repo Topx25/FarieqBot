@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.123.0', 'date' => '2026-10-21', 'title' => 'Ask tag answers any question', 'changes' => [
+        'A group message with the ask tag (#سؤال) now always gets the bot\'s answer, also in help groups and from group admins, and the question may be about anything: general knowledge, a translation, an explanation. The rule is editable in the AI instructions ("bot_ask").',
+    ]],
     ['v' => '3.122.0', 'date' => '2026-10-21', 'title' => 'Help groups: warmer, no repeats, members get real answers', 'changes' => [
         'In a help group a member who is not a user of the system is never told about the dashboard pages: a mistyped tag gets the closest real command, and a plain question gets the bot\'s normal answer.',
         'Help answers are warm and in everyday dialect, never repeat the steps already given, and jokes, thanks or chat between members get no reply.',

@@ -183,7 +183,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             if ($who !== '' && !isset($team[$who]) && $text !== '' && !wf_words($text) && ($g['trigger'] ?? 'mention') === 'all' && $c['mode'] === 'auto') { wf_bot_emoji($acc, (string) $x['jid'], (string) ($m['id'] ?? ''), $text, false); continue; } // only emojis in a group: a reaction, no message
             $mentioned = $me !== '' && (in_array($me, array_map('wf_phone', (array) ($m['mentions'] ?? [])), true) || wf_phone($m['quote_from'] ?? '') === $me);
             $askT = function_exists('wf_ask_tag') ? wf_ask_tag($aid) : ''; // the ask tag (#سؤال by default): the question is for the bot, answered at once like a tag of the bot
-            if ($askT !== '' && wf_intake_has($text, $askT)) { $mentioned = true; $text = trim(str_ireplace($askT, '', $text)) ?: $text; }
+            $asked = $askT !== '' && wf_intake_has($text, $askT); if ($asked) { $mentioned = true; $text = trim(str_ireplace($askT, '', $text)) ?: $text; }
             // A group admin is answered when they ask a question or tag the bot — not while they answer someone else (a reply or a tag of another member).
             $adminAsks = isset($team[$who]) && $mentioned; // STRICT: healers and admins talk among themselves — the bot answers them only when they tag it or reply to it
             if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun && empty($g['guide'])) || $text === '' || !wf_words($text)) continue;
@@ -205,7 +205,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 $reply = strtr((string) $g['text'], ['{name}' => (string) ($m['from_name'] ?? ''), '{group}' => (string) ($x['name'] ?? '')]);
                 $log += ['reply' => $reply, 'confidence' => 1, 'model' => 'fixed message'];
                 $ok = true; $st['gfixed'][$x['jid']][$who] = time();
-            } elseif (!empty($g['guide']) && (wf_sysguide_user($who) || mb_strpos($text, '#') !== false)) { // a system help group (a member's own question, with no tag, gets the bot's normal answer below): explains the system by what the asker's account may open
+            } elseif (!empty($g['guide']) && !$asked && (wf_sysguide_user($who) || mb_strpos($text, '#') !== false)) { // a system help group (a member's own question, with no tag, gets the bot's normal answer below): explains the system by what the asker's account may open
                 $hist = []; foreach (array_slice($rows, max(0, $i - 80), 80) as $hm) { $ht = trim((string) ($hm['text'] ?? '')); if ($ht === '') continue;
                     if (($hm['dir'] ?? '') === 'in' && wf_phone($hm['from'] ?? '') === $who) $hist[] = ['from' => 'customer', 'text' => $ht];
                     elseif (($hm['via'] ?? '') === 'bot' && ($tg = array_values(array_filter($wTags, fn($t) => str_starts_with($ht, '@' . $t)))[0] ?? '') !== '') $hist[] = ['from' => 'bot', 'text' => trim(mb_substr($ht, mb_strlen('@' . $tg)))]; }
@@ -233,7 +233,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 }
                 if ($role === 'crisis') { wf_role_crisis($acc, (string) $x['jid'], $text, (string) ($m['from_name'] ?? ''), (string) ($m['id'] ?? ''), $who); $n++; continue; }
                 $mine = []; foreach (array_slice($rows, -60) as $bm) if (($bm['dir'] ?? '') === 'out' && ($bm['via'] ?? '') === 'bot' && trim((string) ($bm['text'] ?? '')) !== '') $mine[] = (string) $bm['text']; // never repeat what the bot already said here
-                $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => array_slice($mine, -4), 'role' => $role, 'jid' => $x['jid'] . '|' . $who] + ($fun ? ['fun' => true] : []) + (isset($team[$who]) ? ['team' => true] : []));
+                $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => array_slice($mine, -4), 'role' => $role, 'jid' => $x['jid'] . '|' . $who] + ($fun ? ['fun' => true] : []) + ($asked ? ['ask' => true] : []) + (isset($team[$who]) ? ['team' => true] : []));
                 if (empty($r['ok']) || trim((string) $r['reply']) === '') continue;
                 $log += ['reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'role' => $role];
                 // Like private chats: confident answers, short clarifying questions, and the polite
@@ -241,7 +241,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 $clar = !empty($r['clarify']) || (mb_strlen($r['reply']) < 220 && preg_match('/[؟?]\s*$/u', trim($r['reply'])) && $r['confidence'] >= 0.3);
                 if (!empty($r['mode']) && $r['mode'] !== $role && isset(wf_roles_cfg($aid)['roles'][$r['mode']])) $role = (string) $r['mode']; // the model's own choice of mode
                 $gMin = in_array($role, ['dreams', 'support', 'healer'], true) ? min((float) $c['min_conf'], 0.65) : (float) $c['min_conf']; // the roles send from 0.65 in groups too, as in private chats
-                $ok = $r['handoff'] || $clar || $r['confidence'] >= $gMin || ($fun && trim((string) $r['reply']) !== '' && $r['confidence'] >= 0.3);
+                $ok = $r['handoff'] || $clar || $r['confidence'] >= $gMin || ($asked && $r['confidence'] >= 0.5) || ($fun && trim((string) $r['reply']) !== '' && $r['confidence'] >= 0.3);
                 if ($r['handoff']) $log['why'] = 'handed over to a person';
             }
             $n++;

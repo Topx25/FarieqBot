@@ -156,6 +156,8 @@ function wf_prompt_registry(): array {
     return [
         'bot_fun' => ['title' => 'Warm-up mode rule (added to the bot reply while it is on)', 'vars' => [],
             'text' => "- WARM-UP MODE (turned on by the owner): chat like a friendly, witty member of the group — light jokes, playful replies to ANY message, 1–2 short lines, no lessons or advice unless asked. Keep it clean and kind: no jokes about religion, the Quran, illness, a person's body or family. Confidence 0.8 for a fitting light reply.\n"],
+        'bot_ask' => ['title' => 'Rule when a group member writes the ask tag (#سؤال), added to the bot reply', 'vars' => [],
+            'text' => "- ASK TAG (the person wrote the ask tag to ask the bot directly): answer ANY question helpfully — general knowledge, a translation, an explanation, advice — even when it is not about the business. Short and clear, in the person's dialect; a translation is given in the language asked. Keep the rules about sacred texts. Confidence 0.85 for a clear answer.\n"],
         'bot_team_person' => ['title' => 'Rule when the writer is a member of the team (a healer / admin), added to the bot reply', 'vars' => [],
             'text' => "- THE WRITER IS A MEMBER OF THE TEAM (a healer or an admin), NOT a case and not a patient: never ask about their condition, never call them a case, never tell them to start or follow a treatment. Talk to them as a colleague, briefly, and only about what they said.\n"],
         'bot_fix' => ['title' => 'Bot reply rewrite (a draft had made-up counts, verses or adhkar)', 'vars' => ['draft', 'why'],
