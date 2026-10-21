@@ -117,8 +117,11 @@ try {
         $sz = function ($d) { $b = 0; if (!is_dir($d)) return 0; foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($d, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::LEAVES_ONLY, RecursiveIteratorIterator::CATCH_GET_CHILD) as $f) if ($f->isFile()) $b += $f->getSize(); return round($b / 1048576); };
         $R = dirname(__DIR__); $res['disk'] = ['inbox_data' => $sz(WI_DIR), 'archives' => $sz($R . '/wa-local/archive') + $sz($R . '/wa-local/accounts'), 'media' => $sz($R . '/storage')];
     } else $res['disk'] = $prev['disk'];
-    // Warn the super admin once when memory or threads pass 85% of the plan.
-    $hot = $res['mem_mb'] > 0.85 * $lim['pmem_mb'] || $res['threads'] > 0.85 * $lim['nproc'];
+    // Warn the super admin once when memory or threads reach the alert level of the plan (limits → alert_pct, 90% by default);
+    // it warns again only after usage went 10 points below that level and at least an hour passed (no alert every few minutes).
+    $pct = max(50, min(100, (int) ($lim['alert_pct'] ?? 90))) / 100; $calm = $pct - 0.10;
+    $hot = $res['mem_mb'] >= $pct * $lim['pmem_mb'] || $res['threads'] >= $pct * $lim['nproc'];
+    if (!$hot && !empty($prev['alerted']) && ($res['mem_mb'] > $calm * $lim['pmem_mb'] || $res['threads'] > $calm * $lim['nproc'] || strtotime((string) $prev['alerted']) > time() - 3600)) $res['alerted'] = $prev['alerted']; // not calm yet
     if ($hot && empty($prev['alerted'])) { $tellAdmins(wf_msg('alert_resources', ['mem' => $res['mem_mb'], 'mem_limit' => $lim['pmem_mb'], 'threads' => $res['threads'], 'threads_limit' => $lim['nproc']])); $res['alerted'] = date('c'); }
     elseif ($hot) $res['alerted'] = $prev['alerted'];
     wi_write('resources.json', $res);

@@ -5,6 +5,12 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.120.0', 'date' => '2026-10-21', 'title' => 'Business types kept apart, commands list in private, calmer server alerts', 'changes' => [
+        'Spiritual healing wording stays with that business type only: the shared library tags and the commands help use neutral words; healing keeps its own tags and examples.',
+        'Saving the business profile keeps only what was really changed, so values of one business type never stick to a number after it moves to another type (old mixed values are ignored).',
+        'The commands list (#menu and its other names, also with a space after #) now answers in private chats too; server alerts in a chat are no longer read as part of the talk.',
+        'Server resources alert only at 90% of the plan or more (limits → alert_pct), and again only after usage calmed down and an hour passed.',
+    ]],
     ['v' => '3.119.0', 'date' => '2026-10-21', 'title' => 'Bot: Commands section, own commands and the ask tag', 'changes' => [
         'Bot → Commands: every # command of the number in one list (cases, lists, library, section tags, bot words, file shortcuts, quick replies), each edited right there; a command already used is refused.',
         'Own commands: add a new # command with a fixed reply or an AI instruction, for groups, private chats or both. The bot knows it at once and it shows in the commands list.',

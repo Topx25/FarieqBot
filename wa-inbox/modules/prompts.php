@@ -15,9 +15,9 @@ function wf_pack_presets(): array {
             'library_kind' => 'messages and texts the business shares', 'library_sections' => 'FAQ, procedures, policies, offers, announcements, other', 'text_quality' => 'complete, correct, well formatted', 'text_errors' => 'wrong or outdated information',
             'ui_terms' => "Treatment group and follower => Follow-up group and follower\nTreatment group => Follow-up group\nDiagnosis => Assessment\nDiagnosed by => Assessed by\nConfirmed symptoms (one per line) => Main points (one per line)\nExtra symptoms => More details\nNo diagnosis group chosen yet => No reports group chosen yet",
             'case_ex_age' => '30', 'case_ex_kids' => '0', 'case_ex_country' => '', 'case_ex_points' => '', 'case_ex_assessment' => '', 'case_marital' => '', 'reception_pattern' => 'reception|استقبال', 'placement_m' => '', 'placement_f' => '', 'female_hint' => '',
-            'lib_audio_words' => "مسموعة | مسموعه | صوت | صوتية | صوتيه | فويس | سماع", 'ack_words' => "تمام | حاضر | ماشي | اوك | ok | okay | الحمد لله | زي الفل | شكرا | شكراً | جزاك الله خيرا | بارك الله فيك | آمين | امين | يارب | ان شاء الله | إن شاء الله", 'lib_tags' => "#المكتبة | library | المكتبة\n#صوتيات | audio | الصوتيات\n#البرامج | programs | البرامج\n#رقيات | texts | الرقيات المكتوبة", 'program_label' => 'Programs', 'audio_tag_category' => '', 'audio_categories' => "lesson | 🎓 | Lesson | #6366f1\nannouncement | 📣 | Announcement | #f59e0b\nother | 📁 | Other | #64748b", 'summary_labels' => '', 'ex_triggers' => 'التوصيل، امتى يوصل', 'ex_bot_name' => 'مساعد المتجر', 'ex_question' => 'كم مدة التوصيل؟', 'ex_message' => 'السلام عليكم، طلبت من يومين ولسه ما وصلش', 'ex_word' => 'التوصيل', 'ex_try' => 'الطلب اتأخر', 'ex_concept' => 'سياسة الاسترجاع', 'ex_search' => 'مواعيد العمل',
+            'lib_audio_words' => "مسموعة | مسموعه | صوت | صوتية | صوتيه | فويس | سماع", 'ack_words' => "تمام | حاضر | ماشي | اوك | ok | okay | الحمد لله | زي الفل | شكرا | شكراً | جزاك الله خيرا | بارك الله فيك | آمين | امين | يارب | ان شاء الله | إن شاء الله", 'lib_tags' => "#المكتبة | library | المكتبة\n#صوتيات | audio | الصوتيات\n#البرامج | programs | البرامج\n#نصوص | texts | النصوص المكتوبة", 'program_label' => 'Programs', 'audio_tag_category' => '', 'audio_categories' => "lesson | 🎓 | Lesson | #6366f1\nannouncement | 📣 | Announcement | #f59e0b\nother | 📁 | Other | #64748b", 'summary_labels' => '', 'ex_triggers' => 'التوصيل، امتى يوصل', 'ex_bot_name' => 'مساعد المتجر', 'ex_question' => 'كم مدة التوصيل؟', 'ex_message' => 'السلام عليكم، طلبت من يومين ولسه ما وصلش', 'ex_word' => 'التوصيل', 'ex_try' => 'الطلب اتأخر', 'ex_concept' => 'سياسة الاسترجاع', 'ex_search' => 'مواعيد العمل',
             'quran_check' => '', 'quick_reply_example' => 'for a delivery-times message: "التوصيل", "امتى يوصل"', 'summary_categories' => 'inquiry, complaint, payment, new_order, follow_up, support, social, other', 'kb_types' => 'faq|procedure|policy', 'case_labels' => 'متابعة، عاجل، جديد'],
-        'ruqyah' => ['label' => 'Ruqyah / spiritual healing', 'industry' => 'a Quran/ruqyah (spiritual healing) treatment team', 'language' => 'Arabic',
+        'ruqyah' => ['label' => 'Ruqyah / spiritual healing', 'lib_tags' => "#المكتبة | library | المكتبة\n#صوتيات | audio | الصوتيات\n#البرامج | programs | البرامج\n#رقيات | texts | الرقيات المكتوبة", 'industry' => 'a Quran/ruqyah (spiritual healing) treatment team', 'language' => 'Arabic',
             'dialect_rule' => 'Reply in the customer\'s own language and dialect (Egyptian Arabic if they write Egyptian, Moroccan if Moroccan, etc.).', 'output_language' => 'Arabic', 'staff' => 'Therapist', 'client' => 'Case',
             'lib_cmds' => ['send' => '#ارسال', 'program' => '#برنامج', 'text' => '#رقية', 'menu' => '#الأوامر'], // library commands in groups (only this profile)
             // Bot roles (Bot → Roles): words that call a role, its instructions (English for the model; it replies in the customer's dialect) and its first-reply note.
@@ -131,8 +131,17 @@ function wf_pack_default(string $aid): string { $a = wi_accounts()[$aid] ?? null
     // a number whose cases are set up for healing follow-up is a spiritual-healing number, whoever owns it (it must never flip to CRM by itself)
     if ((wi_read('case_cfg.json', [])[$aid]['preset'] ?? '') === 'treatment') return 'ruqyah'; // the saved case setting itself (wf_case_cfg would ask wf_pack again: endless loop)
     return $a && function_exists('wi_ws') && wi_ws($a) !== '' ? 'crm' : 'general'; }
+/** A number's own profile values without the ones that only repeat a ready value: what equals this type's ready value
+ *  is not kept, and spiritual healing values on another type (or another type's values on spiritual healing) are dropped. */
+function wf_pack_own(string $pre, array $p): array {
+    $P = wf_pack_presets(); $mine = $P[$pre] ?? $P['general'];
+    foreach ($p as $k => $v) { if ($k === 'preset') continue;
+        if (array_key_exists($k, $mine) && $mine[$k] == $v) { unset($p[$k]); continue; }
+        foreach ($P as $o => $op) if ($o !== $pre && ($o === 'ruqyah' || $pre === 'ruqyah') && array_key_exists($k, $op) && $op[$k] == $v && $op[$k] != ($mine[$k] ?? null)) { unset($p[$k]); break; } }
+    return $p;
+}
 function wf_pack(string $aid): array {
-    $p = (array) (wi_read('bot.json', [])[$aid]['pack'] ?? []); $P = wf_pack_presets(); $p['preset'] ??= wf_pack_default($aid);
+    $p = (array) (wi_read('bot.json', [])[$aid]['pack'] ?? []); $P = wf_pack_presets(); $p['preset'] ??= wf_pack_default($aid); $p = wf_pack_own((string) $p['preset'], $p);
     return $p + ($P[$p['preset']] ?? $P['general']) + ['lib_tags' => $P['general']['lib_tags'], 'lib_audio_words' => $P['general']['lib_audio_words']]; // every profile starts with the section tags
 }
 /** Audio categories of the current number's business profile: "key | icon | label | colour" per line. */
@@ -243,7 +252,8 @@ function wf_api_prompts(string $api): void {
             if (isset($x['lib_tags'])) { $seen = []; foreach (preg_split('/\R/u', $x['lib_tags']) as $l) { $t = wf_media_code_clean(trim(explode('|', $l)[0])); if ($t === '') continue; $n = str_replace(['-', ' '], '', wf_intake_norm($t));
                 if (isset($seen[$n])) wi_json(['ok' => false, 'error' => 'The tag ' . $t . ' is written twice.'], 422);
                 if (($why = wf_tag_taken($aid, $t, '', true)) !== '') wi_json(['ok' => false, 'error' => $t . ': ' . $why], 422); $seen[$n] = 1; } }
-            $all[$aid]['pack'] = $x; wi_write('bot.json', $all); wi_log('ai_pack_save', ['account' => $aid, 'preset' => $pre]); wi_json(['ok' => true]); }
+            $keep = array_intersect_key((array) ($all[$aid]['pack'] ?? []), array_flip(['lib_cmds'])); // set elsewhere (Bot → Commands)
+            $all[$aid]['pack'] = wf_pack_own($pre, $x) + $keep; wi_write('bot.json', $all); wi_log('ai_pack_save', ['account' => $aid, 'preset' => $pre]); wi_json(['ok' => true]); }
         if ($do === 'prompt') { $k = (string) ($in['key'] ?? ''); if (!isset(wf_prompt_registry()[$k])) wi_json(['ok' => false, 'error' => 'Unknown instruction.']);
             $t = trim((string) ($in['text'] ?? '')); if ($t === '' || !empty($in['reset'])) unset($all[$aid]['prompts'][$k]); else $all[$aid]['prompts'][$k] = mb_substr($t, 0, 20000);
             wi_write('bot.json', $all); wi_log('ai_prompt_save', ['account' => $aid, 'key' => $k]); wi_json(['ok' => true]); }

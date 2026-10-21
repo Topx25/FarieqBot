@@ -37,7 +37,7 @@ function wf_api_business(string $api): void {
             if ($pre === 'ruqyah') @unlink(wf_acc_rules_path($aid)); else wf_acc_rules_write($aid, $pre); // library and content rules follow the type (restart the number's gateway to apply)
             wi_log('business_type', ['account' => $aid, 'type' => $pre]); wi_json(['ok' => true]); }
         if ($do === 'names') { $pk = []; foreach (['industry' => 300, 'client' => 40, 'staff' => 60, 'program_label' => 40] as $k => $max) if (isset($in[$k])) $pk[$k] = mb_substr(trim((string) $in[$k]), 0, $max);
-            wi_update('bot.json', function ($B) use ($aid, $pk) { $B[$aid]['pack'] = array_merge(wf_pack($aid), (array) ($B[$aid]['pack'] ?? []), array_filter($pk, fn($v) => $v !== '')); return $B; });
+            wi_update('bot.json', function ($B) use ($aid, $pk) { $B[$aid]['pack'] = wf_pack_own((string) wf_pack($aid)['preset'], array_merge((array) ($B[$aid]['pack'] ?? []), ['preset' => wf_pack($aid)['preset']], array_filter($pk, fn($v) => $v !== ''))); return $B; });
             $cc = []; foreach (['one' => 40, 'many' => 40, 'icon' => 8] as $k => $max) if (trim((string) ($in[$k] ?? '')) !== '') $cc[$k] = mb_substr(trim((string) $in[$k]), 0, $max);
             wi_update('case_cfg.json', function ($C) use ($aid, $cc) { $C[$aid] = array_merge(['preset' => wf_case_cfg($aid)['preset']], (array) ($C[$aid] ?? []), $cc); return $C; });
             wi_log('business_names', ['account' => $aid]); wi_json(['ok' => true]); }

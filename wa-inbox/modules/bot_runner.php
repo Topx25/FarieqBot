@@ -306,6 +306,9 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
             wi_bot_log_add($aid, ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => (string) ($last['text'] ?? ''), 'reply' => $oc[0], 'result' => !empty($s['ok']) ? 'sent' : 'send_failed', 'role' => 'command', 'at' => date('c')]);
             if ($oc[1]) { $state = wi_read('bot_state.json', []); $state[$aid] = $st; wi_write('bot_state.json', $state); wi_log('bot_restart', ['account' => $aid, 'by' => 'test number']); sleep(2); wi_gateway('/shutdown', [], $acc); return ['did' => [['jid' => $x['jid'], 'result' => 'restart']]]; } // the watchdog starts it again
             $n++; continue; }
+        if (function_exists('wf_is_menu') && wf_is_menu($aid, trim((string) ($last['text'] ?? '')))) { // the commands list asked in a private chat
+            $st['done'][$x['jid']] = $last['time']; $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => wf_cmd_menu($aid), 'via' => 'bot'], $acc);
+            wi_bot_log_add($aid, ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => (string) ($last['text'] ?? ''), 'reply' => '#menu', 'result' => !empty($s['ok']) ? 'sent' : 'send_failed', 'role' => 'command', 'at' => date('c')]); $n++; continue; }
         if (function_exists('wf_cmd_custom_which') && ($cu = wf_cmd_custom_which($aid, trim((string) ($last['text'] ?? '')), false))) { // the owner's own command (Bot → Commands): its reply, at once
             $st['done'][$x['jid']] = $last['time']; wf_cmd_custom_run($acc, $cu, (string) $x['jid'], trim((string) ($last['text'] ?? '')), (string) ($last['id'] ?? ''), '', (string) ($x['name'] ?? '')); $n++; continue; }
         if (!$isTest && isset($team[(string) ($x['phone'] ?? '')]) && $team[(string) $x['phone']] !== 'group admin') continue; // team members / own numbers (a group admin is team inside the groups only: in private they may be a client)
@@ -341,7 +344,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
             $st['done'][$x['jid']] = $last['time']; $st['sent'][] = time(); wi_bot_log_add($aid, ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => $text, 'reply' => $em, 'result' => 'sent', 'role' => 'emoji', 'at' => date('c')]); $n++; continue; }
         if ($text !== '' && wf_is_ack($aid, $text) && array_filter($rows, fn($m) => ($m['dir'] ?? '') === 'out')) { $skip($x, 'a short acknowledgement in a talk already going', $text); continue; } // a new chat is still greeted
         if ($text === '' || !wf_words($text)) { $skip($x, $text === '' ? 'photo / voice note — left to people' : 'no words (emoji / ?)', $text); continue; } // also emoji-only / "ok" // photos / voice (e.g. payment receipts) are left to people and the payment bot
-        $hist = []; foreach (array_slice($rows, -12, -count($q) ?: null) as $m) if (in_array($m['dir'], ['in', 'out'], true) && trim((string) ($m['text'] ?? '')) !== '') $hist[] = ['from' => $m['dir'] === 'out' ? 'bot' : 'customer', 'text' => $m['text']];
+        $hist = []; foreach (array_slice($rows, -12, -count($q) ?: null) as $m) if (in_array($m['dir'], ['in', 'out'], true) && trim((string) ($m['text'] ?? '')) !== '' && !$isSys($m['text'] ?? '')) $hist[] = ['from' => $m['dir'] === 'out' ? 'bot' : 'customer', 'text' => $m['text']];
         $card = wf_customer_card($acc, $x['jid'], $rows);
         $role = function_exists('wf_role_pick') ? wf_role_pick($aid, (string) $x['jid'], $text) : 'bot'; // which hat answers (healer, support, dreams…)
         if ($role === 'crisis') { $st['done'][$x['jid']] = $last['time']; if (!$isTest) wf_role_crisis($acc, (string) $x['jid'], $text, (string) ($x['name'] ?? '')); $did[] = ['jid' => $x['jid'], 'result' => 'crisis']; continue; }

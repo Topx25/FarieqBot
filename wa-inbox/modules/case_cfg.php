@@ -3,20 +3,23 @@
  * The stage keys stay fixed (new / follow / improving / closed) so reports and follow-up keep working; only the words change. ---------- */
 function wf_case_presets(): array {
     $f = fn(array $labels, array $off = []) => array_map(fn($k) => ['on' => !in_array($k, $off, true), 'label' => $labels[$k]], array_combine(array_keys($labels), array_keys($labels)));
-    $words = ['the' => 'ال', 'list' => '#قائمة', 'shortcuts' => '#الاختصارات', 'programs' => '#البرامج', 'library' => '#المكتبة', 'archive' => '#ارشف', 'voice' => 'التسجيل الصوتي للحالة', 'menu' => '#menu', 'menu_alias' => '#منيو, #مينيو, #الاوامر, #اوامر, #الأوامر, #help, #commands, #مساعده, #المساعده, #قائمه, #قايمه, #القائمه',
+    $words = ['the' => 'ال', 'list' => '#قائمة', 'shortcuts' => '#الاختصارات', 'programs' => '#البرامج', 'library' => '#المكتبة', 'archive' => '#ارشف', 'voice' => 'التسجيل الصوتي', 'menu' => '#menu', 'menu_alias' => '#منيو, #مينيو, #الاوامر, #اوامر, #الأوامر, #help, #commands, #مساعده, #المساعده, #قائمه, #قايمه, #القائمه',
         // #menu: per command — what it does, how to write it, an example ({case} / {many} = what one case / several are called)
         'help' => [
             'sec_cases' => '📁 {many}', 'sec_lists' => '📋 القوائم', 'sec_library' => '📖 المكتبة', 'sec_files' => '🏷️ اختصارات الملفات (اكتب الاختصار لوحده)', 'sec_quick' => '⚡ الردود الجاهزة (اكتب الكلمة)', 'more' => 'و{n} كمان في اللوحة', 'inventory' => 'جرد المكتبة كله (الملفات واختصاراتها والردود والبرامج)', 'how' => 'اكتب:', 'eg' => 'مثال:',
-            'new' => ['فتح {case} جديدة', '{cmd} @الشخص + التفاصيل', '{cmd} @أحمد السن 30 من مصر وعنده صداع وكوابيس'],
+            'new' => ['فتح {case} جديدة', '{cmd} @الشخص + التفاصيل', '{cmd} @الشخص + الطلب والتفاصيل'],
             'lookup' => ['عرض ملف {case}', '{cmd} الاسم أو الرقم أو ID', '{cmd} 5'],
             'stage' => ['تغيير مرحلة ال{case}', 'أمر المرحلة + ID أو الاسم + السبب', '{cmd} 5 النوم اتحسن'],
             'archive' => ['أرشفة {case}', '{cmd} ID أو الاسم', '{cmd} 5'],
-            'list' => ['قائمة {many} أو الاختصارات أو البرامج', '{cmd} + اللي عايزه', '{cmd} #الحالة'],
-            'send' => ['إرسال ملف أو تسجيل من المكتبة', '{cmd} اسم الملف', '{cmd} رقية العين'],
-            'program' => ['إرسال برنامج علاج', '{cmd} اسم البرنامج', '{cmd} العين والحسد'],
-            'text' => ['إرسال رقية مكتوبة', '{cmd} اسم الرقية', '{cmd} المس العاشق'],
+            'list' => ['قائمة {many} أو الاختصارات أو البرامج', '{cmd} + اللي عايزه', '{cmd} #الاختصارات'],
+            'send' => ['إرسال ملف أو تسجيل من المكتبة', '{cmd} اسم الملف', '{cmd} اسم الملف'],
+            'program' => ['إرسال برنامج', '{cmd} اسم البرنامج', '{cmd} اسم البرنامج'],
+            'text' => ['إرسال نص مكتوب', '{cmd} اسم النص', '{cmd} اسم النص'],
         ]]; // group command words (Case from a group)
-    return array_map(fn($p) => $p + ['words' => $words], [
+    // spiritual healing only: its own wording and examples, never shown to other businesses
+    $wordsT = array_replace_recursive($words, ['voice' => 'التسجيل الصوتي للحالة', 'help' => ['new' => [2 => '{cmd} @الشخص السن والبلد والأعراض'], 'list' => [2 => '{cmd} #الحالة'],
+        'send' => [2 => '{cmd} رقية العين'], 'program' => [0 => 'إرسال برنامج علاج', 2 => '{cmd} العين والحسد'], 'text' => [0 => 'إرسال رقية مكتوبة', 1 => '{cmd} اسم الرقية', 2 => '{cmd} المس العاشق']]]);
+    $L = [
         'treatment' => ['label' => 'Patients / healing follow-up', 'one' => 'حالة', 'many' => 'الحالات', 'icon' => '🩺',
             'statuses' => ['new' => '🆕 جديدة', 'follow' => '🩺 تحت المتابعة', 'improving' => '📈 في تحسن', 'closed' => '✅ اتقفلت', 'postponed' => '⏸️ اتأجلت', 'removed' => '🗑️ اتحذفت', 'archived' => '📦 مؤرشفة'],
             'cmds' => ['improving' => '#اتحسنت', 'postponed' => '#اتأجلت', 'removed' => '#اتحذفت', 'closed' => '#اتقفلت', 'follow' => '#تحت_المتابعة', 'archived' => '#ارشف'],
@@ -31,7 +34,9 @@ function wf_case_presets(): array {
         'general' => ['label' => 'General follow-up', 'one' => 'متابعة', 'many' => 'المتابعات', 'icon' => '🗂️',
             'statuses' => ['new' => '🆕 جديدة', 'follow' => '🔁 تحت المتابعة', 'improving' => '📈 بتتقدم', 'closed' => '✅ خلصت', 'postponed' => '⏸️ اتأجلت', 'removed' => '🗑️ اتحذفت', 'archived' => '📦 مؤرشفة'],
             'fields' => $f(['name' => 'الاسم', 'phone' => 'الرقم', 'join' => 'التاريخ', 'age' => 'السن', 'marital' => 'الحالة الاجتماعية', 'kids' => 'عدد الأولاد', 'country' => 'البلد', 'follower' => 'المسؤول', 'story' => 'التفاصيل', 'symptoms' => 'النقاط الأساسية', 'extra' => 'ملاحظات', 'diagnosis' => 'النتيجة', 'diag_by' => 'بواسطة', 'placement' => 'ملاحظة'], ['age', 'marital', 'kids'])],
-    ]);
+    ];
+    foreach ($L as $k => $p) $L[$k] = $p + ['words' => $k === 'treatment' ? $wordsT : $words];
+    return $L;
 }
 /** This number's case settings: its own choice, or (older numbers) the preset that fits its business profile. */
 function wf_case_cfg(string $aid): array {
