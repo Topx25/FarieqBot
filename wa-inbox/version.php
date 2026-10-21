@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.126.1', 'date' => '2026-10-21', 'title' => 'Meetings: extra details boxes stay while typing', 'changes' => [
+        'Fix: an added box of extra details vanished as soon as it was clicked. The boxes are built again: typing keeps the cursor, "Required" is a button, and a new box gets the cursor by itself.',
+    ]],
     ['v' => '3.126.0', 'date' => '2026-10-21', 'title' => 'Meetings: hosts from private chats, extra join details', 'changes' => [
         'WhatsApp hosts can be picked from the private chats too, not only from groups.',
         'Extra details on the join page: add up to 10 boxes (e.g. age, country, a question) and mark each one required or not. The answers show in "Who joined".',

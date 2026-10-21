@@ -86,11 +86,15 @@
         var lg = ui('logo'); document.getElementById('mfp-logo').innerHTML = /^https:\/\//.test(lg) ? '<img src="' + esc(lg) + '" alt="">' : '🎥';
         document.getElementById('mfp-l').textContent = MT.base + (g('#mf-slug') || '…'); }
       var FLD = (m.fields || []).map(function (f) { return { label: f.label, req: !!f.req }; });
-      function drawF() { document.getElementById('mf-flds').innerHTML = FLD.map(function (f, i) { return '<div class="mf3-fr"><input data-fl="' + i + '" dir="auto" maxlength="60" placeholder="' + esc(T('e.g. Age, Country, Question')) + '" value="' + esc(f.label) + '"><label class="check"><input type="checkbox" data-fr="' + i + '"' + (f.req ? ' checked' : '') + '> ' + T('Required') + '</label><button type="button" class="link-btn bad-t" data-fx="' + i + '">✕</button></div>'; }).join('') || '<span class="muted small">' + T('None yet.') + '</span>'; }
-      drawF(); document.getElementById('mf-fadd').onclick = function () { if (FLD.length < 10) { FLD.push({ label: '', req: true }); drawF(); } };
-      document.getElementById('mf-flds').addEventListener('input', function (e) { var a = e.target.dataset; if (a.fl !== undefined) FLD[+a.fl].label = e.target.value; if (a.fr !== undefined) FLD[+a.fr].req = e.target.checked; });
-      document.getElementById('mf-flds').addEventListener('change', function (e) { if (e.target.dataset.fr !== undefined) FLD[+e.target.dataset.fr].req = e.target.checked; });
-      document.getElementById('mf-flds').addEventListener('click', function (e) { var x = e.target.closest('[data-fx]'); if (x) { FLD.splice(+x.dataset.fx, 1); drawF(); } });
+      function drawF() { var box = document.getElementById('mf-flds'); box.innerHTML = FLD.map(function (f, i) { return '<div class="mf3-fr"><input type="text" data-fl="' + i + '" dir="auto" maxlength="60" placeholder="' + esc(T('e.g. Age, Country, Question')) + '" value="' + esc(f.label) + '"><button type="button" class="mf3-req' + (f.req ? ' on' : '') + '" data-fr="' + i + '">' + (f.req ? '✔ ' : '') + T('Required') + '</button><button type="button" class="link-btn bad-t" data-fx="' + i + '" aria-label="' + esc(T('Delete')) + '">✕</button></div>'; }).join('') || '<span class="muted small">' + T('None yet.') + '</span>'; }
+      drawF();
+      document.getElementById('mf-fadd').onclick = function (e) { e.stopPropagation(); if (FLD.length >= 10) return; FLD.push({ label: '', req: true }); drawF(); var ins = document.querySelectorAll('#mf-flds [data-fl]'); if (ins.length) ins[ins.length - 1].focus(); };
+      var fbox = document.getElementById('mf-flds');
+      // typing only updates the list (no redraw, so the box keeps the cursor); the buttons redraw
+      fbox.addEventListener('input', function (e) { e.stopPropagation(); var a = e.target.getAttribute('data-fl'); if (a !== null && FLD[+a]) FLD[+a].label = e.target.value; });
+      ['click', 'mousedown', 'focusin', 'keydown'].forEach(function (ev) { fbox.addEventListener(ev, function (e) { e.stopPropagation();
+        if (ev !== 'click') return; var r = e.target.closest('[data-fr]'), x = e.target.closest('[data-fx]');
+        if (r) { FLD[+r.getAttribute('data-fr')].req = !FLD[+r.getAttribute('data-fr')].req; drawF(); } else if (x) { FLD.splice(+x.getAttribute('data-fx'), 1); drawF(); } }); });
       el.oninput = pv; pv();
       // a short hint under every field: what it is for and an example
       var HINT = { '#mf-title': 'The name people see on the join page, e.g. Weekly lesson.', '#mf-slug': 'English letters, numbers and dashes only; it becomes the fixed link you share. Empty = made up for you.',
