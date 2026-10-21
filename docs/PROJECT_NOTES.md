@@ -19,6 +19,16 @@ Keep this file up to date with every change that adds a rule, a setting area or 
 - `modules/sys_guide.php` — help groups: explains the system by the asker's permissions; members who are not users only get the bot commands.
 - `modules/bot_roles.php`, `modules/visitors.php`, `modules/prompts.php` (business types and AI instructions), `modules/msg_templates.php` (all messages the bot sends).
 
+## Facebook (pages, Messenger, comments, posts)
+- A Facebook page is an account with channel `fb`; `wf_fb_gateway` answers the same calls as a WhatsApp number, so the inbox and the bot work unchanged.
+- Files: `modules/facebook.php` (Messenger, webhooks, sending, minute sync), `modules/facebook_feed.php` (comments, posts, stories, insights, API `wf_api_fbfeed`), `modules/facebook_link.php` (the Facebook app per scope, "Continue with Facebook" sign-in, page pick, deauthorize / data deletion), `modules/legal.php` (public privacy, terms, data deletion pages), UI `src/features/34m-facebook.js`.
+- The sign-in callback runs before the session starts (the session cookie is SameSite=Strict) and must never start a session.
+- Every minute (cron) each page's new Messenger messages and new comments on its last 10 posts are read from the page itself, so they arrive while the app is unpublished or a webhook was missed. On the first comment read, older comments are saved without a bot answer.
+- Sending: 24-hour window; HUMAN_AGENT (7 days) for people only.
+- A page can answer with the knowledge of a WhatsApp number (page settings → "The page answers with the knowledge of"; stored as `parent`, used by `wf_fb_parent`).
+- Graph API v26.0. Tests use `$GLOBALS['WI_FAKE_GRAPH']` (and `WI_FAKE_HTTP` for sign-in calls) instead of Facebook.
+- Permissions asked: pages_show_list, pages_messaging, pages_manage_metadata, pages_read_engagement, pages_read_user_content, pages_manage_engagement, pages_manage_posts, read_insights.
+
 ## Business types
 - Types: general, crm, support, ruqyah (spiritual healing). Case wording follows the type (treatment / crm / support / general).
 - Spiritual healing wording, tags, roles, reception gate words and examples exist only in that type; other types never show them, and the other types' values never stick to a healing number.
