@@ -5,6 +5,12 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.124.0', 'date' => '2026-10-21', 'title' => 'Learn from treatment groups while saving tokens', 'changes' => [
+        'Bot → Learn: a new "Learn from groups, saving tokens" card. Exchanges of the chosen groups (by words in the group name, each group can be left out) are collected and cleaned with no AI: weak answers, questions already known and repeated questions are left out.',
+        'A free model shortens each exchange into one line, and a strong model reads only those short lines to make knowledge items for review — far fewer tokens. Runs every hour within daily caps (strong / free calls), all editable.',
+        'Spiritual healing numbers learn from groups whose name has treatment words by default; the general group is not learned from.',
+        'Fix: saving the learning settings no longer resets the other learning settings.',
+    ]],
     ['v' => '3.123.0', 'date' => '2026-10-21', 'title' => 'Ask tag answers any question', 'changes' => [
         'A group message with the ask tag (#سؤال) now always gets the bot\'s answer, also in help groups and from group admins, and the question may be about anything: general knowledge, a translation, an explanation. The rule is editable in the AI instructions ("bot_ask").',
     ]],

@@ -311,8 +311,9 @@ function wf_learn_collect(array $acc, bool $fullAsked = false): array {
         // Groups to learn from: the bot's groups marked "learn", and — when "learn from all groups" is on (default) — every group of this number,
         // so the healers' answers in the treatment groups teach the bot too.
         $rc = wf_bot_run_cfg($aid); $lg = [];
-        foreach ((array) ($rc['groups'] ?? []) as $gj => $gc) if (!empty($gc['learn'])) $lg[$gj] = ['name' => $gc['name'] ?? ''];
-        if (!empty(wf_learn_cfg($aid)['all_groups'])) foreach ((array) (wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long'), null, $acc)['chats'] ?? []) as $ch) if (!empty($ch['group']) && !isset($lg[$ch['jid']])) $lg[(string) $ch['jid']] = ['name' => (string) ($ch['name'] ?? '')];
+        $lean = function_exists('wf_lean_cfg') && !empty(wf_lean_cfg($aid)['on']); // groups are learned the token-saving way (learn_lean): here only the private chats
+        if (!$lean) foreach ((array) ($rc['groups'] ?? []) as $gj => $gc) if (!empty($gc['learn'])) $lg[$gj] = ['name' => $gc['name'] ?? ''];
+        if (!$lean && !empty(wf_learn_cfg($aid)['all_groups'])) foreach ((array) (wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long'), null, $acc)['chats'] ?? []) as $ch) if (!empty($ch['group']) && !isset($lg[$ch['jid']])) $lg[(string) $ch['jid']] = ['name' => (string) ($ch['name'] ?? '')];
         $lgKey = md5(json_encode(array_keys($lg)));
         $full = $fullAsked || empty($meta['collected_to']) || ($meta['learn_groups'] ?? '') !== $lgKey;
         $since = $full ? '' : date('c', strtotime((string) $meta['collected_to']) - 6 * 3600); // overlap: a reply can come hours later
@@ -321,7 +322,7 @@ function wf_learn_collect(array $acc, bool $fullAsked = false): array {
         $r = wi_gateway('/archive/pairs?months=' . (int) wi_sys('months_long')  . ($since !== '' ? '&since=' . rawurlencode(gmdate('Y-m-d\TH:i:s', strtotime($since))) : '')
             . ($lg ? '&groups=' . rawurlencode(implode(',', array_keys($lg))) . '&team=' . rawurlencode($teamNums) : ''), null, $acc);
         if (empty($r['ok'])) return ['ok' => false, 'error' => $r['error'] ?? 'Gateway error.'];
-        $out = $full ? [] : $old; $new = 0; $latest = (string) ($meta['collected_to'] ?? '');
+        $out = $full ? ($lean ? array_filter($old, fn($p) => !empty($p['group'])) : []) : $old; $new = 0; $latest = (string) ($meta['collected_to'] ?? '');
         foreach ($r['pairs'] as $p) {
             if ((string) $p['a_time'] > $latest) $latest = (string) $p['a_time'];
             if (count(wf_words($p['q'])) < 2 || mb_strlen(trim($p['a'])) < 8) continue; // greetings / "ok"
@@ -338,7 +339,7 @@ function wf_learn_collect(array $acc, bool $fullAsked = false): array {
 function wf_learn_distill(array $acc): array {
     $aid = (string) $acc['id'];
         // distill: 20 pairs per call into general knowledge items
-        $pairs = wf_pairs($aid); $todo = array_values(array_filter($pairs, fn($p) => empty($p['done'])));
+        $pairs = wf_pairs($aid); $lean = function_exists('wf_lean_cfg') && !empty(wf_lean_cfg($aid)['on']); $todo = array_values(array_filter($pairs, fn($p) => empty($p['done']) && !($lean && !empty($p['group'])))); // groups: learn_lean
         // Most useful first: substantial replies to real questions, newer first.
         $qscore = fn($p) => min(400, mb_strlen($p['a'])) / 40 + min(8, count(wf_words($p['q']))) + (preg_match('/[؟?]/u', $p['q']) ? 3 : 0) + (strtotime((string) $p['time']) > time() - 180 * 86400 ? 2 : 0);
         usort($todo, fn($a, $b) => $qscore($b) <=> $qscore($a));

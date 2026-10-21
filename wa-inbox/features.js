@@ -814,6 +814,24 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
           if (cmp) { var w2 = say('bot2', '…'); post('bot_test', { text: t, history: hist, prefer: cmp, who: who }).then(function (r) { w2.remove(); var d = say('bot2', r.ok ? r.reply : '⚠️ ' + r.error, r.ok ? r : null); BT.hist.pop(); }); } };
         get('bot_cfg').then(function (r) { if (!r.ok) return; var sel = document.getElementById('bt-cmp'); if (!sel) return; r.models.forEach(function (m) { var o = document.createElement('option'); o.value = m.id; o.textContent = (m.meta ? '🦙 ' : '') + m.label; sel.appendChild(o); }); }); }
       if (t === 'run') { location.href = '?p=botrun'; return; }
+      // Learn from groups saving tokens: collected with no AI, shortened by a free model, analysed by a strong one (Bot → Learn).
+      if (t === 'learn') setTimeout(function () { var host = document.getElementById('bt-body'); if (!host || BT.tab !== 'learn') return; var box = document.createElement('div'); box.className = 'card'; host.appendChild(box);
+        var draw = function (r) { if (!r.ok) { box.innerHTML = '⚠️ ' + esc(T(r.error || 'Failed')); return; } var c = r.cfg, k = r.counts, st = r.state || {}, last = st.last || {};
+          box.innerHTML = '<h3>💡 ' + T('Learn from groups, saving tokens') + '</h3><p class="muted small">' + T('Collecting and cleaning cost no tokens; a free model shortens each exchange into one line; a strong model turns the short lines into knowledge you review in “Knowledge”. Runs once an hour within the daily caps.') + '</p>'
+            + '<label class="check"><input type="checkbox" id="ll-on"' + (c.on ? ' checked' : '') + '> ' + T('On') + '</label>'
+            + '<div class="gcf"><label class="gcf-wide">' + T('Groups whose name has one of these words (separated by ,)') + '<input id="ll-words" dir="auto" value="' + esc(c.words) + '"></label>'
+            + '<label>' + T('Free model (empty = automatic)') + '<input id="ll-free" dir="ltr" value="' + esc(c.free_model) + '" placeholder="' + esc(r.free_now || '') + '"></label>'
+            + '<label>' + T('Strong model (empty = automatic)') + '<input id="ll-model" dir="ltr" value="' + esc(c.model) + '" placeholder="' + esc(r.model_now || '') + '"></label>'
+            + '<label>' + T('Strong model calls a day') + '<input id="ll-calls" type="number" min="1" value="' + c.calls_day + '"></label><label>' + T('Free model calls a day') + '<input id="ll-fcalls" type="number" min="0" value="' + c.free_calls_day + '"></label>'
+            + '<label>' + T('Lines per analysis') + '<input id="ll-batch" type="number" min="5" max="80" value="' + c.batch + '"></label></div>'
+            + '<p class="small">👥 ' + T('Groups') + ': ' + Object.keys(r.groups).map(function (j) { return '<label class="check" dir="auto"><input type="checkbox" data-skip="' + esc(j) + '"' + ((c.skip || []).indexOf(j) < 0 ? ' checked' : '') + '> ' + esc(r.groups[j].name) + '</label>'; }).join(' ') + '</p>'
+            + '<p class="small muted">📊 ' + T('Exchanges') + ' ' + fmt(k.all) + ' · ⏳ ' + T('waiting') + ' ' + fmt(k.waiting) + ' · 🧠 ' + T('learned') + ' ' + fmt(k.learned) + ' · 💰 ' + T('left out with no AI') + ' ' + fmt(k.saved) + ' · ' + T('Today') + ': ' + (st.calls || 0) + ' / ' + (st.free_calls || 0) + (last.at ? ' · ' + T('Last run') + ' ' + esc(last.at.slice(0, 16).replace('T', ' ')) : '') + '</p>'
+            + '<div class="row"><button class="btn primary" id="ll-save">💾 ' + T('Save') + '</button><button class="btn" id="ll-run">▶️ ' + T('Run now') + '</button><span class="muted small" id="ll-msg"></span></div>';
+          var val = function (id) { return document.getElementById(id).value; };
+          document.getElementById('ll-save').onclick = function () { var skip = [].filter.call(box.querySelectorAll('[data-skip]'), function (x) { return !x.checked; }).map(function (x) { return x.dataset.skip; });
+            post('learn_lean', { on: document.getElementById('ll-on').checked ? 1 : 0, words: val('ll-words'), free_model: val('ll-free'), model: val('ll-model'), calls_day: val('ll-calls'), free_calls_day: val('ll-fcalls'), batch: val('ll-batch'), skip: skip }).then(function (x) { draw(x); toast('✓ ' + T('Saved')); }); };
+          document.getElementById('ll-run').onclick = function () { document.getElementById('ll-msg').textContent = T('Working…'); post('learn_lean', { do: 'run' }).then(function () { get('learn_lean').then(draw); }); }; };
+        get('learn_lean').then(draw); }, 0);
       // Commands: every # command of this number (edited where it lives), and the owner's own commands the bot knows at once.
       if (t === 'cmd') { el.innerHTML = '<div class="card"><div class="empty">' + T('Loading…') + '</div></div>';
         var drawCmd = function (r) { if (!r.ok) { el.innerHTML = '<div class="card">⚠️ ' + esc(r.error || '') + '</div>'; return; }

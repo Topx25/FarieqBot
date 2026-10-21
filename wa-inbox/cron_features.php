@@ -192,3 +192,5 @@ if (!empty($D['refresh_token']) && !empty($D['enabled']) && (int) date('G') === 
     $D['queued_date'] = date('Y-m-d'); wi_write('drive.json', $D);
     wi_job_add('backup', 'drive', ['types' => $D['types'] ?? ['data', 'messages']], 'schedule');
 }
+// Learning from the chosen groups, saving tokens (learn_lean): once an hour, within the daily cap of each number.
+if ((int) date('i') === 23 && function_exists('wf_lean_run')) foreach ($accounts as $acc) { try { if (!wi_account_blocked($acc) && !empty(wf_lean_cfg((string) $acc['id'])['on'])) wf_lean_run($acc); } catch (Throwable $e) {} }
