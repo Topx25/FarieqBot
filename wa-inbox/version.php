@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.124.1', 'date' => '2026-10-21', 'title' => 'Media library: readable selection bar, Shift to select many', 'changes' => [
+        'The dark bar of selected files shows every button and link clearly (they were dark on dark).',
+        'Shift + click on a file\'s box selects or clears every file between it and the last one clicked; the boxes are always shown.',
+    ]],
     ['v' => '3.124.2', 'date' => '2026-10-21', 'title' => 'Facebook page card: manual fields hidden when connected', 'changes' => [
         'A page connected with "Continue with Facebook" no longer shows the page token and app secret fields; they moved under "Advanced: manual connection". The card shows the Facebook account it was connected with.',
         '"Last message from Facebook" now also counts the messages read every minute, not only live webhooks.',

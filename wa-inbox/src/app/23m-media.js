@@ -202,7 +202,12 @@
         WI.post(one ? 'media_meta' : 'media_bulk', body).then(function (r) { if (!r.ok) { mlToast('⚠️ ' + (r.error || '')); return; } d.close(); mlToast('✓ ' + T('Saved')); if (!one) msel = {}; mlPage(true); }); };
     }
     function folderAsk(title, val) { var v = prompt(title, val || ''); return v === null ? null : v.trim(); }
-    mroot.addEventListener('change', function (e) { var c = e.target.closest('[data-sel]'); if (!c) return; if (c.checked) msel[c.dataset.sel] = 1; else delete msel[c.dataset.sel]; c.closest('.ml-cell').classList.toggle('sel', c.checked); mlBar(); });
+    // Shift + click on a box selects (or clears) every file between it and the last one clicked.
+    var mlLast = null, mlShift = false; mroot.addEventListener('click', function (e) { if (e.target.closest('[data-sel]')) mlShift = e.shiftKey; }, true);
+    mroot.addEventListener('change', function (e) { var c = e.target.closest('[data-sel]'); if (!c) return;
+      var boxes = [].slice.call(mroot.querySelectorAll('[data-sel]')), i = boxes.indexOf(c), j = mlLast ? boxes.indexOf(mlLast) : -1;
+      (mlShift && j >= 0 ? boxes.slice(Math.min(i, j), Math.max(i, j) + 1) : [c]).forEach(function (x) { x.checked = c.checked; if (c.checked) msel[x.dataset.sel] = 1; else delete msel[x.dataset.sel]; x.closest('.ml-cell').classList.toggle('sel', c.checked); });
+      mlLast = c; mlShift = false; mlBar(); });
     mroot.addEventListener('click', function (e) { var b;
       if (e.target.closest('.ml-ck')) return;
       if ((b = e.target.closest('[data-rn]'))) { mlRename([b.dataset.rn]); return; }

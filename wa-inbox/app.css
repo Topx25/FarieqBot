@@ -1198,3 +1198,9 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .ai-kg{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px}.ai-kg label{display:flex;flex-direction:column;gap:4px;font-size:13px}
 .ai-km{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
 @media (max-width:760px){.ai-kg{grid-template-columns:1fr}}
+/* media: the dark bar of selected files — readable buttons and links */
+.ml-v2 .ml-bulk>b{white-space:nowrap;color:#fff}
+.ml-v2 .ml-bulk .btn.ghost,.ml-v2 .ml-bulk a.btn:not(.primary){background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);opacity:1}
+.ml-v2 .ml-bulk .btn.ghost:hover,.ml-v2 .ml-bulk a.btn:not(.primary):hover{background:rgba(255,255,255,.22)}
+.ml-v2 .ml-bulk .link-btn{color:#9ff0d0;opacity:1;text-decoration:underline}
+.ml-v2 .ml-ck{opacity:1}
