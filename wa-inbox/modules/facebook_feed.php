@@ -21,7 +21,7 @@ function wf_fb_post(string $aid, string $postId): array {
 }
 
 /** A "feed" change from the webhook. */
-function wf_fb_feed_take(array $acc, array $v, string $pageId): void {
+function wf_fb_feed_take(array $acc, array $v, string $pageId, bool $bot = true): void {
     $aid = (string) $acc['id']; if (($v['item'] ?? '') !== 'comment') return;
     $id = (string) ($v['comment_id'] ?? ''); if ($id === '') return; $verb = (string) ($v['verb'] ?? 'add'); $from = (array) ($v['from'] ?? []);
     $old = wf_fb_comments($aid)[$id] ?? null;
@@ -31,7 +31,24 @@ function wf_fb_feed_take(array $acc, array $v, string $pageId): void {
     $row = ['id' => $id, 'post_id' => (string) ($v['post_id'] ?? ''), 'parent_id' => (string) ($v['parent_id'] ?? ''), 'from_id' => (string) ($from['id'] ?? ''), 'from_name' => mb_substr((string) ($from['name'] ?? ''), 0, 120),
         'text' => mb_substr(trim((string) ($v['message'] ?? '')), 0, 2000), 'time' => gmdate('c', (int) ($v['created_time'] ?? time())), 'status' => $ours ? 'page' : ($old['status'] ?? 'new'), 'photo' => (string) ($v['photo'] ?? $v['link'] ?? '')];
     wf_fb_comment_save($aid, $row);
-    if ($verb === 'add' && !$ours && !$old) wf_fb_comment_bot($acc, $row + ['status' => 'new']);
+    if ($bot && $verb === 'add' && !$ours && !$old) wf_fb_comment_bot($acc, $row + ['status' => 'new']);
+}
+
+/** New comments read from the page's recent posts (every minute): they arrive even when Facebook sends no webhook (an app not published yet)
+ *  or when a webhook was missed. Known comments are skipped by their ID; on the first read old comments are kept without a bot answer. Returns how many new ones. */
+function wf_fb_sync_comments(array $acc): int {
+    $aid = (string) $acc['id']; $c = wf_fb_cfg($aid); $pid = $c['page_id']; if ($pid === '' || $c['error'] !== '' || wf_fb_token($aid) === '') return 0;
+    $first = empty($c['csync_at']); $since = $first ? time() - 3 * 86400 : (int) $c['csync_at'];
+    $r = wf_fb_graph($aid, 'GET', 'me/posts', ['fields' => 'id,updated_time,comments.filter(stream).order(reverse_chronological).limit(50){id,message,from,created_time,parent{id},attachment{url,media}}', 'limit' => 10]);
+    if (empty($r['ok'])) return 0; $known = wf_fb_comments($aid); $new = 0; $newest = $since;
+    foreach ((array) ($r['data'] ?? []) as $post) { $postId = (string) ($post['id'] ?? ''); if ($postId === '') continue;
+        foreach (array_reverse((array) ($post['comments']['data'] ?? [])) as $m) {
+            $id = (string) ($m['id'] ?? ''); $ts = strtotime((string) ($m['created_time'] ?? '')) ?: 0; if ($id === '' || isset($known[$id]) || $ts < $since - 120) continue; $newest = max($newest, $ts);
+            wf_fb_feed_take($acc, ['item' => 'comment', 'verb' => 'add', 'comment_id' => $id, 'post_id' => $postId, 'parent_id' => (string) ($m['parent']['id'] ?? $postId), 'from' => (array) ($m['from'] ?? []),
+                'message' => (string) ($m['message'] ?? ''), 'created_time' => $ts, 'photo' => (string) ($m['attachment']['media']['image']['src'] ?? $m['attachment']['url'] ?? '')], $pid, !$first);
+            if ((string) ($m['from']['id'] ?? '') !== $pid) $new++; } }
+    wf_fb_cfg_set($aid, ['csync_at' => $first ? time() : $newest]);
+    return $new;
 }
 
 /** The bot answers a new comment according to the page's settings. */

@@ -177,7 +177,7 @@ function wf_fb_sync(array $acc): int {
 /** Every minute (cron): each Facebook page is caught up, and the bot answers what came in. */
 function wf_fb_sync_all(): void {
     foreach (wi_accounts() as $acc) { if (!wf_fb_is($acc) || empty($acc['enabled'])) continue;
-        try { if (wf_fb_sync($acc) > 0 && function_exists('wf_bot_tick') && wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off') wf_bot_tick($acc, true); } catch (Throwable $e) { wi_log('fb_sync_error', ['account' => $acc['id'], 'error' => $e->getMessage()]); } }
+        try { if (wf_fb_sync($acc) > 0 && function_exists('wf_bot_tick') && wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off') wf_bot_tick($acc, true); if (function_exists('wf_fb_sync_comments')) wf_fb_sync_comments($acc); } catch (Throwable $e) { wi_log('fb_sync_error', ['account' => $acc['id'], 'error' => $e->getMessage()]); } }
 }
 
 /* ---------- sending ---------- */

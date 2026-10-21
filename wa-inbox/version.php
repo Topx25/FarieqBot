@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.116.0', 'date' => '2026-10-21', 'title' => 'Facebook: page comments read every minute', 'changes' => [
+        'Every minute the comments on each Facebook page\'s recent posts are read from the page itself (known ones skipped), so comments arrive even while the Facebook app is not published and a missed webhook is caught up. The comments bot answers new ones; on the first read older comments are only saved, without a bot answer.',
+    ]],
     ['v' => '3.115.0', 'date' => '2026-10-20', 'title' => 'Facebook section in the menu', 'changes' => [
         'New menu section "Facebook": Messenger (the conversations of the Facebook pages only), Page comments, Page posts, Page numbers, and Connect pages. It shows once the user has a Facebook page; Connect pages shows to anyone who may link one.',
         'These items open on a Facebook page automatically when a WhatsApp number is open, and each item is highlighted on its own tab.',
