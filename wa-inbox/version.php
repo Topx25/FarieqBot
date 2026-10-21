@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.125.0', 'date' => '2026-10-21', 'title' => 'Meetings: new design and an archive', 'changes' => [
+        'Meetings page redesigned: a summary on top (meetings, open now, waiting for approval, joins), filter buttons and a grid of cards with the link, the settings and the actions.',
+        'A closed meeting goes to the archive instead of being deleted; its link stops opening and it can be taken back out. Deleting for good is only possible from the archive.',
+    ]],
     ['v' => '3.124.3', 'date' => '2026-10-21', 'title' => 'Server alerts for an open plan', 'changes' => [
         'Memory and process limits set to 0 mean an open plan: no alert on a guessed limit, and the System health page shows the use with no bar.',
         'A new alert when the server really refuses to start processes ("fork failed" in the error logs), at most once an hour.',

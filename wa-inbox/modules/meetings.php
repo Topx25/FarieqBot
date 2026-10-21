@@ -13,7 +13,7 @@ function wf_meet_acc_ok(array $m): bool { $id = (string) ($m['acc'] ?? ''); $a =
     return ($id === '' && wi_is_super()) || (strtolower((string) ($m['by'] ?? '')) !== '' && strtolower((string) ($m['by'] ?? '')) === strtolower((string) ($_SESSION['email'] ?? ''))); }
 function wf_meeting_mine(array $m): bool { if (!wf_meet_acc_ok($m)) return false; return wi_is_super() || isset(wi_my_accounts()[$m['acc'] ?? '']) || strtolower((string) ($m['by'] ?? '')) === strtolower((string) ($_SESSION['email'] ?? '')); }
 function wf_meetings(): array { return wi_read('meetings.json', []); }
-function wf_meet_public(array $m): array { return array_intersect_key($m, array_flip(['id', 'slug', 'title', 'desc', 'mode', 'limit', 'hosts', 'status', 'opened_at', 'opened_by', 'closed_at', 'created', 'by', 'ask_phone', 'record', 'transcript', 'space', 'rec_note', 'approve', 'auto_close', 'auto_after_host', 'host_in_at', 'ui'])) + ['has_password' => !empty($m['pass']), 'has_link' => !empty($m['url']), 'joins' => count($m['joins'] ?? []), 'pending' => count(array_filter($m['joins'] ?? [], fn($j) => ($j['state'] ?? '') === 'pending' && $j['at'] >= ($m['opened_at'] ?? ''))), 'joined_now' => count(array_filter($m['joins'] ?? [], fn($j) => !empty($m['opened_at']) && $j['at'] >= $m['opened_at']))]; }
+function wf_meet_public(array $m): array { return array_intersect_key($m, array_flip(['id', 'slug', 'title', 'desc', 'mode', 'limit', 'hosts', 'status', 'archived', 'opened_at', 'opened_by', 'closed_at', 'created', 'by', 'ask_phone', 'record', 'transcript', 'space', 'rec_note', 'approve', 'auto_close', 'auto_after_host', 'host_in_at', 'ui'])) + ['has_password' => !empty($m['pass']), 'has_link' => !empty($m['url']), 'joins' => count($m['joins'] ?? []), 'pending' => count(array_filter($m['joins'] ?? [], fn($j) => ($j['state'] ?? '') === 'pending' && $j['at'] >= ($m['opened_at'] ?? ''))), 'joined_now' => count(array_filter($m['joins'] ?? [], fn($j) => !empty($m['opened_at']) && $j['at'] >= $m['opened_at']))]; }
 function wf_meet_wa_hosts(array $m): array { return array_map(fn($h) => ['phone' => $h['phone'], 'name' => $h['name'] ?? ''], (array) ($m['wa_hosts'] ?? [])); }
 /** A host from WhatsApp (no dashboard login) uses a personal link: ?m=slug&h=token */
 function wf_meet_wa_host(array $m, string $tok): ?array { if ($tok === '') return null; foreach ((array) ($m['wa_hosts'] ?? []) as $h) if (hash_equals((string) $h['token'], $tok)) return $h; return null; }
@@ -70,7 +70,7 @@ function wf_meet_pending_html(array $m, callable $e): string {
 }
 /** Public page for one meeting (no login): waiting room, name/password form, then redirect to Meet. */
 function wf_meet_page(string $slug): void {
-    $all = wf_meetings(); $m = null; foreach ($all as $x) if (($x['slug'] ?? '') === $slug) $m = $x;
+    $all = wf_meetings(); $m = null; foreach ($all as $x) if (($x['slug'] ?? '') === $slug && empty($x['archived'])) $m = $x; // an archived meeting's link no longer opens
     header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex'); header('Referrer-Policy: no-referrer');
     $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
  $err = ''; $state = 'form';
@@ -199,6 +199,9 @@ function wf_api_meetings(string $api): void {
         $in = wf_post(); wf_admin(); $all = wf_meetings(); $id = (string) ($in['id'] ?? '');
         // Only meetings of this user's numbers (or their own) can be changed or deleted.
         foreach ($all as $x) if ($x['id'] === $id && !wf_meeting_mine($x)) wi_json(['ok' => false, 'error' => 'This meeting belongs to another number.'], 403);
+        if (in_array($in['do'] ?? '', ['archive', 'unarchive'], true)) { $ok = false; // a finished or closed meeting is kept in the archive instead of deleted
+            foreach ($all as &$x) if ($x['id'] === $id) { if (($x['status'] ?? '') === 'open' && $in['do'] === 'archive') wi_json(['ok' => false, 'error' => 'Close the meeting first.']); $x['archived'] = $in['do'] === 'archive' ? date('c') : null; $ok = true; } unset($x);
+            if (!$ok) wi_json(['ok' => false, 'error' => 'Not found.']); wi_write('meetings.json', $all); wi_log('meeting_' . $in['do'], ['id' => $id]); wi_json(['ok' => true]); }
         if (($in['do'] ?? '') === 'delete') { $all = array_values(array_filter($all, fn($x) => $x['id'] !== $id)); wi_write('meetings.json', $all); wi_json(['ok' => true]); }
         $url = trim((string) ($in['url'] ?? ''));
         if ($url !== '' && !preg_match('#^https://meet\.google\.com/[a-z0-9\-]+(\?[\w=&.%-]*)?$#i', $url)) wi_json(['ok' => false, 'error' => 'Paste a Google Meet link (https://meet.google.com/…).']);
@@ -246,6 +249,7 @@ function wf_api_meetings(string $api): void {
         if ($idx === null) wi_json(['ok' => false, 'error' => 'Not found.']);
         $m = $all[$idx];
         if (!wf_meet_can_host($m)) wi_json(['ok' => false, 'error' => 'Only the host(s) of this meeting can open or close it.'], 403);
+        if (($in['do'] ?? '') === 'open' && !empty($m['archived'])) wi_json(['ok' => false, 'error' => 'Take the meeting out of the archive first.']);
         if (($in['do'] ?? '') === 'open') { if (empty($m['url'])) wi_json(['ok' => false, 'error' => 'Add the Google Meet link first.']); $m['status'] = 'open'; $m['opened_at'] = date('c'); $m['opened_by'] = $_SESSION['email']; $m['host_in_at'] = date('c'); }
         else { $m['status'] = 'closed'; $m['closed_at'] = date('c'); }
         $all[$idx] = $m; wi_write('meetings.json', $all); wi_log('meeting_' . ($in['do'] ?? ''), ['id' => $m['id']]);

@@ -1209,3 +1209,18 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .mc-vplay span{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.18);font-size:24px}
 .mc-vplay:hover span{background:rgba(255,255,255,.3)}
 .mc-vplay small{opacity:.8}
+/* meetings: summary, filter chips and a grid of cards */
+.mt2-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:0 0 12px}
+.mt2-k{background:var(--card,#fff);border:1px solid var(--line,#e5e7eb);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.mt2-k span{font-size:20px}.mt2-k b{font-size:22px}.mt2-k small{color:var(--muted,#6b7280)}
+.mt2-bar{align-items:center;gap:10px}.mt2-chips{display:flex;gap:6px;flex-wrap:wrap}
+.mt2-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-top:12px}
+.mt2{border:1px solid var(--line,#e5e7eb);border-radius:16px;padding:14px;background:var(--card,#fff);display:flex;flex-direction:column;gap:10px;border-inline-start:5px solid #cbd5e1}
+.mt2.open{border-inline-start-color:#12b886;box-shadow:0 6px 20px -14px #12b886}
+.mt2-top{display:flex;align-items:center;gap:10px}.mt2-ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--brand-soft,#ecfdf5);font-size:20px;flex:none}
+.mt2-ti{flex:1;min-width:0;display:flex;flex-direction:column}.mt2-ti b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt2-link{display:flex;align-items:center;gap:6px;background:var(--bg2,#f8fafc);border-radius:10px;padding:6px 8px}
+.mt2-link code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.mt2-tags{display:flex;flex-wrap:wrap;gap:6px}.mt2-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted,#6b7280)}
+.mt2-act{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--line,#e5e7eb);padding-top:10px}.mt2-sp{flex:1}
+@media (max-width:520px){.mt2-grid{grid-template-columns:1fr}}
