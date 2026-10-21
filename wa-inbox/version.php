@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.121.0', 'date' => '2026-10-21', 'title' => 'Delete a record for good, stop the bot from a test number', 'changes' => [
+        'Cases: ⋯ → "Delete for good" removes a record from every list (a copy is kept on the server).',
+        'From a test number: #وقف_البوت stops the bot in private chats and groups (only the owner\'s commands are still answered) and #شغل_البوت turns it back on; #امسح + ID or name deletes a record after #تأكيد within 5 minutes. All words are editable in Bot → Commands.',
+    ]],
     ['v' => '3.120.0', 'date' => '2026-10-21', 'title' => 'Business types kept apart, commands list in private, calmer server alerts', 'changes' => [
         'Spiritual healing wording stays with that business type only: the shared library tags and the commands help use neutral words; healing keeps its own tags and examples.',
         'Saving the business profile keeps only what was really changed, so values of one business type never stick to a number after it moves to another type (old mixed values are ignored).',

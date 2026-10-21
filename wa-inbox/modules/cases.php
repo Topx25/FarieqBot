@@ -134,6 +134,13 @@ function wf_case_update(string $aid, string $key, callable $fn): ?array {
     return $out;
 }
 function wf_case_put(string $aid, string $ph, ?array $case): void { wi_update('cases.json', function ($A) use ($aid, $ph, $case) { if ($case === null) unset($A[$aid][$ph]); else $A[$aid][$ph] = $case; return $A; }); }
+/** Deletes a case for good (a copy is kept in the removed cases, as for "Not a case"). Returns false when there is no such case. */
+function wf_case_delete(string $aid, string $ph, string $by): bool {
+    $c = wf_case_get($aid, $ph); if (!$c) return false;
+    wi_update('cases_removed.json', function ($B) use ($aid, $ph, $c, $by) { $B[$aid][$ph] = $c + ['removed_at' => date('c'), 'removed_by' => $by]; return $B; });
+    wf_case_put($aid, $ph, null); @unlink(wf_case_file($aid, $ph)); wi_log('case_delete', ['account' => $aid, 'phone' => $ph, 'by' => $by]);
+    return true;
+}
 function wf_api_cases(string $api): void {
     switch ($api) {
     /* ----- Cases ----- */
@@ -157,6 +164,10 @@ function wf_api_cases(string $api): void {
         foreach ((array) ($c['registry'] ?? []) as $rid) if (isset($reg[$rid])) $entries[] = $reg[$rid];
         foreach ($reg as $e) if (!in_array($e, $entries, true) && in_array($ph, $e['phones'] ?? [], true)) $entries[] = $e; // other reports with this number
         wi_json(['ok' => true, 'case' => $c, 'messages' => $msgs, 'registry' => $entries, 'snapshot_at' => $snap['saved_at'] ?? null, 'statuses' => wf_case_statuses(wf_aid()), 'case_cfg' => wf_case_cfg(wf_aid())]);
+    }
+    case 'case_delete': {
+        $in = wf_post(); wf_admin(); $acc = wi_current(); $ph = wf_phone($in['phone'] ?? '');
+        wi_json(wf_case_delete((string) $acc['id'], $ph, (string) $_SESSION['email']) ? ['ok' => true] : ['ok' => false, 'error' => 'Case not found.']);
     }
     case 'case_team': {
         // "Not a case": a team member / admin. Their number is excluded from automatic cases.

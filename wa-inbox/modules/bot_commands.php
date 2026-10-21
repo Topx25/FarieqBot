@@ -46,6 +46,10 @@ function wf_cmds_inventory(array $acc): array {
     $add('pack.ask_tag', (string) ($P['ask_tag'] ?? ''), 'Bot', 'A question in a group sent straight to the bot');
     $add('pack.fun_cmd', (string) ($P['fun_cmd'] ?? ''), 'Bot', 'Warm-up mode on (from a test number)');
     $add('pack.fun_off', (string) ($P['fun_off'] ?? ''), 'Bot', 'Warm-up mode off (from a test number)');
+    $add('pack.hold_cmd', (string) ($P['hold_cmd'] ?? ''), 'Bot', 'Stop the bot (from a test number)');
+    $add('pack.resume_cmd', (string) ($P['resume_cmd'] ?? ''), 'Bot', 'Turn the bot back on (from a test number)');
+    $add('pack.delete_cmd', (string) ($P['delete_cmd'] ?? ''), 'Bot', 'Delete a record for good: the command + ID or name (from a test number)');
+    $add('pack.confirm_cmd', (string) ($P['confirm_cmd'] ?? ''), 'Bot', 'Confirm the delete (from a test number)');
     $add('pack.restart_cmd', (string) ($P['restart_cmd'] ?? ''), 'Bot', 'Restart the service (from a test number, separated by ,)');
     foreach ((array) (wi_read('media_meta.json', [])[$aid] ?? []) as $k => $m) if (trim((string) ($m['code'] ?? '')) !== '' && empty($m['hidden'])) $add('media.' . $k, (string) $m['code'], 'Files', 'Sends the file:', (string) ($m['title'] ?? $k));
     if (function_exists('wi_replies_for')) foreach (wi_replies_for($acc) as $r) if (trim((string) ($r['keyword'] ?? '')) !== '') $add('quick.' . ($r['id'] ?? ''), '#' . ltrim(trim((string) $r['keyword']), '#/'), 'Quick replies', 'Quick reply:', (string) ($r['title'] ?? ''), false, 'Quick replies');
@@ -67,7 +71,7 @@ function wf_cmds_save(array $acc, string $id, string $tag): string {
     if ($a === 'case') { [$part, $key] = array_pad(explode('.', $k, 2), 2, ''); if (!in_array($part, ['cmds', 'words'], true) || $key === '') return 'Unknown command.';
         $full = (array) (wf_case_cfg($aid)[$part] ?? []); $full[$key] = $tag; // the whole list is kept, so the other words stay as they were
         wi_update('case_cfg.json', function ($A) use ($aid, $part, $full) { $A[$aid][$part] = $full; return $A; }); return ''; }
-    if ($a === 'pack' && in_array($k, ['ask_tag', 'fun_cmd', 'fun_off', 'restart_cmd'], true)) { wi_update('bot.json', function ($A) use ($aid, $k, $tag) { $A[$aid]['pack'][$k] = $tag; return $A; }); return ''; }
+    if ($a === 'pack' && in_array($k, ['ask_tag', 'fun_cmd', 'fun_off', 'restart_cmd', 'hold_cmd', 'resume_cmd', 'delete_cmd', 'confirm_cmd'], true)) { wi_update('bot.json', function ($A) use ($aid, $k, $tag) { $A[$aid]['pack'][$k] = $tag; return $A; }); return ''; }
     if ($a === 'lib') { $all = wf_libcmd_words($aid); if (!isset($all[$k])) return 'Unknown command.'; $all[$k] = $tag; wi_update('bot.json', function ($A) use ($aid, $all) { $A[$aid]['pack']['lib_cmds'] = $all; return $A; }); return ''; }
     if ($a === 'tags') { $lines = preg_split('/\R/u', (string) (wf_pack($aid)['lib_tags'] ?? '')); if ($tag === '' || !isset($lines[(int) $k])) return 'This command cannot be empty.';
         $x = array_map('trim', explode('|', $lines[(int) $k])); $x[0] = $tag; $lines[(int) $k] = implode(' | ', $x);
