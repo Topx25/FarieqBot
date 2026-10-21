@@ -1224,3 +1224,11 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .mt2-tags{display:flex;flex-wrap:wrap;gap:6px}.mt2-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted,#6b7280)}
 .mt2-act{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--line,#e5e7eb);padding-top:10px}.mt2-sp{flex:1}
 @media (max-width:520px){.mt2-grid{grid-template-columns:1fr}}
+/* meetings: the create / edit form in titled sections with a fixed save bar */
+.mf2{padding:0;overflow:hidden}.mf2-top{padding:16px 18px;background:linear-gradient(135deg,var(--brand-soft,#ecfdf5),transparent);border-bottom:1px solid var(--line,#e5e7eb)}
+.mf2-top h3{margin:0 0 2px}
+.mf2-s{padding:14px 18px;border-bottom:1px solid var(--line,#e5e7eb)}
+.mf2-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}.mf2-h>span{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--brand-soft,#ecfdf5);font-size:18px;flex:none}
+.mf2-h div{display:flex;flex-direction:column}
+.mf2 .gcf label.check{background:var(--bg2,#f8fafc);border-radius:10px;padding:8px 10px}
+.mf2-bar{position:sticky;bottom:0;z-index:3;background:var(--card,#fff);padding:12px 18px;border-top:1px solid var(--line,#e5e7eb);box-shadow:0 -8px 20px -16px rgba(0,0,0,.4);margin:0}

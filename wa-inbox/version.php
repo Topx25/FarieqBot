@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.125.1', 'date' => '2026-10-21', 'title' => 'Meetings: new create / edit form', 'changes' => [
+        'The meeting form is split into titled sections — Basics, Joining, Recording, Hosts, Appearance — with a save bar that stays at the bottom while scrolling.',
+    ]],
     ['v' => '3.125.0', 'date' => '2026-10-21', 'title' => 'Meetings: new design and an archive', 'changes' => [
         'Meetings page redesigned: a summary on top (meetings, open now, waiting for approval, joins), filter buttons and a grid of cards with the link, the settings and the actions.',
         'A closed meeting goes to the archive instead of being deleted; its link stops opening and it can be taken back out. Deleting for good is only possible from the archive.',

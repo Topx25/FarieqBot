@@ -25,25 +25,30 @@
     }
     function editor(m) { m = m || { mode: 'auto', hosts: [], limit: 0 };
       var el = document.getElementById('mt-edit');
-      el.innerHTML = '<div class="card mt-f"><h3>' + (m.id ? '✏️ ' + T('Edit meeting') : '➕ ' + T('New meeting')) + '</h3><div class="gcf">'
+      el.innerHTML = '<div class="card mt-f mf2"><div class="mf2-top"><h3>' + (m.id ? '✏️ ' + T('Edit meeting') : '➕ ' + T('New meeting')) + '</h3><small class="muted">' + T('Fill the sections below, then save.') + '</small></div><section class="mf2-s"><div class="mf2-h"><span>📌</span><div><b>' + T('Basics') + '</b><small class="muted">' + T('Name, fixed link and the Google Meet link') + '</small></div></div><div class="gcf">'
         + '<label>' + T('Title') + '<input id="mf-title" value="' + esc(m.title || '') + '" dir="auto"></label>'
         + '<label>' + T('Link name (the fixed link)') + '<input id="mf-slug" value="' + esc(m.slug || '') + '" dir="ltr" placeholder="quran-class"><small class="muted" dir="ltr">' + esc(MT.base) + '<b id="mf-slugv">' + esc(m.slug || '…') + '</b></small></label>'
         + '<label class="gcf-wide">' + T('Google Meet link') + ' <small class="muted">(' + T('open meet.new, copy its link and paste it here') + ')</small><span class="row"><input id="mf-url" dir="ltr" placeholder="' + (m.has_link ? T('saved — paste a new one to replace') : 'https://meet.google.com/abc-defg-hij') + '"><button type="button" class="chip-btn" id="mf-auto">✨ ' + T('Create automatically') + '</button></span><small class="muted" id="mf-amsg"></small></label>'
+        + '<label class="gcf-wide">' + T('Description (shown on the join page)') + '<textarea id="mf-desc" rows="2" dir="auto">' + esc(m.desc || '') + '</textarea></label>'
+        + '</div></section><section class="mf2-s"><div class="mf2-h"><span>🚪</span><div><b>' + T('Joining') + '</b><small class="muted">' + T('How people get in and how many') + '</small></div></div><div class="gcf">'
         + '<label>' + T('How people join') + '<select id="mf-mode"><option value="auto" ' + (m.mode !== 'password' ? 'selected' : '') + '>⚡ ' + T('Automatic join (once the host opens it)') + '</option><option value="password" ' + (m.mode === 'password' ? 'selected' : '') + '>🔒 ' + T('Join with a password') + '</option></select></label>'
         + '<label id="mf-passw" ' + (m.mode === 'password' ? '' : 'hidden') + '>' + T('Password') + '<input id="mf-pass" type="text" autocomplete="off" placeholder="' + (m.has_password ? T('saved — type to change') : '') + '"></label>'
         + '<label>' + T('Maximum participants (0 = no limit)') + '<input id="mf-limit" type="number" min="0" max="1000" value="' + (m.limit || 0) + '"></label>'
  + '<label class="check"><input type="checkbox" id="mf-ap" ' + (m.approve !== false ? 'checked' : '') + '> 🙋 ' + T('Guests wait until a host approves them') + '</label>'
         + '<label class="check"><input type="checkbox" id="mf-ah" ' + (m.auto_after_host ? 'checked' : '') + '> ✅ ' + T('Accept guests automatically once any host has entered') + '</label>'
         + '<label>' + T('Close automatically after (hours)') + '<input id="mf-ac" type="number" min="1" max="24" value="' + (m.auto_close || 3) + '"></label>'
+        + '<label class="check"><input type="checkbox" id="mf-phone" ' + (m.ask_phone ? 'checked' : '') + '> 📱 ' + T('Ask for a phone number too') + '</label>'
+        + '</div></section><section class="mf2-s"><div class="mf2-h"><span>⏺</span><div><b>' + T('Recording') + '</b><small class="muted">' + T('Started by Google Meet itself') + '</small></div></div><div class="gcf">'
         + '<label class="check"><input type="checkbox" id="mf-rec" ' + (m.record ? 'checked' : '') + '> ⏺ ' + T('Record automatically (starts by itself, no host needed)') + '</label>'
         + '<label class="check"><input type="checkbox" id="mf-tr" ' + (m.transcript ? 'checked' : '') + '> 📝 ' + T('Save a transcript automatically') + '</label>'
         + (m.rec_note ? '<div class="gcf-wide small bad-t">⚠️ ' + esc(m.rec_note) + '</div>' : '')
-        + '<label class="check"><input type="checkbox" id="mf-phone" ' + (m.ask_phone ? 'checked' : '') + '> 📱 ' + T('Ask for a phone number too') + '</label>'
+        + '</div></section><section class="mf2-s"><div class="mf2-h"><span>👤</span><div><b>' + T('Hosts') + '</b><small class="muted">' + T('Who can open the meeting') + '</small></div></div><div class="gcf">'
         + '<label class="gcf-wide">' + T('Who opens the meeting (hosts)') + '<div class="mf-hosts">' + MT.users.map(function (u) { return '<label class="check"><input type="checkbox" value="' + esc(u.email) + '" ' + ((m.hosts || []).indexOf(u.email) !== -1 ? 'checked' : '') + '> ' + esc(u.name) + '</label>'; }).join('') + '</div><small class="muted">' + T('None checked = admins only.') + '</small></label>'
         + '<div class="gcf-wide"><b>📱 ' + T('Hosts from WhatsApp groups') + '</b> <small class="muted">' + T('Each one gets a private link to open the meeting — no dashboard login needed.') + '</small>'
         + '<div class="mf-wah" id="mf-wah"></div><div class="row wrap"><select id="mf-g"><option value="">' + T('Choose a group…') + '</option></select><input type="search" id="mf-gq" placeholder="' + T('Search members…') + '" dir="auto"></div><div class="mf-mem" id="mf-mem"></div></div>'
        
-        + '<details class="gcf-wide mf-ui"><summary><b>🎨 ' + T('Customize the pages (waiting, details, approval)') + '</b></summary><div class="gcf mf-uig">'
+        + '</div></section><section class="mf2-s"><div class="mf2-h"><span>🎨</span><div><b>' + T('Appearance') + '</b><small class="muted">' + T('Texts, colours and logo of the pages people see') + '</small></div></div><div class="gcf">'
+        + '<details class="gcf-wide mf-ui" open><summary><b>🎨 ' + T('Customize the pages (waiting, details, approval)') + '</b></summary><div class="gcf mf-uig">'
         + [['waiting_text', 'Waiting page — text', 'The meeting has not started yet — waiting for the host to open it.'], ['waiting_note', 'Waiting page — small note', 'This page refreshes by itself every 15 seconds.'],
           ['form_text', 'Details page — text above the form', ''], ['name_label', 'Details page — name field title', 'Name'], ['phone_label', 'Details page — phone field title', 'Mobile number'], ['pass_label', 'Details page — password field title', 'Password'], ['form_btn', 'Details page — button', 'Join the meeting'],
           ['pending_text', 'Approval page — text', 'Your request was sent ✅ — wait until the host lets you in.'], ['pending_note', 'Approval page — small note', 'This page refreshes by itself; you join as soon as the host agrees.'],
@@ -53,8 +58,8 @@
         + '<label class="gcf-wide">' + T('Logo (https link to an image)') + '<input data-ui="logo" dir="ltr" maxlength="300" value="' + esc((m.ui || {}).logo || '') + '" placeholder="https://…"></label>'
         + (m.slug ? '<div class="gcf-wide small">' + T('Preview') + ': ' + [['waiting', 'Waiting page'], ['form', 'Details page'], ['pending', 'Approval page'], ['rejected', 'Rejected'], ['full', 'Full meeting']].map(function (k) { return '<a href="?m=' + esc(m.slug) + '&preview=' + k[0] + '" target="_blank" rel="noopener">' + T(k[1]) + '</a>'; }).join(' · ') + '</div>' : '')
         + '</div></details>'
-        + '<label class="gcf-wide">' + T('Description (shown on the join page)') + '<textarea id="mf-desc" rows="2" dir="auto">' + esc(m.desc || '') + '</textarea></label></div>'
-        + '<div class="row"><button class="btn primary" id="mf-save">💾 ' + T('Save') + '</button>' + (m.id && m.status !== 'open' ? '<button class="link-btn" id="mf-del">🗄️ ' + T('Move to the archive') + '</button>' : '') + '<button class="link-btn" id="mf-x">' + T('Close') + '</button><span class="muted small" id="mf-msg"></span></div></div>';
+        + '</div></section>'
+        + '<div class="row mf2-bar"><button class="btn primary" id="mf-save">💾 ' + T('Save') + '</button>' + (m.id && m.status !== 'open' ? '<button class="link-btn" id="mf-del">🗄️ ' + T('Move to the archive') + '</button>' : '') + '<button class="link-btn" id="mf-x">' + T('Close') + '</button><span class="muted small" id="mf-msg"></span></div></div>';
       var MSPACE = ''; var WAH = (m.wa_hosts || []).map(function (h) { return { phone: h.phone, name: h.name }; }), MEM = [];
       function drawWah() { document.getElementById('mf-wah').innerHTML = WAH.length ? WAH.map(function (h, i) { return '<span class="tag">📱 ' + esc(h.name || '') + ' <span dir="ltr">+' + esc(h.phone) + '</span> <button type="button" class="link-btn bad-t" data-rmh="' + i + '">✕</button></span>'; }).join(' ') : '<span class="muted small">' + T('None yet.') + '</span>'; }
       function drawMem() { var q = (document.getElementById('mf-gq').value || '').toLowerCase(), have = WAH.map(function (h) { return h.phone; });
