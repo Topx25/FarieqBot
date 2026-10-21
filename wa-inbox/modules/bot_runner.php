@@ -53,6 +53,14 @@ function wf_fun_command(string $aid, string $text): string {
     $h = max(1, (int) ($P['fun_hours'] ?? 2)); wi_update('fun_mode.json', function ($F) use ($aid, $h) { $F[$aid] = time() + $h * 3600; return $F; });
     return wf_msg('fun_on', ['hours' => (string) $h, 'off' => $off]);
 }
+/** The owner's commands sent from a test number to the bot's number: the warm-up words, and the restart words (business profile → restart_cmd).
+ *  Returns [note, restart?], or null when the text is not a command. */
+function wf_owner_command(string $aid, string $text): ?array {
+    if (($n = wf_fun_command($aid, $text)) !== '') return [$n, false];
+    $t = wf_intake_norm(trim($text)); if ($t === '') return null;
+    foreach (preg_split('/[,\x{060C}|\n]+/u', (string) (wf_pack($aid)['restart_cmd'] ?? '')) as $w) { $w = wf_intake_norm(trim($w)); if ($w !== '' && $t === $w) return [wf_msg('bot_restart'), true]; }
+    return null;
+}
 /** Group reply clean-up: no @numbers of other people, no names of other members, no "يا <name>" of someone else. */
 function wf_reply_strict(string $t, array $otherNames, string $who): string {
     $t = preg_replace_callback('/@(\d{6,})/', fn($m) => $m[1] === $who ? $m[0] : '', $t);
@@ -291,6 +299,11 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         if (!$again && isset($paused[$x['jid']]) && (empty($paused[$x['jid']]['until']) || strtotime($paused[$x['jid']]['until']) > time())) continue; // /stop, or handed over to a person for a while
         if (($x['phone'] ?? '') === '' && str_ends_with((string) $x['jid'], '@lid')) { $cc = wi_contact($x['jid'], $acc); $x['phone'] = wf_phone((string) ($cc['phone'] ?? '')); }
         $isTest = in_array((string) ($x['phone'] ?? ''), (array) $c['test'], true); // test numbers: always answered
+        if ($isTest && ($oc = wf_owner_command($aid, trim((string) ($last['text'] ?? '')))) !== null) { // the owner's command from a test number: done, answered, no AI
+            $st['done'][$x['jid']] = $last['time']; $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => $oc[0], 'via' => 'bot'], $acc);
+            wi_bot_log_add($aid, ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => (string) ($last['text'] ?? ''), 'reply' => $oc[0], 'result' => !empty($s['ok']) ? 'sent' : 'send_failed', 'role' => 'command', 'at' => date('c')]);
+            if ($oc[1]) { $state = wi_read('bot_state.json', []); $state[$aid] = $st; wi_write('bot_state.json', $state); wi_log('bot_restart', ['account' => $aid, 'by' => 'test number']); sleep(2); wi_gateway('/shutdown', [], $acc); return ['did' => [['jid' => $x['jid'], 'result' => 'restart']]]; } // the watchdog starts it again
+            $n++; continue; }
         if (!$isTest && isset($team[(string) ($x['phone'] ?? '')]) && $team[(string) $x['phone']] !== 'group admin') continue; // team members / own numbers (a group admin is team inside the groups only: in private they may be a client)
         $isSys = fn($t) => (bool) preg_match('/^\s*(\x{26A0}\x{FE0F}|\x{2705}|\x{1F4CA}|\x{1F514}|\x{2757})/u', (string) $t) || wf_is_system_text((string) $t); // login codes, alerts, reports
         // Let them finish: the gateway asks right after the customer stopped typing (quiet time); the minute check waits the full gather time.
@@ -346,7 +359,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
             if ($m['dir'] === 'in') { if (count(preg_split('/\s+/u', $mt, -1, PREG_SPLIT_NO_EMPTY)) >= 3) break; continue; }
             if (($m['via'] ?? '') !== 'bot') break; if (preg_match('/[\x{061F}?]\s*$/u', $mt)) $askedBefore++; else break; }
         $isQ = !empty($r['clarify']) || preg_match('/[؟?]\s*$/u', trim((string) $r['reply']));
-        if ($repeat || ($isQ && $askedBefore >= max(1, (int) $c['max_clarify']) && empty($r['handoff']))) {
+        if (!$isTest && ($repeat || ($isQ && $askedBefore >= max(1, (int) $c['max_clarify']) && empty($r['handoff'])))) { // a test number always gets the reply, so the owner sees what the bot says
             $why2 = $repeat ? 'same reply as before — handed to the team' : 'already asked to clarify — handed to the team';
             if (!$isTest) { wi_update('bot_paused.json', function ($P) use ($aid, $x, $c) { $P[$aid][$x['jid']] = ['at' => date('c'), 'by' => 'handoff', 'until' => date('c', time() + max(1, (int) $c['human_pause']) * 3600)]; return $P; }); }
             wi_update('bot_drafts.json', function ($d) use ($aid, $x, $text, $r, $why2) { $d[$aid][$x['jid']] = ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => mb_substr($text, 0, 600), 'reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => true, 'model' => $r['task']['model'] ?? '', 'at' => date('c'), 'why' => $why2]; return $d; });
@@ -359,7 +372,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         // A short clarifying question is always safe to send (it states no facts), even with low confidence.
         $clarify = !empty($r['clarify']) || (mb_strlen($r['reply']) < 220 && preg_match('/[؟?]\s*$/u', trim($r['reply'])) && $r['confidence'] >= 0.3);
         $minConf = in_array($role, ['dreams', 'support', 'healer'], true) ? min((float) $c['min_conf'], 0.65) : (float) $c['min_conf']; // an interpretation or a caring reply is never certain: the roles send from 0.65
-        $send = $c['mode'] === 'auto' && $inHours && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour']) && ($handoffSend || $clarify || $r['confidence'] >= $minConf);
+        $send = $c['mode'] === 'auto' && $inHours && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour']) && ($isTest || $handoffSend || $clarify || $r['confidence'] >= $minConf);
         $why = $c['mode'] !== 'auto' ? 'suggest-only mode' : (!$inHours ? 'outside working hours' : (((int) $c['per_hour'] > 0 && count($st['sent']) >= (int) $c['per_hour']) ? 'hourly limit' : ($r['handoff'] ? 'handed over to a person' : ($r['confidence'] < $c['min_conf'] ? 'low confidence' : ''))));
         $log = ['role' => $role, 'jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => mb_substr($text, 0, 600), 'reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'at' => date('c')];
         if ($send) {

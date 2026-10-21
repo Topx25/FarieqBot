@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.118.0', 'date' => '2026-10-21', 'title' => 'Bot: owner commands from a test number, test numbers always answered', 'changes' => [
+        'A test number can now send commands to the bot\'s number in a private chat: the warm-up words (on / off) and new restart words that restart the number\'s service. All words are editable in the business profile (warm-up words now exist for every business type).',
+        'A test number always gets the bot\'s reply, even with low confidence or after a clarifying question, so the owner sees exactly what the bot would say.',
+    ]],
     ['v' => '3.117.0', 'date' => '2026-10-21', 'title' => 'Facebook: link a page to a WhatsApp number from its settings', 'changes' => [
         'Facebook page → Comments settings: new choice "The page answers with the knowledge of" — pick a WhatsApp number and the page\'s bot (Messenger and comments) answers with that number\'s profile, library and rules, or keep the page itself for general answers. Only numbers the user may manage are listed.',
     ]],
