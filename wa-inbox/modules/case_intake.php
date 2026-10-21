@@ -211,6 +211,8 @@ function wf_cmd_menu(string $aid): string {
     $acc = wi_accounts()[$aid] ?? null; $quick = [];
     if ($acc && function_exists('wi_replies_for')) foreach (wi_replies_for($acc) as $r) if (trim((string) ($r['keyword'] ?? '')) !== '') $quick[] = '• #' . ltrim(trim((string) $r['keyword']), '#/') . ' — ' . (string) ($r['title'] ?? '');
     if ($quick) $B[] = $f((string) ($h['sec_quick'] ?? '')) . "\n" . $more($quick);
+    $own = []; if (function_exists('wf_cmds_custom')) foreach (wf_cmds_custom($aid) as $cu) if (!empty($cu['on'])) $own[] = '• ' . $cu['tag'] . (($cu['title'] ?? '') !== '' ? ' — ' . $cu['title'] : '');
+    if ($own) $B[] = wf_msg('cmd_menu_own') . "\n" . $more($own);
     return wf_msg('cmd_menu', ['list' => implode("\n\n━━━━━━━━━━\n\n", $B), 'menu' => (string) ($w['menu'] ?? '#menu')]);
 }
 /** Is this message asking for the commands list? "#menu" in any case (#Menu, #MENU), its other names (#منيو, #الاوامر, #help…),
@@ -334,6 +336,8 @@ function wf_intake_hook(array $acc, array $in): void {
         $typed = wf_norm(ltrim(trim($text), '#')); $hit = array_values(array_filter(wi_replies_for($acc), fn($r) => ($k = wf_norm(ltrim(trim((string) ($r['keyword'] ?? '')), '#/'))) !== '' && $k === $typed));
         if (count($hit) === 1) { $reply(['ok' => false, 'done' => true]); [$tagT, $tagM] = wf_group_tag($from);
             wi_gateway('/chat/send', ['jid' => $jid, 'text' => $tagT . wi_reply_fill((string) $hit[0]['text'], $jid, $acc), 'quote_id' => $id, 'mentions' => $tagM, 'via' => 'bot'], $acc); wi_log('reply_from_group', ['account' => $aid, 'group' => $jid, 'title' => $hit[0]['title'] ?? '']); exit; } }
+    if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && function_exists('wf_cmd_custom_which') && ($cu = wf_cmd_custom_which($aid, $text, true))) { // the owner's own command (Bot → Commands)
+        $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(120); wf_cmd_custom_run($acc, $cu, $jid, $text, $id, $from, (string) ($in['name'] ?? '')); exit; }
     $menuW = (string) (wf_case_cfg($aid)['words']['menu'] ?? ''); // "#menu": the list of commands, in any group
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && wf_is_menu($aid, $text)) {
         $reply(['ok' => false, 'done' => true]); [$tagT, $tagM] = wf_group_tag($from);

@@ -169,6 +169,8 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             $wTags = [$who]; if (strlen($who) >= 14 && function_exists('wf_group_member_phone') && ($pn0 = wf_group_member_phone($acc, (string) $x['jid'], $who)['phone']) !== '') $wTags[] = $pn0; // the bot's replies to this person start with their tag (mobile number or long ID)
             if ($who !== '' && !isset($team[$who]) && $text !== '' && !wf_words($text) && ($g['trigger'] ?? 'mention') === 'all' && $c['mode'] === 'auto') { wf_bot_emoji($acc, (string) $x['jid'], (string) ($m['id'] ?? ''), $text, false); continue; } // only emojis in a group: a reaction, no message
             $mentioned = $me !== '' && (in_array($me, array_map('wf_phone', (array) ($m['mentions'] ?? [])), true) || wf_phone($m['quote_from'] ?? '') === $me);
+            $askT = function_exists('wf_ask_tag') ? wf_ask_tag($aid) : ''; // the ask tag (#سؤال by default): the question is for the bot, answered at once like a tag of the bot
+            if ($askT !== '' && wf_intake_has($text, $askT)) { $mentioned = true; $text = trim(str_ireplace($askT, '', $text)) ?: $text; }
             // A group admin is answered when they ask a question or tag the bot — not while they answer someone else (a reply or a tag of another member).
             $adminAsks = isset($team[$who]) && $mentioned; // STRICT: healers and admins talk among themselves — the bot answers them only when they tag it or reply to it
             if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun && empty($g['guide'])) || $text === '' || !wf_words($text)) continue;
@@ -304,6 +306,8 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
             wi_bot_log_add($aid, ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => (string) ($last['text'] ?? ''), 'reply' => $oc[0], 'result' => !empty($s['ok']) ? 'sent' : 'send_failed', 'role' => 'command', 'at' => date('c')]);
             if ($oc[1]) { $state = wi_read('bot_state.json', []); $state[$aid] = $st; wi_write('bot_state.json', $state); wi_log('bot_restart', ['account' => $aid, 'by' => 'test number']); sleep(2); wi_gateway('/shutdown', [], $acc); return ['did' => [['jid' => $x['jid'], 'result' => 'restart']]]; } // the watchdog starts it again
             $n++; continue; }
+        if (function_exists('wf_cmd_custom_which') && ($cu = wf_cmd_custom_which($aid, trim((string) ($last['text'] ?? '')), false))) { // the owner's own command (Bot → Commands): its reply, at once
+            $st['done'][$x['jid']] = $last['time']; wf_cmd_custom_run($acc, $cu, (string) $x['jid'], trim((string) ($last['text'] ?? '')), (string) ($last['id'] ?? ''), '', (string) ($x['name'] ?? '')); $n++; continue; }
         if (!$isTest && isset($team[(string) ($x['phone'] ?? '')]) && $team[(string) $x['phone']] !== 'group admin') continue; // team members / own numbers (a group admin is team inside the groups only: in private they may be a client)
         $isSys = fn($t) => (bool) preg_match('/^\s*(\x{26A0}\x{FE0F}|\x{2705}|\x{1F4CA}|\x{1F514}|\x{2757})/u', (string) $t) || wf_is_system_text((string) $t); // login codes, alerts, reports
         // Let them finish: the gateway asks right after the customer stopped typing (quiet time); the minute check waits the full gather time.

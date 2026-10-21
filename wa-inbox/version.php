@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.119.0', 'date' => '2026-10-21', 'title' => 'Bot: Commands section, own commands and the ask tag', 'changes' => [
+        'Bot → Commands: every # command of the number in one list (cases, lists, library, section tags, bot words, file shortcuts, quick replies), each edited right there; a command already used is refused.',
+        'Own commands: add a new # command with a fixed reply or an AI instruction, for groups, private chats or both. The bot knows it at once and it shows in the commands list.',
+        'Ask tag (#سؤال by default, editable): a member who writes it in a group gets the bot\'s answer at once, like tagging the bot\'s number.',
+    ]],
     ['v' => '3.118.0', 'date' => '2026-10-21', 'title' => 'Bot: owner commands from a test number, test numbers always answered', 'changes' => [
         'A test number can now send commands to the bot\'s number in a private chat: the warm-up words (on / off) and new restart words that restart the number\'s service. All words are editable in the business profile (warm-up words now exist for every business type).',
         'A test number always gets the bot\'s reply, even with low confidence or after a clarifying question, so the owner sees exactly what the bot would say.',
