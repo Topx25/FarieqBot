@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.126.0', 'date' => '2026-10-21', 'title' => 'Meetings: hosts from private chats, extra join details', 'changes' => [
+        'WhatsApp hosts can be picked from the private chats too, not only from groups.',
+        'Extra details on the join page: add up to 10 boxes (e.g. age, country, a question) and mark each one required or not. The answers show in "Who joined".',
+    ]],
     ['v' => '3.125.3', 'date' => '2026-10-21', 'title' => 'Meetings: a hint under every field', 'changes' => [
         'Every field of the meeting form has a short hint under it: what it does and an example (title, link name, Meet link, description, join mode, password, limit, approval, auto close, phone, recording, transcript, hosts, WhatsApp hosts, page texts).',
     ]],

@@ -1275,3 +1275,5 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 @media (max-width:900px){.mf3-body{grid-template-columns:1fr}.mf3-side{position:static;order:-1}.mf3-pv{min-height:0}}
 .mf3-hint{display:block;margin-top:4px;font-size:12px;line-height:1.5;color:var(--muted,#64748b);font-weight:400}
 .mf3 label.check .mf3-hint{flex-basis:100%;order:3}.mf3 label.check{flex-wrap:wrap}
+.mf3-fields{display:flex;flex-direction:column;gap:8px}.mf3-fr{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.mf3-fr label.check{padding:8px 10px}

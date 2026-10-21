@@ -13,7 +13,7 @@ function wf_meet_acc_ok(array $m): bool { $id = (string) ($m['acc'] ?? ''); $a =
     return ($id === '' && wi_is_super()) || (strtolower((string) ($m['by'] ?? '')) !== '' && strtolower((string) ($m['by'] ?? '')) === strtolower((string) ($_SESSION['email'] ?? ''))); }
 function wf_meeting_mine(array $m): bool { if (!wf_meet_acc_ok($m)) return false; return wi_is_super() || isset(wi_my_accounts()[$m['acc'] ?? '']) || strtolower((string) ($m['by'] ?? '')) === strtolower((string) ($_SESSION['email'] ?? '')); }
 function wf_meetings(): array { return wi_read('meetings.json', []); }
-function wf_meet_public(array $m): array { return array_intersect_key($m, array_flip(['id', 'slug', 'title', 'desc', 'mode', 'limit', 'hosts', 'status', 'archived', 'opened_at', 'opened_by', 'closed_at', 'created', 'by', 'ask_phone', 'record', 'transcript', 'space', 'rec_note', 'approve', 'auto_close', 'auto_after_host', 'host_in_at', 'ui'])) + ['has_password' => !empty($m['pass']), 'has_link' => !empty($m['url']), 'joins' => count($m['joins'] ?? []), 'pending' => count(array_filter($m['joins'] ?? [], fn($j) => ($j['state'] ?? '') === 'pending' && $j['at'] >= ($m['opened_at'] ?? ''))), 'joined_now' => count(array_filter($m['joins'] ?? [], fn($j) => !empty($m['opened_at']) && $j['at'] >= $m['opened_at']))]; }
+function wf_meet_public(array $m): array { return array_intersect_key($m, array_flip(['id', 'slug', 'title', 'desc', 'mode', 'limit', 'hosts', 'status', 'archived', 'fields', 'opened_at', 'opened_by', 'closed_at', 'created', 'by', 'ask_phone', 'record', 'transcript', 'space', 'rec_note', 'approve', 'auto_close', 'auto_after_host', 'host_in_at', 'ui'])) + ['has_password' => !empty($m['pass']), 'has_link' => !empty($m['url']), 'joins' => count($m['joins'] ?? []), 'pending' => count(array_filter($m['joins'] ?? [], fn($j) => ($j['state'] ?? '') === 'pending' && $j['at'] >= ($m['opened_at'] ?? ''))), 'joined_now' => count(array_filter($m['joins'] ?? [], fn($j) => !empty($m['opened_at']) && $j['at'] >= $m['opened_at']))]; }
 function wf_meet_wa_hosts(array $m): array { return array_map(fn($h) => ['phone' => $h['phone'], 'name' => $h['name'] ?? ''], (array) ($m['wa_hosts'] ?? [])); }
 /** A host from WhatsApp (no dashboard login) uses a personal link: ?m=slug&h=token */
 function wf_meet_wa_host(array $m, string $tok): ?array { if ($tok === '') return null; foreach ((array) ($m['wa_hosts'] ?? []) as $h) if (hash_equals((string) $h['token'], $tok)) return $h; return null; }
@@ -110,15 +110,17 @@ function wf_meet_page(string $slug): void {
         // Attempt limit: 8 wrong passwords per device per 15 minutes.
         $ipk = substr(hash('sha256', wi_ip() . '|' . $slug), 0, 20); $G = wi_read('meet_guard.json', []);
         $G[$ipk] = array_values(array_filter($G[$ipk] ?? [], fn($t) => $t > time() - 900));
+        $extra = []; $ferr = ''; foreach ((array) ($m['fields'] ?? []) as $fi => $fd) { $v = trim(mb_substr((string) (((array) ($_POST['f'] ?? []))[$fi] ?? ''), 0, 300)); if ($v !== '') $extra[(string) $fd['label']] = $v; elseif (!empty($fd['req']) && $ferr === '') $ferr = wf_mt('Fill in:') . ' ' . $fd['label']; }
         $name = trim(mb_substr((string) ($_POST['name'] ?? ''), 0, 60)); $phone = preg_replace('/\D/', '', (string) ($_POST['phone'] ?? ''));
         if (count($G[$ipk]) >= 8) $err = '' . wf_mt('Too many attempts — try again in 15 minutes.') . '';
         elseif ($name === '') $err = '' . wf_mt('Write your name.') . '';
         elseif (!empty($m['ask_phone']) && strlen($phone) < 8) $err = '' . wf_mt('Write your mobile number.') . '';
+        elseif ($ferr !== '') $err = $ferr;
         elseif (($m['mode'] ?? 'auto') === 'password' && !password_verify((string) ($_POST['pass'] ?? ''), (string) ($m['pass'] ?? ''))) { $err = '' . wf_mt('Wrong password.') . ''; $G[$ipk][] = time(); }
         wi_write('meet_guard.json', $G);
         if ($err === '') {
             $jid = bin2hex(random_bytes(8)); $ap = !empty($m['approve']) && !wf_meet_auto_ok($m);
-            foreach ($all as &$x) if ($x['id'] === $m['id']) { $x['joins'][] = ['id' => $jid, 'name' => $name, 'phone' => $phone, 'at' => date('c'), 'ip' => substr(hash('sha256', wi_ip()), 0, 12), 'state' => $ap ? 'pending' : 'approved']; $x['joins'] = array_slice($x['joins'], -2000); }
+            foreach ($all as &$x) if ($x['id'] === $m['id']) { $x['joins'][] = ['id' => $jid, 'name' => $name, 'phone' => $phone, 'extra' => $extra, 'at' => date('c'), 'ip' => substr(hash('sha256', wi_ip()), 0, 12), 'state' => $ap ? 'pending' : 'approved']; $x['joins'] = array_slice($x['joins'], -2000); }
             unset($x); wi_write('meetings.json', $all);
             if ($ap) { setcookie('mj_' . $m['id'], $jid, ['expires' => time() + 6 * 3600, 'path' => (string) wi_sys('cookie_path'), 'secure' => true, 'httponly' => true, 'samesite' => 'Lax']); header('Location: ?m=' . rawurlencode($slug)); exit; }
             wf_meet_enter($m, $name); }
@@ -142,6 +144,7 @@ function wf_meet_page(string $slug): void {
     elseif ($state === 'full') echo '<p>' . nl2br($e(wf_meet_ui($m ?? [], 'full_text', wf_mt('The meeting is full.')))) . '</p>';
     else echo (!empty($m['ui']['form_text']) ? '<p class="m">' . nl2br($e($m['ui']['form_text'])) . '</p>' : '') . '<form method="post"><label>' . $e(wf_meet_ui($m, 'name_label', wf_mt('Name'))) . '</label><input name="name" required maxlength="60" value="' . $e($_POST['name'] ?? '') . '">'
         . (!empty($m['ask_phone']) ? '<label>' . $e(wf_meet_ui($m, 'phone_label', wf_mt('Mobile number'))) . '</label><input name="phone" inputmode="tel" dir="ltr" required value="' . $e($_POST['phone'] ?? '') . '">' : '')
+        . implode('', array_map(fn($i, $fd) => '<label>' . $e($fd['label']) . (!empty($fd['req']) ? ' *' : '') . '</label><input name="f[' . $i . ']" dir="auto" maxlength="300"' . (!empty($fd['req']) ? ' required' : '') . ' value="' . $e(((array) ($_POST['f'] ?? []))[$i] ?? '') . '">', array_keys((array) ($m['fields'] ?? [])), (array) ($m['fields'] ?? [])))
         . (($m['mode'] ?? 'auto') === 'password' ? '<label>' . $e(wf_meet_ui($m, 'pass_label', wf_mt('Password'))) . '</label><input name="pass" type="password" required autocomplete="off">' : '')
         . ($err ? '<div class="e">' . $e($err) . '</div>' : '') . '<button>' . $e(wf_meet_ui($m, 'form_btn', wf_mt('Join the meeting'))) . '</button></form>';
     echo '</div></body></html>'; exit;
@@ -219,6 +222,7 @@ function wf_api_meetings(string $api): void {
         if (trim((string) ($in['pass'] ?? '')) !== '') $m['pass'] = password_hash((string) $in['pass'], PASSWORD_DEFAULT);
         if ($m['mode'] === 'password' && empty($m['pass'])) wi_json(['ok' => false, 'error' => 'Set a password for password mode.']);
         $m['limit'] = max(0, min(1000, (int) ($in['limit'] ?? 0))); $m['ask_phone'] = !empty($in['ask_phone']);
+        $m['fields'] = []; foreach (array_slice((array) ($in['fields'] ?? []), 0, 10) as $f) { $l = mb_substr(trim((string) ($f['label'] ?? '')), 0, 60); if ($l !== '') $m['fields'][] = ['label' => $l, 'req' => !empty($f['req'])]; } // extra details asked on the join page
         if (!empty($in['space']) && $url !== '') $m['space'] = (string) $in['space']; elseif ($url !== '' && $url !== ($all[$idx]['url'] ?? '')) unset($m['space']);
         $rec = !empty($in['record']); $tr = !empty($in['transcript']); $m['rec_note'] = '';
         if (($rec || $tr || !empty($m['record']) || !empty($m['transcript'])) && ($rec !== !empty($m['record']) || $tr !== !empty($m['transcript']) || !empty($in['space']))) {
