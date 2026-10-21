@@ -169,6 +169,8 @@ return [
     'Reply under the comment' => 'الرد تحت الكومنت',
     'Also send a private message to the commenter' => 'إرسال رسالة خاصة لصاحب الكومنت كمان',
     'Facebook account' => 'حساب فيسبوك',
+    'Share to a group' => 'شارك في جروب',
+    'Facebook opens its share window: choose "Share to a group"' => 'فيسبوك هيفتح نافذة المشاركة: اختار «المشاركة في مجموعة»',
     'Facebook page' => 'صفحة فيسبوك',
     'Facebook account not known — sign in again' => 'حساب فيسبوك مش معروف — سجّل دخول تاني',
     'Scheduled on the page' => 'اتجدول على الصفحة',

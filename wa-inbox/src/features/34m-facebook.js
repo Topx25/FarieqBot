@@ -8,6 +8,7 @@
       + '<div id="fb-list"><div class="empty">' + T('Loading…') + '</div></div></div></div>'
       + '<div id="fb-pane-p" hidden></div><div id="fb-pane-i" hidden></div>';
     var fbCfg = document.getElementById('fb-cfg');
+    var fbShare = function (url) { return url ? ' <a class="btn ghost sm" href="https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url) + '" target="_blank" rel="noopener" title="' + esc(T('Facebook opens its share window: choose "Share to a group"')) + '">👥 ' + esc(T('Share to a group')) + '</a>' : ''; }; // Facebook closed posting to groups for apps: the person shares the page post into a group in Facebook's own window
     function fbCfgDraw(c, nums) {
       var o = function (v, cur, l) { return '<option value="' + v + '" ' + (cur === v ? 'selected' : '') + '>' + l + '</option>'; };
       fbCfg.innerHTML = '<div class="gcf"><label>' + T('Bot answers comments') + '<select id="fb-bot">' + o('off', c.comment_bot, T('Off')) + o('draft', c.comment_bot, '📝 ' + T('Suggest only (a draft waits for a person)')) + o('auto', c.comment_bot, '⚡ ' + T('Automatic')) + '</select></label>'
@@ -73,7 +74,7 @@
         var b = this, msg = document.getElementById('fp-msg'), f = document.getElementById('fp-file').files[0], at = document.getElementById('fp-at').value;
         var send = function (att) { post('fb_post_act', { act: document.getElementById('fp-story').checked ? 'story' : 'create', text: document.getElementById('fp-text').value, link: document.getElementById('fp-link').value, attachment: att || '', at: at ? Math.floor(new Date(at).getTime() / 1000) : 0 }).then(function (r) {
           b.disabled = false;
-          if (r && r.ok) { var ok = r.scheduled ? '🕒 ' + T('Scheduled on the page') : (r.published || r.url ? '✅ ' + T('Published on the page') : '✅ ' + T('Sent to Facebook')); msg.innerHTML = '<b>' + esc(ok) + '</b>' + (r.url ? ' <a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(T('Open on Facebook')) + ' ↗</a>' : ''); toast(ok); }
+          if (r && r.ok) { var ok = r.scheduled ? '🕒 ' + T('Scheduled on the page') : (r.published || r.url ? '✅ ' + T('Published on the page') : '✅ ' + T('Sent to Facebook')); msg.innerHTML = '<b>' + esc(ok) + '</b>' + (r.url ? ' <a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(T('Open on Facebook')) + ' ↗</a>' + fbShare(r.url) : ''); toast(ok); }
           else msg.textContent = (r && r.error) || T('Failed');
           if (r && r.ok) { document.getElementById('fp-text').value = ''; document.getElementById('fp-link').value = ''; document.getElementById('fp-file').value = ''; document.getElementById('fp-at').value = ''; fbPostList(); } }); };
         b.disabled = true; msg.textContent = T('Working…');
@@ -86,7 +87,7 @@
     function fbPostList() {
       get('fb_posts').then(function (r) {
         var box = document.getElementById('fp-list'); if (!r.ok) { fail(box, r); return; }
-        var row = function (p) { return '<div class="card fb-c" data-id="' + esc(p.id) + '"><div class="row wrap"><b>' + (p.scheduled ? '⏰ ' + T('Scheduled') : '📰') + '</b><span class="muted small">' + esc(when(p.time)) + '</span>' + (p.url ? '<a class="muted small" href="' + esc(p.url) + '" target="_blank" rel="noopener">↗</a>' : '') + '</div>'
+        var row = function (p) { return '<div class="card fb-c" data-id="' + esc(p.id) + '"><div class="row wrap"><b>' + (p.scheduled ? '⏰ ' + T('Scheduled') : '📰') + '</b><span class="muted small">' + esc(when(p.time)) + '</span>' + (p.url ? '<a class="muted small" href="' + esc(p.url) + '" target="_blank" rel="noopener">↗</a>' + (p.scheduled ? '' : fbShare(p.url)) : '') + '</div>'
           + (p.pic ? '<img src="' + esc(p.pic) + '" alt="" style="max-width:220px;border-radius:10px">' : '') + '<p dir="auto" style="white-space:pre-wrap">' + esc(p.text) + '</p>'
           + (p.scheduled ? '' : '<div class="muted small">👍 ' + fmt(p.reactions) + ' · 💬 ' + fmt(p.comments) + ' · ↪️ ' + fmt(p.shares) + '</div>')
           + '<div class="row wrap fb-acts"><button class="btn ghost sm" data-pa="edit">✏️ ' + T('Edit') + '</button><button class="btn danger sm" data-pa="delete">🗑</button></div><div class="fb-box" hidden></div></div>'; };

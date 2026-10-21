@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.124.3', 'date' => '2026-10-21', 'title' => 'Facebook posts: share to a group', 'changes' => [
+        'Each published page post (and the confirmation after publishing) has a "Share to a group" button: Facebook\'s own share window opens and the person picks the group. Facebook does not let apps post in groups, so this is the way to bring a page post into a group.',
+    ]],
     ['v' => '3.124.1', 'date' => '2026-10-21', 'title' => 'Media library: readable selection bar, Shift to select many', 'changes' => [
         'The dark bar of selected files shows every button and link clearly (they were dark on dark).',
         'Shift + click on a file\'s box selects or clears every file between it and the last one clicked; the boxes are always shown.',
