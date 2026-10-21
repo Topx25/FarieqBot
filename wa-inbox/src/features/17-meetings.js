@@ -25,13 +25,14 @@
     }
     function editor(m) { m = m || { mode: 'auto', hosts: [], limit: 0 };
       var el = document.getElementById('mt-edit');
-      el.innerHTML = '<div class="card mt-f mf2"><div class="mf2-top"><h3>' + (m.id ? '✏️ ' + T('Edit meeting') : '➕ ' + T('New meeting')) + '</h3><small class="muted">' + T('Fill the sections below, then save.') + '</small></div><section class="mf2-s"><div class="mf2-h"><span>📌</span><div><b>' + T('Basics') + '</b><small class="muted">' + T('Name, fixed link and the Google Meet link') + '</small></div></div><div class="gcf">'
+      el.innerHTML = '<div class="card mt-f mf2 mf3"><div class="mf2-top"><h3>' + (m.id ? '✏️ ' + T('Edit meeting') : '➕ ' + T('New meeting')) + '</h3><small class="muted">' + T('Fill the sections below, then save.') + '</small></div><div class="mf3-body"><div class="mf3-main"><section class="mf2-s"><div class="mf2-h"><span>📌</span><div><b>' + T('Basics') + '</b><small class="muted">' + T('Name, fixed link and the Google Meet link') + '</small></div></div><div class="gcf">'
         + '<label>' + T('Title') + '<input id="mf-title" value="' + esc(m.title || '') + '" dir="auto"></label>'
         + '<label>' + T('Link name (the fixed link)') + '<input id="mf-slug" value="' + esc(m.slug || '') + '" dir="ltr" placeholder="quran-class"><small class="muted" dir="ltr">' + esc(MT.base) + '<b id="mf-slugv">' + esc(m.slug || '…') + '</b></small></label>'
         + '<label class="gcf-wide">' + T('Google Meet link') + ' <small class="muted">(' + T('open meet.new, copy its link and paste it here') + ')</small><span class="row"><input id="mf-url" dir="ltr" placeholder="' + (m.has_link ? T('saved — paste a new one to replace') : 'https://meet.google.com/abc-defg-hij') + '"><button type="button" class="chip-btn" id="mf-auto">✨ ' + T('Create automatically') + '</button></span><small class="muted" id="mf-amsg"></small></label>'
         + '<label class="gcf-wide">' + T('Description (shown on the join page)') + '<textarea id="mf-desc" rows="2" dir="auto">' + esc(m.desc || '') + '</textarea></label>'
         + '</div></section><section class="mf2-s"><div class="mf2-h"><span>🚪</span><div><b>' + T('Joining') + '</b><small class="muted">' + T('How people get in and how many') + '</small></div></div><div class="gcf">'
-        + '<label>' + T('How people join') + '<select id="mf-mode"><option value="auto" ' + (m.mode !== 'password' ? 'selected' : '') + '>⚡ ' + T('Automatic join (once the host opens it)') + '</option><option value="password" ' + (m.mode === 'password' ? 'selected' : '') + '>🔒 ' + T('Join with a password') + '</option></select></label>'
+        + '<div class="gcf-wide mf3-seg"><span>' + T('How people join') + '</span><div><button type="button" data-mode="auto" class="' + (m.mode !== 'password' ? 'on' : '') + '">⚡ ' + T('Automatic join (once the host opens it)') + '</button><button type="button" data-mode="password" class="' + (m.mode === 'password' ? 'on' : '') + '">🔒 ' + T('Join with a password') + '</button></div></div>'
+        + '<label hidden>' + T('How people join') + '<select id="mf-mode"><option value="auto" ' + (m.mode !== 'password' ? 'selected' : '') + '>⚡ ' + T('Automatic join (once the host opens it)') + '</option><option value="password" ' + (m.mode === 'password' ? 'selected' : '') + '>🔒 ' + T('Join with a password') + '</option></select></label>'
         + '<label id="mf-passw" ' + (m.mode === 'password' ? '' : 'hidden') + '>' + T('Password') + '<input id="mf-pass" type="text" autocomplete="off" placeholder="' + (m.has_password ? T('saved — type to change') : '') + '"></label>'
         + '<label>' + T('Maximum participants (0 = no limit)') + '<input id="mf-limit" type="number" min="0" max="1000" value="' + (m.limit || 0) + '"></label>'
  + '<label class="check"><input type="checkbox" id="mf-ap" ' + (m.approve !== false ? 'checked' : '') + '> 🙋 ' + T('Guests wait until a host approves them') + '</label>'
@@ -59,7 +60,8 @@
         + (m.slug ? '<div class="gcf-wide small">' + T('Preview') + ': ' + [['waiting', 'Waiting page'], ['form', 'Details page'], ['pending', 'Approval page'], ['rejected', 'Rejected'], ['full', 'Full meeting']].map(function (k) { return '<a href="?m=' + esc(m.slug) + '&preview=' + k[0] + '" target="_blank" rel="noopener">' + T(k[1]) + '</a>'; }).join(' · ') + '</div>' : '')
         + '</div></details>'
         + '</div></section>'
-        + '<div class="row mf2-bar"><button class="btn primary" id="mf-save">💾 ' + T('Save') + '</button>' + (m.id && m.status !== 'open' ? '<button class="link-btn" id="mf-del">🗄️ ' + T('Move to the archive') + '</button>' : '') + '<button class="link-btn" id="mf-x">' + T('Close') + '</button><span class="muted small" id="mf-msg"></span></div></div>';
+        + '<div class="row mf2-bar"><button class="btn primary" id="mf-save">💾 ' + T('Save') + '</button>' + (m.id && m.status !== 'open' ? '<button class="link-btn" id="mf-del">🗄️ ' + T('Move to the archive') + '</button>' : '') + '<button class="link-btn" id="mf-x">' + T('Close') + '</button><span class="muted small" id="mf-msg"></span></div></div>'
+        + '<aside class="mf3-side"><div class="mf3-pv-l">👁️ ' + T('Preview') + '</div><div class="mf3-pv" id="mf-pv"><div class="mf3-pv-logo" id="mfp-logo"></div><b id="mfp-t" dir="auto"></b><p id="mfp-d" dir="auto"></p><span class="mf3-pv-mode" id="mfp-m"></span><div class="mf3-pv-in">' + T('Name') + '</div><button type="button" class="mf3-pv-btn" id="mfp-b"></button></div><div class="mf3-pv-link" dir="ltr" id="mfp-l"></div></aside></div></div>';
       var MSPACE = ''; var WAH = (m.wa_hosts || []).map(function (h) { return { phone: h.phone, name: h.name }; }), MEM = [];
       function drawWah() { document.getElementById('mf-wah').innerHTML = WAH.length ? WAH.map(function (h, i) { return '<span class="tag">📱 ' + esc(h.name || '') + ' <span dir="ltr">+' + esc(h.phone) + '</span> <button type="button" class="link-btn bad-t" data-rmh="' + i + '">✕</button></span>'; }).join(' ') : '<span class="muted small">' + T('None yet.') + '</span>'; }
       function drawMem() { var q = (document.getElementById('mf-gq').value || '').toLowerCase(), have = WAH.map(function (h) { return h.phone; });
@@ -72,7 +74,17 @@
       document.getElementById('mf-gq').oninput = drawMem;
       el.addEventListener('click', function (e) { var a = e.target.closest('[data-addh]'); if (a) { var i = WAH.map(function (h) { return h.phone; }).indexOf(a.dataset.addh); if (i === -1) WAH.push({ phone: a.dataset.addh, name: a.dataset.n }); else WAH.splice(i, 1); drawWah(); drawMem(); return; }
         var r = e.target.closest('[data-rmh]'); if (r) { WAH.splice(+r.dataset.rmh, 1); drawWah(); drawMem(); } });
-      document.getElementById('mf-mode').onchange = function () { document.getElementById('mf-passw').hidden = this.value !== 'password'; };
+      document.getElementById('mf-mode').onchange = function () { document.getElementById('mf-passw').hidden = this.value !== 'password'; [].forEach.call(el.querySelectorAll('[data-mode]'), function (b) { b.classList.toggle('on', b.dataset.mode === document.getElementById('mf-mode').value); }); pv(); };
+      el.querySelector('.mf3-seg').onclick = function (e) { var b = e.target.closest('[data-mode]'); if (!b) return; var sl = document.getElementById('mf-mode'); sl.value = b.dataset.mode; sl.onchange(); };
+      // the join page as people will see it, updated while typing
+      function pv() { var g = function (id) { var x = el.querySelector(id); return x ? x.value : ''; }, ui = function (k) { var x = el.querySelector('[data-ui="' + k + '"]'); return x ? x.value : ''; };
+        var box = document.getElementById('mf-pv'); box.style.background = 'linear-gradient(160deg,' + (ui('bg1') || '#ecfdf5') + ',' + (ui('bg2') || '#eef2ff') + ')';
+        var bt = document.getElementById('mfp-b'); bt.style.background = 'linear-gradient(135deg,' + (ui('accent') || '#12b886') + ',' + (ui('accent2') || '#12b886') + ')'; bt.textContent = ui('form_btn') || T('Join the meeting');
+        document.getElementById('mfp-t').textContent = g('#mf-title') || T('New meeting'); document.getElementById('mfp-d').textContent = g('#mf-desc') || ui('form_text') || '';
+        document.getElementById('mfp-m').textContent = g('#mf-mode') === 'password' ? '🔒 ' + T('Join with a password') : '⚡ ' + T('Automatic join');
+        var lg = ui('logo'); document.getElementById('mfp-logo').innerHTML = /^https:\/\//.test(lg) ? '<img src="' + esc(lg) + '" alt="">' : '🎥';
+        document.getElementById('mfp-l').textContent = MT.base + (g('#mf-slug') || '…'); }
+      el.oninput = pv; pv();
       document.getElementById('mf-slug').oninput = function () { document.getElementById('mf-slugv').textContent = this.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-') || '…'; };
       document.getElementById('mf-x').onclick = function () { el.innerHTML = ''; };
       document.getElementById('mf-auto').onclick = function () { var b = this, msg = document.getElementById('mf-amsg'); b.disabled = true; msg.textContent = T('Creating a Google Meet link…');
