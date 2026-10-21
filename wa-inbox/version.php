@@ -6,7 +6,7 @@ declare(strict_types=1);
  */
 return [
     ['v' => '3.124.2', 'date' => '2026-10-21', 'title' => 'Media library: videos load only on play', 'changes' => [
-        'Opening the media library no longer downloads the videos: each shows a play button with its size, and the video loads only when it is pressed.',
+        'Opening the media library no longer downloads the videos: each shows a play button with its size, and the video loads only when it is pressed (also in the list view, the file pickers and the Files page).',
     ]],
     ['v' => '3.124.3', 'date' => '2026-10-21', 'title' => 'Facebook posts: share to a group', 'changes' => [
         'Each published page post (and the confirmation after publishing) has a "Share to a group" button: Facebook\'s own share window opens and the person picks the group. Facebook does not let apps post in groups, so this is the way to bring a page post into a group.',

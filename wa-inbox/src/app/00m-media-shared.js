@@ -11,7 +11,7 @@
     if (it.kind === 'image' || it.kind === 'sticker') return '<img src="' + u + '" alt="" loading="lazy"' + (it.kind === 'sticker' ? ' class="ml-stk"' : '') + '>';
     // videos and GIFs: only a still frame, and only once on screen (a phone on mobile data does not download whole videos)
     if (it.kind === 'gif') return '<video data-lz="' + u + '#t=0.1" preload="none" muted playsinline></video><i class="ml-badge">GIF</i>';
-    if (it.kind === 'video') return '<video data-lz="' + u + '#t=0.5" preload="none" muted playsinline></video><i class="ml-badge">🎬</i>';
+    if (it.kind === 'video') return '<span class="mc-vplay" aria-hidden="true"><span>▶</span></span><i class="ml-badge">🎬</i>'; // no download until it is played
     return '<span class="ml-ic">' + (it.kind === 'voice' ? '🎙️' : it.kind === 'audio' ? '🎧' : '📄') + '</span>';
   }
   var mlLz = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; mlLz.unobserve(e.target); e.target.preload = 'metadata'; e.target.src = e.target.dataset.lz; }); }, { rootMargin: '150px' }) : null;

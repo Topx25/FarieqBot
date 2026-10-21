@@ -194,7 +194,7 @@ document.addEventListener('keydown', function (e) {
     if (it.kind === 'image' || it.kind === 'sticker') return '<img src="' + u + '" alt="" loading="lazy"' + (it.kind === 'sticker' ? ' class="ml-stk"' : '') + '>';
     // videos and GIFs: only a still frame, and only once on screen (a phone on mobile data does not download whole videos)
     if (it.kind === 'gif') return '<video data-lz="' + u + '#t=0.1" preload="none" muted playsinline></video><i class="ml-badge">GIF</i>';
-    if (it.kind === 'video') return '<video data-lz="' + u + '#t=0.5" preload="none" muted playsinline></video><i class="ml-badge">🎬</i>';
+    if (it.kind === 'video') return '<span class="mc-vplay" aria-hidden="true"><span>▶</span></span><i class="ml-badge">🎬</i>'; // no download until it is played
     return '<span class="ml-ic">' + (it.kind === 'voice' ? '🎙️' : it.kind === 'audio' ? '🎧' : '📄') + '</span>';
   }
   var mlLz = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) { es.forEach(function (e) { if (!e.isIntersecting) return; mlLz.unobserve(e.target); e.target.preload = 'metadata'; e.target.src = e.target.dataset.lz; }); }, { rootMargin: '150px' }) : null;
@@ -1203,7 +1203,7 @@ document.addEventListener('keydown', function (e) {
       document.getElementById('fl-grid').innerHTML = rows.slice(0, 400).map(function (x) {
         var url = fUrl(x.attachment), nm = x.file_name || x.text || (x.kind === 'image' ? T('🖼️ Photo') : T('📄 File'));
         var prev = x.kind === 'image' && url ? '<a href="' + url + '" target="_blank" rel="noopener"><img src="' + url + '" alt="" loading="lazy"></a>'
-          : (x.kind === 'video' && url ? '<video controls preload="metadata" playsinline src="' + url + '#t=0.5"></video>' // plays and seeks in place
+          : (x.kind === 'video' && url ? '<video controls preload="none" playsinline src="' + url + '"></video>' // plays and seeks in place
           : ((x.kind === 'audio' || x.kind === 'voice') && url ? '<div class="fl-aud"><span class="fl-ic">' + (x.kind === 'voice' ? '🎙️' : '🎧') + '</span><audio controls preload="none" src="' + url + '"></audio></div>' : '<div class="fl-ic">' + fIcon(x) + '</div>'));
         return '<div class="fl-card"><div class="fl-prev">' + prev + '</div><div class="fl-b"><b dir="auto" title="' + esc(nm) + '">' + esc(nm) + '</b>'
           + '<div class="muted small">' + (x.size ? (x.size / 1048576).toFixed(1) + ' MB · ' : '') + esc(when(x.time, true)) + (x.copies > 1 ? ' · 🔁 ' + fmt(x.copies) + '×' : '') + '</div>'
