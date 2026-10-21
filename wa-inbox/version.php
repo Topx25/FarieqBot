@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.122.0', 'date' => '2026-10-21', 'title' => 'Help groups: warmer, no repeats, members get real answers', 'changes' => [
+        'In a help group a member who is not a user of the system is never told about the dashboard pages: a mistyped tag gets the closest real command, and a plain question gets the bot\'s normal answer.',
+        'Help answers are warm and in everyday dialect, never repeat the steps already given, and jokes, thanks or chat between members get no reply.',
+    ]],
     ['v' => '3.121.0', 'date' => '2026-10-21', 'title' => 'Delete a record for good, stop the bot from a test number', 'changes' => [
         'Cases: ⋯ → "Delete for good" removes a record from every list (a copy is kept on the server).',
         'From a test number: #وقف_البوت stops the bot in private chats and groups (only the owner\'s commands are still answered) and #شغل_البوت turns it back on; #امسح + ID or name deletes a record after #تأكيد within 5 minutes. All words are editable in Bot → Commands.',

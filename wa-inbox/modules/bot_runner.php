@@ -194,7 +194,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             $lastTo = max(array_merge([0], (array) ($st['gwho'][$x['jid']][$who] ?? []))); if (!$mentioned && time() - $lastTo < (int) ($fun ? $c['fun_gap'] : (!empty($g['guide']) ? min(10, (int) $c['group_gap']) : $c['group_gap']))) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
             $trig = $fun ? 'all' : ($g['trigger'] ?? 'mention');
             if ($trig === 'mention' && !$mentioned) continue;
-            if ($trig === 'questions' && !$mentioned && !wf_is_question($text) && (empty($g['guide']) || (count(wf_words($text)) < 3 && mb_strpos($text, '#') === false))) continue; // a help group lets the model decide whether a statement ("I can't open the page") is a request for help
+            if ($trig === 'questions' && !$mentioned && !wf_is_question($text) && (empty($g['guide']) || (mb_strpos($text, '#') === false && (count(wf_words($text)) < 3 || !wf_sysguide_user($who))))) continue; // a member's chat (not a user of the system) is answered only when it is a question or a tag // a help group lets the model decide whether a statement ("I can't open the page") is a request for help
             // An admin is talking with this member: the bot waits until the admin has been quiet for "human_wait" minutes, then answers.
             if (!$adminAsks && empty($g['guide']) && $gwait > 0 && ($aAt = $adminWith($who)) && time() - $aAt < $gwait) { $st['gq'][$x['jid']][$who] = $m; continue; }
             unset($st['gq'][$x['jid']][$who]);
@@ -205,11 +205,12 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 $reply = strtr((string) $g['text'], ['{name}' => (string) ($m['from_name'] ?? ''), '{group}' => (string) ($x['name'] ?? '')]);
                 $log += ['reply' => $reply, 'confidence' => 1, 'model' => 'fixed message'];
                 $ok = true; $st['gfixed'][$x['jid']][$who] = time();
-            } elseif (!empty($g['guide'])) { // a system help group: explains the system by what the asker's account may open
+            } elseif (!empty($g['guide']) && (wf_sysguide_user($who) || mb_strpos($text, '#') !== false)) { // a system help group (a member's own question, with no tag, gets the bot's normal answer below): explains the system by what the asker's account may open
                 $hist = []; foreach (array_slice($rows, max(0, $i - 80), 80) as $hm) { $ht = trim((string) ($hm['text'] ?? '')); if ($ht === '') continue;
                     if (($hm['dir'] ?? '') === 'in' && wf_phone($hm['from'] ?? '') === $who) $hist[] = ['from' => 'customer', 'text' => $ht];
                     elseif (($hm['via'] ?? '') === 'bot' && ($tg = array_values(array_filter($wTags, fn($t) => str_starts_with($ht, '@' . $t)))[0] ?? '') !== '') $hist[] = ['from' => 'bot', 'text' => trim(mb_substr($ht, mb_strlen('@' . $tg)))]; }
-                $r = wf_sysguide_answer($acc, $text, $who, array_slice($hist, -8), (string) ($g['guide_text'] ?? ''));
+                $gav = []; foreach (array_slice($rows, -40) as $bm) if (($bm['via'] ?? '') === 'bot' && trim((string) ($bm['text'] ?? '')) !== '') $gav[] = (string) $bm['text']; // never the same steps again
+                $r = wf_sysguide_answer($acc, $text, $who, array_slice($hist, -8), (string) ($g['guide_text'] ?? ''), array_slice($gav, -5));
                 if (empty($r['ok']) || !empty($r['handoff'])) continue; // a help group never pings the admins for what it cannot answer
                 $log += ['reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => false, 'model' => $r['task']['model'] ?? '', 'role' => 'guide'];
                 $ok = $r['handoff'] || $r['confidence'] >= 0.5;
