@@ -111,8 +111,12 @@ function wf_api_fbfeed(string $api): void {
     $aid = (string) $acc['id'];
     if ($api === 'fb_cfg') {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') { $in = wf_post(); wf_admin();
-            wf_fb_cfg_set($aid, ['comment_bot' => in_array($in['comment_bot'] ?? '', ['off', 'draft', 'auto'], true) ? $in['comment_bot'] : 'off', 'comment_public' => !empty($in['comment_public']) ? 1 : 0, 'comment_private' => !empty($in['comment_private']) ? 1 : 0]); wi_log('fb_cfg', ['account' => $aid]); }
-        $c = wf_fb_cfg($aid); wi_json(['ok' => true, 'cfg' => ['comment_bot' => $c['comment_bot'], 'comment_public' => (int) $c['comment_public'], 'comment_private' => (int) $c['comment_private']], 'connected' => $c['error'] === '' && $c['ok_at'] !== '']);
+            wf_fb_cfg_set($aid, ['comment_bot' => in_array($in['comment_bot'] ?? '', ['off', 'draft', 'auto'], true) ? $in['comment_bot'] : 'off', 'comment_public' => !empty($in['comment_public']) ? 1 : 0, 'comment_private' => !empty($in['comment_private']) ? 1 : 0]);
+            if (array_key_exists('parent', $in)) { $par = (string) $in['parent']; $parA = $par !== '' ? (wi_my_accounts()[$par] ?? null) : null; // the WhatsApp number whose knowledge the page answers with
+                if ($par !== '' && (!$parA || wf_fb_is($parA) || !wi_can_manage($parA))) wi_json(['ok' => false, 'error' => 'This number cannot be linked.']); wf_fb_cfg_set($aid, ['parent' => $par]); }
+            wi_log('fb_cfg', ['account' => $aid]); }
+        $c = wf_fb_cfg($aid); $nums = []; foreach (wi_my_accounts() as $na) if (!wf_fb_is($na) && wi_can_manage($na)) $nums[] = ['id' => (string) $na['id'], 'name' => (string) ($na['name'] ?? $na['id'])];
+        wi_json(['ok' => true, 'cfg' => ['comment_bot' => $c['comment_bot'], 'comment_public' => (int) $c['comment_public'], 'comment_private' => (int) $c['comment_private'], 'parent' => (string) $c['parent']], 'numbers' => $nums, 'connected' => $c['error'] === '' && $c['ok_at'] !== '']);
     }
     if ($api === 'fb_upload') { // a photo or video for a post
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') wi_json(['ok' => false, 'error' => 'POST only.'], 405); wi_check_csrf();

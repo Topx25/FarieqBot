@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.117.0', 'date' => '2026-10-21', 'title' => 'Facebook: link a page to a WhatsApp number from its settings', 'changes' => [
+        'Facebook page → Comments settings: new choice "The page answers with the knowledge of" — pick a WhatsApp number and the page\'s bot (Messenger and comments) answers with that number\'s profile, library and rules, or keep the page itself for general answers. Only numbers the user may manage are listed.',
+    ]],
     ['v' => '3.116.0', 'date' => '2026-10-21', 'title' => 'Facebook: page comments read every minute', 'changes' => [
         'Every minute the comments on each Facebook page\'s recent posts are read from the page itself (known ones skipped), so comments arrive even while the Facebook app is not published and a missed webhook is caught up. The comments bot answers new ones; on the first read older comments are only saved, without a bot answer.',
     ]],

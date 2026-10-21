@@ -8,14 +8,15 @@
       + '<div id="fb-list"><div class="empty">' + T('Loading…') + '</div></div></div></div>'
       + '<div id="fb-pane-p" hidden></div><div id="fb-pane-i" hidden></div>';
     var fbCfg = document.getElementById('fb-cfg');
-    function fbCfgDraw(c) {
+    function fbCfgDraw(c, nums) {
       var o = function (v, cur, l) { return '<option value="' + v + '" ' + (cur === v ? 'selected' : '') + '>' + l + '</option>'; };
       fbCfg.innerHTML = '<div class="gcf"><label>' + T('Bot answers comments') + '<select id="fb-bot">' + o('off', c.comment_bot, T('Off')) + o('draft', c.comment_bot, '📝 ' + T('Suggest only (a draft waits for a person)')) + o('auto', c.comment_bot, '⚡ ' + T('Automatic')) + '</select></label>'
         + '<label class="check"><input type="checkbox" id="fb-pub" ' + (c.comment_public ? 'checked' : '') + '> ' + T('Reply under the comment') + '</label>'
         + '<label class="check"><input type="checkbox" id="fb-prv" ' + (c.comment_private ? 'checked' : '') + '> ' + T('Also send a private message to the commenter') + '</label>'
+        + '<label>' + T('The page answers with the knowledge of') + '<select id="fb-par">' + o('', c.parent || '', T('The page itself (general answers)')) + (nums || []).map(function (n) { return o(n.id, c.parent, '📱 ' + esc(n.name)); }).join('') + '</select></label>'
         + '<button class="btn primary sm" id="fb-save">' + T('Save') + '</button></div>';
       document.getElementById('fb-save').onclick = function () {
-        post('fb_cfg', { comment_bot: document.getElementById('fb-bot').value, comment_public: document.getElementById('fb-pub').checked ? 1 : 0, comment_private: document.getElementById('fb-prv').checked ? 1 : 0 }).then(function (r) { toast(r && r.ok ? T('Saved') : ((r && r.error) || T('Failed'))); });
+        post('fb_cfg', { comment_bot: document.getElementById('fb-bot').value, comment_public: document.getElementById('fb-pub').checked ? 1 : 0, comment_private: document.getElementById('fb-prv').checked ? 1 : 0, parent: document.getElementById('fb-par').value }).then(function (r) { toast(r && r.ok ? T('Saved') : ((r && r.error) || T('Failed'))); });
       };
     }
     function fbDraw() {
@@ -39,7 +40,7 @@
         FB.rows = r.rows; FB.count = r.count || {}; fbDraw();
       });
     }
-    get('fb_cfg').then(function (r) { if (r.ok) fbCfgDraw(r.cfg); else fail(fbCfg, r); });
+    get('fb_cfg').then(function (r) { if (r.ok) fbCfgDraw(r.cfg, r.numbers); else fail(fbCfg, r); });
     document.getElementById('fb-st').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; [].forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); }); FB.status = b.dataset.v; fbLoad(); };
     var fbT = null; document.getElementById('fb-q').oninput = function () { var v = this.value; clearTimeout(fbT); fbT = setTimeout(function () { FB.q = v; fbLoad(); }, 300); };
     function fbAct(id, act, text, done) { post('fb_comment_act', { id: id, act: act, text: text || '' }).then(function (r) { if (r && r.ok) { toast(T('Done')); fbLoad(); if (done) done(); } else toast((r && r.error) || T('Failed')); }); }
