@@ -1576,6 +1576,18 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
         var lg = ui('logo'); document.getElementById('mfp-logo').innerHTML = /^https:\/\//.test(lg) ? '<img src="' + esc(lg) + '" alt="">' : '🎥';
         document.getElementById('mfp-l').textContent = MT.base + (g('#mf-slug') || '…'); }
       el.oninput = pv; pv();
+      // a short hint under every field: what it is for and an example
+      var HINT = { '#mf-title': 'The name people see on the join page, e.g. Weekly lesson.', '#mf-slug': 'English letters, numbers and dashes only; it becomes the fixed link you share. Empty = made up for you.',
+        '#mf-url': 'Open meet.new in Google, copy the link and paste it here — or press Create automatically. People never see it before you open the meeting.', '#mf-desc': 'A line or two shown under the title: what the meeting is about, when, what to prepare.',
+        '.mf3-seg': 'Automatic: anyone with the link enters once a host opens the meeting. Password: they must also type the password you set.', '#mf-pass': 'Shared with the people you invite; they type it on the join page.',
+        '#mf-limit': 'When this many people are inside, new ones see “the meeting is full”. 0 = no limit.', '#mf-ap': 'Each guest waits on a page until a host lets them in from “Who joined”.',
+        '#mf-ah': 'Once any host has entered, waiting guests are let in by themselves.', '#mf-ac': 'If nobody closes it, the meeting closes by itself after this many hours.',
+        '#mf-phone': 'The join form also asks for a mobile number, so you know who came.', '#mf-rec': 'Google Meet starts recording when the call starts; the file goes to the organiser\'s Drive.',
+        '#mf-tr': 'Google Meet writes what was said into a document in the organiser\'s Drive.', '.mf-hosts': 'People of this number who may open and close the meeting from the dashboard.',
+        '#mf-wah': 'People from a WhatsApp group who get a private link to open the meeting — no login needed. Choose a group, then tap the members.' };
+      Object.keys(HINT).forEach(function (q) { var f = el.querySelector(q); if (!f) return; var box = f.closest('label') || f.closest('.gcf-wide') || f.parentNode; if (box.querySelector('.mf3-hint')) return;
+        var h = document.createElement('small'); h.className = 'mf3-hint'; h.textContent = '💡 ' + T(HINT[q]); box.appendChild(h); });
+      [].forEach.call(el.querySelectorAll('[data-ui]'), function (f) { var lb = f.closest('label'); if (!lb || lb.querySelector('.mf3-hint') || !f.placeholder) return; var h = document.createElement('small'); h.className = 'mf3-hint'; h.textContent = T('Empty = the default text shown in grey.'); lb.appendChild(h); });
       document.getElementById('mf-slug').oninput = function () { document.getElementById('mf-slugv').textContent = this.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-') || '…'; };
       document.getElementById('mf-x').onclick = function () { el.innerHTML = ''; };
       document.getElementById('mf-auto').onclick = function () { var b = this, msg = document.getElementById('mf-amsg'); b.disabled = true; msg.textContent = T('Creating a Google Meet link…');

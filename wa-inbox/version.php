@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.125.3', 'date' => '2026-10-21', 'title' => 'Meetings: a hint under every field', 'changes' => [
+        'Every field of the meeting form has a short hint under it: what it does and an example (title, link name, Meet link, description, join mode, password, limit, approval, auto close, phone, recording, transcript, hosts, WhatsApp hosts, page texts).',
+    ]],
     ['v' => '3.125.2', 'date' => '2026-10-21', 'title' => 'Meetings: modern create / edit form with a live preview', 'changes' => [
         'Two columns: numbered section cards on one side and a live preview of the join page (title, description, colours, logo, button, link) that changes while typing.',
         'Switches instead of check boxes, a two-button choice for how people join, softer fields with a focus glow and a floating save bar.',
