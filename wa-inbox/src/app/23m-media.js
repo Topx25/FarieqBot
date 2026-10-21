@@ -72,7 +72,7 @@
     function mlCard(it) {
       var u = mlUrl(it.key), media;
       if (it.kind === 'voice' || it.kind === 'audio') media = '<div class="mc-audio"><span class="mc-big">' + (it.kind === 'voice' ? '🎙️' : '🎧') + '</span><audio controls preload="none" src="' + u + '"></audio></div>';
-      else if (it.kind === 'video') media = '<video class="mc-vid" controls preload="none" playsinline data-lz="' + u + '#t=0.5"></video>';
+      else if (it.kind === 'video') media = '<button type="button" class="mc-vid mc-vplay" data-play="' + u + '" aria-label="' + esc(T('Play')) + '"><span>▶</span><small>' + (it.size ? (it.size / 1048576).toFixed(1) + ' MB' : '') + '</small></button>'; // nothing is downloaded until the person presses play
       else if (it.kind === 'gif') media = '<button type="button" class="ml-it mc-pic" data-key="' + esc(it.key) + '"><video data-lz="' + u + '" preload="none" muted loop autoplay playsinline></video><i class="ml-badge">GIF</i></button>';
       else if (it.kind === 'image' || it.kind === 'sticker') media = '<button type="button" class="ml-it mc-pic" data-key="' + esc(it.key) + '"><img src="' + u + '" alt="" loading="lazy"' + (it.kind === 'sticker' ? ' class="ml-stk"' : '') + '></button>';
       else media = '<button type="button" class="ml-it mc-pic mc-doc" data-key="' + esc(it.key) + '"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5M9 13h7M9 17h7"/></svg><span class="mc-ext">' + esc((it.key.split('.').pop() || '').toUpperCase()) + '</span></button>';
@@ -204,6 +204,8 @@
     function folderAsk(title, val) { var v = prompt(title, val || ''); return v === null ? null : v.trim(); }
     // Shift + click on a box selects (or clears) every file between it and the last one clicked.
     var mlLast = null, mlShift = false; mroot.addEventListener('click', function (e) { if (e.target.closest('[data-sel]')) mlShift = e.shiftKey; }, true);
+    mroot.addEventListener('click', function (e) { var b = e.target.closest('[data-play]'); if (!b) return; e.preventDefault(); e.stopPropagation();
+      var v = document.createElement('video'); v.className = 'mc-vid'; v.controls = true; v.playsInline = true; v.preload = 'auto'; v.src = b.dataset.play; b.replaceWith(v); v.play().catch(function () {}); });
     mroot.addEventListener('change', function (e) { var c = e.target.closest('[data-sel]'); if (!c) return;
       var boxes = [].slice.call(mroot.querySelectorAll('[data-sel]')), i = boxes.indexOf(c), j = mlLast ? boxes.indexOf(mlLast) : -1;
       (mlShift && j >= 0 ? boxes.slice(Math.min(i, j), Math.max(i, j) + 1) : [c]).forEach(function (x) { x.checked = c.checked; if (c.checked) msel[x.dataset.sel] = 1; else delete msel[x.dataset.sel]; x.closest('.ml-cell').classList.toggle('sel', c.checked); });

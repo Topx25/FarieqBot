@@ -2310,6 +2310,7 @@ return [
     'What the business is' => 'النشاط إيه',
     'Language of the content' => 'لغة المحتوى',
     'Language / dialect rule for replies' => 'قاعدة اللغة واللهجة في الردود',
+    'Play' => 'تشغيل',
     'Language for notes and summaries' => 'لغة الملاحظات والملخصات',
     'What the team is called' => 'اسم الفريق (المعالج / الموظف…)',
     'What a customer is called' => 'اسم العميل (حالة / عميل…)',

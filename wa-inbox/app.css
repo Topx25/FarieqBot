@@ -1204,3 +1204,8 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .ml-v2 .ml-bulk .btn.ghost:hover,.ml-v2 .ml-bulk a.btn:not(.primary):hover{background:rgba(255,255,255,.22)}
 .ml-v2 .ml-bulk .link-btn{color:#9ff0d0;opacity:1;text-decoration:underline}
 .ml-v2 .ml-ck{opacity:1}
+/* media: a video is loaded only when play is pressed */
+.mc-vplay{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;width:100%;aspect-ratio:4/3;border:0;border-radius:10px;background:linear-gradient(135deg,#1f2937,#374151);color:#fff;cursor:pointer}
+.mc-vplay span{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.18);font-size:24px}
+.mc-vplay:hover span{background:rgba(255,255,255,.3)}
+.mc-vplay small{opacity:.8}
