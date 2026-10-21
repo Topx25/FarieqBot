@@ -321,6 +321,8 @@ return [
     'New page access token (optional)' => 'رمز وصول جديد للصفحة (اختياري)',
     'New app secret (optional)' => 'سر جديد للتطبيق (اختياري)',
     'Check the connection' => 'فحص الاتصال',
+    'Advanced: manual connection' => 'متقدم: ربط يدوي',
+    'Save and check' => 'حفظ وفحص',
     'Name' => 'الاسم',
     'e.g. Sales number' => 'مثلاً: رقم المبيعات',
     'After adding, the QR appears on the Link page. Scan it from the new phone: WhatsApp → Linked devices → Link a device.' => 'بعد الإضافة، الكود بيظهر في صفحة الربط. امسحه من الموبايل الجديد: واتساب ← الأجهزة المرتبطة ← ربط جهاز.',

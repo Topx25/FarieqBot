@@ -553,10 +553,13 @@
             <label>Webhook address<input readonly value="<?= wi_e(wf_fb_hook_url((string) $a['id'])) ?>" onclick="this.select()"></label>
             <label>Verify code<input readonly value="<?= wi_e($fc['verify']) ?>" onclick="this.select()"></label>
             <?php endif; ?>
-            <p class="muted small">Page: <?= wi_e($fc['page_name'] !== '' ? $fc['page_name'] : $fc['page_id']) ?> · last message from Facebook: <?= wi_e($fc['hook_at'] !== '' ? $fc['hook_at'] : '—') ?></p>
+            <?php $fcLast = max((string) $fc['hook_at'], (string) ($fc['in_at'] ?? '')); $fcOk = $fc['via'] === 'oauth' && $fc['error'] === '' && $fc['ok_at'] !== ''; ?>
+            <p class="muted small"><?php if (($fc['fb_user'] ?? '') !== ''): ?><span>Facebook account</span>: <?= wi_e((string) $fc['fb_user']) ?> · <?php endif; ?>Page: <?= wi_e($fc['page_name'] !== '' ? $fc['page_name'] : $fc['page_id']) ?> · last message from Facebook: <?= wi_e($fcLast !== '' ? date('Y-m-d H:i', strtotime($fcLast) ?: time()) : '—') ?></p>
+            <?php if ($fcOk): ?><button class="btn ghost sm">Check the connection</button><?php endif; ?>
+            <?php if ($fcOk): ?><details class="fb-manual"><summary class="muted small">Advanced: manual connection</summary><div class="stack"><?php endif; ?>
             <label>New page access token (optional)<input name="token" type="password"></label>
             <label>New app secret (optional)<input name="secret" type="password"></label>
-            <button class="btn primary sm">Check the connection</button>
+            <?php if ($fcOk): ?><button class="btn ghost sm">Save and check</button></div></details><?php else: ?><button class="btn primary sm">Check the connection</button><?php endif; ?>
           </div>
         </form>
         <?php endforeach; ?>

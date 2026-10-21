@@ -171,7 +171,7 @@ function wf_fb_sync(array $acc): int {
                 wf_fb_append($aid, $row + ['kind' => $k, 'text' => $text, 'attachment' => wf_fb_save_media($aid, $url, $mid, $k === 'voice' ? 'audio' : $k), 'file_name' => (string) ($att['name'] ?? '')]); }
             elseif ($text !== '') wf_fb_append($aid, $row + ['kind' => 'text', 'text' => $text]); else continue;
             if (!$out) $new++; } }
-    wf_fb_cfg_set($aid, ['sync_at' => $newest]);
+    wf_fb_cfg_set($aid, ['sync_at' => $newest] + ($new > 0 ? ['in_at' => gmdate('c')] : []));
     return $new;
 }
 /** Every minute (cron): each Facebook page is caught up, and the bot answers what came in. */

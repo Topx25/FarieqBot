@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.124.2', 'date' => '2026-10-21', 'title' => 'Facebook page card: manual fields hidden when connected', 'changes' => [
+        'A page connected with "Continue with Facebook" no longer shows the page token and app secret fields; they moved under "Advanced: manual connection". The card shows the Facebook account it was connected with.',
+        '"Last message from Facebook" now also counts the messages read every minute, not only live webhooks.',
+    ]],
     ['v' => '3.124.1', 'date' => '2026-10-21', 'title' => 'Facebook: the linked account shown beside its page; a clear confirmation after publishing', 'changes' => [
         'Accounts → Facebook pages: each page now shows the Facebook account it was connected with next to the page name. It is saved at sign-in, and filled in for pages already connected.',
         'Publishing a post now confirms clearly (published / scheduled) and gives a link to open the post on Facebook, read back from Facebook itself.',
