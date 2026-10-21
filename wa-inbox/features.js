@@ -2037,10 +2037,10 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
         if (!r.ok) return fail(document.getElementById('hl-list'), r);
         var R = r.resources, rs = document.getElementById('hl-res');
         if (!rs) { rs = document.createElement('div'); rs.id = 'hl-res'; rs.className = 'card'; document.getElementById('hl-list').parentNode.insertBefore(rs, document.getElementById('hl-list')); }
-        if (R) { var L = R.limits || {}, bar = function (v, max) { var p = Math.min(100, Math.round(v / Math.max(1, max) * 100)); return '<div class="bk-bar"><i style="width:' + p + '%;' + (p > 85 ? 'background:var(--bad)' : '') + '"></i></div><small class="muted">' + p + '%</small>'; };
+        if (R) { var L = R.limits || {}, bar = function (v, max) { if (!(max > 0)) return '<small class="muted">' + T('No limit') + '</small>'; var p = Math.min(100, Math.round(v / Math.max(1, max) * 100)); return '<div class="bk-bar"><i style="width:' + p + '%;' + (p > 85 ? 'background:var(--bad)' : '') + '"></i></div><small class="muted">' + p + '%</small>'; };
           rs.innerHTML = '<h3>🖥️ ' + T('Server resources') + ' <small class="muted">' + esc(when(R.at)) + '</small></h3><div class="res-grid">'
-            + '<div><b>🧠 ' + T('Memory') + '</b><div class="res-n">' + fmt(R.mem_mb) + ' / ' + fmt(L.pmem_mb) + ' MB</div>' + bar(R.mem_mb, L.pmem_mb) + '</div>'
-            + '<div><b>🧵 ' + T('Processes & threads') + '</b><div class="res-n">' + fmt(R.threads) + ' / ' + fmt(L.nproc) + '</div>' + bar(R.threads, L.nproc) + '<small class="muted">' + fmt(R.procs) + ' ' + T('processes') + '</small></div>'
+            + '<div><b>🧠 ' + T('Memory') + '</b><div class="res-n">' + fmt(R.mem_mb) + (L.pmem_mb > 0 ? ' / ' + fmt(L.pmem_mb) : '') + ' MB</div>' + bar(R.mem_mb, L.pmem_mb) + '</div>'
+            + '<div><b>🧵 ' + T('Processes & threads') + '</b><div class="res-n">' + fmt(R.threads) + (L.nproc > 0 ? ' / ' + fmt(L.nproc) : '') + '</div>' + bar(R.threads, L.nproc) + '<small class="muted">' + fmt(R.procs) + ' ' + T('processes') + '</small></div>'
             + '<div><b>💾 ' + T('Disk') + '</b><div class="small">' + T('Inbox data') + ': ' + fmt((R.disk || {}).inbox_data) + ' MB<br>' + T('Message archives') + ': ' + fmt((R.disk || {}).archives) + ' MB<br>' + T('Media') + ': ' + fmt((R.disk || {}).media) + ' MB</div></div>'
             + '<div><b>📌 ' + T('Biggest users of memory') + '</b><div class="small" dir="ltr">' + Object.keys(R.top || {}).map(function (k) { return esc(k) + ': ' + fmt(R.top[k]) + ' MB'; }).join('<br>') + '</div></div></div>'
             + '<p class="muted small">' + T('Checked every minute. The super admin gets a WhatsApp alert when memory or threads pass 85% of the plan.') + '</p>'; } else rs.remove();

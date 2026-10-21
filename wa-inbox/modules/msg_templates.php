@@ -15,6 +15,7 @@ function wf_is_system_text(string $text): bool {
 function wf_msg_registry(): array {
     return [
         'otp' => ['Login code', ['brand', 'code', 'minutes'], "🔐 كود الدخول لـ {brand}: {code}\nصالح لمدة {minutes} دقايق. لو ما طلبتهوش تجاهل الرسالة.", "🔐 {brand} verification code: {code}\nValid for {minutes} minutes. If you did not request it, ignore this message."],
+        'alert_fork' => ['Server refused new processes (the account is full)', ['count', 'threads', 'mem'], "⚠️ السيرفر رفض يفتح عمليات جديدة {count} مرة في آخر دقيقة (الحساب اتملى).\n🧵 العمليات: {threads}\n🧠 الذاكرة: {mem} MB\nقفل أي حاجة مش محتاجها، ولو اتكرر اطلب من الاستضافة ترفع حدود الحساب.", "⚠️ The server refused to start new processes {count} times in the last minute (the account is full).\n🧵 Threads: {threads}\n🧠 Memory: {mem} MB\nClose what is not needed; if it repeats, ask the host to raise the account limits."],
         'alert_resources' => ['Server resources alert', ['mem', 'mem_limit', 'threads', 'threads_limit'], "⚠️ موارد السيرفر قربت من الحد\n🧠 الذاكرة: {mem} / {mem_limit} MB\n🧵 العمليات: {threads} / {threads_limit}", "⚠️ Server resources are close to the limit\n🧠 Memory: {mem} / {mem_limit} MB\n🧵 Processes: {threads} / {threads_limit}"],
         'alert_down' => ['Number health alert', ['number', 'reason', 'link'], "⚠️ تنبيه صحة الرقم\n📱 {number}\n{reason}\n{link}", "⚠️ Number health alert\n📱 {number}\n{reason}\n{link}"],
         'alert_back' => ['Number back online', ['number'], "✅ رجع الاتصال\n📱 {number}", "✅ Back online\n📱 {number}"],

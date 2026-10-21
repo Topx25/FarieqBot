@@ -120,10 +120,18 @@ try {
     // Warn the super admin once when memory or threads reach the alert level of the plan (limits → alert_pct, 90% by default);
     // it warns again only after usage went 10 points below that level and at least an hour passed (no alert every few minutes).
     $pct = max(50, min(100, (int) ($lim['alert_pct'] ?? 90))) / 100; $calm = $pct - 0.10;
-    $hot = $res['mem_mb'] >= $pct * $lim['pmem_mb'] || $res['threads'] >= $pct * $lim['nproc'];
+    $hot = ((int) $lim['pmem_mb'] > 0 && $res['mem_mb'] >= $pct * $lim['pmem_mb']) || ((int) $lim['nproc'] > 0 && $res['threads'] >= $pct * $lim['nproc']); // 0 = an open plan with no limit
     if (!$hot && !empty($prev['alerted']) && ($res['mem_mb'] > $calm * $lim['pmem_mb'] || $res['threads'] > $calm * $lim['nproc'] || strtotime((string) $prev['alerted']) > time() - 3600)) $res['alerted'] = $prev['alerted']; // not calm yet
     if ($hot && empty($prev['alerted'])) { $tellAdmins(wf_msg('alert_resources', ['mem' => $res['mem_mb'], 'mem_limit' => $lim['pmem_mb'], 'threads' => $res['threads'], 'threads_limit' => $lim['nproc']])); $res['alerted'] = date('c'); }
     elseif ($hot) $res['alerted'] = $prev['alerted'];
+    // The real sign of a full account: the system refused to start a process ("fork failed") — counted in the error logs since the last check.
+    $R = dirname(__DIR__); $forks = 0; $res['logpos'] = (array) ($prev['logpos'] ?? []);
+    foreach (array_merge([__DIR__ . '/error_log', $R . '/error_log', $R . '/wa-local/error_log'], glob(dirname($R) . '/logs/*.error.log') ?: []) as $lf) { $sz = (int) @filesize($lf); if ($sz <= 0) continue;
+        $from = (int) ($res['logpos'][$lf] ?? $sz); if ($from > $sz) $from = 0; $res['logpos'][$lf] = $sz; if ($sz === $from) continue;
+        $h = @fopen($lf, 'r'); if (!$h) continue; fseek($h, max($from, $sz - 2000000)); $forks += preg_match_all('/Fork failed|fork: retry|Resource temporarily unavailable/i', (string) stream_get_contents($h)); fclose($h); }
+    $res['forks'] = $forks;
+    if ($forks > 0 && strtotime((string) ($prev['fork_alerted'] ?? '')) < time() - 3600) { $tellAdmins(wf_msg('alert_fork', ['count' => $forks, 'threads' => $res['threads'], 'mem' => $res['mem_mb']])); $res['fork_alerted'] = date('c'); }
+    elseif (!empty($prev['fork_alerted'])) $res['fork_alerted'] = $prev['fork_alerted'];
     wi_write('resources.json', $res);
 } catch (Throwable $e) {}
 

@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.124.3', 'date' => '2026-10-21', 'title' => 'Server alerts for an open plan', 'changes' => [
+        'Memory and process limits set to 0 mean an open plan: no alert on a guessed limit, and the System health page shows the use with no bar.',
+        'A new alert when the server really refuses to start processes ("fork failed" in the error logs), at most once an hour.',
+        'Each WhatsApp number\'s service uses fewer threads.',
+    ]],
     ['v' => '3.124.2', 'date' => '2026-10-21', 'title' => 'Media library: videos load only on play', 'changes' => [
         'Opening the media library no longer downloads the videos: each shows a play button with its size, and the video loads only when it is pressed (also in the list view, the file pickers and the Files page).',
     ]],
