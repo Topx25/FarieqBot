@@ -15,6 +15,10 @@ Keep this file up to date with every change that adds a rule, a setting area or 
 - `modules/bot_learning.php` — replies (`wf_bot_answer`), model choice (`wf_fast_model`), learning from chats.
 - `modules/bot_commands.php` — Bot → Commands: every `#` command of a number in one list, edited where it lives; the owner's own commands (fixed reply or AI instruction); the ask tag.
 - `modules/learn_lean.php` — learning from chosen groups with few tokens: collect and clean with no AI → a free model shortens each exchange to one line → a strong model turns the lines into knowledge for review. Hourly, with daily caps.
+- `modules/case_deep.php` — #تحليل / #توصيات: the case report by angle, stages, progress, recommendations; private-chat cases never shown in groups.
+- `modules/case_trail.php` / `modules/case_journal.php` — where a case is followed and by whom; a lasting journal (wi_journal table) of messages, team answers and file links, filled every 10 minutes; the bot reads it before answering.
+- `modules/team_watch.php` / `modules/group_watch.php` / `modules/checkin.php` — healers' activity and neglected cases; alerts for unanswered group questions and untaken cases (tagging the healer); follow-up check-ins by the bot.
+- `modules/bot_quality.php`, `modules/voice.php`, `modules/recommend.php`, `modules/suggest.php` — ratings and weekly test; voice notes as text; fitting sessions; search suggestions.
 - `modules/case_intake.php` — cases from groups, reception gate, group commands, `#menu`.
 - `modules/sys_guide.php` — help groups: explains the system by the asker's permissions; members who are not users only get the bot commands.
 - `modules/bot_roles.php`, `modules/visitors.php`, `modules/prompts.php` (business types and AI instructions), `modules/msg_templates.php` (all messages the bot sends).
