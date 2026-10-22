@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.128.0', 'date' => '2026-10-22', 'title' => 'Bot status, and a test chat on the number itself', 'changes' => [
+        'The number\'s chat with itself is a test chat: what the owner types there is answered by the bot like a customer (commands starting with # or / are answered as commands).',
+        'New owner command: the bot\'s status (#حالة_البوت, /status or "حالة البوت") — mode, WhatsApp connection, today\'s replies, hand-overs, drafts, paused chats, last reply and last check.',
+        'More words for stop / resume (#ايقاف_البوت, #تشغيل_البوت, also without #). All editable in Bot → Commands.',
+    ]],
     ['v' => '3.127.1', 'date' => '2026-10-22', 'title' => 'Gateways stop falling over; owner commands from the number\'s own phone', 'changes' => [
         'Fix: at every start a gateway read years of archive to find missing photos and recordings; the memory peak got it stopped by the host, and it started again every few minutes. Now only the last two months are checked, once a day.',
         'The owner\'s commands (warm-up on / off, stop / resume the bot, delete with confirm, restart) also work when typed with # on the number\'s own phone; the answer goes to the number\'s own chat.',
