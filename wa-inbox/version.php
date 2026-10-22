@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.132.1', 'date' => '2026-10-22', 'title' => 'A professional case report', 'changes' => [
+        'The #تحليل report is now a formal report every healer can work from: case ID, name and date; a summary; each angle with its score, level, findings and the evidence; the treatment course with the stage, a progress bar, the trend and each stage done or left; 2-4 recommendations by priority; urgent points; and a note that it supports, not replaces, a direct assessment.',
+        'Its layout and words (levels, trend words, titles) are message templates, and the instruction is editable in the AI instructions.',
+    ]],
     ['v' => '3.132.0', 'date' => '2026-10-22', 'title' => 'Private-chat cases stay private', 'changes' => [
         'A case that comes from a private chat (opened by the bot or by the analysis, never reported in a group) is private: it is never posted to the diagnosis group, group commands and group lists never find it, and the team\'s users do not see it in Cases, Follow-up, search or exports. The owner level (super admin, admin, the client who owns the number) still sees it.',
     ]],

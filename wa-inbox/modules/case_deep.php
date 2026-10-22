@@ -19,7 +19,8 @@ function wf_case_deep(array $acc, string $ph, string $by = ''): array {
     $d = is_array($ai['data'] ?? null) ? $ai['data'] : null; if (empty($ai['ok']) || !$d) return ['error' => $ai['error'] ?? 'AI failed.'];
     $a = ['at' => date('c'), 'by' => $by, 'summary' => mb_substr((string) ($d['summary'] ?? ''), 0, 1200), 'axes' => [], 'stage' => mb_substr((string) ($d['stage'] ?? ''), 0, 120), 'progress' => max(0, min(100, (int) ($d['progress'] ?? 0))),
         'trend' => in_array($d['trend'] ?? '', ['better', 'same', 'worse'], true) ? $d['trend'] : 'unknown', 'stages' => [], 'next_step' => mb_substr((string) ($d['next_step'] ?? ''), 0, 400), 'red_flags' => mb_substr((string) ($d['red_flags'] ?? ''), 0, 400), 'model' => trim(($ai['provider'] ?? '') . ' ' . ($ai['model'] ?? ''))];
-    foreach ((array) ($d['axes'] ?? []) as $x) if (is_array($x)) $a['axes'][] = ['name' => mb_substr((string) ($x['name'] ?? ''), 0, 40), 'score' => max(0, min(10, (int) ($x['score'] ?? 0))), 'state' => mb_substr((string) ($x['state'] ?? ''), 0, 300)];
+    foreach ((array) ($d['axes'] ?? []) as $x) if (is_array($x)) $a['axes'][] = ['name' => mb_substr((string) ($x['name'] ?? ''), 0, 40), 'score' => max(0, min(10, (int) ($x['score'] ?? 0))), 'state' => mb_substr((string) ($x['state'] ?? ''), 0, 400), 'evidence' => mb_substr((string) ($x['evidence'] ?? ''), 0, 300)];
+    $a['recs'] = array_values(array_filter(array_map(fn($r) => mb_substr(trim((string) $r), 0, 300), array_slice((array) ($d['recommendations'] ?? []), 0, 4))));
     foreach ((array) ($d['stages'] ?? []) as $x) if (is_array($x)) $a['stages'][] = ['name' => mb_substr((string) ($x['name'] ?? ''), 0, 80), 'done' => !empty($x['done']), 'note' => mb_substr((string) ($x['note'] ?? ''), 0, 200)];
     wf_case_update($aid, $ph, function (?array $c) use ($a) { if ($c === null) return null; $c['deep'] = array_slice(array_merge((array) ($c['deep'] ?? []), [$a]), -12); return $c; });
     wi_log('case_deep', ['account' => $aid, 'phone' => $ph]);
@@ -27,10 +28,16 @@ function wf_case_deep(array $acc, string $ph, string $by = ''): array {
 }
 /** The analysis as a WhatsApp message. */
 function wf_case_deep_text(array $case, array $a): string {
-    $tr = ['better' => '📈', 'same' => '➖', 'worse' => '📉', 'unknown' => '❔'][$a['trend']] ?? '';
-    $ax = implode("\n", array_map(fn($x) => '• ' . $x['name'] . ': ' . str_repeat('●', (int) round($x['score'] / 2)) . str_repeat('○', 5 - (int) round($x['score'] / 2)) . ' ' . $x['score'] . '/10 — ' . $x['state'], $a['axes']));
-    $sg = implode("\n", array_map(fn($x) => ($x['done'] ? '✅ ' : '⬜ ') . $x['name'] . ($x['note'] !== '' ? ' — ' . $x['note'] : ''), $a['stages']));
-    return wf_msg('case_deep_msg', ['name' => (string) ($case['name'] ?? '') ?: ((string) ($case['data']['name'] ?? '') ?: '+' . (string) ($case['phone'] ?? '')), 'no' => (string) ($case['no'] ?? ''), 'summary' => $a['summary'], 'axes' => $ax, 'stage' => $a['stage'], 'progress' => (string) $a['progress'], 'trend' => $tr, 'stages' => $sg, 'next' => $a['next_step'], 'flags' => $a['red_flags'] !== '' ? "\n⚠️ " . $a['red_flags'] : '']);
+    $lv = array_map('trim', explode('|', wf_msg('case_deep_levels'))); $lvl = fn(int $sc) => $lv[min(count($lv) - 1, max(0, (int) floor($sc / (10.01 / max(1, count($lv))))))] ?? '';
+    $tw = array_map('trim', explode('|', wf_msg('case_deep_trends'))); $tr = ['better' => '📈 ' . ($tw[0] ?? ''), 'same' => '➖ ' . ($tw[1] ?? ''), 'worse' => '📉 ' . ($tw[2] ?? ''), 'unknown' => '❔ ' . ($tw[3] ?? '')][$a['trend']] ?? '';
+    $bar = fn(int $p) => str_repeat('▰', (int) round($p / 10)) . str_repeat('▱', 10 - (int) round($p / 10));
+    $ax = implode("\n\n", array_map(fn($x) => '▫️ ' . $x['name'] . ' — ' . $x['score'] . '/10 (' . $lvl((int) $x['score']) . ")\n" . $x['state'] . (($x['evidence'] ?? '') !== '' ? "\n" . wf_msg('case_deep_evidence') . ' ' . $x['evidence'] : ''), $a['axes']));
+    $sg = implode("\n", array_map(fn($x) => ($x['done'] ? '  ✔︎ ' : '  ◻︎ ') . $x['name'] . ($x['note'] !== '' ? ' — ' . $x['note'] : ''), $a['stages']));
+    $recs = (array) ($a['recs'] ?? []); if (!$recs && $a['next_step'] !== '') $recs = [$a['next_step']];
+    $rc = implode("\n", array_map(fn($r, $i) => ($i + 1) . '. ' . $r, $recs, array_keys($recs)));
+    return wf_msg('case_deep_msg', ['name' => (string) ($case['name'] ?? '') ?: ((string) ($case['data']['name'] ?? '') ?: '+' . (string) ($case['phone'] ?? '')), 'no' => (string) ($case['no'] ?? ''), 'date' => date('Y-m-d', strtotime((string) $a['at'])),
+        'summary' => $a['summary'], 'axes' => $ax, 'stage' => $a['stage'], 'progress' => (string) $a['progress'], 'bar' => $bar((int) $a['progress']), 'trend' => $tr, 'stages' => $sg, 'recs' => $rc,
+        'flags' => $a['red_flags'] !== '' ? "\n\n" . wf_msg('case_deep_flags') . "\n" . $a['red_flags'] : '']);
 }
 /** "#تحليل" + ID, name or a tag: the analysis of that case. Returns the message to send, or '' when the text is not the command. */
 /** Is this text the analysis command? */
