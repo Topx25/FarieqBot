@@ -338,6 +338,9 @@ function wf_intake_hook(array $acc, array $in): void {
             wi_gateway('/chat/send', ['jid' => $jid, 'text' => $tagT . wi_reply_fill((string) $hit[0]['text'], $jid, $acc), 'quote_id' => $id, 'mentions' => $tagM, 'via' => 'bot'], $acc); wi_log('reply_from_group', ['account' => $aid, 'group' => $jid, 'title' => $hit[0]['title'] ?? '']); exit; } }
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && function_exists('wf_cmd_custom_which') && ($cu = wf_cmd_custom_which($aid, $text, true))) { // the owner's own command (Bot → Commands)
         $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(120); wf_cmd_custom_run($acc, $cu, $jid, $text, $id, $from, (string) ($in['name'] ?? '')); exit; }
+    if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && function_exists('wf_case_deep_command') && ($dw = trim((string) (wf_pack($aid)['analyze_cmd'] ?? ''))) !== '' && wf_intake_has(mb_substr($text, 0, mb_strlen($dw) + 2), $dw)) { // "#تحليل" + case: its analysis in the group
+        $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(260); [$tagT, $tagM] = wf_group_tag($from); $msg = wf_case_deep_command($acc, $text, (array) ($in['mentions'] ?? []), '+' . $from);
+        if ($msg !== '') wi_gateway('/chat/send', ['jid' => $jid, 'text' => $tagT . $msg, 'quote_id' => $id, 'mentions' => $tagM, 'via' => 'bot'], $acc); exit; }
     $menuW = (string) (wf_case_cfg($aid)['words']['menu'] ?? ''); // "#menu": the list of commands, in any group
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && wf_is_menu($aid, $text)) {
         $reply(['ok' => false, 'done' => true]); [$tagT, $tagM] = wf_group_tag($from);

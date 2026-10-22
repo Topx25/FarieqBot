@@ -71,6 +71,7 @@ function wf_owner_command(array $acc, string $text): ?array {
     $P = wf_pack($aid); $t = wf_intake_norm(trim($text)); if ($t === '') return null;
     $is = function (string $k) use ($P, $t) { foreach (preg_split('/[,\x{060C}|\n]+/u', (string) ($P[$k] ?? '')) as $w) { $w = wf_intake_norm(trim($w)); if ($w !== '' && $t === $w) return true; } return false; };
     $starts = function (string $k) use ($P, $t, $text) { $w = wf_intake_norm(trim((string) ($P[$k] ?? ''))); return $w !== '' && ($t === $w || str_starts_with($t, $w . ' ')) ? trim((string) (preg_split('/\s+/u', trim($text), 2)[1] ?? '')) : null; }; // the rest as written (the name is matched as typed)
+    if (function_exists('wf_case_deep_command') && ($dm = wf_case_deep_command($acc, $text, [], 'owner')) !== '') return [$dm, false]; // #تحليل + case
     if ($is('restart_cmd')) return [wf_msg('bot_restart'), true];
     if ($is('status_cmd')) { $c = wf_bot_run_cfg($aid); $g = wi_gateway('/status', null, $acc); $st = wi_read('bot_state.json', [])[$aid] ?? []; $day = date('Y-m-d'); $k = ['sent' => 0, 'handoff' => 0, 'draft' => 0, 'skipped' => 0];
         foreach (wi_bot_log($aid, 500) as $l) if (str_starts_with(date('Y-m-d', strtotime((string) ($l['at'] ?? ''))), $day) && isset($k[$l['result'] ?? ''])) $k[$l['result']]++;

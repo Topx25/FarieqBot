@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.131.0', 'date' => '2026-10-22', 'title' => 'Case analysis by angle and a follow-up board', 'changes' => [
+        '#تحليل + the case ID, name or a tag (in a group, from a test number or the number\'s own phone): the case looked at from each angle of the business (healing: spiritual, health, mental) with a score out of 10, the current treatment stage, the stages done and left, the progress % and the trend since the last analysis, the next step and anything urgent.',
+        'Cases → Follow-up & analysis: every case with its last analysis, a progress bar and its history line, filters for getting worse / needs attention / not analysed, and an Analyse now button. Each analysis is kept (the last 12).',
+        'The angles and the command are settings of the business profile (on for the healing type only).',
+    ]],
     ['v' => '3.130.0', 'date' => '2026-10-22', 'title' => 'Suggestions: the right written text, program or recording', 'changes' => [
         'A 💡 Suggestions button in the chat and in the case file: written texts, programs and recordings that fit this person, best first with a match score and one line why — from the person\'s words, their case notes, what the bot learned and how often each item is sent. Send it with one click.',
         'The most used items (sent 2 times or more) are listed too. Few tokens: ranked first with no AI, a fast model only orders the best dozen.',
