@@ -4,14 +4,14 @@
 /* ---------- Bot runner (cron): drafts or automatic replies, with safety limits ---------- */
 function wf_bot_run_cfg(string $aid): array {
     return ((wi_read('bot.json', [])[$aid]['run'] ?? []) + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'dream_wait' => 120, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
-        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5,
+        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5, 'crisis_pause_h' => 12,
         'scope' => 'private', 'groups_mode' => 'selected', 'groups' => [], 'group_default' => ['mode' => 'ai', 'trigger' => 'mention', 'text' => '', 'cooldown' => 24]]);
 }
 /** Chats where the bot is paused with /stop (until /start). */
 function wf_bot_paused(string $aid): array { return wi_read('bot_paused.json', [])[$aid] ?? []; }
-function wf_bot_pause(string $aid, string $jid, bool $pause, string $by): void {
+function wf_bot_pause(string $aid, string $jid, bool $pause, string $by, int $hours = 0): void {
     $all = wi_read('bot_paused.json', []);
-    if ($pause) $all[$aid][$jid] = ['at' => date('c'), 'by' => $by]; else unset($all[$aid][$jid]);
+    if ($pause) $all[$aid][$jid] = ['at' => date('c'), 'by' => $by] + ($hours > 0 ? ['until' => date('c', time() + $hours * 3600)] : []); else unset($all[$aid][$jid]); // with hours: the bot comes back by itself
     wi_write('bot_paused.json', $all);
     // /start = "answer here", even if the team is talking in this chat; /stop removes it.
     wi_update('bot_forced.json', function ($F) use ($pause, $aid, $jid, $by) { if ($pause) unset($F[$aid][$jid]); else $F[$aid][$jid] = ['at' => date('c'), 'by' => $by]; return $F; });

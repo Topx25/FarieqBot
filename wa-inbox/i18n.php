@@ -2310,6 +2310,7 @@ return [
     'What the business is' => 'النشاط إيه',
     'Language of the content' => 'لغة المحتوى',
     'Language / dialect rule for replies' => 'قاعدة اللغة واللهجة في الردود',
+    'After a crisis message the bot stays quiet in that chat for (hours, 0 = until /start)' => 'بعد رسالة أزمة البوت يسكت في الشات ده لمدة (ساعات، 0 = لحد /start)',
     'The bot\'s status (from a test number or the own phone, separated by ,)' => 'حالة البوت (من رقم تيست أو موبايل الرقم نفسه، افصل بفاصلة)',
     'Choose a group or the private chats…' => 'اختار جروب أو المحادثات الخاصة…',
     'Extra details asked on the join page' => 'بيانات إضافية مطلوبة في صفحة الدخول',

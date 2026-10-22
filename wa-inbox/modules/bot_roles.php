@@ -56,7 +56,7 @@ function wf_role_crisis(array $acc, string $jid, string $text, string $name, str
     $phone = $who !== '' ? $who : explode('@', $jid)[0];
     $to = (string) ($c['alert'] ?? '') ?: (function_exists('wf_intake_diag') ? wf_intake_diag($aid) : '');
     if ($to !== '') wi_gateway('/chat/send', ['jid' => $to, 'text' => wf_msg('crisis_alert', ['name' => $name ?: '+' . $phone, 'phone' => '+' . $phone, 'text' => mb_substr($text, 0, 300)]), 'via' => 'bot'], $acc);
-    if (!str_ends_with($jid, '@g.us')) wf_bot_pause($aid, $jid, true, 'crisis — a person must answer'); // a group keeps its bot; the person is followed up privately
+    if (!str_ends_with($jid, '@g.us')) wf_bot_pause($aid, $jid, true, 'crisis — a person must answer', (int) (wf_bot_run_cfg($aid)['crisis_pause_h'] ?? 12)); // the team has these hours; 0 = until someone writes /start // a group keeps its bot; the person is followed up privately
     wi_log('bot_crisis', ['account' => $aid, 'jid' => $jid, 'alerted' => $to !== '']);
 }
 

@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.128.1', 'date' => '2026-10-22', 'title' => 'A crisis pause ends by itself', 'changes' => [
+        'Fix: after a crisis message the bot stayed silent in that private chat for ever. It now comes back after the hours set in Bot → Switch on / off (12 by default, 0 = until someone writes /start).',
+    ]],
     ['v' => '3.128.0', 'date' => '2026-10-22', 'title' => 'Bot status, and a test chat on the number itself', 'changes' => [
         'The number\'s chat with itself is a test chat: what the owner types there is answered by the bot like a customer (commands starting with # or / are answered as commands).',
         'New owner command: the bot\'s status (#حالة_البوت, /status or "حالة البوت") — mode, WhatsApp connection, today\'s replies, hand-overs, drafts, paused chats, last reply and last check.',
