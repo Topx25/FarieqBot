@@ -110,14 +110,16 @@ function wf_customer_card(array $acc, string $jid, array $rows = []): array {
     $cust = $phone !== '' ? (wi_customers()[$phone] ?? null) : null;
     $earlier = count(array_filter($msgs, fn($m) => strtotime((string) $m['time']) < time() - 86400));
     return ['new' => $earlier === 0 && !$groups && !$progs && !$case, 'first' => $first, 'messages' => count($msgs), 'groups' => array_slice(array_unique($groups), 0, 5), 'programs' => $progs,
-        'case' => $case ? (($case['status'] ?? 'new') . ($case['data']['complaint'] ?? '' ? ': ' . $case['data']['complaint'] : '')) : '', 'customer' => $cust['name'] ?? '', 'name' => (string) ($c['name'] ?? '')];
+        'case' => $case ? (($case['status'] ?? 'new') . ($case['data']['complaint'] ?? '' ? ': ' . $case['data']['complaint'] : '')) : '', 'state' => (function () use ($case) { $dl = (array) ($case['deep'] ?? []); if (!$dl) return ''; $d = (array) end($dl); if (strtotime((string) ($d['at'] ?? '')) < time() - 30 * 86400) return ''; // the latest case assessment (a month at most)
+            return 'stage: ' . (string) ($d['stage'] ?? '') . ', progress ' . (int) ($d['progress'] ?? 0) . '%, trend ' . (string) ($d['trend'] ?? '') . '; ' . implode(', ', array_map(fn($x) => $x['name'] . ' ' . $x['score'] . '/10', (array) ($d['axes'] ?? []))); })(), 'customer' => $cust['name'] ?? '', 'name' => (string) ($c['name'] ?? '')];
 }
 function wf_card_text(?array $k): string {
     if (!$k) return "UNKNOWN person — treat as NEW.";
     if ($k['new']) return 'NEW person — first contact' . ($k['first'] ? ' (' . substr((string) $k['first'], 0, 10) . ')' : '') . ', not in any group, no program, no case yet' . ($k['name'] ? ', WhatsApp name: ' . $k['name'] : '') . '.';
     return 'EXISTING person — talking with us since ' . substr((string) $k['first'], 0, 10) . ', ' . $k['messages'] . ' messages'
         . ($k['groups'] ? '; in groups: ' . implode(', ', $k['groups']) : '; not in our groups') . ($k['programs'] ? '; programs: ' . implode(', ', $k['programs']) : '; no program')
-        . ($k['case'] ? '; case: ' . $k['case'] : '') . ($k['customer'] ? '; registered customer: ' . $k['customer'] : '') . '.';
+        . ($k['case'] ? '; case: ' . $k['case'] : '') . ($k['customer'] ? '; registered customer: ' . $k['customer'] : '') . '.'
+        . (!empty($k['state']) ? "\nLATEST CASE ASSESSMENT: " . $k['state'] . '. Fit your tone to it: getting worse or low scores → reassure first, then one small practical step; getting better → encourage and keep the plan; never quote the scores to the person.' : '');
 }
 /** The real names of this number's groups (the bot's groups, the case registry and every group of the number), cached 10 minutes. */
 function wf_our_groups(array $acc): array {
@@ -171,7 +173,8 @@ function wf_bot_answer(array $acc, string $text, array $history = [], string $pr
     $rp = isset($opt['role']) && function_exists('wf_role_prompt') ? wf_role_prompt($aid, (string) ($opt['jid'] ?? ''), (string) $opt['role']) : ['rules' => '', 'prefer' => ''];
     // The WhatsApp name of this number is the team's number (the bot itself), not a sheikh or a person to send people to.
     $ours = wf_our_groups($acc); $groupsRule = $ours ? "- OUR GROUPS (the only groups and the only center you may name or send people to): " . implode(' · ', $ours) . ". A center or group name found in the sources or examples that is not in this list belongs to someone else: never mention it.\n" : '';
-    $self = trim((string) ($acc['name'] ?? '')); $selfRule = (!empty($opt['team']) ? wf_prompt('bot_team_person', $aid) : '') . (!empty($opt['ask']) ? wf_prompt('bot_ask', $aid) : '') . (!empty($opt['fun']) ? wf_prompt('bot_fun', $aid) : '') . $groupsRule . ($self !== '' ? "- \"" . $self . "\" is the name of THIS WhatsApp number (you, the team's number), not a person: never call it a sheikh and never tell people to follow up with it; say \"the sheikh\" / \"the team\" without a name unless the sources give the healer's name.\n- Use the person's name only if they wrote it or the customer card gives it; never take a name from another person in the conversation.\n\n" : '');
+    $edits = function_exists('wf_bot_edits_for') ? wf_bot_edits_for($aid, $text) : ''; // how the team corrected the bot's drafts on alike messages
+    $self = trim((string) ($acc['name'] ?? '')); $selfRule = $edits . (!empty($opt['team']) ? wf_prompt('bot_team_person', $aid) : '') . (!empty($opt['ask']) ? wf_prompt('bot_ask', $aid) : '') . (!empty($opt['fun']) ? wf_prompt('bot_fun', $aid) : '') . $groupsRule . ($self !== '' ? "- \"" . $self . "\" is the name of THIS WhatsApp number (you, the team's number), not a person: never call it a sheikh and never tell people to follow up with it; say \"the sheikh\" / \"the team\" without a name unless the sources give the healer's name.\n- Use the person's name only if they wrote it or the customer card gives it; never take a name from another person in the conversation.\n\n" : '');
     // Healing numbers with roles: one prompt where the model picks the mode itself (keyword routing sent questions to the wrong role)
     $rc = function_exists('wf_roles_cfg') ? wf_roles_cfg($aid) : ['on' => 0, 'roles' => []];
     if (!empty($rc['on']) && $rc['roles'] && (!empty($cfg['brain']) || !empty($opt['brain'])) && empty($opt['classic'])) { // on once the bot test shows it is better
@@ -619,6 +622,7 @@ function wf_api_bot_learning(string $api): void {
     }
     case 'bot_draft': {
         $aid = wf_aid(); $jid = wf_jid($_GET['jid'] ?? ($_POST['jid'] ?? ''));
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($dj = wf_jid((string) (wf_post()['jid'] ?? ''))) !== '' && ($dr = wf_bot_drafts($aid)[$dj] ?? null) && function_exists('wf_bot_edit_learn')) wf_bot_edit_learn(wi_current(), $dj, (array) $dr); // the team sent its own words instead of the draft: kept as an example
         if ($_SERVER['REQUEST_METHOD'] === 'POST') { $in = wf_post(); wi_update('bot_drafts.json', function ($d) use ($aid, $in) { foreach ((array) ($in['jids'] ?? []) as $j) unset($d[$aid][wf_jid((string) $j)]); unset($d[$aid][wf_jid($in['jid'] ?? '')]); return $d; }); wi_json(['ok' => true]); }
         wi_json(['ok' => true, 'draft' => wf_bot_drafts($aid)[$jid] ?? null]);
     }
@@ -714,3 +718,21 @@ function wf_api_bot_learning(string $api): void {
 
     }
 }
+
+/* ---------- Learning from the team's corrections: the draft the bot wrote and what the team really sent instead ---------- */
+function wf_bot_edit_learn(?array $acc, string $jid, array $draft): void {
+    if (!$acc || trim((string) ($draft['reply'] ?? '')) === '') return; $aid = (string) $acc['id'];
+    $rows = (array) (wi_gateway('/archive/thread?limit=15&jid=' . rawurlencode($jid), null, $acc)['rows'] ?? []); $sent = '';
+    foreach (array_reverse($rows) as $m) { if (($m['dir'] ?? '') === 'out' && ($m['via'] ?? '') !== 'bot' && strtotime((string) ($m['time'] ?? '')) > time() - 900 && trim((string) ($m['text'] ?? '')) !== '') { $sent = trim((string) $m['text']); break; } if (($m['dir'] ?? '') === 'in') break; }
+    if ($sent === '' || wf_text_sim($sent, (string) $draft['reply']) >= 0.9) return; // nothing sent, or the draft was sent as it was
+    wi_update('bot_edits.json', function ($E) use ($aid, $draft, $sent) { $E[$aid][] = ['q' => mb_substr((string) ($draft['q'] ?? ''), 0, 400), 'bot' => mb_substr((string) $draft['reply'], 0, 600), 'team' => mb_substr($sent, 0, 800), 'at' => date('c')]; $E[$aid] = array_slice($E[$aid], -80); return $E; });
+}
+/** Up to 3 corrections of alike messages, as examples for the reply prompt ('' when none). */
+function wf_bot_edits_for(string $aid, string $text): string {
+    $E = (array) (wi_read('bot_edits.json', [])[$aid] ?? []); if (!$E) return ''; $sc = [];
+    foreach ($E as $i => $e) { $s = wf_text_sim($text, (string) $e['q']); if ($s >= 0.25) $sc[$i] = $s; } if (!$sc) return ''; arsort($sc);
+    $o = "- HOW THE TEAM CORRECTED YOUR DRAFTS on alike messages — follow the team's way (tone, length, wording), not your old draft:\n";
+    foreach (array_slice(array_keys($sc), 0, 3) as $i) $o .= '  • Person: ' . mb_substr(preg_replace('/\s+/u', ' ', $E[$i]['q']), 0, 160) . "\n    Your draft: " . mb_substr(preg_replace('/\s+/u', ' ', $E[$i]['bot']), 0, 200) . "\n    The team sent: " . mb_substr(preg_replace('/\s+/u', ' ', $E[$i]['team']), 0, 260) . "\n";
+    return $o;
+}
+

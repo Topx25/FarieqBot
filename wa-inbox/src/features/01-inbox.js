@@ -8,7 +8,7 @@
       var qbar = document.createElement('div'); qbar.className = 'fx-quote'; qbar.hidden = true; composer.parentNode.insertBefore(qbar, composer);
       function syncBar() { var j = openJid(); bar.hidden = !j || composer.hidden; document.getElementById('fx-prof').href = '?p=customer&jid=' + encodeURIComponent(j); }
       new MutationObserver(syncBar).observe(composer, { attributes: true }); window.addEventListener('hashchange', function () { window.WI_QUOTE = null; qbar.hidden = true; syncBar(); }); syncBar();
-      document.addEventListener('wi-sent', function () { qbar.hidden = true; if (dbar.dataset.jid) post('bot_draft', { jid: dbar.dataset.jid }); dbar.hidden = true; });
+      document.addEventListener('wi-sent', function () { qbar.hidden = true; var dj = dbar.dataset.jid; if (dj) setTimeout(function () { post('bot_draft', { jid: dj }); }, 3000); dbar.hidden = true; }); // a moment later, so the sent message is in the archive (the team's correction is learned)
       // The bot's draft for this chat (suggest-only mode, or when it was not confident enough to send).
       var dbar = document.createElement('div'); dbar.className = 'fx-draft'; dbar.hidden = true; composer.parentNode.insertBefore(dbar, bar);
       function loadDraft() { var j = openJid(); dbar.hidden = true; if (!j) return; get('bot_draft', { jid: j }).then(function (r) { if (!r.ok || !r.draft || openJid() !== j) return; var d = r.draft; dbar.dataset.jid = j;

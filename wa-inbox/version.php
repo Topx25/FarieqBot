@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.136.0', 'date' => '2026-10-22', 'title' => 'Replies fit the case, and the bot learns from the team\'s corrections', 'changes' => [
+        'The bot reads the person\'s latest case assessment (stage, progress, trend, the angles) and fits its tone: getting worse → reassure first and give one small step; getting better → encourage. It never quotes the scores.',
+        'When the team sends its own words instead of the bot\'s draft, the pair is kept; on alike messages the bot follows the team\'s way (tone, length, wording). The last 80 corrections are kept.',
+    ]],
     ['v' => '3.135.0', 'date' => '2026-10-22', 'title' => 'Fewer hand-overs, fewer silent drafts, no repeated openings', 'changes' => [
         'Before handing a private chat over to the team the bot tries once more with the stronger model and keeps that answer when it no longer needs a person (switch in Bot → Switch on / off).',
         'Quiet hours (from → to, e.g. the night): a reply of middle confidence (from 0.5, editable) is sent with a short line that the team will confirm, instead of waiting as a draft. The line is a message template.',
