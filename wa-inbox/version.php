@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.133.1', 'date' => '2026-10-22', 'title' => '#تحليل in groups finds the right cases', 'changes' => [
+        'A case opened from a private chat is private only when the person is in no group; a person who is also in a group is analysed in the group too, and a number with no case yet opens its case from a group as well.',
+        'A case that is really private-only gets a clear answer in a group ("followed in the private chat only") instead of "write the case ID".',
+    ]],
     ['v' => '3.133.0', 'date' => '2026-10-22', 'title' => 'Follow-up trail: who followed a case, where and when', 'changes' => [
         'Case file → 🧭 Follow-up trail (also on the Follow-up board): every place the case is followed — the private chat and every group — found by number and WhatsApp ID, who followed it in order (healers, the number\'s owner, the bot) with how many times and how sure, and a timeline.',
         'A team message counts when it answers or tags the person (also tags written in the text of old history). A switch can also count a healer\'s message right after the person\'s, marked likely.',

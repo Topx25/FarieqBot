@@ -50,8 +50,12 @@ function wf_case_deep_command(array $acc, string $text, array $mentions = [], st
     // the command alone in a person's private chat: that person
     if (!$hit && $q === '' && $chatJid !== '' && !str_ends_with($chatJid, '@g.us')) { $cp = wf_phone(explode('@', $chatJid)[0]); if (str_ends_with($chatJid, '@lid')) $cp = wf_phone((string) (wi_contact($chatJid, $acc)['phone'] ?? '')); if ($cp !== '') { $q = $cp; $hit = wf_intake_find($aid, $cp, [], $acc, $grp); } }
     // a number that has no case yet but has a chat: its case is opened now, then analysed
-    $dg = wf_phone(preg_replace('/[^\d+]/', '', $q)); if (!$hit && !$grp && strlen($dg) >= 9 && !wf_case_get($aid, $dg) && wf_case_messages($acc, $dg)) { $nm = (string) (wi_contact($dg . '@s.whatsapp.net', $acc)['name'] ?? '');
-        wf_case_reserve_no($aid, $dg, ['phone' => $dg, 'name' => $nm, 'status' => 'new', 'created' => date('c'), 'updated' => date('c'), 'data' => [], 'by' => 'analysis', 'scope' => 'private']); $hit = [$dg => wf_case_get($aid, $dg)]; }
+    // asked in a group about a case kept private: it is used when the person is also in a group (then it is not private), else the group is told it is private
+    if (!$hit && $grp && ($q !== '' || $mentions)) { $all = wf_intake_find($aid, $q, $mentions, $acc); if (count($all) === 1) { $pp = (string) array_key_first($all);
+        if (function_exists('wf_case_trail') && array_filter(wf_case_trail($acc, $pp)['places'], fn($p) => !empty($p['group']))) { wf_case_update($aid, $pp, function (?array $c) { if ($c !== null) $c['scope'] = 'group'; return $c; }); $hit = $all; }
+        else return wf_msg('case_deep_private'); } }
+    $dg = wf_phone(preg_replace('/[^\d+]/', '', $q)); if (!$hit && strlen($dg) >= 9 && !wf_case_get($aid, $dg) && wf_case_messages($acc, $dg)) { $nm = (string) (wi_contact($dg . '@s.whatsapp.net', $acc)['name'] ?? '');
+        wf_case_reserve_no($aid, $dg, ['phone' => $dg, 'name' => $nm, 'status' => 'new', 'created' => date('c'), 'updated' => date('c'), 'data' => [], 'by' => 'analysis', 'scope' => (function_exists('wf_case_trail') && array_filter(wf_case_trail($acc, $dg)['places'], fn($p) => !empty($p['group']))) ? 'group' : 'private']); $hit = [$dg => wf_case_get($aid, $dg)]; }
     if (count($hit) !== 1) return wf_msg('case_deep_none', ['cmd' => $w]);
     $ph = (string) array_key_first($hit);
     if ($waitTo !== '') { $wc = wf_case_get($aid, $ph) ?? []; wi_gateway('/chat/send', ['jid' => $waitTo, 'text' => wf_msg('case_deep_wait', ['name' => (string) ($wc['name'] ?? '') ?: '+' . $ph, 'no' => (string) ($wc['no'] ?? '')]), 'mentions' => $waitMentions, 'via' => 'bot'], $acc); } // the case was found: "checking, the answer follows"

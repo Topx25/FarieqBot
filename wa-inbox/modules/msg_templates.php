@@ -67,6 +67,7 @@ function wf_msg_registry(): array {
         'case_deep_evidence' => ['Case report: the word before the evidence', [], "الدليل:", "Evidence:"],
         'case_deep_flags' => ['Case report: title of the urgent part', [], "⚠️ *تنبيهات تستدعي المتابعة العاجلة*", "⚠️ *Needs urgent attention*"],
         'case_deep_wait' => ['Case analysis: the case was found, the analysis is running', ['name', 'no'], "⏳ جاري فحص وتحليل حالة {name} (ID {no})، وسوف يتم الرد في أقرب وقت.", "⏳ Checking and analysing the case of {name} (ID {no}); the answer follows shortly."],
+        'case_deep_private' => ['Case analysis asked in a group about a private-chat case', [], "🔒 الحالة دي متابَعة في الخاص بس، وتحليلها مش بيتعرض في الجروبات. اطلبه من رقم الحساب في الخاص.", "🔒 This case is followed in the private chat only; its analysis is not shown in groups. Ask for it privately from the account's number."],
         'case_deep_none' => ['Case analysis: no single case found', ['cmd'], "⚠️ اكتب {cmd} وبعده رقم الحالة (ID) أو الاسم أو منشن للشخص.", "⚠️ Write {cmd} then the case ID, the name or a tag of the person."],
         'fun_off' => ['Warm-up mode off (to the owner)', [], "✅ وضع الهزار وقف، والبوت رجع لشغله العادي.", "✅ Warm-up mode is off; the bot is back to normal."],
         'case_status_done' => ['Case from a group: stage changed by a command (to the writer)', ['name', 'case', 'person', 'status', 'reason'], "✅ {person}: {status}\nالسبب: {reason}\n(بواسطة {name})", "✅ {person}: {status}\nReason: {reason}\n(by {name})"],
