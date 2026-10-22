@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.146.2', 'date' => '2026-10-22', 'title' => 'Facebook is an add-on', 'changes' => [
+        'Facebook (pages, Messenger, comments, posts) can be switched off like the invoices add-on: General settings → Facebook add-on (1 = on, 0 = off). Off hides the Facebook menu and stops reading the pages every minute; it is on by default so nothing changes until it is switched.',
+    ]],
     ['v' => '3.146.1', 'date' => '2026-10-22', 'title' => 'Bot settings redesigned', 'changes' => [
         'Bot → Switch on / off: the general settings are grouped in titled sections — working mode, hours, how it replies, hand-over to the team, protection, follow-up and alerts, reports, cases from private chats — with a quick menu to jump between them.',
         'Fix: the reply-length box and the repeat box shared one field name, so saving stored the repeat level wrong; each has its own now.',

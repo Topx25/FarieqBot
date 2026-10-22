@@ -2310,6 +2310,7 @@ return [
     'What the business is' => 'النشاط إيه',
     'Language of the content' => 'لغة المحتوى',
     'Language / dialect rule for replies' => 'قاعدة اللغة واللهجة في الردود',
+    'Facebook add-on: pages, Messenger and comments (1 = on, 0 = off)' => 'إضافة فيسبوك: الصفحات والماسنجر والتعليقات (1 = شغالة، 0 = مقفولة)',
     'Working mode' => 'وضع التشغيل',
     'What the bot answers and when it sends by itself' => 'البوت بيرد على إيه، وإمتى يبعت لوحده',
     'Hours' => 'المواعيد',
