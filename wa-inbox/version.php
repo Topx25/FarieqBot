@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.139.0', 'date' => '2026-10-22', 'title' => 'A reply policy: grounded, listening first, safe', 'changes' => [
+        'Every reply follows a policy (editable in the AI instructions, "bot_policy"): facts only from the knowledge, library and team examples, never an invented religious text, count, price or date; listen first only when the person is distressed (one line of feeling, one or two steps, one question); no medication advice; danger → safety first and the team; hand-over is a signal, never words; privacy; warm and in the person\'s dialect.',
+        'Healing numbers: the bot may say what a case most likely is (evil eye, envy, magic, touch…) and why, in words of likelihood — the healer confirms; it never names a person behind it, never promises healing in a time, and recommends only sessions that exist in the library. Other business types do not get this rule.',
+    ]],
     ['v' => '3.138.0', 'date' => '2026-10-22', 'title' => 'The bot answers voice notes', 'changes' => [
         'A voice note in a private chat is written as text by a model that hears audio (once, kept) and answered like a written message — up to 120 seconds by default; longer ones are left to people. Switch and length in Bot → Switch on / off.',
         'Downloading one file on demand reads only its chat (lighter on the gateway).',
