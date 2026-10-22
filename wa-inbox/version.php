@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.134.0', 'date' => '2026-10-22', 'title' => 'Treatment course, entries, sessions and #توصيات', 'changes' => [
+        'The case report and the follow-up trail show the treatment course (from - to, days, ongoing or ended), how often the person entered the groups, came back and left (from WhatsApp\'s membership events), and the written sessions sent (by their tag, title or opening words) with the most used ones.',
+        '#توصيات + case (ID, name, number or tag; in a group, from a test number or the number\'s own phone): the next steps for the healer from the latest analysis (made again when older than 3 days) and the written texts / programs that fit, from the person\'s words in the private chat and every group.',
+    ]],
     ['v' => '3.133.2', 'date' => '2026-10-22', 'title' => 'Private-chat cases are not even named in groups', 'changes' => [
         'Asked in a group about a case followed only in the private chat, the bot answers as if no such case was found, so the group does not learn it exists.',
     ]],

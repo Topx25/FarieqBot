@@ -35,8 +35,8 @@ function wf_case_deep_text(array $case, array $a): string {
     $sg = implode("\n", array_map(fn($x) => ($x['done'] ? '  ✔︎ ' : '  ◻︎ ') . $x['name'] . ($x['note'] !== '' ? ' — ' . $x['note'] : ''), $a['stages']));
     $recs = (array) ($a['recs'] ?? []); if (!$recs && $a['next_step'] !== '') $recs = [$a['next_step']];
     $rc = implode("\n", array_map(fn($r, $i) => ($i + 1) . '. ' . $r, $recs, array_keys($recs)));
-    $tl = function_exists('wf_case_trail') && !empty($case['phone']) ? wf_trail_lines(wf_case_trail(wi_accounts()[(string) ($a['aid'] ?? '')] ?? (wi_current() ?? []), (string) $case['phone'])) : ['places' => '', 'followers' => ''];
-    return wf_msg('case_deep_msg', ['places' => $tl['places'] ?: '—', 'followers' => $tl['followers'] ?: '—', 'name' => (string) ($case['name'] ?? '') ?: ((string) ($case['data']['name'] ?? '') ?: '+' . (string) ($case['phone'] ?? '')), 'no' => (string) ($case['no'] ?? ''), 'date' => date('Y-m-d', strtotime((string) $a['at'])),
+    $tl = function_exists('wf_case_trail') && !empty($case['phone']) ? wf_trail_lines(wf_case_trail(wi_accounts()[(string) ($a['aid'] ?? '')] ?? (wi_current() ?? []), (string) $case['phone'])) : ['places' => '', 'followers' => '', 'course' => '', 'entry' => '', 'sessions' => ''];
+    return wf_msg('case_deep_msg', ['places' => $tl['places'] ?: '—', 'followers' => $tl['followers'] ?: '—', 'course' => $tl['course'] ?: '—', 'entry' => $tl['entry'] ?: '—', 'sessions' => $tl['sessions'] ?: '—', 'name' => (string) ($case['name'] ?? '') ?: ((string) ($case['data']['name'] ?? '') ?: '+' . (string) ($case['phone'] ?? '')), 'no' => (string) ($case['no'] ?? ''), 'date' => date('Y-m-d', strtotime((string) $a['at'])),
         'summary' => $a['summary'], 'axes' => $ax, 'stage' => $a['stage'], 'progress' => (string) $a['progress'], 'bar' => $bar((int) $a['progress']), 'trend' => $tr, 'stages' => $sg, 'recs' => $rc,
         'flags' => $a['red_flags'] !== '' ? "\n\n" . wf_msg('case_deep_flags') . "\n" . $a['red_flags'] : '']);
 }
@@ -76,3 +76,25 @@ function wf_api_case_deep(string $api): void {
     usort($rows, fn($a, $b) => strcmp($b['at'] ?: $b['updated'], $a['at'] ?: $a['updated']));
     wi_json(['ok' => true, 'axes' => wf_deep_axes($aid), 'rows' => $rows, 'cmd' => (string) (wf_pack($aid)['analyze_cmd'] ?? '')]);
 }
+
+/** "#توصيات" + case (the same ways as the analysis): what to do next and which written texts / programs fit, from the last analysis and the suggestions. */
+function wf_case_recs_command(array $acc, string $text, array $mentions = [], string $chatJid = '', string $waitTo = '', array $waitMentions = []): string {
+    $aid = (string) $acc['id']; $w = trim((string) (wf_pack($aid)['recs_cmd'] ?? '')); if ($w === '' || !wf_intake_has(mb_substr(trim($text), 0, mb_strlen($w) + 2), $w)) return '';
+    $aw = trim((string) (wf_pack($aid)['analyze_cmd'] ?? '')); if ($aw === '') return '';
+    $q = trim(mb_substr(trim($text), mb_strlen($w))); $grp = str_ends_with($waitTo, '@g.us');
+    $hit = ($q !== '' || $mentions) ? wf_intake_find($aid, $q, $mentions, $acc, $grp) : [];
+    if (!$hit && $q === '' && $chatJid !== '' && !str_ends_with($chatJid, '@g.us')) { $cp = wf_phone(explode('@', $chatJid)[0]); if (str_ends_with($chatJid, '@lid')) $cp = wf_phone((string) (wi_contact($chatJid, $acc)['phone'] ?? '')); if ($cp !== '') $hit = wf_intake_find($aid, $cp, [], $acc, $grp); }
+    if (count($hit) !== 1) return wf_msg('case_deep_none', ['cmd' => $w]);
+    $ph = (string) array_key_first($hit); $c = wf_case_get($aid, $ph) ?? [];
+    if ($waitTo !== '') wi_gateway('/chat/send', ['jid' => $waitTo, 'text' => wf_msg('case_recs_wait', ['name' => (string) ($c['name'] ?? '') ?: '+' . $ph, 'no' => (string) ($c['no'] ?? '')]), 'mentions' => $waitMentions, 'via' => 'bot'], $acc);
+    $dl = (array) ($c['deep'] ?? []); $d = $dl ? (array) end($dl) : [];
+    if (!$d || strtotime((string) ($d['at'] ?? '')) < time() - 3 * 86400) { $d = wf_case_deep($acc, $ph, 'recommendations'); if (!empty($d['error'])) $d = []; } // an analysis older than 3 days is made again first
+    $recs = (array) ($d['recs'] ?? []); if (!$recs && !empty($d['next_step'])) $recs = [(string) $d['next_step']];
+    $said = ''; if (function_exists('wf_case_trail')) foreach (array_slice(array_filter(wf_case_trail($acc, $ph)['events'], fn($e) => $e['who'] === 'person'), -30) as $e) $said .= ' ' . $e['text']; // their words in the private chat and every group
+    $items = function_exists('wf_recommend') ? wf_recommend($acc, $ph . '@s.whatsapp.net', true, $said) : [];
+    $rr = array_map('trim', explode('|', wf_msg('rec_reasons'))); $rw = ['matches the person\'s words' => $rr[0] ?? '', 'the team used it for alike cases' => $rr[1] ?? '', 'often sent' => $rr[2] ?? '']; // the reason words in the business language
+    $it = implode("\n", array_map(fn($x) => $x['icon'] . ' ' . $x['title'] . ' — ' . $x['code'] . ' (' . $x['score'] . '%)' . ($x['reason'] !== '' ? "\n    " . ($rw[$x['reason']] ?? $x['reason']) : ''), array_slice($items, 0, 5)));
+    return wf_msg('case_recs_msg', ['name' => (string) ($c['name'] ?? '') ?: '+' . $ph, 'no' => (string) ($c['no'] ?? ''), 'stage' => (string) ($d['stage'] ?? '—'), 'progress' => (string) ($d['progress'] ?? '—'),
+        'recs' => $recs ? implode("\n", array_map(fn($r, $i) => ($i + 1) . '. ' . $r, $recs, array_keys($recs))) : '—', 'items' => $it !== '' ? $it : '—', 'flags' => !empty($d['red_flags']) ? "\n\n" . wf_msg('case_deep_flags') . "\n" . $d['red_flags'] : '']);
+}
+

@@ -47,11 +47,26 @@ function wf_case_trail(array $acc, string $ph, bool $fresh = false): array {
         foreach ((array) ($c['status_log'] ?? []) as $l) $ev[] = ['t' => strtotime((string) ($l['at'] ?? '')), 'who' => (string) ($l['by'] ?? ''), 'where' => 'case', 'text' => '→ ' . (string) ($st[$l['to'] ?? ''] ?? ($l['to'] ?? '')), 'how' => 'sure'];
         foreach ((array) ($c['notes'] ?? []) as $n) if (($n['by'] ?? '') !== 'bot') $ev[] = ['t' => strtotime((string) ($n['at'] ?? '')), 'who' => (string) ($n['by'] ?? ''), 'where' => 'case', 'text' => mb_substr((string) ($n['text'] ?? ''), 0, 120), 'how' => 'sure']; }
     usort($ev, fn($a, $b) => $a['t'] <=> $b['t']);
+    // entries: every time the person was added to / left a group (WhatsApp's membership events), and how often they came back
+    $joins = []; foreach ($chats as $ch) { if (empty($ch['group'])) continue; foreach ((array) (wi_gateway('/groups/events?jid=' . rawurlencode((string) $ch['jid']), null, $acc)['events'] ?? []) as $e) if ($isMe($e['member'] ?? '')) $joins[] = ['g' => (string) $ch['jid'], 'name' => (string) ($ch['name'] ?? ''), 't' => strtotime((string) ($e['time'] ?? '')), 'action' => (string) ($e['action'] ?? '')]; }
+    usort($joins, fn($a, $b) => $a['t'] <=> $b['t']); $adds = array_values(array_filter($joins, fn($j) => $j['action'] === 'add')); $per = []; foreach ($adds as $j) $per[$j['g']] = ($per[$j['g']] ?? 0) + 1;
+    $entry = ['adds' => count($adds), 'back' => array_sum(array_map(fn($n) => max(0, $n - 1), $per)), 'left' => count(array_filter($joins, fn($j) => $j['action'] === 'remove')), 'list' => array_slice($joins, -30)];
+    // sessions: the written texts (ruqyah sessions) sent to the person — by their tag, their title or their opening words
+    $lt = []; foreach (wf_lib_texts($aid) as $x) { $k = ['code' => str_replace(['-', ' ', '_'], '', wf_intake_norm(trim((string) ($x['code'] ?? '')))), 'title' => (string) ($x['title'] ?? ''), 'open' => mb_substr(wf_intake_norm(preg_replace('/\s+/u', ' ', (string) ($x['text'] ?? ''))), 0, 40)]; if ($k['title'] !== '') $lt[] = $k; }
+    $sess = []; foreach ($ev as $e) { $n = wf_intake_norm((string) $e['text']); if ($n === '') continue; $nc = str_replace(['-', ' ', '_'], '', $n); // a tag typed with spaces or dashes
+        foreach ($lt as $k) if (($k['code'] !== '' && mb_strpos($nc, $k['code']) !== false) || (mb_strlen($k['open']) >= 25 && mb_strpos($n, mb_substr($k['open'], 0, 25)) === 0)) { $d = date('Y-m-d', $e['t']); $sess[$k['title'] . '|' . $d] = ['title' => $k['title'], 'day' => $d]; break; } }
+    $byT = []; foreach ($sess as $x) $byT[$x['title']] = ($byT[$x['title']] ?? 0) + 1; arsort($byT);
+    $sessions = ['count' => count($sess), 'titles' => $byT];
+    // the course: from the first sign of the person (entry, message or case) to the case closing, else to the last contact
+    $cc = wf_case_get($aid, $ph); $tt = array_filter([$joins[0]['t'] ?? 0, $ev[0]['t'] ?? 0, $cc ? strtotime((string) ($cc['created'] ?? '')) : 0]);
+    $endT = 0; $closed = false; foreach ((array) ($cc['status_log'] ?? []) as $l) if (in_array($l['to'] ?? '', ['closed', 'archived'], true)) { $endT = strtotime((string) $l['at']); $closed = true; }
+    if (!$endT && $ev) $endT = (int) end($ev)['t'];
+    $span = ['from' => $tt ? min($tt) : 0, 'to' => $endT, 'closed' => $closed, 'days' => ($tt && $endT) ? (int) max(1, round(($endT - min($tt)) / 86400)) : 0];
     $fol = []; foreach ($ev as $e) { if (in_array($e['who'], ['person', ''], true)) continue; $k = $e['who']; $fol[$k] ??= ['who' => $k, 'name' => $names[$k] ?? '', 'n' => 0, 'sure' => 0, 'first' => $e['t'], 'last' => $e['t'], 'places' => []];
         $fol[$k]['n']++; if ($e['how'] === 'sure') $fol[$k]['sure']++; $fol[$k]['last'] = $e['t']; $fol[$k]['places'][$e['where']] = 1; }
     foreach ($fol as &$f) $f['places'] = count($f['places']); unset($f);
     usort($places, fn($a, $b) => strcmp($b['last'], $a['last'])); $fol = array_values($fol); usort($fol, fn($a, $b) => $a['first'] <=> $b['first']);
-    $out = ['places' => $places, 'followers' => $fol, 'events' => array_slice($ev, -300), 'names' => $names, 'at' => date('c')];
+    $out = ['places' => $places, 'followers' => $fol, 'events' => array_slice($ev, -300), 'names' => $names, 'entry' => $entry, 'sessions' => $sessions, 'span' => $span, 'at' => date('c')];
     @file_put_contents($cf, json_encode($out, JSON_UNESCAPED_UNICODE)); @chmod($cf, 0600);
     return $out;
 }
@@ -61,7 +76,12 @@ function wf_trail_lines(array $tr): array {
     $who = function (array $f): string { if ($f['who'] === 'owner') return wf_msg('trail_owner'); if ($f['who'] === 'bot') return wf_msg('trail_bot'); if ($f['who'] === 'history') return wf_msg('trail_history');
         return $f['name'] !== '' ? $f['name'] : (preg_match('/^\d{8,}$/', $f['who']) ? '+' . $f['who'] : $f['who']); };
     $fo = []; foreach ($tr['followers'] as $f) $fo[] = $who($f) . ' (' . date('Y-m-d', $f['first']) . ')';
-    return ['places' => implode(' · ', $pl), 'followers' => implode(' ← ', $fo)];
+    $sp = (array) ($tr['span'] ?? []); $en = (array) ($tr['entry'] ?? []); $se = (array) ($tr['sessions'] ?? []);
+    $top = implode(', ', array_map(fn($t, $n) => $t . ($n > 1 ? ' ×' . $n : ''), array_keys(array_slice((array) ($se['titles'] ?? []), 0, 3, true)), array_slice((array) ($se['titles'] ?? []), 0, 3)));
+    return ['places' => implode(' · ', $pl), 'followers' => implode(' ← ', $fo),
+        'course' => !empty($sp['from']) ? wf_msg('trail_course', ['from' => date('Y-m-d', (int) $sp['from']), 'to' => date('Y-m-d', (int) $sp['to']), 'days' => (string) ($sp['days'] ?? 0), 'state' => !empty($sp['closed']) ? wf_msg('trail_closed') : wf_msg('trail_open')]) : '—',
+        'entry' => wf_msg('trail_entry', ['adds' => (string) ($en['adds'] ?? 0), 'back' => (string) ($en['back'] ?? 0), 'left' => (string) ($en['left'] ?? 0)]),
+        'sessions' => wf_msg('trail_sessions', ['n' => (string) ($se['count'] ?? 0), 'top' => $top !== '' ? $top : '—'])];
 }
 function wf_api_case_trail(string $api): void {
     if ($api !== 'case_trail') return;

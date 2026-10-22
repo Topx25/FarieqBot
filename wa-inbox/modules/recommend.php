@@ -18,9 +18,9 @@ function wf_rec_items(string $aid): array {
 /** The words that matter in a text (normalised, 3+ letters). */
 function wf_rec_words(string $t): array { $o = []; foreach (preg_split('/\s+/u', wf_intake_norm(preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $t))) as $w) if (mb_strlen($w) >= 3) $o[$w] = 1; return $o; }
 /** Suggestions for a chat (and its case): [{kind, icon, code, title, reason, score, uses}], best first. With $q empty and no messages: the most used. */
-function wf_recommend(array $acc, string $jid, bool $ai = true): array {
+function wf_recommend(array $acc, string $jid, bool $ai = true, string $extra = ''): array {
     $aid = (string) $acc['id']; $items = wf_rec_items($aid); if (!$items) return [];
-    $use = wf_rec_usage($aid); $ctx = '';
+    $use = wf_rec_usage($aid); $ctx = $extra; // more of the person's words (e.g. their group messages)
     if ($jid !== '') { $rows = (array) (wi_gateway('/archive/thread?limit=60&jid=' . rawurlencode($jid), null, $acc)['rows'] ?? []);
         foreach (array_slice(array_values(array_filter($rows, fn($m) => ($m['dir'] ?? '') === 'in' && trim((string) ($m['text'] ?? '')) !== '')), -15) as $m) $ctx .= ' ' . $m['text'];
         $ph = preg_replace('/\D/', '', explode('@', $jid)[0]); if (function_exists('wf_case_get') && ($c = wf_case_get($aid, $ph))) foreach (['symptoms', 'complaint', 'story', 'diagnosis', 'notes'] as $k) $ctx .= ' ' . (string) ($c['data'][$k] ?? ''); }
