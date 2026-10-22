@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.146.1', 'date' => '2026-10-22', 'title' => 'Bot settings redesigned', 'changes' => [
+        'Bot → Switch on / off: the general settings are grouped in titled sections — working mode, hours, how it replies, hand-over to the team, protection, follow-up and alerts, reports, cases from private chats — with a quick menu to jump between them.',
+        'Fix: the reply-length box and the repeat box shared one field name, so saving stored the repeat level wrong; each has its own now.',
+    ]],
     ['v' => '3.146.0', 'date' => '2026-10-22', 'title' => 'A landing page for the product and the intro video', 'changes' => [
         'A public product page at /welcome: the problem and the answer, every feature, how to start in 3 steps, the intro video, who it is for, a comparison, the plans with their prices (read from the plans settings), security, frequent questions and a call to start. Its button link and words and the currency are General settings.',
         'The intro video (about a minute and a half, customer service and support) opens from the Help guide and plays on the landing page.',
