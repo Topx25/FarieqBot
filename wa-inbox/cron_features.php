@@ -212,3 +212,6 @@ if ((int) date('i') === 37 && function_exists('wf_bot_quality_week')) foreach ($
 
 // The weekly team report (healers' activity and neglected cases), an hour after the quality report.
 if ((int) date('i') === 41 && function_exists('wf_team_report')) foreach ($accounts as $acc) { try { $tc = wf_bot_run_cfg((string) $acc['id']); if (empty($tc['team_report']) || empty($acc['enabled']) || (int) date('w') !== (int) ($tc['quality_day'] ?? 5) || (int) date('G') !== ((int) ($tc['quality_hour'] ?? 10) + 1) % 24 || !wf_deep_axes((string) $acc['id'])) continue; wf_team_report($acc, $tellAdmins); } catch (Throwable $e) {} }
+
+// Group watch: questions nobody answered and new cases nobody took — the admins are told (every 5 minutes).
+if ((int) date('i') % 5 === 2 && function_exists('wf_group_watch')) foreach ($accounts as $acc) { try { if (!empty($acc['enabled']) && empty($acc['parked']) && (string) ($acc['channel'] ?? '') === '' && wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off') wf_group_watch($acc, $tellAdmins); } catch (Throwable $e) {} }

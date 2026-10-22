@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.143.0', 'date' => '2026-10-22', 'title' => 'Group watch: unanswered questions and untaken cases', 'changes' => [
+        'Every 5 minutes the groups with recent talk are checked: a member\'s question that no one of the team (or the bot) answered for 30 minutes, and a new case no one of the team took for 2 hours, are sent to the admins in one alert — each only once. Switch, minutes and hours in Bot → Switch on / off, with the days after which a case counts as neglected.',
+    ]],
     ['v' => '3.142.0', 'date' => '2026-10-22', 'title' => 'Help: a full guide of the system', 'changes' => [
         'A ❓ Help button at the top opens a full guide of the system: every part (conversations, search, groups, meetings, cases, analysis, follow-up trail, team follow-up, library, suggestions, the bot and its settings, commands, owner commands, learning, quality, numbers, business profile, AI, health, settings), frequent questions and tips, with a search box.',
     ]],
