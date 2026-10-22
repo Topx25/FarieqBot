@@ -53,7 +53,7 @@ function wf_case_deep_command(array $acc, string $text, array $mentions = [], st
     // asked in a group about a case kept private: it is used when the person is also in a group (then it is not private), else the group is told it is private
     if (!$hit && $grp && ($q !== '' || $mentions)) { $all = wf_intake_find($aid, $q, $mentions, $acc); if (count($all) === 1) { $pp = (string) array_key_first($all);
         if (function_exists('wf_case_trail') && array_filter(wf_case_trail($acc, $pp)['places'], fn($p) => !empty($p['group']))) { wf_case_update($aid, $pp, function (?array $c) { if ($c !== null) $c['scope'] = 'group'; return $c; }); $hit = $all; }
-        else return wf_msg('case_deep_private'); } }
+        else return wf_msg('case_deep_none', ['cmd' => $w]); } } // a private-only case is never confirmed in a group
     $dg = wf_phone(preg_replace('/[^\d+]/', '', $q)); if (!$hit && strlen($dg) >= 9 && !wf_case_get($aid, $dg) && wf_case_messages($acc, $dg)) { $nm = (string) (wi_contact($dg . '@s.whatsapp.net', $acc)['name'] ?? '');
         wf_case_reserve_no($aid, $dg, ['phone' => $dg, 'name' => $nm, 'status' => 'new', 'created' => date('c'), 'updated' => date('c'), 'data' => [], 'by' => 'analysis', 'scope' => (function_exists('wf_case_trail') && array_filter(wf_case_trail($acc, $dg)['places'], fn($p) => !empty($p['group']))) ? 'group' : 'private']); $hit = [$dg => wf_case_get($aid, $dg)]; }
     if (count($hit) !== 1) return wf_msg('case_deep_none', ['cmd' => $w]);

@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.133.2', 'date' => '2026-10-22', 'title' => 'Private-chat cases are not even named in groups', 'changes' => [
+        'Asked in a group about a case followed only in the private chat, the bot answers as if no such case was found, so the group does not learn it exists.',
+    ]],
     ['v' => '3.133.1', 'date' => '2026-10-22', 'title' => '#تحليل in groups finds the right cases', 'changes' => [
         'A case opened from a private chat is private only when the person is in no group; a person who is also in a group is analysed in the group too, and a number with no case yet opens its case from a group as well.',
         'A case that is really private-only gets a clear answer in a group ("followed in the private chat only") instead of "write the case ID".',
