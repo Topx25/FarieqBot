@@ -206,3 +206,6 @@ if ((int) date('i') === 23 && function_exists('wf_lean_run')) foreach ($accounts
 // Numbers that are not linked (logged out, need the QR): their process is stopped (it starts again for a while when the QR page is opened),
 // the admins are warned every day from "idle_warn_days", and the number is switched off at "idle_stop_days".
 if ((int) date('i') % 5 === 0 && function_exists('wf_idle_numbers')) { try { wf_idle_numbers($tellAdmins, time()); } catch (Throwable $e) {} }
+
+// The weekly bot quality report (people's ratings + a test against the team's answers), on the set day and hour.
+if ((int) date('i') === 37 && function_exists('wf_bot_quality_week')) foreach ($accounts as $acc) { try { $qc = wf_bot_run_cfg((string) $acc['id']); if ($qc['mode'] === 'off' || empty($acc['enabled']) || (int) date('w') !== (int) ($qc['quality_day'] ?? 5) || (int) date('G') !== (int) ($qc['quality_hour'] ?? 10)) continue; wf_bot_quality_week($acc, $tellAdmins); } catch (Throwable $e) {} }

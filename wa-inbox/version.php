@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.140.0', 'date' => '2026-10-22', 'title' => 'Bot quality: people\'s ratings and a weekly test', 'changes' => [
+        'People rate the bot with no question asked: a reaction on a bot reply (👍 ❤️ / 👎) or the words right after it (thanks / that is wrong). The emojis and words are business-profile settings.',
+        'A weekly test asks the bot real questions the team answered and a model scores each reply 1-5 against the team\'s. A weekly report (score, trend, people\'s satisfaction, weak topics) goes to the admins on the set day and hour. Bot → Learn shows the scores, the history, the test answers and the replies people did not like, with Run now.',
+    ]],
     ['v' => '3.138.0', 'date' => '2026-10-22', 'title' => 'The bot answers voice notes', 'changes' => [
         'A voice note in a private chat is written as text by a model that hears audio (once, kept) and answered like a written message — up to 120 seconds by default; longer ones are left to people. Switch and length in Bot → Switch on / off.',
         'Downloading one file on demand reads only its chat (lighter on the gateway).',
