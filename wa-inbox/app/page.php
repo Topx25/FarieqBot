@@ -62,6 +62,7 @@
       <?php endforeach; endforeach; ?>
     </nav>
     <div class="lang-switch side-lang"><a href="?p=<?= wi_e($page) ?>&amp;lang=en" class="<?= wi_lang() === 'en' ? 'on' : '' ?>">English</a><a href="?p=<?= wi_e($page) ?>&amp;lang=ar" class="<?= wi_lang() === 'ar' ? 'on' : '' ?>">العربية</a></div>
+    <a href="?p=help" class="ver-chip <?= $page === 'help' ? 'on' : '' ?>">❓ <?= wi_e(wi_t('Help')) ?></a>
     <a href="?p=changes" class="ver-chip <?= $page === 'changes' ? 'on' : '' ?>">🆕 <?= wi_e($versions[0]['v'] ?? '') ?></a>
     <div class="me">
       <a href="?p=me" class="avatar" title="My account"><?= wi_e(mb_strtoupper(mb_substr(($me['name'] ?? '') ?: $me['email'], 0, 1))) ?></a>
@@ -357,6 +358,8 @@
           WI.post('my_google', { do: x.dataset.gg }).then(function (r) { if (!r.ok) { alert(r.error || T('Failed')); return; } if (r.url) location.href = r.url; else load(); }); });
         load(); });</script>
       <?php endif; ?>
+    <?php elseif ($page === 'help'): ?>
+      <iframe src="?help_doc=<?= (int) @filemtime(dirname(__DIR__) . '/help.html') ?>" title="Help" style="width:100%;height:calc(100vh - 120px);border:0;border-radius:14px;background:#fff"></iframe>
     <?php elseif ($page === 'changes'): ?>
       <section class="hero"><div class="hero-t"><span class="hero-ic">🆕</span><div><h1>What's new</h1><p class="muted">Current version <b><?= wi_e($versions[0]['v'] ?? '') ?></b> · every update gets its own version.</p></div></div></section>
       <?php // Customers see the product's releases; the full development log only when Settings → System → changelog = full (super admin can switch here).

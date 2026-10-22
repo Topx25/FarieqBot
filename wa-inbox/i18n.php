@@ -2310,6 +2310,7 @@ return [
     'What the business is' => 'النشاط إيه',
     'Language of the content' => 'لغة المحتوى',
     'Language / dialect rule for replies' => 'قاعدة اللغة واللهجة في الردود',
+    'Help' => 'المساعدة',
     'Team follow-up' => 'متابعة الفريق',
     'Who of the team follows which case, how often and how fast — from replies and tags in every group, the number\'s own phone and the case file. Cases nobody answered for some days are on top.' => 'مين من الفريق بيتابع أنهي حالة، وقد إيه، وبسرعة إزاي — من الردود والمنشنات في كل الجروبات وموبايل الرقم وملف الحالة. الحالات اللي محدش رد عليها كام يوم فوق.',
     'Reading every group…' => 'بقرا كل الجروبات…',

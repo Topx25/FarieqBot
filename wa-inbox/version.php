@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.142.0', 'date' => '2026-10-22', 'title' => 'Help: a full guide of the system', 'changes' => [
+        'A ❓ Help button at the top opens a full guide of the system: every part (conversations, search, groups, meetings, cases, analysis, follow-up trail, team follow-up, library, suggestions, the bot and its settings, commands, owner commands, learning, quality, numbers, business profile, AI, health, settings), frequent questions and tips, with a search box.',
+    ]],
     ['v' => '3.141.0', 'date' => '2026-10-22', 'title' => 'Team follow-up: which healer follows which case', 'changes' => [
         'Cases → 👥 Team follow-up: every healer / admin with the cases they follow, their answers, their median answer time and last activity; every open case with the person\'s last message, the team\'s last answer and who gave it. Cases nobody answered for some days (3 by default) are on top, and cases waiting for the team are marked. Built by reading each group once.',
         'A weekly team report (healers and neglected cases) goes to the admins an hour after the quality report. Only the owner level sees this page.',

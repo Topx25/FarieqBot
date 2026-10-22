@@ -9,6 +9,7 @@ wi_boot();
 if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy(); header('Location: ./'); exit; } // another client's address
 // The website (PHP-FPM) and the background jobs run as the account user: the data stays private to it (0700 / 0600).
 
+if (isset($_GET['help_doc']) && wi_logged_in()) { header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex'); readfile(__DIR__ . '/help.html'); exit; } // the user guide (Help page)
 if (isset($_GET['m']) && !isset($_GET['api'])) { require __DIR__ . '/features.php'; wf_meet_page(preg_replace('/[^a-z0-9-]/', '', strtolower((string) $_GET['m']))); } // public meeting gateway (no login)
 if (isset($_GET['fb_hook'])) { require __DIR__ . '/features.php'; wf_fb_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['fb_hook']))); exit; } // Facebook calls this (verified by the app secret)
 if (isset($_GET['privacy']) || isset($_GET['terms'])) { require __DIR__ . '/features.php'; wf_legal_page(isset($_GET['terms']) ? 'terms' : 'privacy'); } // public privacy policy / terms (asked for by Facebook and Google)
@@ -88,7 +89,7 @@ $flash = wi_flash();
 ob_start('wi_translate_html');
 $page = (string) ($_GET['p'] ?? 'dashboard');
 // A user who is to link their own number and has none yet starts on the "link a number" page.
-if (!wi_my_accounts() && wi_can_link_own() && !wi_is_super() && !in_array($page, ['accounts', 'link', 'changes', 'users', 'me'], true)) {
+if (!wi_my_accounts() && wi_can_link_own() && !wi_is_super() && !in_array($page, ['accounts', 'link', 'changes', 'help', 'users', 'me'], true)) {
     if (empty($_SESSION['own_hint'])) { $_SESSION['own_hint'] = 1; wi_flash('Welcome! Link your WhatsApp number to start: add it here, then scan the QR code with WhatsApp on your phone.', 'ok'); }
     header('Location: ?p=accounts'); exit;
 }
@@ -96,12 +97,12 @@ if (wi_logged_in() && isset($_GET['acc']) && isset(wi_my_accounts()[(string) $_G
 // Facebook menu: Messenger and the page's comments / posts / numbers open on a Facebook page (the first one) when a number is open
 if (wi_logged_in() && (($_GET['ch'] ?? '') === 'fb' || $page === 'facebook') && ((wi_current()['channel'] ?? '') !== 'fb')) foreach (wi_my_accounts() as $fbId => $fbA) if (($fbA['channel'] ?? '') === 'fb') { $_SESSION['acc'] = (string) $fbId; break; } // links that open a page for a given number
 if ($page === 'clients' && !wi_is_super()) $page = 'dashboard'; // subscriptions are the super admin's
-if (!in_array($page, ['business', 'clients', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook'], true)) $page = 'dashboard';
+if (!in_array($page, ['business', 'clients', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'help', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook'], true)) $page = 'dashboard';
 $fxPages = ['business', 'learning', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'facebook'];
 $autoPages = ['schedule', 'programs', 'status'];
 $sysPages = ['health', 'report', 'backup'];
 $versions = (array) require __DIR__ . '/version.php';
-if (wi_logged_in() && $page !== 'users' && wi_page_perm($page === 'link' || $page === 'gateway' ? 'accounts' : $page) === '' && !in_array($page, ['link', 'gateway', 'changes', 'me'], true)) $page = 'dashboard';
+if (wi_logged_in() && $page !== 'users' && wi_page_perm($page === 'link' || $page === 'gateway' ? 'accounts' : $page) === '' && !in_array($page, ['link', 'gateway', 'changes', 'help', 'me'], true)) $page = 'dashboard';
 if ($page === 'users' && !wi_can_users()) $page = 'dashboard';
 $manager = wi_is_admin() || wi_can_link_own() || (bool) array_filter(wi_my_accounts(), 'wi_can_manage');
 if (in_array($page, ['link', 'accounts', 'gateway', 'broadcast'], true) && !$manager && !($page === 'broadcast' && wi_is_team() && wi_page_perm('broadcast') !== '')) $page = 'dashboard';
