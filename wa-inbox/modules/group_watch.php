@@ -27,6 +27,8 @@ function wf_group_watch(array $acc, callable $tell): array {
         $sent[$key] = $now; $alerts[] = wf_msg('case_untaken_alert', ['name' => (string) ($cs['name'] ?? '') ?: '+' . $ph, 'no' => (string) ($cs['no'] ?? ''), 'hours' => (string) (int) round(($now - $ct) / 3600)]); }
     foreach ($sent as $k => $t) if ($t < $now - 7 * 86400) unset($sent[$k]);
     wi_update('group_watch.json', function ($G) use ($aid, $sent) { $G[$aid]['sent'] = $sent; $G[$aid]['at'] = date('c'); return $G; });
-    if ($alerts) $tell(wf_msg('group_watch_head', ['name' => (string) ($acc['name'] ?? $aid)]) . "\n\n" . implode("\n\n", array_slice($alerts, 0, 8)));
+    if ($alerts) { $msg = wf_msg('group_watch_head', ['name' => (string) ($acc['name'] ?? $aid)]) . "\n\n" . implode("\n\n", array_slice($alerts, 0, 8));
+        $to = (string) ($c['watch_to'] ?? ''); // a group chosen in Bot → Switch on / off gets the alert; else the admins privately
+        if (preg_match('/^[0-9-]{6,40}@g\.us$/', $to)) wi_gateway('/chat/send', ['jid' => $to, 'text' => $msg, 'via' => 'bot'], $acc); else $tell($msg); }
     return ['alerts' => count($alerts)];
 }

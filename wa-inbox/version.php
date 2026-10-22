@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.144.1', 'date' => '2026-10-22', 'title' => 'Follow-up alerts to a chosen group', 'changes' => [
+        'The alerts about unanswered group questions and untaken cases can go to a group (e.g. the general group) instead of the admins privately — Bot → Switch on / off.',
+    ]],
     ['v' => '3.144.0', 'date' => '2026-10-22', 'title' => 'Follow-up check-ins by the bot', 'changes' => [
         'The bot can ask people under follow-up how they are — every 2 days at 19:00 by default, at most 15 a day — with a short personal message written from their case and last talk, in their dialect. Their answer comes back to the bot like any message, and the case file notes the check-in.',
         'Safe for the number: only people who wrote in the last 30 days, nobody the team or the bot talked to in the last day, never in a paused chat, a pause between messages. Off until switched on in Bot → Switch on / off.',

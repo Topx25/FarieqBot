@@ -2310,6 +2310,8 @@ return [
     'What the business is' => 'النشاط إيه',
     'Language of the content' => 'لغة المحتوى',
     'Language / dialect rule for replies' => 'قاعدة اللغة واللهجة في الردود',
+    'Send these alerts to (a group ID like 1203…@g.us, empty = the admins privately)' => 'ابعت التنبيهات دي لـ (معرّف جروب زي 1203…@g.us، فاضي = للأدمن في الخاص)',
+    'the admins privately' => 'الأدمن في الخاص',
     'Follow-up check-in: the bot asks people under follow-up how they are, every' => 'متابعة دورية: البوت يسأل الحالات اللي تحت المتابعة عن أحوالهم، كل',
     'days at' => 'يوم الساعة',
     'at most' => 'بحد أقصى',
