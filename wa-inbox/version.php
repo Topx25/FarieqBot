@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.141.0', 'date' => '2026-10-22', 'title' => 'Team follow-up: which healer follows which case', 'changes' => [
+        'Cases → 👥 Team follow-up: every healer / admin with the cases they follow, their answers, their median answer time and last activity; every open case with the person\'s last message, the team\'s last answer and who gave it. Cases nobody answered for some days (3 by default) are on top, and cases waiting for the team are marked. Built by reading each group once.',
+        'A weekly team report (healers and neglected cases) goes to the admins an hour after the quality report. Only the owner level sees this page.',
+    ]],
     ['v' => '3.140.0', 'date' => '2026-10-22', 'title' => 'Bot quality: people\'s ratings and a weekly test', 'changes' => [
         'People rate the bot with no question asked: a reaction on a bot reply (👍 ❤️ / 👎) or the words right after it (thanks / that is wrong). The emojis and words are business-profile settings.',
         'A weekly test asks the bot real questions the team answered and a model scores each reply 1-5 against the team\'s. A weekly report (score, trend, people\'s satisfaction, weak topics) goes to the admins on the set day and hour. Bot → Learn shows the scores, the history, the test answers and the replies people did not like, with Run now.',

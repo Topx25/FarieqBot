@@ -209,3 +209,6 @@ if ((int) date('i') % 5 === 0 && function_exists('wf_idle_numbers')) { try { wf_
 
 // The weekly bot quality report (people's ratings + a test against the team's answers), on the set day and hour.
 if ((int) date('i') === 37 && function_exists('wf_bot_quality_week')) foreach ($accounts as $acc) { try { $qc = wf_bot_run_cfg((string) $acc['id']); if ($qc['mode'] === 'off' || empty($acc['enabled']) || (int) date('w') !== (int) ($qc['quality_day'] ?? 5) || (int) date('G') !== (int) ($qc['quality_hour'] ?? 10)) continue; wf_bot_quality_week($acc, $tellAdmins); } catch (Throwable $e) {} }
+
+// The weekly team report (healers' activity and neglected cases), an hour after the quality report.
+if ((int) date('i') === 41 && function_exists('wf_team_report')) foreach ($accounts as $acc) { try { $tc = wf_bot_run_cfg((string) $acc['id']); if (empty($tc['team_report']) || empty($acc['enabled']) || (int) date('w') !== (int) ($tc['quality_day'] ?? 5) || (int) date('G') !== ((int) ($tc['quality_hour'] ?? 10) + 1) % 24 || !wf_deep_axes((string) $acc['id'])) continue; wf_team_report($acc, $tellAdmins); } catch (Throwable $e) {} }
