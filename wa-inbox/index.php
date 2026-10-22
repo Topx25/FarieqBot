@@ -9,6 +9,8 @@ wi_boot();
 if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy(); header('Location: ./'); exit; } // another client's address
 // The website (PHP-FPM) and the background jobs run as the account user: the data stays private to it (0700 / 0600).
 
+if (isset($_GET['landing'])) { require __DIR__ . '/features.php'; wi_landing(); } // the product's public page
+if (isset($_GET['intro_video'])) { header('Content-Type: text/html; charset=utf-8'); readfile(__DIR__ . '/intro.html'); exit; } // the intro video (public: shown on the landing page and in Help)
 if (isset($_GET['help_doc']) && wi_logged_in()) { header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex'); readfile(__DIR__ . '/help.html'); exit; } // the user guide (Help page)
 if (isset($_GET['m']) && !isset($_GET['api'])) { require __DIR__ . '/features.php'; wf_meet_page(preg_replace('/[^a-z0-9-]/', '', strtolower((string) $_GET['m']))); } // public meeting gateway (no login)
 if (isset($_GET['fb_hook'])) { require __DIR__ . '/features.php'; wf_fb_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['fb_hook']))); exit; } // Facebook calls this (verified by the app secret)

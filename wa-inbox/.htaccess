@@ -7,6 +7,7 @@ DirectoryIndex index.php
   # Clean public addresses for the privacy policy, the terms and Facebook's data deletion instructions
   RewriteRule ^privacy/?$ index.php?privacy=1 [L,QSA]
   RewriteRule ^terms/?$ index.php?terms=1 [L,QSA]
+  RewriteRule ^welcome/?$ index.php?landing=1 [L,QSA]
   RewriteRule ^data-deletion/?$ index.php?privacy=1 [L,QSA]
   RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule !(^|/)(index\.php|install\.php|pricing\.php|app\.css|app\.js|features\.js|theme\.css|pro\.css|google\.css|orchid\.css|studio\.css|aurora\.css)$ - [F,L]
