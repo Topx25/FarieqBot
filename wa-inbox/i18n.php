@@ -2310,6 +2310,8 @@ return [
     'What the business is' => 'النشاط إيه',
     'Language of the content' => 'لغة المحتوى',
     'Language / dialect rule for replies' => 'قاعدة اللغة واللهجة في الردود',
+    'Reply length (characters): to a short message / to a long one (0 = no limit)' => 'طول الرد (حروف): لرسالة قصيرة / لرسالة طويلة (0 = من غير حد)',
+    'Offer a fitting written text or program at the end of a reply, from a match of' => 'اقترح رقية مكتوبة أو برنامج مناسب في آخر الرد، من نسبة تطابق',
     'Before handing over to the team, try once more with the stronger model' => 'قبل التحويل للفريق، جرّب مرة كمان بالموديل الأقوى',
     'Quiet hours (nobody of the team awake): send middle-confidence replies with a line that the team will confirm' => 'ساعات الهدوء (مفيش حد من الفريق صاحي): ابعت الردود متوسطة الثقة مع سطر إن الفريق هيأكد',
     'from confidence' => 'من ثقة',

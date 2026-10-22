@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.137.0', 'date' => '2026-10-22', 'title' => 'Reply length that fits, and a fitting session offered in the reply', 'changes' => [
+        'A short message gets a short reply (about 220 characters) and a long one up to about 700 — both editable in Bot → Switch on / off (0 = no limit).',
+        'When the person describes their state, a healing reply ends with the written session or program that fits best (match from 75%, editable), with its tag to ask for it; the same one is not offered to the same person again for a week. On by default for a healing business.',
+    ]],
     ['v' => '3.136.0', 'date' => '2026-10-22', 'title' => 'Replies fit the case, and the bot learns from the team\'s corrections', 'changes' => [
         'The bot reads the person\'s latest case assessment (stage, progress, trend, the angles) and fits its tone: getting worse → reassure first and give one small step; getting better → encourage. It never quotes the scores.',
         'When the team sends its own words instead of the bot\'s draft, the pair is kept; on alike messages the bot follows the team\'s way (tone, length, wording). The last 80 corrections are kept.',

@@ -3,9 +3,9 @@
 
 /* ---------- Bot runner (cron): drafts or automatic replies, with safety limits ---------- */
 function wf_bot_run_cfg(string $aid): array {
-    $r = (array) (wi_read('bot.json', [])[$aid]['run'] ?? []); $r['heal_24h'] ??= function_exists('wf_pack') && (wf_pack($aid)['preset'] ?? '') === 'ruqyah'; // a healing business answers day and night unless switched off
+    $r = (array) (wi_read('bot.json', [])[$aid]['run'] ?? []); $r['heal_24h'] ??= function_exists('wf_pack') && (wf_pack($aid)['preset'] ?? '') === 'ruqyah'; $r['rec_in_reply'] ??= $r['heal_24h'] && (wf_pack($aid)['preset'] ?? '') === 'ruqyah'; // a healing business answers day and night unless switched off
     return ($r + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'dream_wait' => 120, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
-        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5, 'crisis_pause_h' => 12, 'handoff_retry' => true, 'quiet_from' => 0, 'quiet_to' => 0, 'quiet_min_conf' => 0.5,
+        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5, 'crisis_pause_h' => 12, 'reply_short_max' => 220, 'reply_long_max' => 700, 'rec_min' => 75, 'handoff_retry' => true, 'quiet_from' => 0, 'quiet_to' => 0, 'quiet_min_conf' => 0.5,
         'scope' => 'private', 'groups_mode' => 'selected', 'groups' => [], 'group_default' => ['mode' => 'ai', 'trigger' => 'mention', 'text' => '', 'cooldown' => 24]]);
 }
 /** Chats where the bot is paused with /stop (until /start). */
@@ -431,6 +431,12 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         // A short clarifying question is always safe to send (it states no facts), even with low confidence.
         $clarify = !empty($r['clarify']) || (mb_strlen($r['reply']) < 220 && preg_match('/[؟?]\s*$/u', trim($r['reply'])) && $r['confidence'] >= 0.3);
         $minConf = in_array($role, ['dreams', 'support', 'healer'], true) ? min((float) $c['min_conf'], 0.65) : (float) $c['min_conf']; // an interpretation or a caring reply is never certain: the roles send from 0.65
+        // 7) a written text / program that clearly fits (no AI, from the person's words): offered at the end of a healing reply — the person sends its tag to get it
+        $recOn = $c['rec_in_reply'] ?? (function_exists('wf_pack') && (wf_pack($aid)['preset'] ?? '') === 'ruqyah');
+        if ($recOn && empty($r['handoff']) && in_array($role, ['healer', 'support', 'dreams', 'teacher', 'bot'], true) && function_exists('wf_recommend')) { $ro = (array) ($st['rec_offered'][$x['jid']] ?? []);
+            foreach (mb_strlen($text) >= 25 ? wf_recommend($acc, (string) $x['jid'], true, $text) : [] as $it) { // only when the person describes something (a fast model orders the dozen) if ($it['score'] < (int) $c['rec_min'] || isset($ro[$it['code']]) || mb_strpos((string) $r['reply'], $it['code']) !== false) continue;
+                $r['reply'] = rtrim((string) $r['reply']) . "\n\n" . wf_msg('rec_offer', ['title' => $it['title'], 'code' => $it['code']]); $st['rec_offered'][$x['jid']][$it['code']] = time(); break; }
+            foreach ((array) ($st['rec_offered'] ?? []) as $rj => $rl) { $rl = array_filter((array) $rl, fn($t) => $t > time() - 7 * 86400); if ($rl) $st['rec_offered'][$rj] = $rl; else unset($st['rec_offered'][$rj]); } } // the same item is not offered again for a week
         $send = $c['mode'] === 'auto' && $inH && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour']) && ($isTest || $handoffSend || $clarify || $r['confidence'] >= $minConf);
         // 2) quiet hours (e.g. the night, nobody of the team awake): a reply of middle confidence is sent with a short "I will confirm it" line instead of waiting as a draft
         $qf = (int) ($c['quiet_from'] ?? 0); $qt = (int) ($c['quiet_to'] ?? 0); $qh = (int) date('G'); $quiet = $qf !== $qt && ($qf < $qt ? ($qh >= $qf && $qh < $qt) : ($qh >= $qf || $qh < $qt));
