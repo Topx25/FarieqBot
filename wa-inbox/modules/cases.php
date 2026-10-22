@@ -118,6 +118,10 @@ function wf_case_snapshot(array $acc, string $phone): array {
 /** The report with the case ID on top, so the diagnosis group can answer by ID (#الحالة ID …). */
 function wf_report_id(string $report, $no): string { $no = (string) $no; return $no === '' || preg_match('/^\D{0,4}ID ' . preg_quote($no, '/') . '\b/u', $report) ? $report : '🆔 ID ' . $no . "\n" . $report; }
 /** Saves a new case once so it gets its ID now (before its report is posted). Returns the ID. */
+/** A case of a private chat (not reported in a group): kept for the number's owner — never posted to the diagnosis group, never found by group commands, hidden from the team's users. */
+function wf_case_is_private(array $c): bool { return ($c['scope'] ?? '') === 'private' || (($c['scope'] ?? '') === '' && empty((array) ($c['groups'] ?? [])) && empty($c['report']) && (!empty($c['private']) || in_array((string) ($c['by'] ?? ''), ['bot', 'analysis'], true))); }
+/** May the signed-in person see private-chat cases? The owner level only (super admin, admin, the client who owns the number). */
+function wf_case_private_ok(): bool { if (PHP_SAPI === 'cli') return true; $u = wi_me(); return $u && in_array((string) ($u['role'] ?? ''), ['super', 'admin', 'client'], true); }
 function wf_case_reserve_no(string $aid, string $key, array $draft): string {
     if (!empty($draft['no'])) return (string) $draft['no'];
     wf_case_update($aid, $key, fn(?array $x) => $x ?? $draft);
@@ -147,7 +151,7 @@ function wf_api_cases(string $api): void {
     case 'cases': {
         $aid = wf_aid();
         if (!empty($_GET['sync'])) { @set_time_limit(200); wf_cases_sync(wi_current()); }
-        $cases = array_values(wf_cases($aid));
+        $cases = array_values(array_filter(wf_cases($aid), fn($c) => is_array($c) && (!wf_case_is_private($c) || wf_case_private_ok()))); // private-chat cases: the owner level only
         usort($cases, fn($a, $b) => strcmp((string) ($b['last'] ?? ''), (string) ($a['last'] ?? '')));
         $counts = array_count_values(array_map(fn($c) => $c['status'] ?? 'new', $cases));
         wi_json(['ok' => true, 'cases' => $cases, 'counts' => $counts, 'groups' => wf_case_groups($aid), 'statuses' => wf_case_statuses(wf_aid()), 'case_cfg' => wf_case_cfg(wf_aid())]);
@@ -155,7 +159,7 @@ function wf_api_cases(string $api): void {
     case 'case': {
         $acc = wi_current(); $ph = wf_phone($_GET['phone'] ?? '');
         $c = wf_cases((string) $acc['id'])[$ph] ?? null;
-        if (!$c) wi_json(['ok' => false, 'error' => 'Case not found.']);
+        if (!$c || (wf_case_is_private($c) && !wf_case_private_ok())) wi_json(['ok' => false, 'error' => 'Case not found.']);
         $f = wf_case_file((string) $acc['id'], $ph);
         $snap = is_file($f) ? json_decode((string) file_get_contents($f), true) : null;
         $msgs = $snap['messages'] ?? wf_case_messages($acc, $ph);
@@ -227,7 +231,7 @@ function wf_api_cases(string $api): void {
     }
     case 'case_set': {
         $in = wf_post(); $acc = wi_current(); $aid = (string) $acc['id']; $ph = wf_phone($in['phone'] ?? '');
-        if (!wf_case_get($aid, $ph)) wi_json(['ok' => false, 'error' => 'Case not found.']);
+        if (!($cg = wf_case_get($aid, $ph)) || (wf_case_is_private($cg) && !wf_case_private_ok())) wi_json(['ok' => false, 'error' => 'Case not found.']);
         $email = (string) $_SESSION['email']; $statuses = wf_case_statuses(wf_aid()); $fields = array_keys(wf_case_cfg($aid)['fields']);
         $saved = wf_case_update($aid, $ph, function (?array $c) use ($in, $email, $statuses, $fields) { if ($c === null) return null; // changed on the stored case: nothing saved meanwhile is lost
         if (isset($in['status']) && isset($statuses[$in['status']])) { $c['status_log'][] = ['from' => $c['status'] ?? 'new', 'to' => $in['status'], 'at' => date('c'), 'by' => $email]; $c['status'] = $in['status']; }
@@ -259,7 +263,7 @@ function wf_api_cases(string $api): void {
     }
     case 'case_export': {
         $acc = wi_current(); $ph = wf_phone($_GET['phone'] ?? '');
-        $c = wf_cases((string) $acc['id'])[$ph] ?? null; if (!$c) { http_response_code(404); exit('Not found'); }
+        $c = wf_cases((string) $acc['id'])[$ph] ?? null; if (!$c || (wf_case_is_private($c) && !wf_case_private_ok())) { http_response_code(404); exit('Not found'); }
         $f = wf_case_file((string) $acc['id'], $ph); $snap = is_file($f) ? json_decode((string) file_get_contents($f), true) : null;
         $msgs = $snap['messages'] ?? wf_case_messages($acc, $ph);
         header('Content-Type: text/html; charset=utf-8');

@@ -489,7 +489,7 @@ function wf_case_from_private(array $acc, array $c, string $phone, string $jid, 
     $case = wf_case_get($bid, $phone);
     if (!$case) {
         if (empty($c['case_private_new']) || empty($r['symptoms'])) return '';
-        $case = ['phone' => $phone, 'name' => $name, 'status' => 'new', 'created' => date('c'), 'by' => 'bot', 'manual' => true, 'groups' => [],
+        $case = ['phone' => $phone, 'name' => $name, 'status' => 'new', 'created' => date('c'), 'by' => 'bot', 'manual' => true, 'groups' => [], 'scope' => 'private',
             'data' => ['complaint' => (string) ($r['complaint'] ?? ''), 'source' => 'private chat (' . ($acc['name'] ?? $acc['id']) . ')'], 'notes' => [['at' => date('c'), 'by' => 'bot', 'text' => 'Case opened from a private chat: ' . mb_substr($text, 0, 300)]]];
         $done = 'opened';
     } else {

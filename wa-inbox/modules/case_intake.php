@@ -83,8 +83,8 @@ function wf_intake_cmds(string $aid): array {
 }
 function wf_intake_lookup_kw(string $aid): string { return (string) (wf_intake_cfg($aid)['lookup'] ?? ('#' . (wf_case_cfg($aid)['words']['the'] ?? '') . str_replace(' ', '_', (string) wf_case_cfg($aid)['one']))); }
 /** Cases matching a tag, a number (full or its end), a case key, or part of the name. */
-function wf_intake_find(string $aid, string $q, array $mentions, $acc): array {
-    $all = wf_cases($aid); $self = preg_replace('/\D/', '', (string) ($acc['phone'] ?? ''));
+function wf_intake_find(string $aid, string $q, array $mentions, $acc, bool $inGroup = false): array {
+    $all = wf_cases($aid); if ($inGroup) $all = array_filter($all, fn($c) => is_array($c) && !wf_case_is_private($c)); $self = preg_replace('/\D/', '', (string) ($acc['phone'] ?? ''));
     foreach ($mentions as $j) { $d = preg_replace('/\D/', '', explode('@', (string) $j)[0]); if ($d !== '' && $d !== $self && isset($all[$d])) return [$d => $all[$d]]; }
     $q = trim(preg_replace('/@\d+/', '', $q)); if ($q === '') return [];
     if (isset($all[$q])) return [$q => $all[$q]];
@@ -115,7 +115,7 @@ function wf_intake_list(array $acc, string $jid, string $text, string $id, array
         $rows = array_map(fn($p) => '• ' . (string) ($p['name'] ?? '') . ' (' . count((array) ($p['days'] ?? [])) . ')', wf_programs($aid));
         $out = wf_msg('list_programs', ['count' => (string) count($rows), 'list' => implode("\n", array_slice($rows, 0, 80))]); $what = 'programs';
     } elseif (wf_intake_has($text, wf_intake_lookup_kw($aid)) || wf_intake_has($text, '#' . (string) $cc['many']) || wf_intake_has($text, '#' . (string) $cc['one'])) {
-        $all = wf_cases($aid); $by = [];
+        $all = array_filter(wf_cases($aid), fn($c) => is_array($c) && !wf_case_is_private($c)); $by = []; // group lists never show private-chat cases
         foreach ($all as $k => $c) if (($c['status'] ?? '') !== 'archived') $by[(string) ($c['status'] ?? 'new')][] = '• ' . ($c['no'] ?? '') . ' · ' . (trim((string) ($c['name'] ?? '')) ?: '+' . $k) . ' — ' . $k;
         $parts = []; foreach ((array) $cc['statuses'] as $k => $lbl) if (!empty($by[$k])) $parts[] = $lbl . ' (' . count($by[$k]) . ")\n" . implode("\n", array_slice($by[$k], 0, 40));
         $out = wf_msg('list_cases', ['case' => (string) $cc['many'], 'count' => (string) count($all), 'list' => implode("\n\n", $parts)]); $what = 'cases';
@@ -155,9 +155,9 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
         $vals = array_values($vals); $ref = $ph !== '' ? $ph : (string) array_shift($vals); if ($ph !== '' && count($vals) > 1) array_shift($vals); // with a number, the name line is not the reason
         $reason = trim(implode("\n", $vals));
     }
-    $hits = wf_intake_find($aid, $ref, $mentions, $acc);
+    $hits = wf_intake_find($aid, $ref, $mentions, $acc, true);
     if (!$hits && $ref !== '') { $w = preg_split('/\s+/u', preg_replace('/@\d+/', '', $ref)); // "aamer reason words": try the first 1–3 words as the name
-        for ($i = min(3, count($w)); $i >= 1 && !$hits; $i--) { $h = wf_intake_find($aid, implode(' ', array_slice($w, 0, $i)), [], $acc); if (count($h) === 1) { $hits = $h; $reason = trim(implode(' ', array_slice($w, $i)) . "\n" . $reason); } } }
+        for ($i = min(3, count($w)); $i >= 1 && !$hits; $i--) { $h = wf_intake_find($aid, implode(' ', array_slice($w, 0, $i)), [], $acc, true); if (count($h) === 1) { $hits = $h; $reason = trim(implode(' ', array_slice($w, $i)) . "\n" . $reason); } } }
     elseif ($hits && $mentions) $reason = trim(preg_replace('/@\d+/', '', $ref) . "\n" . $reason);
     if (!$hits) { $dj = wf_intake_diag($aid); $dn = ''; if ($dj !== '') foreach ((array) (wi_gateway('/groups', null, $acc)['groups'] ?? []) as $g) if ((string) ($g['id'] ?? $g['jid'] ?? '') === $dj) $dn = (string) ($g['subject'] ?? $g['name'] ?? '');
         $say(wf_msg('case_not_found', ['case' => $one, 'query' => mb_substr($ref, 0, 40), 'diag' => $dn])); return true; }
@@ -182,7 +182,7 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
 
 /** A stage change written in another group is noted in the diagnosis group too, as a reply to the case's report there when it is known. */
 function wf_case_diag_note(array $acc, string $key, string $fromJid, string $status, string $reason, string $by): void {
-    $aid = (string) $acc['id']; $c = wf_case_get($aid, $key); if (!$c) return;
+    $aid = (string) $acc['id']; $c = wf_case_get($aid, $key); if (!$c || wf_case_is_private($c)) return; // a private-chat case is never posted to the diagnosis group
     $diag = (string) ($c['diag_jid'] ?? '') ?: wf_intake_diag($aid); if ($diag === '' || $diag === $fromJid) return; // written in the diagnosis group itself: already there
     $txt = wf_msg('case_diag_note', ['no' => (string) ($c['no'] ?? ''), 'name' => (string) ($c['name'] ?? '') ?: '+' . $key, 'status' => $status, 'reason' => mb_substr($reason, 0, 1500), 'by' => $by]);
     $q = !empty($c['diag_msg']) && ($c['diag_jid'] ?? '') === $diag ? (string) $c['diag_msg'] : '';

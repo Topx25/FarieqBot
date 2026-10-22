@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.132.0', 'date' => '2026-10-22', 'title' => 'Private-chat cases stay private', 'changes' => [
+        'A case that comes from a private chat (opened by the bot or by the analysis, never reported in a group) is private: it is never posted to the diagnosis group, group commands and group lists never find it, and the team\'s users do not see it in Cases, Follow-up, search or exports. The owner level (super admin, admin, the client who owns the number) still sees it.',
+    ]],
     ['v' => '3.131.1', 'date' => '2026-10-22', 'title' => '#تحليل for any number; gateways keep their memory low', 'changes' => [
         '#تحليل with a number that has no case yet opens its case and analyses the chat; alone in a person\'s private chat it analyses that person. A "checking and analysing, the answer follows" message is sent as soon as the case is found, and the result comes to the number\'s own chat (never to the customer).',
         'Fix: gateways were stopped by the host when a big archive read raised their memory. Memory is now given back right after such reads (about 215 MB instead of 400 MB), and the group learning reads only the last two months after its first run.',

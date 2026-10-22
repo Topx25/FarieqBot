@@ -37,12 +37,13 @@ function wf_case_deep_text(array $case, array $a): string {
 function wf_case_deep_is(string $aid, string $text): bool { $w = trim((string) (wf_pack($aid)['analyze_cmd'] ?? '')); return $w !== '' && wf_deep_axes($aid) && wf_intake_has(mb_substr(trim($text), 0, mb_strlen($w) + 2), $w); }
 function wf_case_deep_command(array $acc, string $text, array $mentions = [], string $by = '', string $chatJid = '', string $waitTo = '', array $waitMentions = []): string {
     $aid = (string) $acc['id']; if (!wf_case_deep_is($aid, $text)) return ''; $w = trim((string) wf_pack($aid)['analyze_cmd']); $t = trim($text);
-    $q = trim(mb_substr($t, mb_strlen($w))); $hit = ($q !== '' || $mentions) ? wf_intake_find($aid, $q, $mentions, $acc) : [];
+    $grp = str_ends_with($waitTo, '@g.us'); // asked in a group: private-chat cases stay out of it
+    $q = trim(mb_substr($t, mb_strlen($w))); $hit = ($q !== '' || $mentions) ? wf_intake_find($aid, $q, $mentions, $acc, $grp) : [];
     // the command alone in a person's private chat: that person
-    if (!$hit && $q === '' && $chatJid !== '' && !str_ends_with($chatJid, '@g.us')) { $cp = wf_phone(explode('@', $chatJid)[0]); if (str_ends_with($chatJid, '@lid')) $cp = wf_phone((string) (wi_contact($chatJid, $acc)['phone'] ?? '')); if ($cp !== '') { $q = $cp; $hit = wf_intake_find($aid, $cp, [], $acc); } }
+    if (!$hit && $q === '' && $chatJid !== '' && !str_ends_with($chatJid, '@g.us')) { $cp = wf_phone(explode('@', $chatJid)[0]); if (str_ends_with($chatJid, '@lid')) $cp = wf_phone((string) (wi_contact($chatJid, $acc)['phone'] ?? '')); if ($cp !== '') { $q = $cp; $hit = wf_intake_find($aid, $cp, [], $acc, $grp); } }
     // a number that has no case yet but has a chat: its case is opened now, then analysed
-    $dg = wf_phone(preg_replace('/[^\d+]/', '', $q)); if (!$hit && strlen($dg) >= 9 && wf_case_messages($acc, $dg)) { $nm = (string) (wi_contact($dg . '@s.whatsapp.net', $acc)['name'] ?? '');
-        wf_case_reserve_no($aid, $dg, ['phone' => $dg, 'name' => $nm, 'status' => 'new', 'created' => date('c'), 'updated' => date('c'), 'data' => [], 'by' => 'analysis']); $hit = [$dg => wf_case_get($aid, $dg)]; }
+    $dg = wf_phone(preg_replace('/[^\d+]/', '', $q)); if (!$hit && !$grp && strlen($dg) >= 9 && !wf_case_get($aid, $dg) && wf_case_messages($acc, $dg)) { $nm = (string) (wi_contact($dg . '@s.whatsapp.net', $acc)['name'] ?? '');
+        wf_case_reserve_no($aid, $dg, ['phone' => $dg, 'name' => $nm, 'status' => 'new', 'created' => date('c'), 'updated' => date('c'), 'data' => [], 'by' => 'analysis', 'scope' => 'private']); $hit = [$dg => wf_case_get($aid, $dg)]; }
     if (count($hit) !== 1) return wf_msg('case_deep_none', ['cmd' => $w]);
     $ph = (string) array_key_first($hit);
     if ($waitTo !== '') { $wc = wf_case_get($aid, $ph) ?? []; wi_gateway('/chat/send', ['jid' => $waitTo, 'text' => wf_msg('case_deep_wait', ['name' => (string) ($wc['name'] ?? '') ?: '+' . $ph, 'no' => (string) ($wc['no'] ?? '')]), 'mentions' => $waitMentions, 'via' => 'bot'], $acc); } // the case was found: "checking, the answer follows"
@@ -57,7 +58,7 @@ function wf_api_case_deep(string $api): void {
         wi_json(!empty($a['error']) ? ['ok' => false, 'error' => $a['error']] : ['ok' => true, 'deep' => $a]); }
     // the follow-up board: every case with its last analysis, stage, progress and trend
     $st = (array) (wf_case_cfg($aid)['statuses'] ?? []); $rows = [];
-    foreach (wf_cases($aid) as $ph => $c) { if (!is_array($c) || in_array($c['status'] ?? '', ['archived', 'removed'], true)) continue; $dl = (array) ($c['deep'] ?? []); $d = $dl ? (array) end($dl) : []; $h = array_map(fn($x) => (int) ($x['progress'] ?? 0), (array) ($c['deep'] ?? []));
+    foreach (wf_cases($aid) as $ph => $c) { if (!is_array($c) || in_array($c['status'] ?? '', ['archived', 'removed'], true) || (wf_case_is_private($c) && !wf_case_private_ok())) continue; $dl = (array) ($c['deep'] ?? []); $d = $dl ? (array) end($dl) : []; $h = array_map(fn($x) => (int) ($x['progress'] ?? 0), (array) ($c['deep'] ?? []));
         $rows[] = ['phone' => (string) $ph, 'name' => (string) ($c['name'] ?? ($c['data']['name'] ?? '')), 'no' => (string) ($c['no'] ?? ''), 'status' => (string) ($st[$c['status'] ?? 'new'] ?? ''), 'at' => (string) ($d['at'] ?? ''), 'progress' => $d ? (int) $d['progress'] : null,
             'trend' => (string) ($d['trend'] ?? ''), 'stage' => (string) ($d['stage'] ?? ''), 'axes' => (array) ($d['axes'] ?? []), 'history' => $h, 'flags' => (string) ($d['red_flags'] ?? ''), 'next' => (string) ($d['next_step'] ?? ''), 'summary' => (string) ($d['summary'] ?? ''), 'updated' => (string) ($c['updated'] ?? '')]; }
     usort($rows, fn($a, $b) => strcmp($b['at'] ?: $b['updated'], $a['at'] ?: $a['updated']));

@@ -32,7 +32,7 @@ function wf_suggest(array $acc, string $q, int $max = 25): array {
         $nm = (string) ($c['name'] ?? ''); $ph = (string) ($c['phone'] ?? ''); $s = max(wf_sg_score($q, $nm), $ph !== '' ? wf_sg_score($q, $ph) : 0);
         $add(!empty($c['group']) ? 'group' : 'chat', !empty($c['group']) ? '👥' : '💬', $nm !== '' ? $nm : ($ph !== '' ? '+' . $ph : (string) $c['jid']), $ph !== '' ? '+' . $ph : '', '?p=inbox#' . rawurlencode((string) $c['jid']), $s); }
     if ($can('cases') && function_exists('wf_cases')) { $one = (string) (wf_case_cfg($aid)['one'] ?? '');
-        foreach (wf_cases($aid) as $ph => $c) { if (!is_array($c)) continue; $nm = (string) ($c['name'] ?? ($c['data']['name'] ?? '')); $no = (string) ($c['no'] ?? '');
+        foreach (wf_cases($aid) as $ph => $c) { if (!is_array($c) || (wf_case_is_private($c) && !wf_case_private_ok())) continue; $nm = (string) ($c['name'] ?? ($c['data']['name'] ?? '')); $no = (string) ($c['no'] ?? '');
             $s = max(wf_sg_score($q, $nm), wf_sg_score($q, (string) $ph), $no !== '' && ltrim($q, '#') === $no ? 100 : 0);
             $add('case', '🗂️', $nm !== '' ? $nm : '+' . $ph, trim($one . ($no !== '' ? ' · ID ' . $no : '') . ' · +' . $ph), '?p=cases&q=' . rawurlencode((string) $ph), $s); } }
     if ($can('bot') && function_exists('wf_kb')) foreach (wf_kb($aid) as $k) { if (($k['status'] ?? '') === 'disabled') continue;
