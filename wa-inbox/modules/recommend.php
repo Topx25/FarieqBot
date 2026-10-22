@@ -56,6 +56,6 @@ function wf_api_recommend(string $api): void {
     if ($api === 'recommend') { @set_time_limit(90); wi_json(['ok' => true, 'items' => $jid !== '' ? wf_recommend($acc, wf_jid($jid), empty($_GET['fast'])) : [], 'popular' => wf_rec_popular($aid)]); }
     $in = wf_post(); $jid = wf_jid((string) ($in['jid'] ?? '')); $code = trim((string) ($in['code'] ?? ''));
     if ($jid === '' || $code === '' || !wi_can_reply()) wi_json(['ok' => false, 'error' => 'Not allowed.'], 403);
-    $ok = wf_media_code_send($acc, $jid, $code); // counted as used inside wi_log('recommend_send', ['account' => $aid, 'jid' => $jid, 'code' => $code]);
+    $ok = wf_media_code_send($acc, $jid, $code); wi_log('recommend_send', ['account' => $aid, 'jid' => $jid, 'code' => $code]);
     wi_json(['ok' => $ok]);
 }
