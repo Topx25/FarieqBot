@@ -55,6 +55,9 @@
     }
     if ($api === 'qr') {
         if (!wi_can_manage(wi_current())) wi_json(['ok' => false, 'error' => 'Not allowed for this number.'], 403);
+        $ca = wi_current(); if (!empty($ca['parked']) && (int) ($ca['qr_until'] ?? 0) < time()) { // a number stopped while not linked: started for the QR window
+            $A = wi_accounts(); $A[$ca['id']]['qr_until'] = time() + 60 * max(5, (int) wi_sys('idle_qr_min')); wi_save_accounts($A);
+            @exec('nohup /usr/local/bin/php ' . escapeshellarg(dirname(__DIR__, 3) . '/wa-local/accounts_watchdog.php') . ' >/dev/null 2>&1 &'); }
         $q = wi_gateway('/qr.json'); if (!empty($q['connected'])) $q['phone'] = preg_replace('/[:@].*$/', '', (string) (wi_gateway('/status')['account']['id'] ?? '')); // the linked mobile number
         wi_json($q);
     }

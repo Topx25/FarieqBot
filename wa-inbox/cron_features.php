@@ -202,3 +202,7 @@ if (!empty($D['refresh_token']) && !empty($D['enabled']) && (int) date('G') === 
 }
 // Learning from the chosen groups, saving tokens (learn_lean): once an hour, within the daily cap of each number.
 if ((int) date('i') === 23 && function_exists('wf_lean_run')) foreach ($accounts as $acc) { try { if (!wi_account_blocked($acc) && !empty(wf_lean_cfg((string) $acc['id'])['on'])) wf_lean_run($acc); } catch (Throwable $e) {} }
+
+// Numbers that are not linked (logged out, need the QR): their process is stopped (it starts again for a while when the QR page is opened),
+// the admins are warned every day from "idle_warn_days", and the number is switched off at "idle_stop_days".
+if ((int) date('i') % 5 === 0 && function_exists('wf_idle_numbers')) { try { wf_idle_numbers($tellAdmins, time()); } catch (Throwable $e) {} }

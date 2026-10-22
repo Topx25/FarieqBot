@@ -43,6 +43,7 @@ foreach ($registry as $a) {
     if ($id === '' || $id === 'main' || $port < 1024 || $port > 65535 || strlen($token) < 32) continue;
     $dir = WA_DIR . '/accounts/' . $id;
     if (empty($a['enabled'])) { wa_stop($dir); continue; }
+    if (!empty($a['parked']) && (int) ($a['qr_until'] ?? 0) < time()) { wa_stop($dir); continue; } // not linked: no process until someone opens its QR page
     $wanted[$id] = true;
     if (!is_dir($dir)) { @mkdir($dir . '/archive', 0755, true); @mkdir($dir . '/auth', 0700, true); }
     $st = wa_http('http://127.0.0.1:' . $port . '/status?token=' . rawurlencode($token));

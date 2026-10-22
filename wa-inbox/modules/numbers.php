@@ -95,3 +95,23 @@ function wf_api_numbers(string $api): void {
     }
     }
 }
+
+/** Numbers that are not linked (logged out, need the QR): stopped until their QR page is opened, warned daily, switched off at the end (System settings: idle_*). */
+function wf_idle_numbers(callable $tellAdmins, int $now): void {
+    $I = wi_read('idle_numbers.json', []); $A = wi_accounts(); $chg = false;
+    foreach ($A as $id => $a) { if (!empty($a['main']) || empty($a['enabled']) || (string) ($a['channel'] ?? '') !== '' || (int) ($a['port'] ?? 0) < 1024) { unset($I[$id]); continue; } // WhatsApp numbers only (a Facebook page has no gateway)
+        $inQr = (int) ($a['qr_until'] ?? 0) > $now; $h = (!empty($a['parked']) && !$inQr) ? [] : wi_gateway('/health', null, $a);
+        if (!empty($h['connected'])) { unset($I[$id]); if (!empty($a['parked']) || isset($a['qr_until'])) { unset($A[$id]['parked'], $A[$id]['qr_until']); $chg = true; } continue; }
+        // not linked = WhatsApp logged it out, or it answers but has stayed disconnected for 30 minutes (a stopped or crashed process is not counted: the watchdog restarts it)
+        $idle = !empty($a['parked']) || !empty($h['logged_out']) || (!empty($h['ok']) && empty($h['connected']) && !empty($h['disconnected_since']) && strtotime((string) $h['disconnected_since']) < $now - 1800);
+        if (!$idle) continue;
+        $I[$id]['since'] ??= date('c'); $days = (int) floor(($now - strtotime((string) $I[$id]['since'])) / 86400);
+        if (empty($a['parked']) && !$inQr) { $A[$id]['parked'] = true; $chg = true; }
+        $warn = max(1, (int) wi_sys('idle_warn_days')); $stop = max($warn, (int) wi_sys('idle_stop_days'));
+        if ($days >= $stop) { $A[$id]['enabled'] = false; unset($A[$id]['parked'], $A[$id]['qr_until']); $chg = true; unset($I[$id]);
+            $tellAdmins(wf_msg('number_idle_stopped', ['name' => (string) ($a['name'] ?? $id), 'days' => (string) $days])); wi_log('number_idle_stopped', ['account' => $id]); continue; }
+        if ($days >= $warn && ($I[$id]['warned'] ?? '') !== date('Y-m-d')) { $I[$id]['warned'] = date('Y-m-d');
+            $tellAdmins(wf_msg('number_idle_warn', ['name' => (string) ($a['name'] ?? $id), 'days' => (string) $days, 'left' => (string) ($stop - $days)])); } }
+    if ($chg) wi_save_accounts($A); wi_write('idle_numbers.json', $I);
+}
+
