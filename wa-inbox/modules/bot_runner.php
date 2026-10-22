@@ -5,7 +5,7 @@
 function wf_bot_run_cfg(string $aid): array {
     $r = (array) (wi_read('bot.json', [])[$aid]['run'] ?? []); $r['heal_24h'] ??= function_exists('wf_pack') && (wf_pack($aid)['preset'] ?? '') === 'ruqyah'; // a healing business answers day and night unless switched off
     return ($r + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'dream_wait' => 120, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
-        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5, 'crisis_pause_h' => 12,
+        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5, 'crisis_pause_h' => 12, 'handoff_retry' => true, 'quiet_from' => 0, 'quiet_to' => 0, 'quiet_min_conf' => 0.5,
         'scope' => 'private', 'groups_mode' => 'selected', 'groups' => [], 'group_default' => ['mode' => 'ai', 'trigger' => 'mention', 'text' => '', 'cooldown' => 24]]);
 }
 /** Chats where the bot is paused with /stop (until /start). */
@@ -397,6 +397,12 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         if (!empty($r['mode']) && $r['mode'] !== $role && isset(wf_roles_cfg($aid)['roles'][$r['mode']])) $role = (string) $r['mode']; // the model's own choice of mode (notes, threshold, case file)
         $st['done'][$x['jid']] = $last['time']; $n++;
         if (empty($r['ok']) || trim((string) $r['reply']) === '') { $did[] = ['jid' => $x['jid'], 'result' => 'error', 'error' => $r['error'] ?? '']; continue; }
+        // 1) before handing over to the team: one more try with the stronger model (it often knows), kept when it no longer needs a person
+        if (!empty($r['handoff']) && !empty($c['handoff_retry'])) { $r2 = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => $mine, 'role' => $role, 'jid' => (string) $x['jid'], 'no_fast' => true]);
+            if (!empty($r2['ok']) && empty($r2['handoff']) && trim((string) $r2['reply']) !== '' && (float) $r2['confidence'] >= 0.6) { $r = $r2; $r['retried'] = true; } }
+        // 3) never open with the same sentence the bot used in this chat lately (a greeting repeated at every message)
+        $fs = function (string $t) { $p = preg_split('/(?<=[.!?\x{061F}\n])\s+/u', trim($t), 2); return [trim((string) ($p[0] ?? '')), trim((string) ($p[1] ?? ''))]; };
+        [$open, $rest] = $fs((string) $r['reply']); if ($rest !== '' && mb_strlen($open) <= 80) $ln = fn($t) => trim(preg_replace('/\s+/u', ' ', preg_replace('/[^\p{L}\p{N}\s]/u', '', wf_norm($t)))); foreach ($mine as $pm) if ($ln($fs($pm)[0]) !== '' && $ln($fs($pm)[0]) === $ln($open)) { $r['reply'] = $rest; break; }
         // Asked to join / rejoin a group: the bot does it (automatic mode, working hours) and says what happened.
         $jr = null; if (!empty($r['join_group']) && $c['mode'] === 'auto' && $inHours) { $jr = wf_bot_group_join($acc, (string) $x['jid'], (string) ($x['phone'] ?? ''));
             if ($jr['result'] !== 'off') { $r['reply'] = wf_msg('bot_group_' . ($jr['result'] === 'limit' ? 'team' : $jr['result']), ['group' => (string) ($jr['group'] ?? '')]); $r['confidence'] = 1.0; $r['clarify'] = false;
@@ -426,6 +432,9 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         $clarify = !empty($r['clarify']) || (mb_strlen($r['reply']) < 220 && preg_match('/[؟?]\s*$/u', trim($r['reply'])) && $r['confidence'] >= 0.3);
         $minConf = in_array($role, ['dreams', 'support', 'healer'], true) ? min((float) $c['min_conf'], 0.65) : (float) $c['min_conf']; // an interpretation or a caring reply is never certain: the roles send from 0.65
         $send = $c['mode'] === 'auto' && $inH && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour']) && ($isTest || $handoffSend || $clarify || $r['confidence'] >= $minConf);
+        // 2) quiet hours (e.g. the night, nobody of the team awake): a reply of middle confidence is sent with a short "I will confirm it" line instead of waiting as a draft
+        $qf = (int) ($c['quiet_from'] ?? 0); $qt = (int) ($c['quiet_to'] ?? 0); $qh = (int) date('G'); $quiet = $qf !== $qt && ($qf < $qt ? ($qh >= $qf && $qh < $qt) : ($qh >= $qf || $qh < $qt));
+        if (!$send && $quiet && $c['mode'] === 'auto' && $inH && empty($r['handoff']) && (float) $r['confidence'] >= (float) ($c['quiet_min_conf'] ?? 0.5) && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour'])) { $send = true; $r['reply'] = rtrim((string) $r['reply']) . "\n\n" . wf_msg('bot_hedge'); }
         $why = $c['mode'] !== 'auto' ? 'suggest-only mode' : (!$inH ? 'outside working hours' : (((int) $c['per_hour'] > 0 && count($st['sent']) >= (int) $c['per_hour']) ? 'hourly limit' : ($r['handoff'] ? 'handed over to a person' : ($r['confidence'] < $c['min_conf'] ? 'low confidence' : ''))));
         $log = ['role' => $role, 'jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => mb_substr($text, 0, 600), 'reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'at' => date('c')];
         if ($send) {
