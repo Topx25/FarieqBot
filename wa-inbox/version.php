@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.144.2', 'date' => '2026-10-22', 'title' => 'Follow-up alerts tag the healer', 'changes' => [
+        'In a group, each follow-up alert tags the healer who follows that case; when the case has no known healer, the team member last active in that group is tagged.',
+    ]],
     ['v' => '3.144.1', 'date' => '2026-10-22', 'title' => 'Follow-up alerts to a chosen group', 'changes' => [
         'The alerts about unanswered group questions and untaken cases can go to a group (e.g. the general group) instead of the admins privately — Bot → Switch on / off.',
     ]],
