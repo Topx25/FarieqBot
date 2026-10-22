@@ -5,7 +5,7 @@
 function wf_bot_run_cfg(string $aid): array {
     $r = (array) (wi_read('bot.json', [])[$aid]['run'] ?? []); $r['heal_24h'] ??= function_exists('wf_pack') && (wf_pack($aid)['preset'] ?? '') === 'ruqyah'; $r['rec_in_reply'] ??= $r['heal_24h'] && (wf_pack($aid)['preset'] ?? '') === 'ruqyah'; // a healing business answers day and night unless switched off
     return ($r + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'dream_wait' => 120, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
-        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5, 'crisis_pause_h' => 12, 'reply_short_max' => 220, 'reply_long_max' => 700, 'rec_min' => 75, 'handoff_retry' => true, 'quiet_from' => 0, 'quiet_to' => 0, 'quiet_min_conf' => 0.5,
+        'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5, 'crisis_pause_h' => 12, 'voice_reply' => true, 'voice_max_sec' => 120, 'reply_short_max' => 220, 'reply_long_max' => 700, 'rec_min' => 75, 'handoff_retry' => true, 'quiet_from' => 0, 'quiet_to' => 0, 'quiet_min_conf' => 0.5,
         'scope' => 'private', 'groups_mode' => 'selected', 'groups' => [], 'group_default' => ['mode' => 'ai', 'trigger' => 'mention', 'text' => '', 'cooldown' => 24]]);
 }
 /** Chats where the bot is paused with /stop (until /start). */
@@ -374,6 +374,9 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         $q = []; for ($i = count($rows) - 1; $i >= 0 && $rows[$i]['dir'] === 'in'; $i--) array_unshift($q, $rows[$i]);
         $q = array_values(array_filter($q, fn($m) => !$isSys($m['text'] ?? ''))); // a login code or an alert after the customer's message does not hide it
         if (!$q) { $skip($x, 'a message the system sent by itself (login code, alert, report…)'); continue; }
+        // 8) a voice note is written as text (once) and answered like a message (Bot → Switch on / off: voice_reply, voice_max_sec)
+        if (!empty($c['voice_reply']) && function_exists('wf_voice_text')) foreach ($q as &$qm) if (trim((string) ($qm['text'] ?? '')) === '' && in_array($qm['kind'] ?? '', ['voice', 'audio'], true) && ($vt = wf_voice_text($acc, $qm, (string) $x['jid'])) !== '') { $qm['text'] = $vt; $qm['voice'] = true; }
+        unset($qm);
         $text = trim(implode("\n", array_filter(array_map(fn($m) => (string) ($m['text'] ?? ''), $q))));
         // The customer asked the bot to stop: it stays silent in this chat until someone turns it back on.
         $sw = array_filter(array_map('wf_norm', wf_style_words((string) $c['stop_words']))); $tn = wf_norm($text);

@@ -2310,6 +2310,8 @@ return [
     'What the business is' => 'النشاط إيه',
     'Language of the content' => 'لغة المحتوى',
     'Language / dialect rule for replies' => 'قاعدة اللغة واللهجة في الردود',
+    'Answer voice notes (written as text first), up to' => 'رد على الرسايل الصوتية (بتتكتب نص الأول)، لحد',
+    'seconds (0 = any length)' => 'ثانية (0 = أي طول)',
     'Reply length (characters): to a short message / to a long one (0 = no limit)' => 'طول الرد (حروف): لرسالة قصيرة / لرسالة طويلة (0 = من غير حد)',
     'Offer a fitting written text or program at the end of a reply, from a match of' => 'اقترح رقية مكتوبة أو برنامج مناسب في آخر الرد، من نسبة تطابق',
     'Before handing over to the team, try once more with the stronger model' => 'قبل التحويل للفريق، جرّب مرة كمان بالموديل الأقوى',

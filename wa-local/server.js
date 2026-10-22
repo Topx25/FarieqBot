@@ -2278,7 +2278,8 @@ app.get('/media/dedupe', requireToken, (req, res) => res.json({ ok: true, ...(de
 app.post('/media/fetch', requireToken, async (req, res) => {
   try {
     const id = String(req.body.id || '');
-    const row = readArchive({ limit: 300000, months: 36 }).find((r) => r.id === id && r.mref);
+    const jid = String(req.body.jid || ''); // with the chat given only that chat is read (reading the whole archive raised the memory)
+    const row = readArchive(jid ? { jid, limit: 5000, months: 6 } : { limit: 300000, months: 36 }).find((r) => r.id === id && r.mref);
     if (!row) { res.status(404).json({ ok: false, error: 'Nothing to download for this message.' }); return; }
     if (Number(row.mref.fileLength || 0) > 300 * 1048576) { res.status(413).json({ ok: false, error: 'File larger than 300 MB.' }); return; }
     const d = await withTimeout(downloadRow(row), 900000, 'download timed out');
