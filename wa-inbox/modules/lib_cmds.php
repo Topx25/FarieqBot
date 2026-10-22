@@ -146,6 +146,7 @@ function wf_program_message(array $p): string {
 }
 /** A message that names a file's code: the file is sent there (with its caption). True when sent. */
 function wf_media_code_send(array $acc, string $jid, string $text, string $quote = ''): bool {
+    if (function_exists('wf_rec_used') && ($wf_c = trim($text)) !== '' && $wf_c[0] === '#' && mb_strlen($wf_c) <= 70 && (wf_program_code_in((string) $acc['id'], $wf_c) || wf_lib_text_code_in((string) $acc['id'], $wf_c) || wf_media_code_in((string) $acc['id'], $wf_c) !== '')) wf_rec_used((string) $acc['id'], $wf_c); // how often each item is sent (the suggestions list the most used)
     if ((wf_libtag_which((string) $acc['id'], $text) || wf_program_code_in((string) $acc['id'], $text) || wf_lib_text_code_in((string) $acc['id'], $text) || wf_media_code_in((string) $acc['id'], $text) !== '') && !wf_code_once((string) $acc['id'], $jid, $text, $quote)) return true; // the same message delivered twice, or caught by two paths: answered once
     if (wf_libtag_which((string) $acc['id'], $text)) return wf_libtag_send($acc, $jid, $text, $quote); // a section tag: the list of that section
     if ($lt = wf_lib_text_code_in((string) $acc['id'], $text)) return wf_lib_text_send($acc, $jid, $lt, $quote) || true; // a library text's tag: the text with its cover

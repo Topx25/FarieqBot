@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.130.0', 'date' => '2026-10-22', 'title' => 'Suggestions: the right written text, program or recording', 'changes' => [
+        'A 💡 Suggestions button in the chat and in the case file: written texts, programs and recordings that fit this person, best first with a match score and one line why — from the person\'s words, their case notes, what the bot learned and how often each item is sent. Send it with one click.',
+        'The most used items (sent 2 times or more) are listed too. Few tokens: ranked first with no AI, a fast model only orders the best dozen.',
+    ]],
     ['v' => '3.129.1', 'date' => '2026-10-22', 'title' => 'Working hours per group; private chats all day', 'changes' => [
         'Each group can have its own working hours (Bot → Groups → the group: from → to); empty = the bot\'s hours.',
         'New switch: private chats answered all day and night while the groups keep their hours. Healing replies in groups follow the day-and-night switch too.',

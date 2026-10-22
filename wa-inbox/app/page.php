@@ -171,6 +171,7 @@
             <label class="attach-btn lbl" title="Send a photo, audio or PDF"><span>📎</span><em>Attach</em><input type="file" id="attach" accept="image/jpeg,image/png,image/webp,audio/*,.ogg,.mp3,.m4a,.wav,application/pdf" hidden></label>
             <button type="button" class="attach-btn lbl" id="ml-btn" title="Send from the media library"><span>🖼️</span><em>Library</em></button>
             <button type="button" class="attach-btn lbl" id="qr-btn" title="Quick replies (type / or #)"><span>⚡</span><em>Quick replies</em></button>
+            <button type="button" class="attach-btn lbl" id="rec-btn" title="<?= wi_e(wi_t('Suggest a written text, a program or a recording for this person')) ?>"><span>💡</span><em><?= wi_e(wi_t('Suggestions')) ?></em></button>
             <textarea id="reply" rows="1" maxlength="4000" placeholder="Type a reply… ( / for quick replies)" dir="auto"></textarea>
             <button class="btn primary" id="send-btn" title="Send">➤</button>
           </form>

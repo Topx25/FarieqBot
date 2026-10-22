@@ -446,6 +446,7 @@
         if (e.key === 'Escape') qrPop.hidden = true;
       });
       qrPop.addEventListener('mousedown', function (e) { e.preventDefault(); var it = e.target.closest('[data-qr]'); if (it) qrUse(qrItems[Number(it.getAttribute('data-qr'))]); if (e.target.closest('[data-qr-manage]')) openReplies(); });
+      if (document.getElementById('rec-btn')) document.getElementById('rec-btn').addEventListener('click', function () { if (!open) { alert(T('Choose a conversation first.')); return; } WI.recPanel(open); });
       document.getElementById('qr-btn').addEventListener('click', function () { if (!open) { alert(T('Choose a conversation first.')); return; } box.value = (box.value ? box.value + ' ' : '') + '/'; box.focus(); qrShow(); });
       function drawReplies() {
         var q = (document.getElementById('qr-q').value || '').trim().toLowerCase(), cur = document.getElementById('qr-id').value;

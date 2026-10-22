@@ -18,6 +18,16 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
   window.WI = window.WI || {};
   WI.csrf = function () { return app.getAttribute('data-csrf') || ''; };
   WI.get = function (name, params) { var q = new URLSearchParams(Object.assign({ api: name }, params || {})); return fetch('?' + q.toString(), { credentials: 'same-origin', cache: 'no-store' }).then(wiSafeJson, wiNetFail); };
+  // 💡 Suggestions: which written text / program / recording fits this person (best first), and the most used ones.
+  WI.recPanel = function (jid, phone) { var T = window.T || function (x) { return x; }, E = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var d = document.createElement('dialog'); d.className = 'rec-dlg'; d.innerHTML = '<div class="rec-h"><b>💡 ' + T('Suggestions') + '</b><button type="button" class="btn ghost sm" data-x>✕</button></div><div class="rec-b"><div class="empty">' + T('Reading the chat and what the bot learned…') + '</div></div>';
+    document.body.appendChild(d); d.showModal(); d.addEventListener('close', function () { d.remove(); }); d.querySelector('[data-x]').onclick = function () { d.close(); };
+    var row = function (x, pop) { var c = x.score >= 75 ? 'hi' : x.score >= 50 ? 'mid' : 'lo'; return '<div class="rec-it"><span class="rec-ic">' + x.icon + '</span><div class="rec-tx"><b dir="auto">' + E(x.title) + '</b><small dir="auto">' + E(T(x.reason || '')) + (x.uses >= 2 ? ' · 🔁 ' + x.uses + ' ' + T('times') : '') + ' · <code dir="ltr">' + E(x.code) + '</code></small></div>' + (pop ? '' : '<span class="sg-sc ' + c + '">' + x.score + '%</span>') + (jid ? '<button type="button" class="btn sm primary" data-send="' + E(x.code) + '">📤 ' + T('Send') + '</button>' : '') + '</div>'; };
+    WI.get('recommend', jid ? { jid: jid } : { phone: phone || '' }).then(function (r) { var b = d.querySelector('.rec-b'); if (!r || !r.ok) { b.innerHTML = '⚠️ ' + E(r && r.error); return; }
+      b.innerHTML = '<h4>🎯 ' + T('Fits this person') + '</h4>' + ((r.items || []).length ? r.items.map(function (x) { return row(x); }).join('') : '<div class="muted small">' + T('Nothing fits yet — the person has not described their case.') + '</div>')
+        + ((r.popular || []).length ? '<h4>🔁 ' + T('Most used (2 times or more)') + '</h4>' + r.popular.map(function (x) { return row(x, true); }).join('') : '');
+      b.onclick = function (e) { var s = e.target.closest('[data-send]'); if (!s) return; s.disabled = true; s.textContent = '⏳';
+        WI.post('recommend_send', { jid: jid, code: s.dataset.send }).then(function (x) { s.textContent = x && x.ok ? '✓ ' + T('Sent') : '⚠️'; }); }; }); };
   WI.post = function (name, body) { var o = { method: 'POST', credentials: 'same-origin', headers: { 'X-CSRF': WI.csrf() } }; if (body !== undefined) { o.headers['Content-Type'] = 'application/json'; o.body = JSON.stringify(body); } return fetch('?api=' + name, o).then(wiSafeJson, wiNetFail); };
   function api(name, params) { return WI.get(name, params); }
   // Links from messages / contacts open only as web pages (no javascript: or data: URLs).
@@ -754,6 +764,7 @@ document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') qrPop.hidden = true;
       });
       qrPop.addEventListener('mousedown', function (e) { e.preventDefault(); var it = e.target.closest('[data-qr]'); if (it) qrUse(qrItems[Number(it.getAttribute('data-qr'))]); if (e.target.closest('[data-qr-manage]')) openReplies(); });
+      if (document.getElementById('rec-btn')) document.getElementById('rec-btn').addEventListener('click', function () { if (!open) { alert(T('Choose a conversation first.')); return; } WI.recPanel(open); });
       document.getElementById('qr-btn').addEventListener('click', function () { if (!open) { alert(T('Choose a conversation first.')); return; } box.value = (box.value ? box.value + ' ' : '') + '/'; box.focus(); qrShow(); });
       function drawReplies() {
         var q = (document.getElementById('qr-q').value || '').trim().toLowerCase(), cur = document.getElementById('qr-id').value;
