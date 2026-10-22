@@ -30,6 +30,7 @@ function wf_clean_gcfg(array $g): array {
         'text' => mb_substr(trim((string) ($g['text'] ?? '')), 0, 2000), 'cooldown' => max(1, min(720, (int) ($g['cooldown'] ?? 24))), 'name' => mb_substr((string) ($g['name'] ?? ''), 0, 120),
         'welcome' => !empty($g['welcome']) && $g['welcome'] !== '0', 'welcome_text' => mb_substr(trim((string) ($g['welcome_text'] ?? '')), 0, 2000),
         'learn' => !empty($g['learn']) && $g['learn'] !== '0',
+        'from' => isset($g['from']) && $g['from'] !== '' ? max(0, min(23, (int) $g['from'])) : '', 'to' => isset($g['to']) && $g['to'] !== '' ? max(0, min(24, (int) $g['to'])) : '', // the group's own working hours ('' = the bot's)
         'visitors' => !empty($g['visitors']) && $g['visitors'] !== '0', 'bye' => !empty($g['bye']) && $g['bye'] !== '0', 'bye_text' => mb_substr(trim((string) ($g['bye_text'] ?? '')), 0, 1500), // visitors list: farewell to a person who leaves before answering
         'revisit' => !empty($g['revisit']) && $g['revisit'] !== '0', 'revisit_text' => mb_substr(trim((string) ($g['revisit_text'] ?? '')), 0, 2000), 'revisit_days' => max(0, min(365, (int) ($g['revisit_days'] ?? 3))), 'revisit_kick' => max(0, min(50, (int) ($g['revisit_kick'] ?? 0))), 'kick_text' => mb_substr(trim((string) ($g['kick_text'] ?? '')), 0, 1000), // a person who comes back
         'guide' => !empty($g['guide']) && $g['guide'] !== '0', 'guide_text' => mb_substr(trim((string) ($g['guide_text'] ?? '')), 0, 3000), // system help group: explains the system by the asker's permissions
@@ -154,6 +155,7 @@ function wf_is_question(string $t): bool {
 /** Group messages: answers members' new messages in the chosen groups (as a reply to their message). */
 function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $chats): array {
     $aid = (string) $acc['id']; $did = []; $n = 0;
+    $heal24G = !empty($c['heal_24h_groups'] ?? $c['heal_24h']) ? array_flip(['healer', 'dreams', 'support', 'teacher']) : [];
     $since = strtotime((string) ($c['since'] ?? 'now'));
     $h = wi_gateway('/health', null, $acc); $me = wf_phone(explode(':', (string) ($h['account'] ?? ''))[0]);
     foreach ($chats as $x) {
@@ -273,7 +275,8 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 foreach (array_slice($admCache[$x['jid']], 0, 8) as $p) { $mentions[] = wf_phone($p['phone']) . '@s.whatsapp.net'; }
                 if ($mentions) $log['reply'] .= "\n" . implode(' ', array_map(fn($j) => '@' . explode('@', $j)[0], $mentions));
             }
-            $hh = (int) date('G'); $inH = $c['from'] <= $c['to'] ? ($hh >= $c['from'] && $hh < $c['to']) : ($hh >= $c['from'] || $hh < $c['to']);
+            $hf = $g['from'] === '' ? (int) $c['from'] : (int) $g['from']; $ht = $g['to'] === '' ? (int) $c['to'] : (int) $g['to']; // this group's own hours, else the bot's
+            $hh = (int) date('G'); $inH = $hf === $ht || ($hf <= $ht ? ($hh >= $hf && $hh < $ht) : ($hh >= $hf || $hh < $ht)) || isset($heal24G[(string) ($log['role'] ?? '')]);
             if ($c['mode'] === 'auto' && $ok && $inH && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour'])) {
                 // every group reply tags the person it answers, so replies to different people never get mixed up
                 $tagNum = $who; if (strlen($who) >= 14 && function_exists('wf_group_member_phone') && ($pn = wf_group_member_phone($acc, (string) $x['jid'], $who)['phone']) !== '') $tagNum = $pn; // the tag shows the mobile number, not the long WhatsApp ID
@@ -308,7 +311,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
     for ($w = 0; !$got && $fast && $w < 120; $w++) { sleep(1); $got = flock($lk, LOCK_EX | LOCK_NB); }
     if (!$got) return ['skipped' => 'busy'];
     $heal24 = !empty($c['heal_24h']) ? array_flip(['healer', 'dreams', 'support', 'teacher']) : []; // the healing roles answer day and night (Bot → Switch on / off)
-    $h = (int) date('G'); $inHours = $c['from'] <= $c['to'] ? ($h >= $c['from'] && $h < $c['to']) : ($h >= $c['from'] || $h < $c['to']);
+    $h = (int) date('G'); $inHours = !empty($c['private_24h']) ? true : null; $inHours ??= $c['from'] <= $c['to'] ? ($h >= $c['from'] && $h < $c['to']) : ($h >= $c['from'] || $h < $c['to']);
     $state = wi_read('bot_state.json', []); $st = $state[$aid] ?? ['done' => [], 'sent' => []];
     $st['last_tick'] = date('c'); $retry = (array) ($st['retry'] ?? []); // chats an admin asked to answer now (once, past the limits)
     $st['sent'] = array_values(array_filter($st['sent'] ?? [], fn($t) => $t > time() - 3600));

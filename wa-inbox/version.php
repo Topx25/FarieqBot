@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.129.1', 'date' => '2026-10-22', 'title' => 'Working hours per group; private chats all day', 'changes' => [
+        'Each group can have its own working hours (Bot → Groups → the group: from → to); empty = the bot\'s hours.',
+        'New switch: private chats answered all day and night while the groups keep their hours. Healing replies in groups follow the day-and-night switch too.',
+    ]],
     ['v' => '3.129.0', 'date' => '2026-10-22', 'title' => 'Search everything while typing; healing replies day and night', 'changes' => [
         'The top search box suggests while typing: chats and numbers, groups, cases, knowledge, library files, commands and message text, each with its match score, best first. ↑↓ to choose, Enter on a suggestion opens it, Enter alone searches all messages.',
         'Healing replies (healer, dreams, support, teacher) work day and night outside the working hours (on by default for a healing business), and a hand-over no longer silences them for hours: only the owner\'s own reply stops the bot for the idle minutes.',
