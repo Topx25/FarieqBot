@@ -691,6 +691,26 @@ function archive(entry) {
 function archiveSent(result, jid, kind, text, attachment, via) {
   archive({ dir: 'out', id: result?.key?.id || '', jid, phone: String(jid).split('@')[0], kind, text: text || '', attachment: attachment ? path.relative(storageRoot, attachment) : '', via });
 }
+// The archive files are append-only. Each is kept in memory with an index of its lines by chat, and when it grows only the new part is read:
+// a thread request used to read and scan every file (tens of MB) each time.
+const archiveCache = new Map();
+function archiveIndexLine(c, n) {
+  const line = c.lines[n]; if (!line) return; const i = line.indexOf('"jid":"'); if (i < 0) return; const j = line.indexOf('"', i + 7); if (j < 0) return;
+  const k = line.slice(i + 7, j); let a = c.idx.get(k); if (!a) c.idx.set(k, a = []); a.push(n);
+}
+function archiveFile(fp) {
+  const st = fs.statSync(fp); let c = archiveCache.get(fp);
+  if (c && c.s === st.size) return c;
+  if (c && st.size > c.s && c.lines.length && c.lines[c.lines.length - 1] === '') { // grew, and the cached text ended on a whole line: read only what was added
+    const fd = fs.openSync(fp, 'r');
+    try { const buf = Buffer.alloc(st.size - c.s); fs.readSync(fd, buf, 0, buf.length, c.s); c.lines.pop(); const start = c.lines.length; for (const l of buf.toString('utf8').split('\n')) c.lines.push(l); for (let n = start; n < c.lines.length; n++) archiveIndexLine(c, n); c.s = st.size; return c; }
+    catch { archiveCache.delete(fp); } finally { fs.closeSync(fd); }
+  }
+  const buf = fs.readFileSync(fp); c = { s: buf.length, lines: buf.toString('utf8').split('\n'), idx: new Map() };
+  for (let n = 0; n < c.lines.length; n++) archiveIndexLine(c, n);
+  archiveCache.delete(fp); archiveCache.set(fp, c); while (archiveCache.size > 64) archiveCache.delete(archiveCache.keys().next().value);
+  return c;
+}
 function readArchive({ phone = '', q = '', limit = 300, months = 3, jid = '', events = false } = {}) {
   const jidNeedle = jid ? `"jid":${JSON.stringify(String(jid))}` : ''; // every row and marker of a chat carries its jid exactly like this
   const files = fs.existsSync(archiveDir) ? fs.readdirSync(archiveDir).filter((f) => /^\d{4}-\d{2}\.jsonl$/.test(f)).sort().slice(-months) : [];
@@ -704,7 +724,9 @@ function readArchive({ phone = '', q = '', limit = 300, months = 3, jid = '', ev
   const cleared = new Map(); // chats deleted from the dashboard: jid -> time (older messages are hidden)
   const rows = [];
   for (const f of files) {
-    for (const line of fs.readFileSync(path.join(archiveDir, f), 'utf8').split('\n')) {
+    const ac = archiveFile(path.join(archiveDir, f)), ids = jid ? (ac.idx.get(String(jid)) || []) : null; // a chat asked for: only its own lines
+    for (let ai = 0, an = ids ? ids.length : ac.lines.length; ai < an; ai++) {
+      const line = ac.lines[ids ? ids[ai] : ai];
       if (!line || (jidNeedle && !line.includes(jidNeedle))) continue; // one chat asked for: other chats' lines are skipped without parsing
       let r; try { r = JSON.parse(line); } catch { continue; }
       if (r.dir === 'deleted') { deleted.add(r.id); continue; }
@@ -1730,13 +1752,14 @@ app.get('/groups/invite', requireToken, async (req, res) => {
 let mediaKindsCache = null;
 app.get('/archive/media-kinds', requireToken, (req, res) => {
   try {
-    if (!mediaKindsCache || mediaKindsCache.v !== archiveVersion) { const kinds = {}, names = {}, chats = {};
+    if (!mediaKindsCache || mediaKindsCache.v !== archiveVersion) { const kinds = {}, names = {}, chats = {}, senders = {};
       for (const r of readArchive({ limit: 300000, months: 60 })) if (r.attachment) {
         if (r.kind && !kinds[r.attachment]) kinds[r.attachment] = r.kind;
         if (!names[r.attachment] && r.file_name) names[r.attachment] = String(r.file_name).slice(0, 120); // the name the file was sent with
-        if (!chats[r.attachment] && r.jid) chats[r.attachment] = r.jid; } // the chat or group it came from (media library filter)
-      mediaKindsCache = { v: archiveVersion, kinds, names, chats }; }
-    res.json({ ok: true, kinds: mediaKindsCache.kinds, names: mediaKindsCache.names, chats: mediaKindsCache.chats });
+        if (!chats[r.attachment] && r.jid) chats[r.attachment] = r.jid; // the chat or group it came from (media library filter)
+        if (!senders[r.attachment]) senders[r.attachment] = Object.assign(r.dir === 'out' ? { o: 1 } : { n: String(r.from_name || r.name || '').slice(0, 60), p: String(r.from || r.phone || '').replace(/\D/g, '').slice(0, 20) }, { m: String(r.id || '').slice(0, 80) }); } // who sent it (the owner of the media)
+      mediaKindsCache = { v: archiveVersion, kinds, names, chats, senders }; }
+    res.json({ ok: true, kinds: mediaKindsCache.kinds, names: mediaKindsCache.names, chats: mediaKindsCache.chats, senders: mediaKindsCache.senders });
   } catch (error) { res.status(500).json({ ok: false, error: error.message }); }
 });
 
@@ -2107,7 +2130,7 @@ function mqRow(id) {
   // Built once, then kept up to date by archive() (re-reading the whole archive froze the gateway).
   if (!mqIndex) {
     mqIndex = new Map(); sigFiles = new Map();
-    for (const r of readArchive({ limit: 300000, months: 60 })) if (r.id && r.mref) { mqIndex.set(r.id, r); const sg = mediaSig(r.mref); if (sg && r.attachment && !sigFiles.has(sg)) sigFiles.set(sg, r.attachment); }
+    for (const r of readArchive({ limit: 120000, months: 6 })) if (r.id && r.mref) { mqIndex.set(r.id, r); const sg = mediaSig(r.mref); if (sg && r.attachment && !sigFiles.has(sg)) sigFiles.set(sg, r.attachment); }
     mqIndexAt = Date.now();
   }
   return mqIndex.get(id);
@@ -2182,9 +2205,10 @@ setInterval(async () => {
 }, 2500);
 app.get('/media/queue', requireToken, (_req, res) => { res.json({ ok: true, pending: mediaQueue.pending.length, done: mediaQueue.done, dupes: mediaQueue.dupes || 0, failed: mediaQueue.failed, expired: mediaQueue.expired, last_error: mediaQueue.last_error, started_at: mediaQueue.started_at }); });
 /** Queue every archived recording (and, with images=1 or by default at startup, every photo/sticker) that has download details but no file yet. */
-function queueMissingMedia(images) {
+// At start only the last months are scanned, once a day (reading years of archive at once used so much memory that the host stopped the gateway, again at every start).
+function queueMissingMedia(images, months = 60) {
   let n = 0; const gone = new Set(mediaQueue.gone || []);
-  for (const r of readArchive({ limit: 300000, months: 60 })) {
+  for (const r of readArchive({ limit: months < 60 ? 50000 : 300000, months })) {
     if (!r.mref || r.attachment || !r.id || gone.has(r.id)) continue;
     const audio = r.kind === 'voice' || r.kind === 'audio' || r.mref.type === 'audio' || /^audio\//.test(String(r.mref.mimetype || ''));
     if (audio || (images && MEDIA_AUTO.includes(r.kind) && Number(r.mref.fileLength || 0) <= mediaMaxBytes(r.mref))) { queueMedia(r.id); n++; }
@@ -2197,7 +2221,7 @@ app.post('/media/queue-audio', requireToken, (req, res) => {
 });
 // After every start: anything that should have been downloaded but was not (offline, expired link, crash) is queued again.
 let missingChecked = false;
-setInterval(() => { if (!missingChecked && connected && socket) { missingChecked = true; try { const n = queueMissingMedia(true); if (n) console.log(`media: ${n} missing photos/recordings queued`); } catch { /* next start */ } } }, 60000);
+setInterval(() => { if (!missingChecked && connected && socket) { missingChecked = true; if (Date.now() - Number(mediaQueue.scanned_at || 0) < 86400000) return; mediaQueue.scanned_at = Date.now(); mqDirty = true; try { const n = queueMissingMedia(true, 2); if (n) console.log(`media: ${n} missing photos/recordings queued`); } catch { /* next start */ } } }, 60000);
 
 /** Downloads one archived media message on demand (works while WhatsApp still keeps the file). */
 // One-time pass over files downloaded before fingerprints existed: identical files keep one copy,

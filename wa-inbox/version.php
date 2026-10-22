@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.127.1', 'date' => '2026-10-22', 'title' => 'Gateways stop falling over; owner commands from the number\'s own phone', 'changes' => [
+        'Fix: at every start a gateway read years of archive to find missing photos and recordings; the memory peak got it stopped by the host, and it started again every few minutes. Now only the last two months are checked, once a day.',
+        'The owner\'s commands (warm-up on / off, stop / resume the bot, delete with confirm, restart) also work when typed with # on the number\'s own phone; the answer goes to the number\'s own chat.',
+    ]],
     ['v' => '3.127.0', 'date' => '2026-10-22', 'title' => 'Numbers that are not linked stop using the server', 'changes' => [
         'A WhatsApp number that is logged out (needs its QR) has its process stopped; opening its link page starts it for a while (System settings: idle_qr_min, 15 minutes) so the QR can be scanned.',
         'The admins get a warning every day once a number has not been linked for idle_warn_days (3), and the number is switched off at idle_stop_days (5). A number that only crashed is never counted; it is restarted as before.',

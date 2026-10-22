@@ -47,9 +47,9 @@ if (isset($_GET['bot_hook'])) {
             wi_log('keyword_reply', ['account' => $aid, 'jid' => $jid, 'keyword' => $hit[0]['keyword'], 'sent' => $why === '', 'why' => $why]); }
         echo json_encode($out, JSON_UNESCAPED_UNICODE); exit; }
     if ($acc && ($in['cmd'] ?? '') === 'expand') { $jid = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($in['jid'] ?? ''));
-        if (function_exists('wf_fun_command') && !str_ends_with($jid, '@g.us') && ($note = wf_fun_command((string) $acc['id'], (string) ($in['text'] ?? ''))) !== '') { // the warm-up word typed in a private chat: the note goes to the owner's own number, not to that chat
+        if (function_exists('wf_owner_command') && !str_ends_with($jid, '@g.us') && ($oc = wf_owner_command($acc, (string) ($in['text'] ?? ''))) !== null && ($note = (string) $oc[0]) !== '') { // the owner's commands typed on the number's own phone (warm-up, stop / resume, delete, restart) // the warm-up word typed in a private chat: the note goes to the owner's own number, not to that chat
             $me = preg_replace('/[:@].*$/', '', (string) (wi_gateway('/status', null, $acc)['account']['id'] ?? '')); if ($me !== '') wi_gateway('/chat/send', ['jid' => $me . '@s.whatsapp.net', 'text' => $note, 'via' => 'bot'], $acc);
-            wi_log('fun_mode', ['account' => $acc['id'], 'on' => wf_fun_on((string) $acc['id'])]); header('Content-Type: application/json'); echo json_encode(['ok' => false]); exit; }
+            wi_log('owner_command', ['account' => $acc['id'], 'restart' => !empty($oc[1])]); header('Content-Type: application/json'); echo json_encode(['ok' => false]); if (!empty($oc[1])) { if (function_exists('fastcgi_finish_request')) fastcgi_finish_request(); sleep(2); wi_gateway('/shutdown', [], $acc); } exit; }
         if (function_exists('wf_media_code_send') && wf_media_code_send($acc, preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($in['jid'] ?? '')), (string) ($in['text'] ?? ''))) { // a file's shortcut typed on the phone: the file goes to that chat
             header('Content-Type: application/json'); echo json_encode(['ok' => false]); exit; }
         if (function_exists('wf_intake_list_text') && mb_strpos((string) ($in['text'] ?? ''), '#') !== false) { $Lw = (array) (wf_case_cfg((string) $acc['id'])['words'] ?? []) + ['list' => '', 'shortcuts' => '', 'programs' => ''];
