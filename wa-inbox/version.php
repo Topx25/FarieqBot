@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.133.0', 'date' => '2026-10-22', 'title' => 'Follow-up trail: who followed a case, where and when', 'changes' => [
+        'Case file → 🧭 Follow-up trail (also on the Follow-up board): every place the case is followed — the private chat and every group — found by number and WhatsApp ID, who followed it in order (healers, the number\'s owner, the bot) with how many times and how sure, and a timeline.',
+        'A team message counts when it answers or tags the person (also tags written in the text of old history). A switch can also count a healer\'s message right after the person\'s, marked likely.',
+        'The #تحليل report shows where the case is followed and who followed it, in order.',
+    ]],
     ['v' => '3.132.1', 'date' => '2026-10-22', 'title' => 'A professional case report', 'changes' => [
         'The #تحليل report is now a formal report every healer can work from: case ID, name and date; a summary; each angle with its score, level, findings and the evidence; the treatment course with the stage, a progress bar, the trend and each stage done or left; 2-4 recommendations by priority; urgent points; and a note that it supports, not replaces, a direct assessment.',
         'Its layout and words (levels, trend words, titles) are message templates, and the instruction is editable in the AI instructions.',

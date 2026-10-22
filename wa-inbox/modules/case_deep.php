@@ -17,7 +17,7 @@ function wf_case_deep(array $acc, string $ph, string $by = ''): array {
     $ai = wi_ai('Case analysis (deep)', wf_prompt('case_deep', $aid, ['axes' => implode(', ', $axes), 'stages' => implode("\n", $stages) ?: '-', 'programs' => implode("\n", $prog) ?: '-',
         'previous' => $prev ? json_encode(array_intersect_key($prev, array_flip(['at', 'progress', 'stage', 'axes'])), JSON_UNESCAPED_UNICODE) : '-', 'notes' => mb_substr(json_encode((array) ($case['data'] ?? []), JSON_UNESCAPED_UNICODE), 0, 2500), 'messages' => mb_substr($conv, -24000)]), 210, ['subject' => '+' . $ph]);
     $d = is_array($ai['data'] ?? null) ? $ai['data'] : null; if (empty($ai['ok']) || !$d) return ['error' => $ai['error'] ?? 'AI failed.'];
-    $a = ['at' => date('c'), 'by' => $by, 'summary' => mb_substr((string) ($d['summary'] ?? ''), 0, 1200), 'axes' => [], 'stage' => mb_substr((string) ($d['stage'] ?? ''), 0, 120), 'progress' => max(0, min(100, (int) ($d['progress'] ?? 0))),
+    $a = ['aid' => $aid, 'at' => date('c'), 'by' => $by, 'summary' => mb_substr((string) ($d['summary'] ?? ''), 0, 1200), 'axes' => [], 'stage' => mb_substr((string) ($d['stage'] ?? ''), 0, 120), 'progress' => max(0, min(100, (int) ($d['progress'] ?? 0))),
         'trend' => in_array($d['trend'] ?? '', ['better', 'same', 'worse'], true) ? $d['trend'] : 'unknown', 'stages' => [], 'next_step' => mb_substr((string) ($d['next_step'] ?? ''), 0, 400), 'red_flags' => mb_substr((string) ($d['red_flags'] ?? ''), 0, 400), 'model' => trim(($ai['provider'] ?? '') . ' ' . ($ai['model'] ?? ''))];
     foreach ((array) ($d['axes'] ?? []) as $x) if (is_array($x)) $a['axes'][] = ['name' => mb_substr((string) ($x['name'] ?? ''), 0, 40), 'score' => max(0, min(10, (int) ($x['score'] ?? 0))), 'state' => mb_substr((string) ($x['state'] ?? ''), 0, 400), 'evidence' => mb_substr((string) ($x['evidence'] ?? ''), 0, 300)];
     $a['recs'] = array_values(array_filter(array_map(fn($r) => mb_substr(trim((string) $r), 0, 300), array_slice((array) ($d['recommendations'] ?? []), 0, 4))));
@@ -35,7 +35,8 @@ function wf_case_deep_text(array $case, array $a): string {
     $sg = implode("\n", array_map(fn($x) => ($x['done'] ? '  ✔︎ ' : '  ◻︎ ') . $x['name'] . ($x['note'] !== '' ? ' — ' . $x['note'] : ''), $a['stages']));
     $recs = (array) ($a['recs'] ?? []); if (!$recs && $a['next_step'] !== '') $recs = [$a['next_step']];
     $rc = implode("\n", array_map(fn($r, $i) => ($i + 1) . '. ' . $r, $recs, array_keys($recs)));
-    return wf_msg('case_deep_msg', ['name' => (string) ($case['name'] ?? '') ?: ((string) ($case['data']['name'] ?? '') ?: '+' . (string) ($case['phone'] ?? '')), 'no' => (string) ($case['no'] ?? ''), 'date' => date('Y-m-d', strtotime((string) $a['at'])),
+    $tl = function_exists('wf_case_trail') && !empty($case['phone']) ? wf_trail_lines(wf_case_trail(wi_accounts()[(string) ($a['aid'] ?? '')] ?? (wi_current() ?? []), (string) $case['phone'])) : ['places' => '', 'followers' => ''];
+    return wf_msg('case_deep_msg', ['places' => $tl['places'] ?: '—', 'followers' => $tl['followers'] ?: '—', 'name' => (string) ($case['name'] ?? '') ?: ((string) ($case['data']['name'] ?? '') ?: '+' . (string) ($case['phone'] ?? '')), 'no' => (string) ($case['no'] ?? ''), 'date' => date('Y-m-d', strtotime((string) $a['at'])),
         'summary' => $a['summary'], 'axes' => $ax, 'stage' => $a['stage'], 'progress' => (string) $a['progress'], 'bar' => $bar((int) $a['progress']), 'trend' => $tr, 'stages' => $sg, 'recs' => $rc,
         'flags' => $a['red_flags'] !== '' ? "\n\n" . wf_msg('case_deep_flags') . "\n" . $a['red_flags'] : '']);
 }
