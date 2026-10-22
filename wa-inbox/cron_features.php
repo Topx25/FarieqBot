@@ -215,3 +215,6 @@ if ((int) date('i') === 41 && function_exists('wf_team_report')) foreach ($accou
 
 // Group watch: questions nobody answered and new cases nobody took — the admins are told (every 5 minutes).
 if ((int) date('i') % 5 === 2 && function_exists('wf_group_watch')) foreach ($accounts as $acc) { try { if (!empty($acc['enabled']) && empty($acc['parked']) && (string) ($acc['channel'] ?? '') === '' && wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off') wf_group_watch($acc, $tellAdmins); } catch (Throwable $e) {} }
+
+// Follow-up check-ins: at the set hour, the bot asks people under follow-up how they are (with a daily cap).
+if ((int) date('i') === 15 && function_exists('wf_checkin_run')) foreach ($accounts as $acc) { try { $cc = wf_bot_run_cfg((string) $acc['id']); if (!empty($cc['checkin_on']) && $cc['mode'] === 'auto' && empty($acc['parked']) && !empty($acc['enabled']) && (int) date('G') === (int) $cc['checkin_hour'] && empty($cc['held'])) wf_checkin_run($acc); } catch (Throwable $e) {} }
