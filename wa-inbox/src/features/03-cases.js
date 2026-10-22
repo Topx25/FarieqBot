@@ -166,7 +166,7 @@
     }
     load(false);
     document.getElementById('cs-sync').onclick = function () { this.disabled = true; load(true); };
-    document.getElementById('cs-q').oninput = function () { C.q = this.value; pgReset('cases'); draw(); };
+    document.getElementById('cs-q').oninput = function () { C.q = this.value; pgReset('cases'); draw(); }; (function () { var q0 = new URLSearchParams(location.search).get('q'); if (q0) { var b = document.getElementById('cs-q'); b.value = q0; b.oninput(); } })(); // opened from the search suggestions
     document.getElementById('cs-st').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; C.st = b.dataset.s; load(false); };
     return;
   }

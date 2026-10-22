@@ -248,7 +248,7 @@
       if (e.target.closest('#me-send')) { mlSave().then(function () { mlForward(mcur.key, document.getElementById('me-c').value, function () { mlPage(true); }); }); return; }
       if (e.target.closest('#me-hide') && confirm(T('Delete this file from the library? It stays in the chats and can be put back from «Deleted».'))) { mlSave({ hidden: 1 }).then(function () { mlEdClose(); }); }
     });
-    document.getElementById('ml-q').oninput = function () { mq = this.value; mlPage(); };
+    document.getElementById('ml-q').oninput = function () { mq = this.value; mlPage(); }; (function () { var q0 = new URLSearchParams(location.search).get('q'); if (q0) { var b = document.getElementById('ml-q'); b.value = q0; b.oninput(); } })(); // opened from the search suggestions
     var so = document.getElementById('ml-sort'); so.value = msort; so.onchange = function () { msort = this.value; try { localStorage.setItem('wi_ml_sort', msort); } catch (e) {} mlPage(); };
     mlPage(true);
   }

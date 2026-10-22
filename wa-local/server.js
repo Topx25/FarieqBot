@@ -2130,7 +2130,7 @@ function mqRow(id) {
   // Built once, then kept up to date by archive() (re-reading the whole archive froze the gateway).
   if (!mqIndex) {
     mqIndex = new Map(); sigFiles = new Map();
-    for (const r of readArchive({ limit: 120000, months: 6 })) if (r.id && r.mref) { mqIndex.set(r.id, r); const sg = mediaSig(r.mref); if (sg && r.attachment && !sigFiles.has(sg)) sigFiles.set(sg, r.attachment); }
+    for (const r of readArchive({ limit: 30000, months: 2 })) if (r.id && r.mref) { mqIndex.set(r.id, r); const sg = mediaSig(r.mref); if (sg && r.attachment && !sigFiles.has(sg)) sigFiles.set(sg, r.attachment); }
     mqIndexAt = Date.now();
   }
   return mqIndex.get(id);

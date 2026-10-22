@@ -3,7 +3,8 @@
 
 /* ---------- Bot runner (cron): drafts or automatic replies, with safety limits ---------- */
 function wf_bot_run_cfg(string $aid): array {
-    return ((wi_read('bot.json', [])[$aid]['run'] ?? []) + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'dream_wait' => 120, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
+    $r = (array) (wi_read('bot.json', [])[$aid]['run'] ?? []); $r['heal_24h'] ??= function_exists('wf_pack') && (wf_pack($aid)['preset'] ?? '') === 'ruqyah'; // a healing business answers day and night unless switched off
+    return ($r + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'dream_wait' => 120, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
         'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => 'وقف، توقف، كفاية، بس كده، stop', 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5, 'crisis_pause_h' => 12,
         'scope' => 'private', 'groups_mode' => 'selected', 'groups' => [], 'group_default' => ['mode' => 'ai', 'trigger' => 'mention', 'text' => '', 'cooldown' => 24]]);
 }
@@ -52,6 +53,15 @@ function wf_fun_command(string $aid, string $text): string {
     if ($t !== wf_intake_norm($on)) return '';
     $h = max(1, (int) ($P['fun_hours'] ?? 2)); wi_update('fun_mode.json', function ($F) use ($aid, $h) { $F[$aid] = time() + $h * 3600; return $F; });
     return wf_msg('fun_on', ['hours' => (string) $h, 'off' => $off]);
+}
+/** The owner wrote the continue word (#كمل) in a customer's chat: the bot answers there again now (the owner's earlier replies no longer hold it back, a pause is lifted). */
+function wf_chat_continue(string $aid, string $jid, string $text): bool {
+    $t = wf_intake_norm(trim($text)); $ok = false; foreach (preg_split('/[,\x{060C}|\n]+/u', (string) (wf_pack($aid)['continue_cmd'] ?? '')) as $w) if (($w = wf_intake_norm(trim($w))) !== '' && $t === $w) $ok = true;
+    if (!$ok || str_ends_with($jid, '@g.us')) return false;
+    wi_update('bot_resume_at.json', function ($R) use ($aid, $jid) { $R[$aid][$jid] = time(); return $R; });
+    wi_update('bot_paused.json', function ($P) use ($aid, $jid) { unset($P[$aid][$jid]); return $P; });
+    wi_bot_log_add($aid, ['jid' => $jid, 'at' => date('c'), 'result' => 'resumed', 'q' => $text, 'reply' => '', 'why' => 'owner wrote the continue word']);
+    return true;
 }
 /** The owner's commands sent from a test number to the bot's number: the warm-up words, and the restart words (business profile → restart_cmd).
  *  Returns [note, restart?], or null when the text is not a command. */
@@ -297,6 +307,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
     $got = flock($lk, LOCK_EX | LOCK_NB);
     for ($w = 0; !$got && $fast && $w < 120; $w++) { sleep(1); $got = flock($lk, LOCK_EX | LOCK_NB); }
     if (!$got) return ['skipped' => 'busy'];
+    $heal24 = !empty($c['heal_24h']) ? array_flip(['healer', 'dreams', 'support', 'teacher']) : []; // the healing roles answer day and night (Bot → Switch on / off)
     $h = (int) date('G'); $inHours = $c['from'] <= $c['to'] ? ($h >= $c['from'] && $h < $c['to']) : ($h >= $c['from'] || $h < $c['to']);
     $state = wi_read('bot_state.json', []); $st = $state[$aid] ?? ['done' => [], 'sent' => []];
     $st['last_tick'] = date('c'); $retry = (array) ($st['retry'] ?? []); // chats an admin asked to answer now (once, past the limits)
@@ -352,6 +363,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         // Like a person: the bot stops only while a real person from the team is talking here — for "human_wait" minutes after the team's
         // last message (after the bot's last reply). No team activity in that time: it carries on. Only bot and customer: it never waits.
         $botAt = 0; foreach ($rows as $m) if ($m['dir'] === 'out' && ($m['via'] ?? '') === 'bot') $botAt = max($botAt, strtotime($m['time']));
+        $resAt = (int) (wi_read('bot_resume_at.json', [])[$aid][$x['jid']] ?? 0); if ($humanAt <= $resAt) $humanAt = 0; // the owner wrote the continue word (#كمل) in this chat: the bot answers again
         if (!$isTest && !$again && !isset($forced[$x['jid']]) && $humanAt > $botAt && time() - $humanAt < $wait) continue; // the team is on it (checked again next minute)
         // The customer's latest messages (since our last reply).
         $q = []; for ($i = count($rows) - 1; $i >= 0 && $rows[$i]['dir'] === 'in'; $i--) array_unshift($q, $rows[$i]);
@@ -396,19 +408,20 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         $isQ = !empty($r['clarify']) || preg_match('/[؟?]\s*$/u', trim((string) $r['reply']));
         if (!$isTest && ($repeat || ($isQ && $askedBefore >= max(1, (int) $c['max_clarify']) && empty($r['handoff'])))) { // a test number always gets the reply, so the owner sees what the bot says
             $why2 = $repeat ? 'same reply as before — handed to the team' : 'already asked to clarify — handed to the team';
-            if (!$isTest) { wi_update('bot_paused.json', function ($P) use ($aid, $x, $c) { $P[$aid][$x['jid']] = ['at' => date('c'), 'by' => 'handoff', 'until' => date('c', time() + max(1, (int) $c['human_pause']) * 3600)]; return $P; }); }
+            if (!$isTest && !isset($heal24[$role])) { wi_update('bot_paused.json', function ($P) use ($aid, $x, $c) { $P[$aid][$x['jid']] = ['at' => date('c'), 'by' => 'handoff', 'until' => date('c', time() + max(1, (int) $c['human_pause']) * 3600)]; return $P; }); }
             wi_update('bot_drafts.json', function ($d) use ($aid, $x, $text, $r, $why2) { $d[$aid][$x['jid']] = ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => mb_substr($text, 0, 600), 'reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => true, 'model' => $r['task']['model'] ?? '', 'at' => date('c'), 'why' => $why2]; return $d; });
             wi_bot_log_add($aid, (wi_read('bot_drafts.json', [])[$aid][$x['jid']] ?? ['jid' => $x['jid'], 'why' => $why2]) + ['result' => 'draft']);
             $did[] = ['jid' => $x['jid'], 'result' => 'draft', 'why' => $why2]; continue;
         }
         // Handing over to a person: the polite "someone from the team will answer" reply is still sent,
         // then the bot steps back from this chat so it never talks over the team.
-        $handoffSend = $r['handoff'] && $c['mode'] === 'auto' && $inHours && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour']);
+        $inH = $inHours || isset($heal24[$role]); $always = isset($heal24[$role]); // a healing role: no working hours, and no long pause after a hand-over — only the owner's own reply stops it (for the idle minutes)
+        $handoffSend = $r['handoff'] && $c['mode'] === 'auto' && $inH && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour']);
         // A short clarifying question is always safe to send (it states no facts), even with low confidence.
         $clarify = !empty($r['clarify']) || (mb_strlen($r['reply']) < 220 && preg_match('/[؟?]\s*$/u', trim($r['reply'])) && $r['confidence'] >= 0.3);
         $minConf = in_array($role, ['dreams', 'support', 'healer'], true) ? min((float) $c['min_conf'], 0.65) : (float) $c['min_conf']; // an interpretation or a caring reply is never certain: the roles send from 0.65
-        $send = $c['mode'] === 'auto' && $inHours && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour']) && ($isTest || $handoffSend || $clarify || $r['confidence'] >= $minConf);
-        $why = $c['mode'] !== 'auto' ? 'suggest-only mode' : (!$inHours ? 'outside working hours' : (((int) $c['per_hour'] > 0 && count($st['sent']) >= (int) $c['per_hour']) ? 'hourly limit' : ($r['handoff'] ? 'handed over to a person' : ($r['confidence'] < $c['min_conf'] ? 'low confidence' : ''))));
+        $send = $c['mode'] === 'auto' && $inH && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour']) && ($isTest || $handoffSend || $clarify || $r['confidence'] >= $minConf);
+        $why = $c['mode'] !== 'auto' ? 'suggest-only mode' : (!$inH ? 'outside working hours' : (((int) $c['per_hour'] > 0 && count($st['sent']) >= (int) $c['per_hour']) ? 'hourly limit' : ($r['handoff'] ? 'handed over to a person' : ($r['confidence'] < $c['min_conf'] ? 'low confidence' : ''))));
         $log = ['role' => $role, 'jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => mb_substr($text, 0, 600), 'reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'at' => date('c')];
         if ($send) {
             $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => wf_bot_style($r['reply'], $aid, $isTest ? '' : (string) $x['jid']), 'by' => 'bot', 'via' => 'bot', 'typing_ms' => (int) round(1000 * min(max(1, (float) $c['typing_max']), max((float) $c['typing_min'], mb_strlen($r['reply']) / 25) * (0.85 + mt_rand(0, 30) / 100)))], $acc); wf_bot_intro_done(!empty($s['ok']));
@@ -416,7 +429,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
             if (!empty($s['ok']) && !$isTest && function_exists('wf_role_note')) wf_role_note($aid, explode('@', (string) $x['jid'])[0], $role, $text, (string) $r['reply'], '');
             if (!empty($s['ok']) && !$isTest && in_array($role, ['healer', 'dreams', 'support'], true) && function_exists('wf_role_fill_case')) { try { // what they told about themselves goes into their case file
                 $mineIn = []; foreach (array_slice($rows, -30) as $hm) if (($hm['dir'] ?? '') === 'in') $mineIn[] = (string) ($hm['text'] ?? ''); wf_role_fill_case($aid, (string) ($x['phone'] ?? explode('@', (string) $x['jid'])[0]), $mineIn); } catch (Throwable $e) {} }
-            if (!empty($s['ok']) && $r['handoff'] && !$isTest) { wi_update('bot_paused.json', function ($P) use ($aid, $x, $c) { $P[$aid][$x['jid']] = ['at' => date('c'), 'by' => 'handoff', 'until' => date('c', time() + max(1, (int) $c['human_pause']) * 3600)]; return $P; }); $log['why'] = 'handed over to a person'; }
+            if (!empty($s['ok']) && $r['handoff'] && !$isTest && !$always) { wi_update('bot_paused.json', function ($P) use ($aid, $x, $c) { $P[$aid][$x['jid']] = ['at' => date('c'), 'by' => 'handoff', 'until' => date('c', time() + max(1, (int) $c['human_pause']) * 3600)]; return $P; }); $log['why'] = 'handed over to a person'; }
         }
         if (!$send || !in_array($log['result'], ['sent', 'handoff'], true)) {
             wi_update('bot_drafts.json', function ($d) use ($aid, $x, $log, $why) { $d[$aid][$x['jid']] = $log + ['why' => $why]; return $d; });

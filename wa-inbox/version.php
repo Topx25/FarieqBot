@@ -5,6 +5,12 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.129.0', 'date' => '2026-10-22', 'title' => 'Search everything while typing; healing replies day and night', 'changes' => [
+        'The top search box suggests while typing: chats and numbers, groups, cases, knowledge, library files, commands and message text, each with its match score, best first. ↑↓ to choose, Enter on a suggestion opens it, Enter alone searches all messages.',
+        'Healing replies (healer, dreams, support, teacher) work day and night outside the working hours (on by default for a healing business), and a hand-over no longer silences them for hours: only the owner\'s own reply stops the bot for the idle minutes.',
+        'The owner writes #كمل in a customer\'s chat and the bot answers there again at once. The working hours show how many hours a day they make.',
+        'Fix: a gateway with many missing files built a large index at start and was stopped by the host; the index now covers the last two months.',
+    ]],
     ['v' => '3.128.1', 'date' => '2026-10-22', 'title' => 'A crisis pause ends by itself', 'changes' => [
         'Fix: after a crisis message the bot stayed silent in that private chat for ever. It now comes back after the hours set in Bot → Switch on / off (12 by default, 0 = until someone writes /start).',
     ]],
