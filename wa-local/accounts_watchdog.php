@@ -57,7 +57,7 @@ foreach ($registry as $a) {
         'STORAGE_ROOT' => dirname(WA_DIR) . '/storage', 'HOME' => WA_DIR, 'UV_THREADPOOL_SIZE' => '2']);
     $log = $dir . '/gateway.log';
     // Fully detached (own session, no pipes), so this run ends and the next run can manage the account.
-    $cmd = 'setsid ' . escapeshellarg(wa_node()) . ' --v8-pool-size=1 ' . escapeshellarg(WA_DIR . '/server.js') . ' >> ' . escapeshellarg($log) . ' 2>&1 < /dev/null &';
+    $cmd = 'setsid ' . escapeshellarg(wa_node()) . ' --v8-pool-size=1 --expose-gc --max-old-space-size=384 ' . escapeshellarg(WA_DIR . '/server.js') . ' >> ' . escapeshellarg($log) . ' 2>&1 < /dev/null &';
     $p = @proc_open($cmd, [0 => ['file', '/dev/null', 'r'], 1 => ['file', '/dev/null', 'w'], 2 => ['file', '/dev/null', 'w']], $pipes, WA_DIR, $env);
     if (is_resource($p)) proc_close($p);
     @file_put_contents($log, date('c') . " watchdog started account {$id} on port {$port}\n", FILE_APPEND);

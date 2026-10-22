@@ -5,6 +5,10 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.131.1', 'date' => '2026-10-22', 'title' => '#تحليل for any number; gateways keep their memory low', 'changes' => [
+        '#تحليل with a number that has no case yet opens its case and analyses the chat; alone in a person\'s private chat it analyses that person. A "checking and analysing, the answer follows" message is sent as soon as the case is found, and the result comes to the number\'s own chat (never to the customer).',
+        'Fix: gateways were stopped by the host when a big archive read raised their memory. Memory is now given back right after such reads (about 215 MB instead of 400 MB), and the group learning reads only the last two months after its first run.',
+    ]],
     ['v' => '3.131.0', 'date' => '2026-10-22', 'title' => 'Case analysis by angle and a follow-up board', 'changes' => [
         '#تحليل + the case ID, name or a tag (in a group, from a test number or the number\'s own phone): the case looked at from each angle of the business (healing: spiritual, health, mental) with a score out of 10, the current treatment stage, the stages done and left, the progress % and the trend since the last analysis, the next step and anything urgent.',
         'Cases → Follow-up & analysis: every case with its last analysis, a progress bar and its history line, filters for getting worse / needs attention / not analysed, and an Analyse now button. Each analysis is kept (the last 12).',

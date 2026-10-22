@@ -47,6 +47,10 @@ if (isset($_GET['bot_hook'])) {
             wi_log('keyword_reply', ['account' => $aid, 'jid' => $jid, 'keyword' => $hit[0]['keyword'], 'sent' => $why === '', 'why' => $why]); }
         echo json_encode($out, JSON_UNESCAPED_UNICODE); exit; }
     if ($acc && ($in['cmd'] ?? '') === 'expand') { $jid = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($in['jid'] ?? ''));
+        if (function_exists('wf_case_deep_is') && wf_case_deep_is((string) $acc['id'], (string) ($in['text'] ?? ''))) { // #تحليل typed on the number's phone: answered in its own chat (never in the customer's chat), after the gateway is let go
+            header('Content-Type: application/json'); header('Connection: close'); echo json_encode(['ok' => false]); if (function_exists('fastcgi_finish_request')) fastcgi_finish_request(); ignore_user_abort(true); @set_time_limit(260);
+            $me = preg_replace('/[:@].*$/', '', (string) (wi_gateway('/status', null, $acc)['account']['id'] ?? '')); $msg = wf_case_deep_command($acc, (string) ($in['text'] ?? ''), [], 'owner', $jid, $me !== '' ? $me . '@s.whatsapp.net' : '');
+            if ($me !== '' && $msg !== '') wi_gateway('/chat/send', ['jid' => $me . '@s.whatsapp.net', 'text' => $msg, 'via' => 'bot'], $acc); exit; }
         if (function_exists('wf_chat_continue') && wf_chat_continue((string) $acc['id'], $jid, (string) ($in['text'] ?? ''))) { header('Content-Type: application/json'); echo json_encode(['ok' => false]); exit; } // #كمل in a customer's chat: the bot answers there again
         if (function_exists('wf_owner_command') && !str_ends_with($jid, '@g.us') && ($oc = wf_owner_command($acc, (string) ($in['text'] ?? ''))) !== null && ($note = (string) $oc[0]) !== '') { // the owner's commands typed on the number's own phone (warm-up, stop / resume, delete, restart) // the warm-up word typed in a private chat: the note goes to the owner's own number, not to that chat
             $me = preg_replace('/[:@].*$/', '', (string) (wi_gateway('/status', null, $acc)['account']['id'] ?? '')); if ($me !== '') wi_gateway('/chat/send', ['jid' => $me . '@s.whatsapp.net', 'text' => $note, 'via' => 'bot'], $acc);

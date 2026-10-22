@@ -30,15 +30,23 @@ function wf_case_deep_text(array $case, array $a): string {
     $tr = ['better' => '📈', 'same' => '➖', 'worse' => '📉', 'unknown' => '❔'][$a['trend']] ?? '';
     $ax = implode("\n", array_map(fn($x) => '• ' . $x['name'] . ': ' . str_repeat('●', (int) round($x['score'] / 2)) . str_repeat('○', 5 - (int) round($x['score'] / 2)) . ' ' . $x['score'] . '/10 — ' . $x['state'], $a['axes']));
     $sg = implode("\n", array_map(fn($x) => ($x['done'] ? '✅ ' : '⬜ ') . $x['name'] . ($x['note'] !== '' ? ' — ' . $x['note'] : ''), $a['stages']));
-    return wf_msg('case_deep_msg', ['name' => (string) ($case['name'] ?? ($case['data']['name'] ?? '')), 'no' => (string) ($case['no'] ?? ''), 'summary' => $a['summary'], 'axes' => $ax, 'stage' => $a['stage'], 'progress' => (string) $a['progress'], 'trend' => $tr, 'stages' => $sg, 'next' => $a['next_step'], 'flags' => $a['red_flags'] !== '' ? "\n⚠️ " . $a['red_flags'] : '']);
+    return wf_msg('case_deep_msg', ['name' => (string) ($case['name'] ?? '') ?: ((string) ($case['data']['name'] ?? '') ?: '+' . (string) ($case['phone'] ?? '')), 'no' => (string) ($case['no'] ?? ''), 'summary' => $a['summary'], 'axes' => $ax, 'stage' => $a['stage'], 'progress' => (string) $a['progress'], 'trend' => $tr, 'stages' => $sg, 'next' => $a['next_step'], 'flags' => $a['red_flags'] !== '' ? "\n⚠️ " . $a['red_flags'] : '']);
 }
 /** "#تحليل" + ID, name or a tag: the analysis of that case. Returns the message to send, or '' when the text is not the command. */
-function wf_case_deep_command(array $acc, string $text, array $mentions = [], string $by = ''): string {
-    $aid = (string) $acc['id']; $w = trim((string) (wf_pack($aid)['analyze_cmd'] ?? '')); if ($w === '' || !wf_deep_axes($aid)) return '';
-    $t = trim($text); if (!wf_intake_has(mb_substr($t, 0, mb_strlen($w) + 2), $w)) return '';
+/** Is this text the analysis command? */
+function wf_case_deep_is(string $aid, string $text): bool { $w = trim((string) (wf_pack($aid)['analyze_cmd'] ?? '')); return $w !== '' && wf_deep_axes($aid) && wf_intake_has(mb_substr(trim($text), 0, mb_strlen($w) + 2), $w); }
+function wf_case_deep_command(array $acc, string $text, array $mentions = [], string $by = '', string $chatJid = '', string $waitTo = '', array $waitMentions = []): string {
+    $aid = (string) $acc['id']; if (!wf_case_deep_is($aid, $text)) return ''; $w = trim((string) wf_pack($aid)['analyze_cmd']); $t = trim($text);
     $q = trim(mb_substr($t, mb_strlen($w))); $hit = ($q !== '' || $mentions) ? wf_intake_find($aid, $q, $mentions, $acc) : [];
+    // the command alone in a person's private chat: that person
+    if (!$hit && $q === '' && $chatJid !== '' && !str_ends_with($chatJid, '@g.us')) { $cp = wf_phone(explode('@', $chatJid)[0]); if (str_ends_with($chatJid, '@lid')) $cp = wf_phone((string) (wi_contact($chatJid, $acc)['phone'] ?? '')); if ($cp !== '') { $q = $cp; $hit = wf_intake_find($aid, $cp, [], $acc); } }
+    // a number that has no case yet but has a chat: its case is opened now, then analysed
+    $dg = wf_phone(preg_replace('/[^\d+]/', '', $q)); if (!$hit && strlen($dg) >= 9 && wf_case_messages($acc, $dg)) { $nm = (string) (wi_contact($dg . '@s.whatsapp.net', $acc)['name'] ?? '');
+        wf_case_reserve_no($aid, $dg, ['phone' => $dg, 'name' => $nm, 'status' => 'new', 'created' => date('c'), 'updated' => date('c'), 'data' => [], 'by' => 'analysis']); $hit = [$dg => wf_case_get($aid, $dg)]; }
     if (count($hit) !== 1) return wf_msg('case_deep_none', ['cmd' => $w]);
-    $ph = (string) array_key_first($hit); $a = wf_case_deep($acc, $ph, $by);
+    $ph = (string) array_key_first($hit);
+    if ($waitTo !== '') { $wc = wf_case_get($aid, $ph) ?? []; wi_gateway('/chat/send', ['jid' => $waitTo, 'text' => wf_msg('case_deep_wait', ['name' => (string) ($wc['name'] ?? '') ?: '+' . $ph, 'no' => (string) ($wc['no'] ?? '')]), 'mentions' => $waitMentions, 'via' => 'bot'], $acc); } // the case was found: "checking, the answer follows"
+    $a = wf_case_deep($acc, $ph, $by);
     return !empty($a['error']) ? '⚠️ ' . wi_t((string) $a['error']) : wf_case_deep_text(wf_case_get($aid, $ph) ?? [], $a);
 }
 

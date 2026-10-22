@@ -711,7 +711,10 @@ function archiveFile(fp) {
   archiveCache.delete(fp); archiveCache.set(fp, c); while (archiveCache.size > 64) archiveCache.delete(archiveCache.keys().next().value);
   return c;
 }
-function readArchive({ phone = '', q = '', limit = 300, months = 3, jid = '', events = false } = {}) {
+// After a read over whole months the memory is given back at once (the host stops a gateway whose memory jumps).
+let gcTimer = null; function gcSoon() { if (typeof global.gc === 'function' && !gcTimer) gcTimer = setTimeout(() => { gcTimer = null; try { global.gc(); } catch { /* ignore */ } }, 200); }
+function readArchive(opts = {}) { const out = readArchiveRows(opts); if (!opts.jid) gcSoon(); return out; }
+function readArchiveRows({ phone = '', q = '', limit = 300, months = 3, jid = '', events = false } = {}) {
   const jidNeedle = jid ? `"jid":${JSON.stringify(String(jid))}` : ''; // every row and marker of a chat carries its jid exactly like this
   const files = fs.existsSync(archiveDir) ? fs.readdirSync(archiveDir).filter((f) => /^\d{4}-\d{2}\.jsonl$/.test(f)).sort().slice(-months) : [];
   const deleted = new Set();

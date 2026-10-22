@@ -66,12 +66,12 @@ function wf_chat_continue(string $aid, string $jid, string $text): bool {
 }
 /** The owner's commands sent from a test number to the bot's number: the warm-up words, and the restart words (business profile → restart_cmd).
  *  Returns [note, restart?], or null when the text is not a command. */
-function wf_owner_command(array $acc, string $text): ?array {
+function wf_owner_command(array $acc, string $text, string $jid = ''): ?array {
     $aid = (string) $acc['id']; if (($n = wf_fun_command($aid, $text)) !== '') return [$n, false];
     $P = wf_pack($aid); $t = wf_intake_norm(trim($text)); if ($t === '') return null;
     $is = function (string $k) use ($P, $t) { foreach (preg_split('/[,\x{060C}|\n]+/u', (string) ($P[$k] ?? '')) as $w) { $w = wf_intake_norm(trim($w)); if ($w !== '' && $t === $w) return true; } return false; };
     $starts = function (string $k) use ($P, $t, $text) { $w = wf_intake_norm(trim((string) ($P[$k] ?? ''))); return $w !== '' && ($t === $w || str_starts_with($t, $w . ' ')) ? trim((string) (preg_split('/\s+/u', trim($text), 2)[1] ?? '')) : null; }; // the rest as written (the name is matched as typed)
-    if (function_exists('wf_case_deep_command') && ($dm = wf_case_deep_command($acc, $text, [], 'owner')) !== '') return [$dm, false]; // #تحليل + case
+    if (function_exists('wf_case_deep_command') && ($dm = wf_case_deep_command($acc, $text, [], 'owner', '', $jid)) !== '') return [$dm, false]; // #تحليل + case
     if ($is('restart_cmd')) return [wf_msg('bot_restart'), true];
     if ($is('status_cmd')) { $c = wf_bot_run_cfg($aid); $g = wi_gateway('/status', null, $acc); $st = wi_read('bot_state.json', [])[$aid] ?? []; $day = date('Y-m-d'); $k = ['sent' => 0, 'handoff' => 0, 'draft' => 0, 'skipped' => 0];
         foreach (wi_bot_log($aid, 500) as $l) if (str_starts_with(date('Y-m-d', strtotime((string) ($l['at'] ?? ''))), $day) && isset($k[$l['result'] ?? ''])) $k[$l['result']]++;
@@ -343,7 +343,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         if (!$again && isset($paused[$x['jid']]) && (empty($paused[$x['jid']]['until']) || strtotime($paused[$x['jid']]['until']) > time())) continue; // /stop, or handed over to a person for a while
         if (($x['phone'] ?? '') === '' && str_ends_with((string) $x['jid'], '@lid')) { $cc = wi_contact($x['jid'], $acc); $x['phone'] = wf_phone((string) ($cc['phone'] ?? '')); }
         $isTest = $isSelf || in_array((string) ($x['phone'] ?? ''), (array) $c['test'], true); // test numbers (and the number's own test chat): always answered
-        if ($isTest && ($oc = wf_owner_command($acc, trim((string) ($last['text'] ?? '')))) !== null) { // the owner's command from a test number: done, answered, no AI
+        if ($isTest && ($oc = wf_owner_command($acc, trim((string) ($last['text'] ?? '')), (string) $x['jid'])) !== null) { // the owner's command from a test number: done, answered, no AI
             $st['done'][$x['jid']] = $last['time']; $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => $oc[0], 'via' => 'bot'], $acc);
             wi_bot_log_add($aid, ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => (string) ($last['text'] ?? ''), 'reply' => $oc[0], 'result' => !empty($s['ok']) ? 'sent' : 'send_failed', 'role' => 'command', 'at' => date('c')]);
             if ($oc[1]) { $state = wi_read('bot_state.json', []); $state[$aid] = $st; wi_write('bot_state.json', $state); wi_log('bot_restart', ['account' => $aid, 'by' => 'test number']); sleep(2); wi_gateway('/shutdown', [], $acc); return ['did' => [['jid' => $x['jid'], 'result' => 'restart']]]; } // the watchdog starts it again

@@ -39,7 +39,7 @@ function wf_lean_collect(array $acc): array {
     $aid = (string) $acc['id']; $L = wf_lean_cfg($aid); $lg = wf_lean_groups($acc); if (!$lg) return ['ok' => true, 'groups' => 0, 'new' => 0];
     $meta = (array) (wi_read('learn_lean.json', [])[$aid] ?? []); $since = (string) ($meta['to'] ?? '');
     $team = implode(',', array_keys(wf_team($acc, $lg)));
-    $r = wi_gateway('/archive/pairs?months=' . (int) wi_sys('months_long') . ($since !== '' ? '&since=' . rawurlencode(gmdate('Y-m-d\TH:i:s', strtotime($since) - 6 * 3600)) : '')
+    $r = wi_gateway('/archive/pairs?months=' . ($since !== '' ? 2 : (int) wi_sys('months_long')) . ($since !== '' ? '&since=' . rawurlencode(gmdate('Y-m-d\TH:i:s', strtotime($since) - 6 * 3600)) : '')
         . '&groups=' . rawurlencode(implode(',', array_keys($lg))) . '&team=' . rawurlencode($team), null, $acc);
     if (empty($r['ok'])) return ['ok' => false, 'error' => $r['error'] ?? 'Gateway error.'];
     $pairs = wf_pairs($aid); $kbQ = array_map(fn($k) => (string) ($k['q'] ?? ''), wf_kb($aid)); $new = 0; $drop = 0; $to = $since;
