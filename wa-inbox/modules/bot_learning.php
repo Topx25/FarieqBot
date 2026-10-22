@@ -110,7 +110,7 @@ function wf_customer_card(array $acc, string $jid, array $rows = []): array {
     $cust = $phone !== '' ? (wi_customers()[$phone] ?? null) : null;
     $earlier = count(array_filter($msgs, fn($m) => strtotime((string) $m['time']) < time() - 86400));
     return ['new' => $earlier === 0 && !$groups && !$progs && !$case, 'first' => $first, 'messages' => count($msgs), 'groups' => array_slice(array_unique($groups), 0, 5), 'programs' => $progs,
-        'case' => $case ? (($case['status'] ?? 'new') . ($case['data']['complaint'] ?? '' ? ': ' . $case['data']['complaint'] : '')) : '', 'state' => (function () use ($case) { $dl = (array) ($case['deep'] ?? []); if (!$dl) return ''; $d = (array) end($dl); if (strtotime((string) ($d['at'] ?? '')) < time() - 30 * 86400) return ''; // the latest case assessment (a month at most)
+        'case' => $case ? (($case['status'] ?? 'new') . ($case['data']['complaint'] ?? '' ? ': ' . $case['data']['complaint'] : '')) : '', 'journal' => $phone !== '' && function_exists('wf_journal_brief') ? wf_journal_brief($aid, $phone) : '', 'state' => (function () use ($case) { $dl = (array) ($case['deep'] ?? []); if (!$dl) return ''; $d = (array) end($dl); if (strtotime((string) ($d['at'] ?? '')) < time() - 30 * 86400) return ''; // the latest case assessment (a month at most)
             return 'stage: ' . (string) ($d['stage'] ?? '') . ', progress ' . (int) ($d['progress'] ?? 0) . '%, trend ' . (string) ($d['trend'] ?? '') . '; ' . implode(', ', array_map(fn($x) => $x['name'] . ' ' . $x['score'] . '/10', (array) ($d['axes'] ?? []))); })(), 'customer' => $cust['name'] ?? '', 'name' => (string) ($c['name'] ?? '')];
 }
 function wf_card_text(?array $k): string {
@@ -119,6 +119,7 @@ function wf_card_text(?array $k): string {
     return 'EXISTING person — talking with us since ' . substr((string) $k['first'], 0, 10) . ', ' . $k['messages'] . ' messages'
         . ($k['groups'] ? '; in groups: ' . implode(', ', $k['groups']) : '; not in our groups') . ($k['programs'] ? '; programs: ' . implode(', ', $k['programs']) : '; no program')
         . ($k['case'] ? '; case: ' . $k['case'] : '') . ($k['customer'] ? '; registered customer: ' . $k['customer'] : '') . '.'
+        . (!empty($k['journal']) ? "\n" . $k['journal'] : '')
         . (!empty($k['state']) ? "\nLATEST CASE ASSESSMENT: " . $k['state'] . '. Fit your tone to it: getting worse or low scores → reassure first, then one small practical step; getting better → encourage and keep the plan; never quote the scores to the person.' : '');
 }
 /** The real names of this number's groups (the bot's groups, the case registry and every group of the number), cached 10 minutes. */

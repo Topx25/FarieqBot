@@ -5,6 +5,11 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.145.0', 'date' => '2026-10-22', 'title' => 'A lasting case journal, the case files, and the bot reads them', 'changes' => [
+        'Every 10 minutes the new messages are added to a lasting journal of each case: the person\'s messages, the team\'s answers (replies and tags in any group, the number\'s phone), the bot\'s, and every file sent by or to the person. It keeps growing even when old chats leave the archive window. The first fill covered the last 30 days.',
+        'Case file → 📎 Case files: links to every file of the person already kept (photos, voice notes, videos, documents) — no second copy is uploaded.',
+        'Before answering, the bot reads the journal: who follows the person, the team\'s last step and the last file sent — and never contradicts what the team told them.',
+    ]],
     ['v' => '3.144.2', 'date' => '2026-10-22', 'title' => 'Follow-up alerts tag the healer', 'changes' => [
         'In a group, each follow-up alert tags the healer who follows that case; when the case has no known healer, the team member last active in that group is tagged.',
     ]],

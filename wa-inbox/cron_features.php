@@ -218,3 +218,6 @@ if ((int) date('i') % 5 === 2 && function_exists('wf_group_watch')) foreach ($ac
 
 // Follow-up check-ins: at the set hour, the bot asks people under follow-up how they are (with a daily cap).
 if ((int) date('i') === 15 && function_exists('wf_checkin_run')) foreach ($accounts as $acc) { try { $cc = wf_bot_run_cfg((string) $acc['id']); if (!empty($cc['checkin_on']) && $cc['mode'] === 'auto' && empty($acc['parked']) && !empty($acc['enabled']) && (int) date('G') === (int) $cc['checkin_hour'] && empty($cc['held'])) wf_checkin_run($acc); } catch (Throwable $e) {} }
+
+// The cases' lasting journal (who did what, where, and the files' links): the new messages every 10 minutes.
+if ((int) date('i') % 10 === 7 && function_exists('wf_journal_ingest')) foreach ($accounts as $acc) { try { if (!empty($acc['enabled']) && empty($acc['parked']) && (string) ($acc['channel'] ?? '') === '') wf_journal_ingest($acc); } catch (Throwable $e) {} }
