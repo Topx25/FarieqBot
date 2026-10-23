@@ -5,6 +5,9 @@ declare(strict_types=1);
  * the versions backup folder (<version>.tar.gz with wa-inbox + the gateway code).
  */
 return [
+    ['v' => '3.124.4', 'date' => '2026-10-23', 'title' => 'Facebook sign-in reads the account\'s business portfolios', 'changes' => [
+        'When the Facebook sign-in includes the business_management permission, the sign-in also reads the account\'s business portfolios, so Meta counts that permission as used (needed before the app can be published).',
+    ]],
     ['v' => '3.146.2', 'date' => '2026-10-22', 'title' => 'Facebook is an add-on', 'changes' => [
         'Facebook (pages, Messenger, comments, posts) can be switched off like the invoices add-on: General settings → Facebook add-on (1 = on, 0 = off). Off hides the Facebook menu and stops reading the pages every minute; it is on by default so nothing changes until it is switched.',
     ]],
