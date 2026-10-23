@@ -82,7 +82,13 @@ function wf_owner_rules(array $cfg): string {
     foreach ($lines as $i => $l) $out .= ($i + 1) . '. ' . $l . "\n";
     return $out . "\n";
 }
-function wf_bot_cfg(string $aid): array { return (wi_read('bot.json', [])[$aid] ?? []) + ['model' => '', 'tone' => 'warm', 'name' => '', 'about' => '', 'rules' => '', 'fast' => true]; }
+function wf_bot_cfg(string $aid): array { return (wi_read('bot.json', [])[$aid] ?? []) + ['model' => '', 'tone' => 'warm', 'name' => '', 'about' => '', 'rules' => '', 'fast' => true, 'emoji' => 'few', 'lang' => 'auto', 'sk_catalog' => true, 'sk_market' => true]; }
+/** Language override of the bot (Bot → Settings → Bot personality); ruqyah numbers keep their preset's own rule. */
+function wf_bot_lang_rule(string $aid, string $lang): string {
+    $L = ['auto' => 'Write in the same language as the customer\'s LAST message (English → English; Arabic → their own country\'s dialect), even if the examples or sources are in another language.', 'eg' => 'Always reply in Egyptian Arabic, whatever dialect the customer writes.', 'gulf' => 'Always reply in Gulf (Saudi) Arabic, whatever dialect the customer writes.', 'lev' => 'Always reply in Levantine Arabic, whatever dialect the customer writes.', 'msa' => 'Always reply in simple Modern Standard Arabic.', 'en' => 'Always reply in English, whatever language the customer writes.'];
+    if (!isset($L[$lang]) || (function_exists('wf_pack') && (wf_pack($aid)['preset'] ?? '') === 'ruqyah')) return '';
+    return "\n\nLANGUAGE OF YOUR REPLY (this overrides any other language or dialect rule above): " . $L[$lang] . "\n";
+}
 /** Real past exchanges closest to the message — examples of how the team talks. */
 function wf_style_examples(string $aid, string $text, int $n = 4, string $role = ''): array {
     $want = array_flip(wf_words($text)); $out = [];
@@ -156,9 +162,9 @@ function wf_fast_model(bool $bulk = false): string {
 /** What the bot WOULD answer (nothing is sent). $prefer = "provider:model" to force a model (compare). */
 function wf_bot_answer(array $acc, string $text, array $history = [], string $prefer = '', ?array $card = null, array $opt = []): array {
     if (function_exists('wf_fb_parent') && ($pa = wf_fb_parent($acc))) $acc = $pa; // a Facebook page linked to a number answers with that number's knowledge (profile, library, learning, rules)
-    $aid = (string) $acc['id']; $cfg = wf_bot_cfg($aid); $avoid = array_values(array_filter((array) ($opt['avoid'] ?? [])));
+    $aid = (string) $acc['id']; $cfg = (array) ($opt['cfg'] ?? []) + wf_bot_cfg($aid); $avoid = array_values(array_filter((array) ($opt['avoid'] ?? [])));
     // 1) Answer cache: the same general question answered well before → reused, no AI call, no tokens.
-    if (!$prefer && !$avoid && ($opt['role'] ?? 'bot') === 'bot' && mb_strlen(trim($text)) >= 12 && (count($history) <= 2 || wf_cache_standalone($text)) && ($hit = wf_cache_find($aid, $text))) {
+    if (!$prefer && !$avoid && ($opt['role'] ?? 'bot') === 'bot' && mb_strlen(trim($text)) >= 12 && empty($opt['cfg']) && (count($history) <= 2 || wf_cache_standalone($text)) && ($hit = wf_cache_find($aid, $text))) {
         return ['ok' => true, 'reply' => $hit['answer'], 'confidence' => 0.95, 'handoff' => false, 'clarify' => false, 'reason' => 'من الكاش (' . round($hit['similarity'] * 100) . '%)',
             'symptoms' => false, 'complaint' => '', 'sources' => [], 'used' => [], 'cached' => $hit['id'], 'task' => ['model' => 'cache', 'tokens_in' => 0, 'tokens_out' => 0]];
     }
@@ -171,6 +177,7 @@ function wf_bot_answer(array $acc, string $text, array $history = [], string $pr
     $ex = ''; foreach (wf_style_examples($aid, $text, 4, in_array($opt['role'] ?? '', ['', 'bot', 'teacher', 'crisis'], true) ? '' : (string) $opt['role']) as $p) $ex .= "Customer: " . mb_substr(preg_replace('/\s+/u', ' ', $p['q']), 0, 300) . "\nTeam: " . mb_substr($p['a'], 0, 600) . "\n---\n";
     $hist = ''; foreach (array_slice($history, -8) as $h) $hist .= ($h['from'] === 'bot' ? 'You' : 'Customer') . ': ' . mb_substr((string) $h['text'], 0, 500) . "\n";
     $tone = ['warm' => 'kind, calm and respectful — professional care, never affectionate', 'short' => 'very short and direct (1–3 lines)', 'formal' => 'polite and formal', 'friendly' => 'friendly and light like a helpful shop owner, a small emoji at most, never silly', 'expert' => 'a confident expert: precise, explains the why in one line, recommends clearly', 'sales' => 'a good salesperson: helpful first, then suggests the fitting product or next step and asks one closing question, never pushy'][$cfg['tone']] ?? 'warm';
+    $tone .= ($cfg['emoji'] ?? 'few') === 'none' ? '; no emoji at all' : '; at most one small emoji';
     $rp = isset($opt['role']) && function_exists('wf_role_prompt') ? wf_role_prompt($aid, (string) ($opt['jid'] ?? ''), (string) $opt['role']) : ['rules' => '', 'prefer' => ''];
     // The WhatsApp name of this number is the team's number (the bot itself), not a sheikh or a person to send people to.
     $ours = wf_our_groups($acc); $groupsRule = $ours ? "- OUR GROUPS (the only groups and the only center you may name or send people to): " . implode(' · ', $ours) . ". A center or group name found in the sources or examples that is not in this list belongs to someone else: never mention it.\n" : '';
@@ -195,8 +202,9 @@ function wf_bot_answer(array $acc, string $text, array $history = [], string $pr
         'style_rules' => wf_style_prompt($aid), 'who' => wf_card_text($card), 'owner_check' => $cfg['rules'] ? "- Before answering, check your reply against EVERY numbered OWNER RULE at the top; rewrite it if it breaks any.\n" : '',
         'avoid' => $avoid ? "YOUR EARLIER REPLIES IN THIS CHAT — the new reply must NOT repeat or rephrase them; answer what is new, move the conversation forward, or set handoff=true:\n- " . implode("\n- ", array_map(fn($a) => mb_substr(preg_replace('/\s+/u', ' ', (string) $a), 0, 300), $avoid)) . "\n\n" : '',
         'examples' => $ex ?: '(none)', 'sources' => $ctx ?: '(none)', 'conversation' => $hist . 'Customer: ' . mb_substr($text, 0, 1500)]);
-    if (function_exists('wf_market_prompt') && ($mkP = wf_market_prompt($aid)) !== '') $prompt = str_replace("\nCONVERSATION:", "\nOUR MARKET:\n" . $mkP . "\nCONVERSATION:", $prompt);
-    if (function_exists('wf_catalog_prompt') && ($catP = wf_catalog_prompt($aid)) !== '') { $prompt = str_replace("\nCONVERSATION:", "\nPRODUCT CATALOG (the only true prices; never invent a product or a price):\n" . $catP . "\nCONVERSATION:", $prompt); $prompt = str_replace("Set clarify=true", "Set \"product\":\"<id>\" (the id in brackets) when the person asks about ONE product of the catalog, so its photo is sent with your reply. Set clarify=true", $prompt); }
+    if (!empty($cfg['sk_market']) && function_exists('wf_market_prompt') && ($mkP = wf_market_prompt($aid)) !== '') $prompt = str_replace("\nCONVERSATION:", "\nOUR MARKET:\n" . $mkP . "\nCONVERSATION:", $prompt);
+    if (!empty($cfg['sk_catalog']) && function_exists('wf_catalog_prompt') && ($catP = wf_catalog_prompt($aid)) !== '') { $prompt = str_replace("\nCONVERSATION:", "\nPRODUCT CATALOG (the only true prices; never invent a product or a price):\n" . $catP . "\nCONVERSATION:", $prompt); $prompt = str_replace("Set clarify=true", "Set \"product\":\"<id>\" (the id in brackets) when the person asks about ONE product of the catalog, so its photo is sent with your reply. Set clarify=true", $prompt); }
+    $prompt .= wf_bot_lang_rule($aid, (string) ($cfg['lang'] ?? 'auto'));
     // Joining groups (Bot → Joining groups): the model only flags the request; the runner adds the person or sends the personal invitation.
     if (function_exists('wf_bot_join_cfg') && !empty(wf_bot_join_cfg($aid)['on'])) $prompt = str_replace("Set clarify=true", "Set \"join_group\":true when the person asks to join or rejoin one of our groups, or says they cannot get in (the link does not work, they were removed). Then the reply only says you are taking care of it now — never send or promise a link.\nSet clarify=true", $prompt);
     // ⚡ Fast replies: when no model is chosen, a light fast model answers first (others take over if it fails).
@@ -480,8 +488,12 @@ function wf_api_bot_learning(string $api): void {
         $aid = wf_aid(); $all = wi_read('bot.json', []);
         if ($_SERVER['REQUEST_METHOD'] === 'POST') { $in = wf_post(); wf_admin();
             $all[$aid] = ['model' => preg_replace('/[^A-Za-z0-9_.:\/@-]+/', '', (string) ($in['model'] ?? '')), 'tone' => in_array($in['tone'] ?? '', ['warm', 'short', 'formal', 'friendly', 'expert', 'sales'], true) ? $in['tone'] : 'warm',
-                'name' => mb_substr(trim((string) ($in['name'] ?? '')), 0, 60), 'about' => mb_substr(trim((string) ($in['about'] ?? '')), 0, 500), 'rules' => mb_substr(trim((string) ($in['rules'] ?? '')), 0, 1500), 'fast' => !empty($in['fast'])]
-                + array_intersect_key($all[$aid] ?? [], array_flip(['run', 'profile', 'profile_at', 'auto_approve']));
+                'name' => mb_substr(trim((string) ($in['name'] ?? '')), 0, 60), 'about' => mb_substr(trim((string) ($in['about'] ?? '')), 0, 500), 'rules' => mb_substr(trim((string) ($in['rules'] ?? '')), 0, 1500), 'fast' => !empty($in['fast']),
+                'emoji' => ($in['emoji'] ?? '') === 'none' ? 'none' : 'few', 'lang' => in_array($in['lang'] ?? '', ['eg', 'gulf', 'lev', 'msa', 'en'], true) ? $in['lang'] : 'auto',
+                'sk_catalog' => !array_key_exists('sk_catalog', $in) || !empty($in['sk_catalog']), 'sk_market' => !array_key_exists('sk_market', $in) || !empty($in['sk_market'])]
+                + ($all[$aid] ?? []);
+            // voice replies and the hand-off notice live in the bot's run settings; the personality panel switches them too
+            foreach (['voice_reply', 'handoff_notify'] as $k) if (array_key_exists($k, $in)) $all[$aid]['run'][$k] = !empty($in[$k]);
             // keep the Learning → Rules list in step: the box's lines are the switched-on rules, switched-off ones are kept
             $old = wi_read('bot.json', [])[$aid]['rules_list'] ?? null;
             if (is_array($old)) { $lines = array_values(array_filter(array_map('trim', preg_split('/\R/u', $all[$aid]['rules'])))); $list = array_map(fn($l) => ['text' => $l, 'on' => true], $lines);

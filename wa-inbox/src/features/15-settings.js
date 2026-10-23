@@ -72,7 +72,7 @@
         ['numbers', '📱', 'Numbers protection', 'Daily limits that keep the WhatsApp numbers safe, and numbers left unlinked', ['group_add_day', 'keyword_per_hour', 'keyword_cooldown_min', 'idle_warn_days', 'idle_stop_days', 'idle_qr_min']],
         ['files', '📦', 'Files and history', 'Largest file sizes and how many months are read', ['max_send_mb', 'max_learn_mb', 'max_status_mb', 'max_export_mb', 'months_recent', 'months_short', 'months_long', 'refresh_pct']],
         ['ai', '🤖', 'AI', 'Where the AI runs and its safety filter', ['ai_engine', 'ai_safety', 'bridge_url', 'bridge_host']],
-        ['addons', '🧩', 'Add-ons', 'Turn on only what this installation sells', ['addon_facebook', 'addon_invoices', 'invoices_config', 'notify_clients', 'backup_folder', 'changelog']],
+        ['addons', '🧩', 'Add-ons', 'Turn on only what this installation sells', ['addon_facebook', 'addon_instagram', 'addon_invoices', 'invoices_config', 'notify_clients', 'backup_folder', 'changelog']],
         ['market', '📣', 'Landing page and plans', 'The public page at /welcome', ['landing_home', 'landing_design', 'landing_cta_url', 'landing_cta_label', 'plan_currency']],
         ['legal', '⚖️', 'Privacy and terms', 'The owner name and the text of the legal pages', ['legal_owner', 'legal_email', 'privacy_text', 'terms_text']]];
       var fld = function (f) { var v = f.value == null ? '' : f.value; used[f.key] = 1;
