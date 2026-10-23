@@ -100,6 +100,12 @@ $status = wa_watchdog_http($statusUrl, 6);
 $started = false;
 
 if (!$status['ok'] || $status['status'] === 0) {
+    // copies of the main gateway that stopped answering: all stopped first, so only one runs (two copies on one session fight for it)
+    $copies = []; foreach ((array) glob('/proc/[0-9]*', GLOB_ONLYDIR) as $pd) { $cl = (string) @file_get_contents($pd . '/cmdline'); if (strpos($cl, 'wa-local/server.js') === false) continue;
+        if (strpos((string) @file_get_contents($pd . '/environ'), "ACCOUNT_ID=") === false) $copies[(int) basename($pd)] = time() - (int) @filectime($pd); }
+    if ($copies && min($copies) < 240) exit; // one is still starting up (it answers after a while): wait for it
+    foreach (array_keys($copies) as $cp) if (function_exists('posix_kill')) @posix_kill($cp, 15);
+    if ($copies) sleep(3);
     $start = wa_watchdog_start_gateway($gatewayDir, $token, $nodePort, $logFile);
     $started = (bool) $start['ok'];
     @file_put_contents($gatewayDir . '/guard.log', date('c') . " restarted main\n", FILE_APPEND);

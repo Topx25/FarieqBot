@@ -1602,7 +1602,7 @@ return [
         'Old duplicate files removed (each had an identical copy in use) and old version snapshots made small.',
     ]],
     ['v' => '1.24.0', 'date' => '2026-10-08', 'title' => 'Numbers page, team exclusions, list/icons views', 'changes' => [
-        'Numbers page: pull numbers from group members, private chats and numbers written in messages — each once, in WhatsApp format (e.g. 201001234567), with name and groups; export CSV / TXT / contacts (VCF) or copy.',
+        'Numbers page: pull numbers from group members, private chats and numbers written in messages — each once, in WhatsApp format (country code + number), with name and groups; export CSV / TXT / contacts (VCF) or copy.',
         'Group admins, our own numbers, Inbox users and anyone marked "Not a case (team)" are never turned into cases automatically.',
         '"جروب للحالات وتشخيصها" moved from "follow everyone" to Case registry: cases come from the number written in each post, not from who posted it.',
         'Groups and Numbers can be shown as a list or as icons (remembered).',

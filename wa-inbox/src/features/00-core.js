@@ -4,6 +4,7 @@
 function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return Math.round(ms * Math.max(50, Math.min(400, p)) / 100); }
 // Example texts and case-form fields come from the number's business profile, never from the code.
 function EX(k) { var e = window.WI_EX || {}; return e[k] || ''; }
+function FL(k, en) { var f = (((window.WI_PACK || {}).case_cfg || {}).fields || {})[k]; return (f && f.label) || T(en); } // a case field's name for this type of business
 function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
 
 (function () {

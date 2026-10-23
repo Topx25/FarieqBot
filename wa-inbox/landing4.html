@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{brand}} — عميلك سأل؟ اترد عليه.</title>
+<meta name="description" content="{{brand}}: رقم واتساب واحد لفريقك كله، ومساعد ذكي بيرد من معرفتك ليل ونهار، وملف لكل عميل.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--deep:#06322a;--deep2:#0a3f35;--em:#34d399;--em2:#10b981;--mint:#a7f3d0;--ice:#ecfdf5;--sun:#fbbf24;--line:#ffffff1a;--ink:#0f172a}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--deep);color:var(--ice);font-family:Cairo,Tahoma,sans-serif;font-size:17px;line-height:1.75;overflow-x:hidden}
+a{color:inherit}.w{max-width:1240px;margin:0 auto;padding:0 24px}
+.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:800;border-radius:999px;padding:14px 28px;font-size:17px;transition:transform .15s,box-shadow .15s}
+.btn.p{background:var(--em);color:var(--deep)}.btn.p:hover{transform:translateY(-2px);box-shadow:0 14px 30px -12px var(--em)}
+.btn.l{background:var(--ice);color:var(--deep)}.btn.o{border:1.5px solid #6ee7b7;padding:12.5px 26px}.btn.o:hover{background:#ffffff10}
+/* header */
+header{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--deep) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header .w{display:flex;align-items:center;gap:30px;height:76px}
+.logo{font-weight:900;font-size:21px;display:flex;align-items:center;gap:10px;text-decoration:none}.logo i{width:40px;height:40px;border-radius:12px;background:var(--em);display:grid;place-items:center;color:var(--deep)}
+header nav{display:flex;gap:28px;flex:1;justify-content:center}header nav a{text-decoration:none;color:var(--mint);font-size:16px}header nav a:hover{color:#fff}
+header .btn{padding:11px 22px;font-size:15px}
+/* hero */
+.hero{position:relative;padding:60px 0 90px;overflow:hidden}
+.hero::before{content:"";position:absolute;width:900px;height:700px;top:-200px;inset-inline-start:-200px;background:radial-gradient(closest-side,#0f766e,transparent);opacity:.9}
+.hero .w{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.pill{display:inline-block;border:1px solid #34d39966;color:#6ee7b7;border-radius:999px;padding:6px 16px;font-size:15px;font-weight:700}
+h1{font-size:clamp(46px,6vw,82px);line-height:1.08;margin:22px 0;font-weight:900}h1 span{color:var(--em)}
+.lead{font-size:21px;color:var(--mint);margin:0 0 30px;max-width:540px}.ctas{display:flex;gap:14px;flex-wrap:wrap}
+.stats{display:flex;gap:40px;margin-top:38px;flex-wrap:wrap}.stats b{display:block;font-size:34px;font-weight:900;color:var(--em);line-height:1.2}.stats span{font-size:14px;color:var(--mint)}
+/* real WhatsApp chat */
+.phone{position:relative;width:380px;margin-inline-start:auto;margin-inline-end:60px;background:#111;border-radius:46px;padding:12px;box-shadow:0 50px 100px -30px #000c,0 0 0 1px #ffffff14}
+.phone::before{content:"";position:absolute;top:22px;left:50%;transform:translateX(-50%);width:90px;height:24px;border-radius:20px;background:#000;z-index:3}
+.wa{border-radius:36px;overflow:hidden;background:#efeae2;display:flex;flex-direction:column;height:720px;color:#111b21;font-family:"Segoe UI",Cairo,Helvetica,sans-serif}
+.wa-bar{background:#008069;color:#fff;padding:46px 12px 10px;display:flex;align-items:center;gap:10px}
+.wa-bar .av{width:38px;height:38px;border-radius:50%;background:#fbbf24;color:#06322a;display:grid;place-items:center;font-weight:800;flex:none}
+.wa-bar b{display:block;font-size:16px;font-weight:600}.wa-bar small{font-size:12.5px;opacity:.85}
+.wa-bar .ic{margin-inline-start:auto;display:flex;gap:18px}.wa-bar svg{width:20px;height:20px}
+.wa-body{flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:3px;overflow:hidden;font-size:14.2px;
+ background-color:#efeae2;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23d9d2c5' stroke-width='1.4'%3E%3Ccircle cx='20' cy='22' r='7'/%3E%3Cpath d='M70 15l8 8-8 8-8-8z'/%3E%3Cpath d='M95 70c6 0 10 4 10 10'/%3E%3Crect x='18' y='75' width='16' height='12' rx='3'/%3E%3Cpath d='M55 95l6-10 6 10z'/%3E%3Ccircle cx='100' cy='30' r='3'/%3E%3C/g%3E%3C/svg%3E")}
+.wa-day{align-self:center;background:#fff;color:#54656f;font-size:12px;border-radius:8px;padding:4px 10px;margin:4px 0 8px;box-shadow:0 1px .5px #0b141a21}
+.wa-sys{align-self:center;background:#ffeecd;color:#54656f;font-size:12px;border-radius:8px;padding:4px 10px;margin:6px 0;text-align:center}
+.wa-m{position:relative;max-width:82%;padding:6px 9px 8px;border-radius:8px;box-shadow:0 1px .5px #0b141a21;line-height:1.45;margin-top:4px}
+.wa-m.in{background:#fff;align-self:flex-start;border-top-right-radius:0}
+.wa-m.out{background:#d9fdd3;align-self:flex-end;border-top-left-radius:0}
+.wa-m.in::before{content:"";position:absolute;top:0;right:-8px;border-top:0 solid transparent;border-left:8px solid #fff;border-bottom:10px solid transparent}
+.wa-m.out::before{content:"";position:absolute;top:0;left:-8px;border-right:8px solid #d9fdd3;border-bottom:10px solid transparent}
+.wa-t{float:left;margin:6px 10px 0 0;font-size:11px;color:#667781;display:inline-flex;align-items:center;gap:3px;position:relative;top:4px}
+.tk{width:16px;height:11px;color:#53bdeb}
+.wa-who{display:block;font-size:12.5px;font-weight:600;color:#c2410c}.wa-who.bot{color:#008069}
+.wa-img{display:block;height:150px;margin:-2px -5px 6px;border-radius:6px;background:linear-gradient(160deg,#a7f3d0,#34d399 60%,#047857)}
+.wa-in{background:#f0f2f5;padding:8px 10px;display:flex;align-items:center;gap:8px}
+.wa-in div{flex:1;background:#fff;border-radius:24px;padding:10px 16px;color:#8696a0;font-size:15px}
+.wa-in span{width:44px;height:44px;border-radius:50%;background:#00a884;display:grid;place-items:center;color:#fff}
+.typing{align-self:flex-end;background:#d9fdd3;border-radius:8px;padding:9px 14px;display:flex;gap:4px;margin-top:4px}.typing i{width:7px;height:7px;border-radius:50%;background:#5f8f74;animation:bl 1s infinite}.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}@keyframes bl{50%{opacity:.3}}
+.wa-body .wa-m,.wa-body .wa-day{animation:pop .45s both}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fl{position:absolute;border-radius:18px;padding:13px 18px;font-size:15px;box-shadow:0 22px 44px -18px #000;z-index:4}
+.fl1{top:120px;inset-inline-end:-30px;background:var(--sun);color:var(--deep);font-weight:800}
+.fl2{bottom:-10px;inset-inline-start:10px;background:#fff;color:var(--ink);width:230px;line-height:1.5}.fl2 b{display:block}
+.fl3{bottom:260px;inset-inline-end:-30px;background:#0a3f35;border:1px solid #34d39955;color:var(--mint);font-size:14px;width:210px;line-height:1.5}
+/* sections */
+section.s{padding:110px 0;position:relative}.light{background:var(--ice);color:var(--ink)}
+.sh{max-width:760px;margin:0 0 50px}.sh.c{text-align:center;margin-inline:auto}.ey{color:var(--em);font-weight:800;font-size:15px}.light .ey{color:#047857}
+.sh h2{font-size:clamp(32px,4vw,52px);line-height:1.2;margin:8px 0 12px;font-weight:900}.sh p{font-size:19px;margin:0;color:var(--mint)}.light .sh p{color:#475569}
+/* features */
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.f{background:#fff;border-radius:26px;padding:30px;color:var(--ink);border:1px solid #d1fae5;transition:transform .2s,box-shadow .2s}.f:hover{transform:translateY(-4px);box-shadow:0 30px 60px -30px #06322a55}
+.f h3{margin:14px 0 6px;font-size:22px;font-weight:800}.f p{margin:0;color:#475569;font-size:16px}
+.f .ic{width:52px;height:52px;border-radius:16px;background:var(--ice);display:grid;place-items:center;color:#047857}.f .ic svg{width:26px;height:26px}
+.f.big{grid-column:span 3}.f.mid{grid-column:span 2}.f.dark{background:var(--deep);color:var(--ice);border:0}.f.dark p{color:var(--mint)}.f.dark .ic{background:#ffffff14;color:var(--em)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.chips span{font-size:13px;border-radius:99px;padding:4px 12px;background:var(--ice);color:#047857;font-weight:700}.f.dark .chips span{background:#ffffff14;color:var(--mint)}
+/* demo */
+.demo{display:grid;grid-template-columns:1fr 400px;gap:60px;align-items:center}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 16px}.tabs button{font:inherit;font-weight:700;border:1.5px solid #34d39966;background:transparent;color:var(--ice);border-radius:99px;padding:8px 18px;cursor:pointer}.tabs button.on{background:var(--em);color:var(--deep);border-color:var(--em)}
+.qs{display:flex;flex-direction:column;gap:10px}.qs button{font:inherit;text-align:start;background:#ffffff0d;border:1px solid var(--line);color:var(--ice);border-radius:16px;padding:13px 18px;cursor:pointer}.qs button:hover{background:#ffffff1a}
+.demo .phone{margin:0}.demo .wa{height:640px}.demo .wa-body{overflow-y:auto}
+/* compare */
+.cmp{background:#fff;border-radius:24px;overflow:hidden;overflow-x:auto;border:1px solid #d1fae5}.cmp table{width:100%;border-collapse:collapse;min-width:680px}
+.cmp th,.cmp td{padding:15px 20px;text-align:start;border-bottom:1px solid #e2f3ec;vertical-align:top;font-size:15.5px}.cmp thead th{background:#f6fbf9;font-size:17px}.cmp tbody th{color:#475569;font-weight:700;width:20%}.cmp .us{background:#f0fdf6;font-weight:600}.cmp thead .us{background:var(--deep);color:#fff}
+.note{font-size:13px;color:#64748b;text-align:center;margin-top:14px}
+/* providers */
+.prov{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.prov span{border:1px solid var(--line);background:#ffffff0a;border-radius:14px;padding:10px 18px;font-weight:700}.prov i{font-style:normal;font-size:12px;margin-inline-start:8px;color:var(--em)}.prov .pd i{color:var(--sun)}
+/* video */
+.video{max-width:1000px;margin:0 auto;aspect-ratio:16/9;border-radius:26px;overflow:hidden;background:#000;box-shadow:0 40px 90px -40px #000}.video iframe{width:100%;height:100%;border:0}
+/* plans */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:20px}
+.plan{background:#fff;color:var(--ink);border-radius:26px;padding:30px;display:flex;flex-direction:column;gap:10px;position:relative;border:1px solid #d1fae5}
+.plan.hot{background:var(--deep);color:var(--ice);border:2px solid var(--em);transform:translateY(-8px)}.plan .eyebrow{position:absolute;top:-14px;inset-inline-start:24px;background:var(--sun);color:var(--deep);border-radius:99px;padding:3px 14px;font-size:13px;font-weight:800}
+.plan h3{margin:0;font-size:22px}.price{font-size:44px;font-weight:900}.price small{font-size:15px;opacity:.7;font-weight:600}
+.plan ul{list-style:none;padding:0;margin:6px 0 16px;flex:1}.plan li{padding:7px 0;border-bottom:1px dashed #d1fae5;font-size:15px}.plan.hot li{border-color:#ffffff22}.plan li::before{content:"✓";color:var(--em2);font-weight:900;margin-inline-end:10px}
+.plan .btn{justify-content:center}.plan .btn.g{border:1.5px solid var(--deep);color:var(--deep)}.plan.hot .btn.p{background:var(--em)}
+/* faq */
+.q{border-bottom:1px solid var(--line)}.q summary{cursor:pointer;font-weight:800;padding:18px 0;list-style:none;display:flex;justify-content:space-between;gap:12px;font-size:18px}.q summary::after{content:"+";font-size:26px;color:var(--em)}.q[open] summary::after{content:"−"}.q p{margin:0 0 18px;color:var(--mint)}
+/* cta */
+.cta{background:var(--em);color:var(--deep);border-radius:36px;padding:72px 40px;text-align:center}.cta h2{font-size:clamp(34px,5vw,62px);margin:0 0 12px;font-weight:900;line-height:1.15}.cta p{font-size:20px;margin:0 0 28px;font-weight:600}.cta .btn{background:var(--deep);color:var(--ice)}
+footer{padding:40px 0;color:var(--mint);font-size:14px;border-top:1px solid var(--line)}footer .w{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.rv{opacity:1}.js .rv{opacity:0;transform:translateY(24px);transition:opacity .7s,transform .7s}.js .rv.in{opacity:1;transform:none}
+@media (max-width:1000px){header nav{display:none}.hero .w,.demo{grid-template-columns:1fr}.phone{margin:20px auto 0;width:min(380px,100%)}.fl{display:none}.grid{grid-template-columns:1fr 1fr}.f.big,.f.mid{grid-column:span 2}}
+@media (max-width:600px){header .btn.o{display:none}.grid{grid-template-columns:1fr}.f.big,.f.mid{grid-column:auto}section.s{padding:72px 0}.wa{height:600px}}
+@media (prefers-reduced-motion:reduce){.js .rv{opacity:1;transform:none}.wa-body .wa-m{animation:none}}
+</style>
+<script>document.documentElement.classList.add("js");document.addEventListener("DOMContentLoaded",function(){var L=document.querySelectorAll(".rv");if(!("IntersectionObserver" in window)){[].forEach.call(L,function(e){e.classList.add("in")});return}var io=new IntersectionObserver(function(E){E.forEach(function(x){if(x.isIntersecting){x.target.classList.add("in");io.unobserve(x.target)}})},{rootMargin:"0px 0px -8% 0px"});[].forEach.call(L,function(e){io.observe(e)})});</script>
+</head>
+<body>
+<header><div class="w"><a class="logo" href="#"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.9A8 8 0 1 1 21 12z"/></svg></i>{{brand}}</a>
+<nav><a href="#features">المميزات</a><a href="#try">جرّب بنفسك</a><a href="#compare">المقارنة</a><a href="#pricing">الأسعار</a><a href="#faq">أسئلة</a></nav>
+<a class="btn o" href="{{login_url}}">دخول</a><a class="btn p" href="{{cta_url}}">{{cta_label}}</a></div></header>
+
+<section class="hero"><div class="w">
+<div><span class="pill">لفرق المبيعات وخدمة العملاء</span>
+<h1>عميلك سأل.<br><span>اترد عليه.</span></h1>
+<p class="lead">رقم واتساب واحد، فريقك كله عليه، ومساعد ذكي بيرد من معرفتك ليل ونهار. وانت شايف كل حاجة.</p>
+<div class="ctas"><a class="btn l" href="{{cta_url}}">{{cta_label}}</a><a class="btn o" href="#video">▶ شوف الفيديو</a></div>
+<div class="stats"><div><b>24/7</b><span>رد من غير توقف</span></div><div><b>QR</b><span>ربط في دقيقة</span></div><div><b>رقم واحد</b><span>لفريق كامل</span></div></div></div>
+<div style="position:relative">
+<div class="fl fl1">⚡ اترد في 4 ثواني</div>
+<div class="fl fl2"><b>✓ طلب جديد اتسجّل</b>نور · فستان أخضر M</div>
+<div class="phone"><div class="wa">
+<div class="wa-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="av">ن</span><div><b>نور</b><small>متصل الآن</small></div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></span></div>
+<div class="wa-body" id="hb"><div class="wa-day">اليوم</div><div class="wa-m in">مساء الخير، عندكم الفستان الأخضر مقاس M؟<span class="wa-t">11:42 م</span></div><div class="wa-m out"><span class="wa-who">سارة</span>أيوه موجود 🌿 وده آخر مقاس M عندنا. تحبي أحجزهولك؟<span class="wa-t">11:43 م<svg class="tk" viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 7.2 2.3 4.6 1.3 5.6l3.6 3.6 7.2-7.6zM15 .6 8.8 7.2l-.9-.9-1 1 1.9 1.9 7.2-7.6z" fill="currentColor"/></svg></span></div><div class="wa-m in">طب التوصيل للإسكندرية بكام؟<span class="wa-t">2:10 ص</span></div><div class="wa-m out"><span class="wa-who bot">المساعد</span>التوصيل للإسكندرية 60 جنيه وبيوصل في يومين 🚚<span class="wa-t">2:10 ص<svg class="tk" viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 7.2 2.3 4.6 1.3 5.6l3.6 3.6 7.2-7.6zM15 .6 8.8 7.2l-.9-.9-1 1 1.9 1.9 7.2-7.6z" fill="currentColor"/></svg></span></div><div class="wa-m out"><span class="wa-img"></span><b>فستان أخضر قطن — مقاس M</b><br>💰 450 جنيه<span class="wa-t">2:10 ص<svg class="tk" viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 7.2 2.3 4.6 1.3 5.6l3.6 3.6 7.2-7.6zM15 .6 8.8 7.2l-.9-.9-1 1 1.9 1.9 7.2-7.6z" fill="currentColor"/></svg></span></div><div class="wa-m in">تمام احجزيه 😍<span class="wa-t">2:11 ص</span></div></div>
+<div class="wa-in"><div>مراسلة</div><span><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12z"/></svg></span></div>
+</div></div></div>
+</div></section>
+
+<section class="s light" id="features"><div class="w"><div class="sh rv"><span class="ey">المميزات</span><h2>كل اللي فريقك محتاجه… من غير لف</h2><p>من أول رسالة لحد ما العميل يشتري ويرجع تاني.</p></div>
+<div class="grid">
+<div class="f dark big rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01"/></svg></div><h3>مساعد بيتعلّم أسلوبكم</h3><p>بيرد من معرفتكم وكتالوج منتجاتكم، وبيتعلّم من تعديلات الفريق على ردوده. ولو مش متأكد بيحوّل للإنسان بدل ما يغلط.</p><div class="chips"><span>رد 24 ساعة</span><span>يفهم العامية</span><span>تحويل للموظف</span><span>ساعات هدوء</span></div></div>
+<div class="f big rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5M15 19c0-2 1.5-3.5 4-3.5"/></svg></div><h3>فريق كامل على رقم واحد</h3><p>كل واحد بحسابه وصلاحياته، وكل رد عارف مين كتبه. الخاص والجروبات وكل الأرقام في لوحة واحدة.</p><div class="chips"><span>صلاحيات لكل صفحة</span><span>أكتر من رقم</span></div></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div><h3>بيسمع الفويس</h3><p>الرسالة الصوتية بتتحوّل لكلام ويترد عليها.</p></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></div><h3>كتالوج منتجات</h3><p>بالصور والأسعار، والمساعد بيبعت صورة المنتج اللي اتسأل عنه.</p></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></div><h3>ملف لكل عميل</h3><p>مراحل وسجل كامل بكل رد وملف، ورسايل متابعة تلقائية.</p></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 0 1-3.4 0"/></svg></div><h3>عين على الجروبات</h3><p>سؤال محدش رد عليه؟ تنبيه للمسؤول بمنشن.</p></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>تقارير بتفهمها</h3><p>سرعة رد كل موظف، ومين مستني، وجودة الردود كل أسبوع.</p></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><h3>خصوصية ونسخ احتياطي</h3><p>الرسايل محفوظة حتى لو اتمسحت، ونسخة كاملة على Google Drive.</p></div>
+</div></div></section>
+
+<section class="s" id="try"><div class="w demo">
+<div class="rv"><span class="ey">جرّب بنفسك</span><h2 style="font-size:clamp(32px,4vw,52px);line-height:1.2;margin:8px 0 12px;font-weight:900">اسأل زي العميل… وشوف الرد</h2><p style="color:var(--mint);margin:0">مثال لطريقة الرد. في الحقيقة المساعد بيرد من بياناتك أنت. جرّب "عايز أكلم حد".</p>
+<div class="tabs" id="tabs"><button class="on" data-k="shop">متجر</button><button data-k="clinic">عيادة</button><button data-k="support">دعم فني</button><button data-k="course">كورسات</button></div>
+<div class="qs" id="qs"></div></div>
+<div class="phone rv"><div class="wa">
+<div class="wa-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="av" id="dav">م</span><div><b id="dnm">متجر نور</b><small id="dst">متصل الآن</small></div></div>
+<div class="wa-body" id="db"></div>
+<div class="wa-in"><div>مراسلة</div><span><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12z"/></svg></span></div>
+</div></div>
+</div></section>
+
+<section class="s light" id="compare"><div class="w"><div class="sh c rv"><span class="ey">بصراحة</span><h2>واتساب بزنس ولا {{brand}}؟</h2><p>واتساب بزنس كويس لمحل صغير بيرد بنفسه. لو عندك فريق وعملاء كتير، الفرق كبير.</p></div>
+<div class="cmp rv"><table><thead><tr><th></th><th>واتساب بزنس (التطبيق)</th><th class="us">{{brand}}</th></tr></thead><tbody><tr><th>السعر</th><td>مجاني</td><td class="us">اشتراك شهري حسب الباقة</td></tr><tr><th>الرد التلقائي</th><td>رسالة ترحيب وغياب وردود سريعة بتكتبها بإيدك</td><td class="us">بوت ذكاء اصطناعي بيفهم السؤال ويرد من معرفة شغلك 24 ساعة</td></tr><tr><th>الذكاء الاصطناعي</th><td>مساعد Meta في بعض الدول بس، وإعداداته بسيطة</td><td class="us">بيتعلّم من ردود فريقك، وتختار المزوّد (Gemini أو Groq أو OpenAI أو Claude وغيرهم) مجاني أو مدفوع</td></tr><tr><th>الرسايل الصوتية</th><td>❌</td><td class="us">✅ يفهم الفويس ويرد عليه</td></tr><tr><th>الفريق على نفس الرقم</th><td>الموبايل + لحد 4 أجهزة مربوطة</td><td class="us">فريق كامل بصلاحيات لكل موظف</td></tr><tr><th>متابعة الجروبات</th><td>❌</td><td class="us">✅ يرد في الجروبات وينبّه لو سؤال اتساب من غير رد</td></tr><tr><th>ملف العميل</th><td>تصنيفات (Labels) وملاحظة قصيرة</td><td class="us">ملف كامل: مراحل، سجل دائم بكل رد وملف، رسايل متابعة تلقائية</td></tr><tr><th>التقارير</th><td>إحصائيات بسيطة للرسايل</td><td class="us">تقارير يومية وأسبوعية للجودة وأداء كل موظف</td></tr><tr><th>أكتر من رقم</th><td>كل رقم في تطبيق لوحده</td><td class="us">كل الأرقام في لوحة واحدة</td></tr><tr><th>الإرسال الجماعي</th><td>قوائم بث لحد 256 شخص، ويوصل بس للي حافظ رقمك</td><td class="us">إرسال جماعي على دفعات بحدود تحمي رقمك</td></tr><tr><th>كتالوج المنتجات</th><td>✅ موجود</td><td class="us">✅ كتالوج بالصور والأسعار، والبوت بيرد على الأسعار منه ويبعت صورة المنتج</td></tr><tr><th>طريقة الربط</th><td>تطبيق رسمي من Meta</td><td class="us">بيتربط على رقمك بالـ QR زي واتساب ويب</td></tr></tbody></table></div>
+<p class="note">المقارنة مع تطبيق واتساب بزنس المجاني. المميزات عندهم بتختلف حسب الدولة وبتتغيّر مع التحديثات.</p></div></section>
+
+<section class="s"><div class="w"><div class="sh c rv"><span class="ey">الذكاء اللي يناسب ميزانيتك</span><h2>أكتر من مزوّد… والنظام بيختار الأفضل</h2><p>ولو واحد وقف، التاني بيكمّل. ابدأ ببلاش بمفتاح مجاني من غير كارت بنكي.</p></div>
+<div class="prov rv"><span>Google Gemini<i>مجاني</i></span><span>Groq<i>مجاني</i></span><span>Mistral<i>مجاني</i></span><span>OpenRouter<i>موديلات مجانية</i></span><span class="pd">OpenAI<i>مدفوع</i></span><span class="pd">Claude<i>مدفوع</i></span></div></div></section>
+
+<section class="s" id="video" style="padding-top:20px"><div class="w"><div class="sh c rv"><span class="ey">دقيقتين</span><h2>شوف النظام وهو شغال</h2></div><div class="video rv"><iframe src="{{video_url}}" title="video" loading="lazy" allowfullscreen></iframe></div></div></section>
+
+<section class="s light" id="pricing"><div class="w"><div class="sh c rv"><span class="ey">الأسعار</span><h2>باقات بسيطة ومن غير عقود</h2><p>ابدأ بتجربة، وكبّر لما تحتاج.</p></div><div class="plans rv">{{plans}}</div></div></section>
+
+<section class="s" id="faq"><div class="w" style="max-width:880px"><div class="sh c rv"><span class="ey">أسئلة</span><h2>عندك سؤال؟</h2></div>
+<details class="q"><summary>محتاج أغيّر رقمي أو أعمل حساب واتساب بيزنس؟</summary><p>لا. بتربط رقمك الحالي (عادي أو بيزنس) بكود QR زي الواتساب ويب، والموبايل بيفضل شغال عادي.</p></details>
+<details class="q"><summary>البوت هيرد غلط على عملائي؟</summary><p>البوت بيرد من معرفة شركتك بس، ولما مش متأكد بيكتب مسودة لفريقك أو بيحوّل للموظف. وتقدر تجرّبه الأول قبل ما تشغّله.</p></details>
+<details class="q"><summary>ينفع أكتر من موظف يشتغل في نفس الوقت؟</summary><p>أيوه، كل موظف بحسابه وصلاحياته، والنظام بيوضح مين رد على مين.</p></details>
+<details class="q"><summary>البوت بيفهم العامية واللهجات؟</summary><p>أيوه، بيرد بلهجة العميل، وبيفهم الرسايل الصوتية كمان.</p></details>
+<details class="q"><summary>رسايلي القديمة هتظهر؟</summary><p>من لحظة الربط كل الرسايل بتتحفظ، والقديم بيتسحب على قد ما الواتساب بيسمح.</p></details>
+<details class="q"><summary>ينفع ألغي في أي وقت؟</summary><p>أيوه، من غير عقود.</p></details></div></section>
+
+<section class="s" style="padding-top:0"><div class="w"><div class="cta rv"><h2>ولا عميل يستنى تاني.</h2><p>اربط رقمك في دقيقة وجرّب مع فريقك.</p><a class="btn" href="{{cta_url}}">{{cta_label}}</a></div></div></section>
+<footer><div class="w"><span>© {{year}} {{brand}}</span><span><a href="{{privacy_url}}">سياسة الخصوصية</a> · <a href="{{terms_url}}">شروط الاستخدام</a></span></div></footer>
+
+<script>
+(function(){
+var TK='<svg class="tk" viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 7.2 2.3 4.6 1.3 5.6l3.6 3.6 7.2-7.6zM15 .6 8.8 7.2l-.9-.9-1 1 1.9 1.9 7.2-7.6z" fill="currentColor"/></svg>';
+function now(){var d=new Date(),h=d.getHours(),m=('0'+d.getMinutes()).slice(-2);return (h%12||12)+':'+m+(h<12?' ص':' م')}
+var D={shop:{n:'متجر نور',a:'م',q:[['عندكم الشنطة الجلد البني؟','أيوه موجودة 🌸 بـ 850 جنيه، جلد طبيعي وفيها جيبين من جوه.',['<b>شنطة جلد بني</b><br>💰 850 جنيه']],['التوصيل بياخد قد إيه؟','القاهرة والجيزة يوم واحد، والمحافظات من 2 لـ 3 أيام 🚚'],['عايز أكلم حد',null,'سارة']]},
+clinic:{n:'عيادة د. منى',a:'ع',q:[['الكشف بكام؟','الكشف 400 جنيه، والاستشارة خلال أسبوعين ببلاش 🩺'],['في مواعيد بكرة؟','بكرة في ميعادين: 5:30 و7:00 مساءً. أحجزلك أنهي واحد؟'],['عايز أكلم حد',null,'السكرتارية']]},
+support:{n:'دعم شركة النت',a:'د',q:[['النت فاصل من الصبح','آسفين 🙏 جرّب تطفي الراوتر دقيقة وترجّعه. ولو لسه، ابعتلي رقم الاشتراك.'],['عايز أغيّر الباقة','المتاح 100 و200 و500 ميجا. تحب أعرّفك الفرق؟'],['عايز أكلم حد',null,'الدعم الفني']]},
+course:{n:'أكاديمية التصميم',a:'أ',q:[['الكورس الجاي امتى؟','الدفعة الجديدة تبدأ السبت، 8 أسابيع أونلاين 🎓'],['بكام؟','1,800 جنيه، وينفع على قسطين.'],['عايز أكلم حد',null,'منسّق الكورس']]}};
+var cur='shop',db=document.getElementById('db'),qs=document.getElementById('qs'),busy=0;
+function add(cls,inner){var d=document.createElement('div');d.className=cls;d.innerHTML=inner;db.appendChild(d);db.scrollTop=db.scrollHeight;return d}
+function msg(dir,txt,who,img){return add('wa-m '+dir,(who?'<span class="wa-who'+(who==='المساعد'?' bot':'')+'">'+who+'</span>':'')+(img?'<span class="wa-img"></span>':'')+txt+'<span class="wa-t">'+now()+(dir==='out'?TK:'')+'</span>')}
+function load(k){cur=k;var x=D[k];document.getElementById('dnm').textContent=x.n;document.getElementById('dav').textContent=x.a;document.getElementById('dst').textContent='متصل الآن';db.innerHTML='<div class="wa-day">اليوم</div>';msg('out','أهلًا بيك 👋 اسأل وأنا أرد عليك.','المساعد');qs.innerHTML=x.q.map(function(q,i){return'<button data-i="'+i+'">'+q[0]+'</button>'}).join('')}
+qs.onclick=function(e){var b=e.target.closest('button');if(!b||busy)return;busy=1;var q=D[cur].q[+b.dataset.i];msg('in',q[0]);document.getElementById('dst').textContent='يكتب…';
+setTimeout(function(){var t=add('typing','<i></i><i></i><i></i>');setTimeout(function(){t.remove();document.getElementById('dst').textContent='متصل الآن';
+if(q[1]){msg('out',q[1],'المساعد');if(q[2])setTimeout(function(){msg('out',q[2][0],'المساعد',1)},600)}else{add('wa-sys','تم التحويل لـ '+q[2]);setTimeout(function(){msg('out','أهلًا، أنا '+q[2]+' معاك دلوقتي. اتفضّل 🙏',q[2])},800)}busy=0},1200)},400)};
+document.getElementById('tabs').onclick=function(e){var b=e.target.closest('button');if(!b)return;[].forEach.call(this.children,function(x){x.classList.toggle('on',x===b)});load(b.dataset.k)};load('shop');
+[].forEach.call(document.querySelectorAll('#hb > *'),function(e,i){e.style.animationDelay=(i*0.55)+'s'});
+})();
+</script>
+</body></html>

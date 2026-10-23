@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{brand}} — كل شغل واتساب في مكان واحد</title>
+<meta name="description" content="{{brand}}: لوحة واحدة لفريقك على واتساب، ومساعد ذكي بيكتب والفريق بيراجع، وملف لكل عميل.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f6f5ef;--paper2:#eeede4;--ink:#172521;--mut:#5d6a64;--line:#d8dad1;--green:#176d54;--green2:#0f5a45;--soft:#dde9dd;--clay:#dd795b;--clay2:#fbe6dd;--frame:#142b26;--card:#ffffff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"IBM Plex Sans Arabic",Tahoma,sans-serif;font-size:17px;line-height:1.75}
+a{color:inherit}.w{max-width:1240px;margin:0 auto;padding:0 24px}
+.mono{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.5px}
+.lbl{color:var(--clay);font-weight:600;font-size:14px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 22px;border-radius:8px;font-weight:600;text-decoration:none;font-size:16px;border:1px solid transparent;transition:background .15s}
+.btn.p{background:var(--green);color:#fff}.btn.p:hover{background:var(--green2)}
+.btn.s{border-color:var(--green);color:var(--green)}.btn.s:hover{background:var(--soft)}
+.btn.g{padding-inline:4px;color:var(--ink)}.btn.g:hover{text-decoration:underline}
+/* nav */
+header{position:sticky;top:0;z-index:40;background:var(--paper);border-bottom:1px solid var(--line)}
+header .w{display:flex;align-items:center;gap:28px;height:68px}
+.logo{font-weight:600;font-size:19px;text-decoration:none;display:flex;align-items:center;gap:10px}.logo i{width:30px;height:30px;border-radius:7px;background:var(--frame);color:#fff;display:grid;place-items:center;font-style:normal;font-size:15px}
+header nav{display:flex;gap:24px;flex:1;justify-content:center}header nav a{text-decoration:none;color:var(--mut);font-size:15px}header nav a:hover{color:var(--ink)}
+.prog{position:absolute;bottom:-1px;inset-inline-start:0;height:2px;background:var(--green);width:0}
+/* hero */
+.hero{padding:64px 0 40px}
+.hero .w{display:grid;grid-template-columns:4.6fr 7.4fr;gap:48px;align-items:center}
+h1{font-size:clamp(36px,4.6vw,62px);line-height:1.18;margin:14px 0 18px;font-weight:700;letter-spacing:-.5px}
+.lead{font-size:18px;color:var(--mut);margin:0 0 28px}.ctas{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.trust{display:flex;gap:18px;margin-top:22px;color:var(--mut);font-size:14px;flex-wrap:wrap}.trust span::before{content:"✓ ";color:var(--green);font-weight:700}
+/* app frame */
+.frame{background:var(--frame);border-radius:12px;padding:10px;box-shadow:inset 0 0 0 1px #ffffff14}
+.app{background:var(--paper);border-radius:8px;overflow:hidden;display:grid;grid-template-columns:46px 165px 1fr 160px;height:470px;font-size:13px}
+.sb{background:#1d3a33;display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px 0;color:#9fc3b6}.sb b{width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:#ffffff14;color:#fff;font-size:12px}.sb b.on{background:var(--green)}.sb i{font-style:normal;font-size:17px;opacity:.8}
+.cl{border-inline-end:1px solid var(--line);background:#fbfbf7;overflow:hidden}
+.cl .h{padding:10px 12px;border-bottom:1px solid var(--line);font-weight:600;display:flex;justify-content:space-between}
+.cv{padding:10px 12px;border-bottom:1px solid var(--line);position:relative}.cv.on{background:var(--soft)}
+.cv b{display:block;font-size:13px}.cv small{color:var(--mut);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cv .dot{position:absolute;top:13px;inset-inline-end:12px;width:7px;height:7px;border-radius:50%;background:#d64545}
+.chip{display:inline-block;font-size:11px;border-radius:12px;padding:1px 8px;margin-top:4px}.c-ok{background:var(--soft);color:var(--green)}.c-late{background:var(--clay2);color:#a3462a}.c-wait{background:#e9eae5;color:var(--ink)}
+.th{display:flex;flex-direction:column;background:#f1f0e8}
+.th .h{padding:10px 14px;border-bottom:1px solid var(--line);background:var(--paper);display:flex;justify-content:space-between;align-items:center}
+.msgs{flex:1;padding:14px;display:flex;flex-direction:column;gap:9px;overflow:hidden}
+.b{max-width:82%;padding:8px 11px;border-radius:10px;line-height:1.6}.b small{display:block;font-size:10.5px;color:var(--mut)}
+.b.in{background:#fff;border:1px solid var(--line);align-self:flex-start}.b.out{background:var(--soft);align-self:flex-end}
+.b.draft{background:#fff;border:1px dashed var(--clay);align-self:flex-end;position:relative}
+.b.draft .t{display:block;font-size:10.5px;color:var(--clay);font-weight:600}
+.b.draft s{color:#a3462a99;text-decoration-color:var(--clay)}
+.b.draft ins{text-decoration:none;background:#fff1c7;padding:0 3px;border-radius:3px}
+.pen{align-self:flex-end;max-width:70%;font-size:11.5px;color:#a3462a;border-inline-start:2px solid var(--clay);padding:2px 8px;background:var(--clay2);border-radius:4px}
+.comp{border-top:1px solid var(--line);padding:9px 12px;color:var(--mut);background:var(--paper);display:flex;justify-content:space-between}
+.ctx{border-inline-start:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:8px;background:#fbfbf7}
+.ctx .av{width:44px;height:44px;border-radius:50%;background:var(--clay);color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px}
+.kv{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:7px}.kv span{color:var(--mut)}
+.note{font-size:12px;color:var(--mut);margin-top:10px}
+.swipehint{display:none}
+/* sections */
+section.s{padding:96px 0;border-top:1px solid var(--line)}
+.sh{max-width:760px;margin:0 0 44px}.sh h2{font-size:clamp(28px,3.4vw,44px);line-height:1.25;margin:10px 0 12px;font-weight:700}.sh p{color:var(--mut);margin:0;font-size:18px}
+/* pain → outcome */
+.story{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:0;align-items:start}
+.story div{padding:8px 24px 8px 0;position:relative;font-size:21px;line-height:1.6}
+.story div::after{content:"";position:absolute;top:20px;inset-inline-start:-1px;inset-inline-end:20px;height:1px;background:var(--line)}
+.story s{color:#93a09a;text-decoration-color:#93a09a}
+.story .end{font-weight:700}.story .end::before{content:"";position:absolute;top:15px;inset-inline-end:8px;width:11px;height:11px;border-radius:50%;background:var(--green)}
+/* tour */
+.tour{display:grid;grid-template-columns:270px 1fr;gap:28px}
+.tabs{display:flex;flex-direction:column;border-inline-start:1px solid var(--line)}
+.tabs button{font:inherit;text-align:start;background:none;border:0;border-inline-start:2px solid transparent;margin-inline-start:-1px;padding:12px 18px;cursor:pointer;color:var(--mut);display:flex;gap:12px}
+.tabs button .mono{color:#9aa49f;padding-top:3px}.tabs button.on{color:var(--ink);font-weight:600;border-color:var(--green)}
+.pane{display:none}.pane.on{display:grid;grid-template-columns:1fr 1.1fr;gap:28px;align-items:start}
+.pane h3{font-size:24px;margin:0 0 10px;line-height:1.35}.pane p{color:var(--mut);margin:0 0 14px}
+.pane ul{list-style:none;padding:0;margin:0}.pane li{padding:8px 0;border-bottom:1px solid var(--line);font-size:15.5px}.pane li::before{content:"—";color:var(--green);margin-inline-end:10px}
+.scr{background:var(--frame);border-radius:12px;padding:10px}.scr .in{background:var(--paper);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:13.5px;min-height:250px}
+.row{background:#fff;border:1px solid var(--line);border-radius:8px;padding:9px 12px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.kan{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.kan div{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:6px}.kan b{font-size:12px;color:var(--mut)}.kan span{background:var(--paper2);border-radius:6px;padding:5px 7px;font-size:12px}
+.bars{display:flex;align-items:flex-end;gap:10px;height:120px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:8px}.bars i{flex:1;background:var(--green);opacity:.85}
+/* day */
+.day{background:var(--soft);border-radius:0}
+.tl{display:grid;grid-template-columns:repeat(3,1fr);border-top:2px solid var(--ink)}
+.tl div{padding:22px 24px 0 0;position:relative}.tl div::before{content:"";position:absolute;top:-7px;inset-inline-start:0;width:12px;height:12px;border-radius:50%;background:var(--ink)}
+.tl .mono{color:var(--green);font-size:14px}.tl h3{margin:6px 0 8px;font-size:21px}.tl p{margin:0;color:#3d4a45;font-size:15.5px}
+/* demo */
+.demo{display:grid;grid-template-columns:1fr 1.05fr;gap:40px;align-items:start}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}.pills button{font:inherit;font-size:15px;border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 16px;cursor:pointer}.pills button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.qs{display:flex;flex-wrap:wrap;gap:8px}.qs button{font:inherit;font-size:14.5px;border:1px solid var(--green);color:var(--green);background:transparent;border-radius:12px;padding:7px 14px;cursor:pointer}.qs button:hover{background:var(--soft)}
+.chatw{background:var(--frame);border-radius:12px;padding:10px}.chatw .in{background:#f1f0e8;border-radius:8px;height:430px;display:flex;flex-direction:column;overflow:hidden}
+.chatw .h{background:var(--paper);padding:11px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center;font-size:14px}
+.chatw .h .av{width:34px;height:34px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-size:16px;transition:background .3s}
+.chatw .h small{display:block;color:var(--mut);font-size:12px}
+.chatw .msgs{overflow-y:auto;font-size:14px}
+.esc{align-self:center;background:var(--clay2);color:#a3462a;border-radius:99px;padding:3px 12px;font-size:12px;font-weight:600}
+.typing{align-self:flex-end;background:var(--soft);border-radius:10px;padding:9px 13px;display:flex;gap:4px}.typing i{width:6px;height:6px;border-radius:50%;background:var(--green);animation:bl 1s infinite}.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}@keyframes bl{50%{opacity:.25}}
+/* chapters */
+.ch{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;padding:40px 0;border-bottom:1px solid var(--line)}.ch:last-child{border:0}
+.ch.r .txt{order:2}.ch h3{font-size:28px;margin:8px 0 10px;line-height:1.3}.ch p{color:var(--mut);margin:0 0 10px}
+.warn{font-size:13px;background:var(--clay2);color:#8a3b23;border-radius:6px;padding:6px 10px;display:inline-block}
+.matrix{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);font-size:14px}.matrix th,.matrix td{border:1px solid var(--line);padding:9px 12px;text-align:center}.matrix th:first-child,.matrix td:first-child{text-align:start}.matrix thead th{background:var(--paper2);font-weight:600}
+.y{color:var(--green);font-weight:700}.n{color:#b8bfba}
+/* ribbon */
+.ribbon{position:fixed;inset-inline-start:14px;top:50%;transform:translateY(-50%);z-index:30;display:flex;flex-direction:column;gap:0;width:118px}
+.ribbon div{border-inline-start:1px solid var(--line);padding:8px 0 8px 0;padding-inline-start:14px;font-size:12px;color:#a3aca7;position:relative;transition:color .3s}
+.ribbon div::before{content:"";position:absolute;inset-inline-start:-4px;top:13px;width:7px;height:7px;border-radius:50%;background:var(--line);transition:background .3s}
+.ribbon div.on{color:var(--ink);font-weight:600}.ribbon div.on::before{background:var(--green)}.ribbon div.done::before{background:var(--green);opacity:.45}
+.ribbon .t{font-family:"IBM Plex Mono";font-size:10px;color:var(--mut);padding:0 0 6px;border:0}.ribbon .t::before{display:none}
+/* providers / sectors */
+.split{display:grid;grid-template-columns:1fr 1.3fr;gap:44px;align-items:start}
+.sectors{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--ink)}
+.sectors div{padding:20px 20px 0 0;border-inline-start:1px solid var(--line)}.sectors div:first-child{border:0}.sectors h3{margin:6px 0 8px;font-size:19px}.sectors p{margin:0;color:var(--mut);font-size:15px}
+/* compare */
+.cmp{background:#fff;border:1px solid var(--line);overflow-x:auto}.cmp table{width:100%;border-collapse:collapse;min-width:640px}
+.cmp th,.cmp td{padding:14px 18px;text-align:start;border-bottom:1px solid var(--line);vertical-align:top;font-size:15px}
+.cmp thead th{background:var(--paper2);font-weight:600}.cmp tbody th{color:var(--mut);font-weight:500;width:22%;position:sticky;inset-inline-start:0;background:#fff}.cmp .us{background:#f3f8f3}.cmp thead .us{background:var(--frame);color:#fff}
+.cmp tr.more{display:none}.cmp.open tr.more{display:table-row}
+.morebtn{margin-top:14px;font:inherit;background:none;border:1px solid var(--ink);border-radius:8px;padding:9px 18px;cursor:pointer}
+/* video */
+.video{aspect-ratio:16/9;background:var(--frame);border-radius:12px;overflow:hidden;padding:10px}.video iframe{width:100%;height:100%;border:0;border-radius:8px}
+/* pricing (cards from the plans settings) */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:0;border:1px solid var(--line);background:#fff}
+.plan{padding:28px;border-inline-start:1px solid var(--line);display:flex;flex-direction:column;gap:8px;position:relative}.plan:first-child{border:0}
+.plan.hot{background:#f3f8f3;box-shadow:inset 0 3px 0 var(--green)}.plan .eyebrow{font-size:12px;color:var(--green);font-weight:600}
+.plan h3{margin:0;font-size:20px}.price{font-size:38px;font-weight:700}.price small{font-size:15px;color:var(--mut);font-weight:500}
+.plan ul{list-style:none;padding:0;margin:6px 0 16px;flex:1}.plan li{padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}.plan li::before{content:"✓";color:var(--green);margin-inline-end:10px}.plan .btn{justify-content:center}
+/* faq */
+.q{border-bottom:1px solid var(--line)}.q summary{cursor:pointer;font-weight:600;padding:18px 0;list-style:none;display:flex;justify-content:space-between;gap:12px}.q summary::after{content:"+";font-size:22px;color:var(--green)}.q[open] summary::after{content:"−"}.q p{margin:0 0 18px;color:var(--mut)}
+/* cta */
+.cta{background:var(--frame);color:#fff;padding:96px 0}.cta h2{font-size:clamp(34px,5vw,60px);margin:0 0 14px;line-height:1.2}.cta p{color:#b9cdc5;margin:0 0 28px;font-size:18px}.cta .btn.p{background:#fff;color:var(--frame)}
+footer{padding:48px 0 90px;color:var(--mut);font-size:14px}footer .cols{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:24px}footer b{color:var(--ink);display:block;margin-bottom:8px}footer a{display:block;text-decoration:none;padding:3px 0}footer a:hover{color:var(--ink)}
+.mbar{display:none}
+.rv{opacity:1}
+@media (max-width:1560px){.ribbon{display:none}}
+@media (max-width:980px){header nav{display:none}.hero .w,.tour,.pane.on,.demo,.ch,.split{grid-template-columns:1fr}.ch.r .txt{order:0}
+ .app{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;height:430px}.app>*{flex:0 0 100%;scroll-snap-align:start}.sb{display:none}.swipehint{display:block;font-size:13px;color:var(--mut);margin-top:8px}
+ .tabs{flex-direction:row;overflow-x:auto;border:0;gap:8px}.tabs button{white-space:nowrap;border:1px solid var(--line);border-radius:99px;margin:0;padding:7px 14px}.tabs button.on{border-color:var(--ink);background:var(--ink);color:#fff}.tabs button .mono{display:none}
+ .story{grid-template-columns:1fr}.story div{padding:10px 0}.story div::after{display:none}
+ .tl{grid-template-columns:1fr;border:0}.tl div{border-inline-start:3px solid var(--green);padding:14px 16px;margin-bottom:12px;background:#ffffff80}.tl div:nth-child(2){border-color:#c9a43a}.tl div:nth-child(3){border-color:var(--frame)}.tl div::before{display:none}
+ .sectors{grid-template-columns:1fr 1fr}.sectors div{border:0;padding:16px 0}footer .cols{grid-template-columns:1fr 1fr}
+ .mbar{display:flex;position:fixed;bottom:0;inset-inline:0;height:64px;background:#fff;border-top:1px solid var(--line);z-index:50;align-items:center;justify-content:center;padding:0 16px}.mbar .btn{width:100%;justify-content:center}
+ section.s{padding:64px 0}}
+@media (max-width:560px){h1{font-size:36px}.sectors{grid-template-columns:1fr}.kan{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header><div class="w"><a class="logo" href="#"><i>✉</i>{{brand}}</a><nav><a href="#product">المنتج</a><a href="#how">كيف يعمل</a><a href="#demo">التجربة التفاعلية</a><a href="#sectors">القطاعات</a><a href="#pricing">الأسعار</a></nav><a class="btn g" href="{{login_url}}">تسجيل الدخول</a><a class="btn p" href="{{cta_url}}">{{cta_label}}</a></div><div class="prog" id="prog"></div></header>
+
+<nav class="ribbon" id="ribbon" aria-hidden="true"><div class="t">رحلة عميل واحد</div><div data-s="product">رسالة واردة</div><div data-s="how">المساعد كتب مسودة</div><div data-s="tour">الفريق راجع ورد</div><div data-s="day">اتسجّل في ملفه</div><div data-s="demo">اتحوّل لموظف</div><div data-s="pricing">اتقفل الطلب</div></nav>
+
+<section class="hero" id="product"><div class="w">
+<div><span class="lbl">01 — منصة إدارة واتساب للفريق</span>
+<h1>كل شغل واتساب، أخيرًا في مكان واحد.</h1>
+<p class="lead">كفاية نقل بين الموبايلات، ومتابعات بتتنسى، ورسايل من غير مسؤول. افتح لوحة واحدة لفريقك، وسيب الأسئلة المتكررة للمساعد الذكي، وركّزوا انتوا على العملاء اللي محتاجين تدخل حقيقي.</p>
+<div class="ctas"><a class="btn p" href="{{cta_url}}">{{cta_label}}</a><a class="btn g" href="#how">شوف النظام بيشتغل إزاي ←</a></div>
+<div class="trust"><span>ربط بالـ QR في دقيقة</span><span>فريق كامل على رقم واحد</span><span>بيفهم العامية والفويس</span></div></div>
+<div><div class="frame"><div class="app">
+<div class="sb"><b class="on">١</b><b>٢</b><i>💬</i><i>👥</i><i>🗂️</i><i>📊</i></div>
+<div class="cl"><div class="h">المحادثات <span class="mono">24</span></div>
+<div class="cv on"><b>نور</b><small>التوصيل للإسكندرية بكام؟</small><span class="chip c-ok">المساعد كتب مسودة</span></div>
+<div class="cv"><span class="dot"></span><b>محمود</b><small>الطلب لسه ما وصلش</small><span class="chip c-late">متأخر</span></div>
+<div class="cv"><b>جروب العملاء</b><small>عضو: التجديد إزاي؟</small><span class="chip c-wait">@أحمد</span></div>
+<div class="cv"><b>ياسمين</b><small>شكرًا، وصل 🌸</small><span class="chip c-ok">تم</span></div></div>
+<div class="th"><div class="h"><b>نور</b><span class="mono">رقم المبيعات</span></div><div class="msgs">
+<div class="b in">عندكم الفستان الأخضر مقاس M؟<small>11:42 م</small></div>
+<div class="b out">أيوه موجود، تحبي أسجّلك الطلب؟<small>سارة · 11:43 م</small></div>
+<div class="b in">التوصيل للإسكندرية بكام؟<small>2:10 ص</small></div>
+<div class="b draft"><span class="t">مسودة المساعد · بتتراجع</span>التوصيل للإسكندرية <s>60 جنيه</s> <ins>مجانًا النهارده بس</ins> وبيوصل في يومين 🚚</div>
+<div class="pen">سارة: عميلة متكررة، التوصيل عليها النهارده.</div>
+</div><div class="comp"><span>اكتب رد أو / للردود الجاهزة</span><span>↵</span></div></div>
+<div class="ctx"><div class="av">ن</div><b>نور</b><span class="mono" style="color:var(--mut)">عميلة · الإسكندرية</span>
+<div class="kv"><span>المرحلة</span><b>تفاوض</b></div><div class="kv"><span>المسؤول</span><b>سارة</b></div><div class="kv"><span>آخر طلب</span><b>فستان</b></div><div class="kv"><span>متابعة</span><b>بكرة</b></div></div>
+</div></div><div class="swipehint">اسحب لرؤية ملف العميل ←</div><div class="note">* البيانات والشاشات المعروضة لأغراض التوضيح فقط.</div></div>
+</div></section>
+
+<section class="s" id="how"><div class="w"><div class="sh"><span class="lbl">02 — من المشكلة للنتيجة</span></div>
+<div class="story"><div><s>العميل بيبعت من 3 أيام…</s></div><div><s>…ومفيش موظف عارف مين رد عليه…</s></div><div class="end">فريقك كله شايف نفس المحادثة، والمسؤول واضح، والمساعد كتب الرد وانتوا بتراجعوه.</div></div></div></section>
+
+<section class="s" id="tour"><div class="w"><div class="sh"><span class="lbl">03 — جولة في المنتج</span><h2>ست وحدات بتشتغل مع بعض</h2><p>اختار وحدة وشوف شكلها جوه اللوحة.</p></div>
+<div class="tour"><div class="tabs" id="tabs">
+<button class="on"><span class="mono">01</span>صندوق الوارد الموحّد</button><button><span class="mono">02</span>المساعد الذكي</button><button><span class="mono">03</span>ملف العميل</button><button><span class="mono">04</span>المشاكل والمتابعة</button><button><span class="mono">05</span>الجروبات</button><button><span class="mono">06</span>التقارير والإشراف</button></div>
+<div id="panes">
+<div class="pane on"><div><h3>أكتر من رقم وفريق كامل… في صندوق واحد</h3><p>كل موظف بحسابه، وكل محادثة ليها مسؤول، وكل رد عارف مين كتبه.</p><ul><li>الخاص والجروبات في مكان واحد</li><li>ردود جاهزة بالهاشتاج</li><li>الرسايل محفوظة حتى لو اتمسحت من الموبايل</li><li>صلاحيات لكل صفحة: عرض أو تعديل</li></ul></div>
+<div class="scr"><div class="in"><div class="row"><span>نور · التوصيل؟</span><span class="chip c-ok">سارة</span></div><div class="row"><span>محمود · الطلب اتأخر</span><span class="chip c-late">أحمد</span></div><div class="row"><span>كريم · الفاتورة</span><span class="chip c-wait">من غير مسؤول</span></div></div></div></div>
+<div class="pane"><div><h3>بيكتب من معرفتك… والفريق بيراجع</h3><p>بيتعلّم من ردود فريقكم وملفاتكم والكتالوج. لو مش متأكد بيكتب مسودة أو بيحوّل للإنسان.</p><ul><li>بيفهم الفويس ويرد عليه</li><li>كتالوج بالصور والأسعار</li><li>بيتعلّم من تعديلات الفريق على ردوده</li><li>ساعات عمل وساعات هدوء</li></ul></div>
+<div class="scr"><div class="in"><div class="row"><span>🎙️ فويس 0:18</span><span class="chip c-ok">اتحوّل لكلام</span></div><div class="b in">بكام الشنطة الجلد البني؟</div><div class="b draft"><span class="t">مسودة · من الكتالوج</span>الشنطة الجلد البني بـ 850 جنيه 👜</div></div></div></div>
+<div class="pane"><div><h3>من أول "بكام" لحد ما يشتري</h3><p>ملف لكل عميل بمراحل بتسمّيها انت، وسجل دائم بكل رد وكل ملف اتبعت.</p><ul><li>مراحل وملاحظات وبيانات</li><li>رسايل متابعة تلقائية</li><li>تحليل وتوصيات بالخطوة الجاية</li><li>المساعد بيقرا السجل قبل ما يرد</li></ul></div>
+<div class="scr"><div class="in"><div class="kan"><div><b>جديد</b><span>سارة إ.</span><span>عمر</span></div><div><b>تواصل</b><span>كريم</span></div><div><b>عرض</b><span>نور</span></div><div><b>مكتمل</b><span>د. حسام</span><span>طارق</span></div></div></div></div></div>
+<div class="pane"><div><h3>كل مشكلة ليها حالة ومسؤول</h3><p>في نشاط الدعم الفني كل مشكلة بتتسجّل بحالتها لحد ما تتحل، والعملاء اللي محدش رد عليهم بيظهروا في تقرير.</p><ul><li>جاري الحل · مستني العميل · اتحلت</li><li>تنبيه لو عميل استنى من غير رد</li><li>تحويل بملخص للموظف المختص</li></ul></div>
+<div class="scr"><div class="in"><div class="row"><span>الراوتر بيفصل</span><span class="chip c-wait">جاري الحل</span></div><div class="row"><span>تغيير الباقة</span><span class="chip c-late">مستني العميل</span></div><div class="row"><span>النت بطيء</span><span class="chip c-ok">اتحلت</span></div></div></div></div>
+<div class="pane"><div><h3>الجروبات من غير فوضى</h3><p>المساعد بيرد على أسئلة الأعضاء، وأي سؤال فضل من غير رد بيوصل المسؤول بمنشن.</p><ul><li>أوامر بالهاشتاج: #سؤال و#menu وأوامرك</li><li>جروب استقبال بيسجّل الحالات الجديدة</li><li>ترحيب بالأعضاء الجداد</li></ul></div>
+<div class="scr"><div class="in"><div class="b in"><small>عضو</small>#سؤال لينك التسليم فين؟</div><div class="b out"><small>المساعد</small>اللينك في الرسالة المثبّتة فوق 📌</div><div class="esc">🔔 @أحمد: سؤال تاني من غير رد من 30 دقيقة</div></div></div></div>
+<div class="pane"><div><h3>تعرف مين شغّال… ومين مستني</h3><p>تقارير بسيطة بتوصلك على الواتساب.</p><ul><li>تقرير يومي وأسبوعي</li><li>سرعة رد كل موظف</li><li>جودة ردود المساعد كل أسبوع</li></ul></div>
+<div class="scr"><div class="in"><div class="bars"><i style="height:40%"></i><i style="height:62%"></i><i style="height:48%"></i><i style="height:80%"></i><i style="height:70%"></i><i style="height:90%"></i><i style="height:55%"></i></div><div class="row"><span>سارة</span><span class="mono">رد في دقيقتين</span></div><div class="row"><span>أحمد</span><span class="mono">رد في 9 دقايق</span></div></div></div></div>
+</div></div></div></section>
+
+<section class="s day" id="day"><div class="w"><div class="sh"><span class="lbl">04 — يوم في حياة الفريق</span><h2>من أول رسالة الصبح… لآخر سؤال بالليل</h2></div>
+<div class="tl"><div><span class="mono">09:00 ص</span><h3>الفريق بيبدأ وكل حاجة قدامه</h3><p>رسايل الليل مترتبة، واللي محتاج إنسان عليه علامة، وكل واحد بياخد عملاءه.</p></div>
+<div><span class="mono">14:00 م</span><h3>في عز الضغط</h3><p>المساعد بيرد من الكتالوج على الأسئلة المكررة، والفريق بيمسك الشكاوى والبيع.</p></div>
+<div><span class="mono">00:00 ص</span><h3>آخر اليوم مش آخر الردود</h3><p>المساعد بيرد في حدود معرفتك، واللي مش متأكد منه بيسيبه مسودة للصبح.</p></div></div></div></section>
+
+<section class="s" id="demo"><div class="w"><div class="demo">
+<div><span class="lbl">05 — جرّب بنفسك</span><h2 style="font-size:clamp(28px,3.4vw,44px);line-height:1.25;margin:10px 0">اسأل زي العميل</h2><p style="color:var(--mut);margin:0">اختار نوع النشاط ودوس على سؤال. جرّب "أحتاج حد من الفريق" وشوف التحويل.</p>
+<div class="pills" id="pills"><button class="on" data-k="shop">🛍️ متجر</button><button data-k="clinic">🩺 عيادة</button><button data-k="support">🛠️ دعم فني</button><button data-k="course">🎓 تعليم</button></div>
+<div class="qs" id="qs"></div><p class="note">تجربة توضيحية (بيانات افتراضية).</p></div>
+<div class="chatw"><div class="in"><div class="h"><span class="av" id="dav">🤖</span><div><b id="dnm">متجر نور</b><small id="dst">المساعد بيرد</small></div></div><div class="msgs" id="dm"></div></div></div>
+</div></div></section>
+
+<section class="s"><div class="w"><div class="sh"><span class="lbl">06 — فصول</span><h2>تفاصيل بتفرق في الشغل اليومي</h2></div>
+<div class="ch"><div class="txt"><span class="mono">الفصل 1</span><h3>البحث والأرشيف</h3><p>دوّر على فاتورة أو فويس قديم أو ملف في ثواني. الرسايل محفوظة حتى لو اتمسحت من الموبايل، والمكتبة متصنّفة بفولدرات.</p></div><div class="scr"><div class="in"><div class="row"><span>🔎 فاتور…</span><span class="mono">3 نتايج</span></div><div class="row"><span>💬 عميل: فاتورة الشهر</span><span class="chip c-ok">رسالة</span></div><div class="row"><span>📎 نموذج_الفاتورة.pdf</span><span class="chip c-wait">ملف</span></div></div></div></div>
+<div class="ch r"><div class="txt"><span class="mono">الفصل 2</span><h3>الإرسال والمتابعة</h3><p>رسايل مجدولة، وبرامج متابعة، وإرسال جماعي على دفعات بحدود.</p><span class="warn">بيخضع لسياسات استخدام واتساب، والحدود موجودة علشان تحمي رقمك.</span></div><div class="scr"><div class="in"><div class="row"><span>🗓️ تذكير الموعد</span><span class="mono">بكرة 10:00 ص</span></div><div class="row"><span>📣 عرض الأسبوع</span><span class="mono">دفعات · 20/ساعة</span></div></div></div></div>
+<div class="ch"><div class="txt"><span class="mono">الفصل 3</span><h3>الصلاحيات والنسخ الاحتياطي</h3><p>كل دور بيشوف اللي مسموح له بيه، والمحادثات الخاصة لصاحب الحساب بس، ونسخة يومية على Google Drive.</p></div>
+<table class="matrix"><thead><tr><th></th><th>المالك</th><th>مشرف</th><th>موظف</th></tr></thead><tbody><tr><td>المحادثات</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr><tr><td>إعدادات البوت</td><td class="y">✓</td><td class="y">✓</td><td class="n">—</td></tr><tr><td>المستخدمين</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr><tr><td>الحالات الخاصة</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr></tbody></table></div>
+</div></section>
+
+<section class="s"><div class="w split"><div><span class="lbl">07 — مزوّدي الذكاء الاصطناعي</span><h2 style="font-size:clamp(26px,3vw,38px);line-height:1.3;margin:10px 0">تحكّم في المزوّد والتكلفة</h2><p style="color:var(--mut)">اربط أكتر من مزوّد. النظام بيختار الأنسب، ولو واحد وقف التاني بيكمّل.</p><p class="note">المفاتيح والحدود المجانية بتخضع لسياسة كل مزوّد.</p></div>
+<table class="matrix"><thead><tr><th>المزوّد</th><th>خطة مجانية</th><th>مدفوع</th></tr></thead><tbody><tr><td>Google Gemini</td><td class="y">✓</td><td class="y">✓</td></tr><tr><td>Groq</td><td class="y">✓</td><td class="y">✓</td></tr><tr><td>Mistral</td><td class="y">✓</td><td class="y">✓</td></tr><tr><td>OpenRouter</td><td class="y">موديلات مجانية</td><td class="y">✓</td></tr><tr><td>OpenAI</td><td class="n">—</td><td class="y">✓</td></tr><tr><td>Anthropic Claude</td><td class="n">—</td><td class="y">✓</td></tr></tbody></table></div></section>
+
+<section class="s" id="sectors"><div class="w"><div class="sh"><span class="lbl">08 — القطاعات</span><h2>شكله إيه في نشاط زي نشاطك</h2><p>أمثلة توضيحية لطريقة الاستخدام.</p></div>
+<div class="sectors"><div><span class="mono">عقارات</span><h3>من المعاينة للتفاوض</h3><p>كل عميل في مرحلته، ومتابعة تلقائية لو سكت.</p></div><div><span class="mono">مطاعم</span><h3>المواعيد والمنيو</h3><p>المساعد بيرد على ساعات العمل والأسعار، والفريق بيمسك الطلبات.</p></div><div><span class="mono">استشارات</span><h3>توجيه من غير فتاوى</h3><p>المساعد بيوجّه الاستفسار للمختص بدل ما يقدّم رأي غير معتمد.</p></div><div><span class="mono">مبيعات</span><h3>ولا فرصة تضيع</h3><p>كل عميل ليه مسؤول، والتقرير بيقولك مين مستني.</p></div></div></div></section>
+
+<section class="s" id="compare"><div class="w"><div class="sh"><span class="lbl">09 — مقارنة صادقة</span><h2>تطبيق واتساب بزنس ولا {{brand}}؟</h2></div>
+<div class="cmp" id="cmp"><table><thead><tr><th></th><th>واتساب بزنس (تطبيق الموبايل)</th><th class="us">{{brand}}</th></tr></thead><tbody><tr><th>السعر</th><td>مجاني</td><td class="us">اشتراك شهري حسب الباقة</td></tr><tr><th>الرد التلقائي</th><td>رسالة ترحيب وغياب وردود سريعة بتكتبها بإيدك</td><td class="us">بوت ذكاء اصطناعي بيفهم السؤال ويرد من معرفة شغلك 24 ساعة</td></tr><tr><th>الذكاء الاصطناعي</th><td>مساعد Meta في بعض الدول بس، وإعداداته بسيطة</td><td class="us">بيتعلّم من ردود فريقك، وتختار المزوّد (Gemini أو Groq أو OpenAI أو Claude وغيرهم) مجاني أو مدفوع</td></tr><tr><th>الرسايل الصوتية</th><td>❌</td><td class="us">✅ يفهم الفويس ويرد عليه</td></tr><tr><th>الفريق على نفس الرقم</th><td>الموبايل + لحد 4 أجهزة مربوطة</td><td class="us">فريق كامل بصلاحيات لكل موظف</td></tr><tr><th>متابعة الجروبات</th><td>❌</td><td class="us">✅ يرد في الجروبات وينبّه لو سؤال اتساب من غير رد</td></tr><tr class="more"><th>ملف العميل</th><td>تصنيفات (Labels) وملاحظة قصيرة</td><td class="us">ملف كامل: مراحل، سجل دائم بكل رد وملف، رسايل متابعة تلقائية</td></tr><tr class="more"><th>التقارير</th><td>إحصائيات بسيطة للرسايل</td><td class="us">تقارير يومية وأسبوعية للجودة وأداء كل موظف</td></tr><tr class="more"><th>أكتر من رقم</th><td>كل رقم في تطبيق لوحده</td><td class="us">كل الأرقام في لوحة واحدة</td></tr><tr class="more"><th>الإرسال الجماعي</th><td>قوائم بث لحد 256 شخص، ويوصل بس للي حافظ رقمك</td><td class="us">إرسال جماعي على دفعات بحدود تحمي رقمك</td></tr><tr class="more"><th>كتالوج المنتجات</th><td>✅ موجود</td><td class="us">✅ كتالوج بالصور والأسعار، والبوت بيرد على الأسعار منه ويبعت صورة المنتج</td></tr><tr class="more"><th>طريقة الربط</th><td>تطبيق رسمي من Meta</td><td class="us">بيتربط على رقمك بالـ QR زي واتساب ويب</td></tr></tbody></table></div>
+<button class="morebtn" id="more">عرض المقارنة الكاملة (12 معيار)</button><p class="note">مميزات واتساب بزنس بتختلف حسب الدولة وبتتغيّر مع التحديثات.</p></div></section>
+
+<section class="s" id="video"><div class="w"><div class="sh"><span class="lbl">10 — جولة بالفيديو</span><h2>شوف جولة سريعة في لوحة التحكم</h2></div><div class="video"><iframe src="{{video_url}}" title="video" loading="lazy" allowfullscreen></iframe></div></div></section>
+
+<section class="s" id="pricing"><div class="w"><div class="sh"><span class="lbl">11 — الأسعار</span><h2>باقات واضحة ومن غير عقود</h2></div><div class="plans">{{plans}}</div></div></section>
+
+<section class="s" id="faq"><div class="w" style="max-width:880px"><div class="sh"><span class="lbl">12 — أسئلة شائعة</span><h2>عندك سؤال؟</h2></div>
+<details class="q"><summary>محتاج أغيّر رقمي أو أعمل حساب واتساب بيزنس؟</summary><p>لا. بتربط رقمك الحالي (عادي أو بيزنس) بكود QR زي الواتساب ويب، والموبايل بيفضل شغال عادي.</p></details>
+<details class="q"><summary>البوت هيرد غلط على عملائي؟</summary><p>البوت بيرد من معرفة شركتك بس، ولما مش متأكد بيكتب مسودة لفريقك أو بيحوّل للموظف. وتقدر تجرّبه الأول قبل ما تشغّله.</p></details>
+<details class="q"><summary>ينفع أكتر من موظف يشتغل في نفس الوقت؟</summary><p>أيوه، كل موظف بحسابه وصلاحياته، والنظام بيوضح مين رد على مين.</p></details>
+<details class="q"><summary>البوت بيفهم العامية واللهجات؟</summary><p>أيوه، بيرد بلهجة العميل، وبيفهم الرسايل الصوتية كمان.</p></details>
+<details class="q"><summary>رسايلي القديمة هتظهر؟</summary><p>من لحظة الربط كل الرسايل بتتحفظ، والقديم بيتسحب على قد ما الواتساب بيسمح.</p></details>
+<details class="q"><summary>ينفع ألغي في أي وقت؟</summary><p>أيوه، من غير عقود.</p></details></div></section>
+
+<section class="cta"><div class="w"><h2>خلّي فريقك يرد من مكان واحد.</h2><p>اربط رقمك في دقيقة وجرّب مع فريقك.</p><a class="btn p" href="{{cta_url}}">{{cta_label}}</a></div></section>
+<footer><div class="w cols"><div><b>{{brand}}</b>صندوق واتساب واحد لفريقك، ومساعد ذكي، وملف لكل عميل.<br>© {{year}}</div><div><b>المنتج</b><a href="#tour">الجولة</a><a href="#demo">التجربة</a><a href="#pricing">الأسعار</a></div><div><b>الحساب</b><a href="{{login_url}}">تسجيل الدخول</a><a href="{{cta_url}}">{{cta_label}}</a></div><div><b>قانوني</b><a href="{{privacy_url}}">سياسة الخصوصية</a><a href="{{terms_url}}">شروط الاستخدام</a></div></div></footer>
+<div class="mbar"><a class="btn p" href="{{cta_url}}">{{cta_label}}</a></div>
+
+<script>
+(function(){
+var T=document.querySelectorAll('#tabs button'),P=document.querySelectorAll('#panes .pane');
+[].forEach.call(T,function(b,i){b.onclick=function(){[].forEach.call(T,function(x,j){x.classList.toggle('on',j===i);P[j].classList.toggle('on',j===i)})}});
+var cmp=document.getElementById('cmp');document.getElementById('more').onclick=function(){var o=cmp.classList.toggle('open');this.textContent=o?'إخفاء باقي المقارنة':this.dataset.t||this.textContent};document.getElementById('more').dataset.t=document.getElementById('more').textContent;
+var D={shop:{n:'متجر نور',q:[['المقاس M متوفر؟','أيوه متوفر 🌿 تحبي أسجّلك الطلب؟'],['التوصيل بكام؟','القاهرة والجيزة 40 جنيه، والمحافظات 60 جنيه، وبيوصل في يومين.'],['أحتاج حد من الفريق',null,'سارة من المبيعات']]},
+clinic:{n:'عيادة د. منى',q:[['المواعيد المتاحة؟','بكرة في ميعادين: 5:30 و7:00 مساءً. أحجزلك أنهي واحد؟'],['سعر الكشف؟','الكشف 400 جنيه، والاستشارة خلال أسبوعين ببلاش.'],['أحتاج حد من الفريق',null,'السكرتارية']]},
+support:{n:'دعم شركة النت',q:[['النت فاصل','آسفين 🙏 جرّب تطفي الراوتر دقيقة. لو لسه، ابعت رقم الاشتراك وأسجّل المشكلة.'],['عايز أغيّر الباقة','الباقات المتاحة 100 و200 و500 ميجا. تحب أعرّفك الفرق؟'],['أحتاج حد من الفريق',null,'الدعم الفني']]},
+course:{n:'أكاديمية التصميم',q:[['الدفعة الجاية امتى؟','الدفعة الجديدة تبدأ السبت، 8 أسابيع أونلاين 🎓'],['بكام؟','1,800 جنيه، وينفع على قسطين.'],['أحتاج حد من الفريق',null,'منسّق الكورس']]}};
+var cur='shop',dm=document.getElementById('dm'),qs=document.getElementById('qs'),busy=0;
+function add(h,c){var d=document.createElement('div');d.className=c;d.innerHTML=h;dm.appendChild(d);dm.scrollTop=dm.scrollHeight;return d}
+function bot(on,who){var a=document.getElementById('dav');a.textContent=on?'🤖':'👤';a.style.background=on?'':'var(--clay)';document.getElementById('dst').textContent=on?'المساعد بيرد':('معاك: '+who)}
+function load(k){cur=k;var x=D[k];document.getElementById('dnm').textContent=x.n;bot(1);dm.innerHTML='';add('أهلًا بيك 👋 اسأل وأنا أرد عليك.','b out');qs.innerHTML=x.q.map(function(q,i){return'<button data-i="'+i+'">'+q[0]+'</button>'}).join('')}
+qs.onclick=function(e){var b=e.target.closest('button');if(!b||busy)return;busy=1;var q=D[cur].q[+b.dataset.i];add(q[0],'b in');setTimeout(function(){var t=add('<i></i><i></i><i></i>','typing');setTimeout(function(){t.remove();if(q[1]){add('<small>المساعد</small>'+q[1],'b out')}else{add('تم التحويل لـ '+q[2],'esc');bot(0,q[2]);setTimeout(function(){add('<small>'+q[2]+'</small>أهلًا بيك، أنا معاك دلوقتي. اتفضّل.','b out')},900)}busy=0},1100)},350)};
+document.getElementById('pills').onclick=function(e){var b=e.target.closest('button');if(!b)return;[].forEach.call(this.children,function(x){x.classList.toggle('on',x===b)});load(b.dataset.k)};load('shop');
+var R=document.querySelectorAll('#ribbon [data-s]'),ids=[].map.call(R,function(r){return r.dataset.s}),prog=document.getElementById('prog');
+function onScroll(){var h=document.documentElement,y=h.scrollTop,max=h.scrollHeight-innerHeight;prog.style.width=(max>0?y/max*100:0)+'%';var cur=-1;ids.forEach(function(id,i){var el=document.getElementById(id);if(el&&el.getBoundingClientRect().top<innerHeight*.45)cur=i});[].forEach.call(R,function(r,i){r.classList.toggle('on',i===cur);r.classList.toggle('done',i<cur)})}
+addEventListener('scroll',onScroll,{passive:true});onScroll();
+})();
+</script>
+</body></html>

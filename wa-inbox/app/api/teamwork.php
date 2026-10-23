@@ -147,6 +147,7 @@
             $view = (string) ($_GET['view'] ?? '');
             $groups = []; $sections = []; $topics = []; $archivedN = 0; $nameMeta = (array) (wi_read('media_meta.json', [])[wi_current()['id'] ?? ''] ?? []);
             $aiRev = wi_read('lib_ai.json', [])[wi_current()['id'] ?? ''] ?? [];
+            $libR = !function_exists('wf_acc_rules_file') ? [] : (array) ((json_decode((string) @file_get_contents(wf_acc_rules_file((string) (wi_current()['id'] ?? ''))), true) ?: [])['library'] ?? []); $secOk = $libR ? array_flip(array_merge(array_column((array) ($libR['sections'] ?? []), 'name'), array_filter([(string) ($libR['other_section'] ?? ''), (string) ($libR['audio_section'] ?? '')]))) : [];
             if ($aiRev) {
                 // AI review: corrected section/topic/title, quality, and merges of near-duplicates.
                 $byKey = []; foreach ($r['groups'] as $i => $g) $byKey[$g['best']['key'] ?? ''] = $i;
@@ -161,7 +162,7 @@
                     if (!empty($a['best_pick']) && $a['best_pick'] !== ($g['best']['key'] ?? '')) {
                         foreach ($g['others'] ?? [] as $oi => $o) if (($o['key'] ?? '') === $a['best_pick']) { $g['others'][$oi] = $g['best']; $g['best'] = $o; break; }
                     }
-                    if (!empty($a['section'])) $g['section'] = $a['section'];
+                    if (!empty($a['section']) && (!$secOk || isset($secOk[$a['section']]))) $g['section'] = $a['section']; // a section of an older type of business (offers on a healing number) is dropped
                     if (!empty($a['topic'])) $g['topic'] = $a['topic'];
                     if (!empty($a['title'])) $g['title'] = $a['title'];
                     $g['ai'] = ['quality' => $a['quality'] ?? null, 'note' => $a['note'] ?? '', 'valid' => $a['valid'] ?? null, 'compare' => $a['compare'] ?? null, 'formatted' => $a['formatted'] ?? ''];

@@ -41,6 +41,7 @@ function wf_clean_gcfg(array $g): array {
         // New members who do not answer: a reminder after gate_remind_h hours, a last notice gate_final_h hours later, removal gate_kick_m minutes after it (0 = never removed)
         'gate_follow' => !isset($g['gate_follow']) || ($g['gate_follow'] && $g['gate_follow'] !== '0'), 'gate_remind_h' => max(1, min(72, (int) ($g['gate_remind_h'] ?? 3))), 'gate_final_h' => max(1, min(72, (int) ($g['gate_final_h'] ?? 3))), 'gate_kick_m' => max(0, min(1440, (int) ($g['gate_kick_m'] ?? 30))),
         'gate_notify' => preg_match('/^[0-9-]{6,40}@g\.us$/', (string) ($g['gate_notify'] ?? '')) ? (string) $g['gate_notify'] : '', // where the healer is asked to open the case
+        'antispam' => !empty($g['antispam']) && $g['antispam'] !== '0', // a link, invite or ad from someone outside the team: the message is deleted and the number removed
         'gate_review' => implode(', ', array_slice(array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) ($g['gate_review'] ?? ''))))), 0, 10))];
 }
 /* ---------- Warm-up mode: the owner types the word (#هزار) in any private chat on the phone; the bot then chats and jokes
@@ -279,12 +280,13 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             }
             $hf = $g['from'] === '' ? (int) $c['from'] : (int) $g['from']; $ht = $g['to'] === '' ? (int) $c['to'] : (int) $g['to']; // this group's own hours, else the bot's
             $hh = (int) date('G'); $inH = $hf === $ht || ($hf <= $ht ? ($hh >= $hf && $hh < $ht) : ($hh >= $hf || $hh < $ht)) || isset($heal24G[(string) ($log['role'] ?? '')]);
+            $gid = (string) ($m['id'] ?? ''); if ($gid !== '' && isset($st['gids'][$gid])) continue; // this message was answered already (two runs at once)
             if ($c['mode'] === 'auto' && $ok && $inH && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour'])) {
                 // every group reply tags the person it answers, so replies to different people never get mixed up
                 $tagNum = $who; if (strlen($who) >= 14 && function_exists('wf_group_member_phone') && ($pn = wf_group_member_phone($acc, (string) $x['jid'], $who)['phone']) !== '') $tagNum = $pn; // the tag shows the mobile number, not the long WhatsApp ID
                 $askJ = $tagNum . (strlen($tagNum) >= 14 ? '@lid' : '@s.whatsapp.net'); $gtext = '@' . $tagNum . ' ' . wf_bot_style($log['reply'], $aid, (string) $x['jid'], true);
                 $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => $gtext, 'by' => 'bot', 'via' => 'bot', 'quote_id' => $m['id'] ?? null, 'mentions' => array_values(array_unique(array_merge([$askJ], $mentions)))], $acc); wf_bot_intro_done(!empty($s['ok']));
-                $log['result'] = !empty($s['ok']) ? (!empty($r['handoff']) ? 'handoff' : 'sent') : 'send_failed'; if (!empty($s['ok'])) { $st['sent'][] = time(); $st['gwho'][$x['jid']][$who][] = time(); } else $log['error'] = $s['error'] ?? '';
+                $log['result'] = !empty($s['ok']) ? (!empty($r['handoff']) ? 'handoff' : 'sent') : 'send_failed'; if (!empty($s['ok'])) { $st['sent'][] = time(); $st['gwho'][$x['jid']][$who][] = time(); if ($gid !== '') { $st['gids'][$gid] = time(); $st['gids'] = array_filter($st['gids'], fn($t) => $t > time() - 86400); } } else $log['error'] = $s['error'] ?? '';
                 if (!empty($s['ok']) && function_exists('wf_role_note')) wf_role_note($aid, $who, (string) ($log['role'] ?? 'bot'), $text, (string) $log['reply'], (string) ($x['name'] ?? ''));
             } else {
                 $log['result'] = 'draft'; $log['why'] = $c['mode'] !== 'auto' ? 'suggest-only mode' : (!$ok ? 'low confidence' : (!$inH ? 'outside working hours' : 'hourly limit'));
@@ -308,10 +310,15 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
     if ($c['mode'] === 'off' || empty($acc['enabled'])) return ['skipped' => 'off'];
     // One run at a time per number (the instant hook and the every-minute check can meet).
     // The instant trigger waits its turn (up to 2 minutes) instead of giving up.
-    $lkf = WI_DIR . '/bot_' . preg_replace('/\W/', '', $aid) . '.lock'; $lk = @fopen($lkf, 'c'); if (!$lk) return ['skipped' => 'lock']; @chmod($lkf, 0600);
+    // A run that hangs (a web request the hosting keeps alive) would hold the lock for hours: after 6 minutes the next run takes a new lock.
+    $lkb = WI_DIR . '/bot_' . preg_replace('/\W/', '', $aid); $gen = (int) @file_get_contents($lkb . '.gen');
+    $lkf = $lkb . ($gen ? '.' . $gen : '') . '.lock'; $lk = @fopen($lkf, 'c'); if (!$lk) return ['skipped' => 'lock']; @chmod($lkf, 0600);
     $got = flock($lk, LOCK_EX | LOCK_NB);
     for ($w = 0; !$got && $fast && $w < 120; $w++) { sleep(1); $got = flock($lk, LOCK_EX | LOCK_NB); }
+    if (!$got && (int) @filemtime($lkb . '.at') < time() - 360) { @file_put_contents($lkb . '.gen', (string) ($gen + 1)); @unlink($lkf); wi_log('bot_lock_stale', ['account' => $aid, 'gen' => $gen + 1]);
+        $lkf = $lkb . '.' . ($gen + 1) . '.lock'; $lk = @fopen($lkf, 'c'); $got = $lk && flock($lk, LOCK_EX | LOCK_NB); }
     if (!$got) return ['skipped' => 'busy'];
+    @touch($lkb . '.at');
     $heal24 = !empty($c['heal_24h']) ? array_flip(['healer', 'dreams', 'support', 'teacher']) : []; // the healing roles answer day and night (Bot → Switch on / off)
     $h = (int) date('G'); $inHours = !empty($c['private_24h']) ? true : null; $inHours ??= $c['from'] <= $c['to'] ? ($h >= $c['from'] && $h < $c['to']) : ($h >= $c['from'] || $h < $c['to']);
     $state = wi_read('bot_state.json', []); $st = $state[$aid] ?? ['done' => [], 'sent' => []];
@@ -405,7 +412,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
             if (!empty($r2['ok']) && empty($r2['handoff']) && trim((string) $r2['reply']) !== '' && (float) $r2['confidence'] >= 0.6) { $r = $r2; $r['retried'] = true; } }
         // 3) never open with the same sentence the bot used in this chat lately (a greeting repeated at every message)
         $fs = function (string $t) { $p = preg_split('/(?<=[.!?\x{061F}\n])\s+/u', trim($t), 2); return [trim((string) ($p[0] ?? '')), trim((string) ($p[1] ?? ''))]; };
-        [$open, $rest] = $fs((string) $r['reply']); if ($rest !== '' && mb_strlen($open) <= 80) $ln = fn($t) => trim(preg_replace('/\s+/u', ' ', preg_replace('/[^\p{L}\p{N}\s]/u', '', wf_norm($t)))); foreach ($mine as $pm) if ($ln($fs($pm)[0]) !== '' && $ln($fs($pm)[0]) === $ln($open)) { $r['reply'] = $rest; break; }
+        [$open, $rest] = $fs((string) $r['reply']); if ($rest !== '' && mb_strlen($open) <= 80) { $ln = fn($t) => trim(preg_replace('/\s+/u', ' ', preg_replace('/[^\p{L}\p{N}\s]/u', '', wf_norm($t)))); foreach ($mine as $pm) if ($ln($fs($pm)[0]) !== '' && $ln($fs($pm)[0]) === $ln($open)) { $r['reply'] = $rest; break; } }
         // Asked to join / rejoin a group: the bot does it (automatic mode, working hours) and says what happened.
         $jr = null; if (!empty($r['join_group']) && $c['mode'] === 'auto' && $inHours) { $jr = wf_bot_group_join($acc, (string) $x['jid'], (string) ($x['phone'] ?? ''));
             if ($jr['result'] !== 'off') { $r['reply'] = wf_msg('bot_group_' . ($jr['result'] === 'limit' ? 'team' : $jr['result']), ['group' => (string) ($jr['group'] ?? '')]); $r['confidence'] = 1.0; $r['clarify'] = false;
@@ -448,6 +455,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         $log = ['role' => $role, 'jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => mb_substr($text, 0, 600), 'reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'at' => date('c')];
         if ($send) {
             $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => wf_bot_style($r['reply'], $aid, $isTest ? '' : (string) $x['jid']), 'by' => 'bot', 'via' => 'bot', 'typing_ms' => (int) round(1000 * min(max(1, (float) $c['typing_max']), max((float) $c['typing_min'], mb_strlen($r['reply']) / 25) * (0.85 + mt_rand(0, 30) / 100)))], $acc); wf_bot_intro_done(!empty($s['ok']));
+            if (!empty($s['ok']) && empty($r['handoff']) && (string) ($r['product'] ?? '') !== '' && function_exists('wf_catalog_send')) { sleep(2); wf_catalog_send($acc, (string) $x['jid'], (string) $r['product'], 'bot'); $log['product'] = $r['product']; } // the product asked about, with its photo
             $log['result'] = !empty($s['ok']) ? ($r['handoff'] ? 'handoff' : 'sent') : 'send_failed'; if (!empty($s['ok'])) { $st['sent'][] = time(); $st['last_sent'] = date('c'); } else $log['error'] = $s['error'] ?? '';
             if (!empty($s['ok']) && !$isTest && function_exists('wf_role_note')) wf_role_note($aid, explode('@', (string) $x['jid'])[0], $role, $text, (string) $r['reply'], '');
             if (!empty($s['ok']) && !$isTest && in_array($role, ['healer', 'dreams', 'support'], true) && function_exists('wf_role_fill_case')) { try { // what they told about themselves goes into their case file

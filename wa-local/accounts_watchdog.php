@@ -53,6 +53,9 @@ foreach ($registry as $a) {
     $pid = (int) @file_get_contents($dir . '/gateway.pid');
     $cmdline = $pid > 1 ? (string) @file_get_contents('/proc/' . $pid . '/cmdline') : '';
     if ($cmdline !== '' && strpos($cmdline, 'server.js') !== false) { $guard['accounts'][$id]['restarted'] = false; $guard['accounts'][$id]['busy'] = true; continue; }
+    // any other copy of this number's gateway still alive (its pid file was overwritten): never start one more
+    $alive = false; foreach ((array) glob('/proc/[0-9]*', GLOB_ONLYDIR) as $pd) { $cl = (string) @file_get_contents($pd . '/cmdline'); if (strpos($cl, 'server.js') === false) continue; if (strpos((string) @file_get_contents($pd . '/environ'), "ACCOUNT_ID={$id}\0") !== false) { $alive = true; break; } }
+    if ($alive) { $guard['accounts'][$id]['restarted'] = false; $guard['accounts'][$id]['busy'] = true; continue; }
     $env = array_merge($_ENV, ['GATEWAY_TOKEN' => $token, 'PORT' => (string) $port, 'DATA_DIR' => $dir, 'ACCOUNT_ID' => $id,
         'STORAGE_ROOT' => dirname(WA_DIR) . '/storage', 'HOME' => WA_DIR, 'UV_THREADPOOL_SIZE' => '2']);
     $log = $dir . '/gateway.log';

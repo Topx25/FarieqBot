@@ -8,7 +8,7 @@
       var add = function (k, label) { if (seen[k] || k === 'name' || k === 'phone') return; seen[k] = 1; fields.push([k, label]); };
       add('complaint', T('Complaint'));
       Object.keys(CF).forEach(function (k) { if (CF[k].on) add(k, CF[k].label || k); });
-      [['symptoms', 'Symptoms'], ['diagnosis', 'Assessment'], ['program', 'Program'], ['age', 'Age'], ['country', 'Country'], ['started', 'Follow-up started']].forEach(function (f) { if (String(d[f[0]] || '').trim()) add(f[0], T(f[1])); });
+      [['symptoms', 'Symptoms'], ['diagnosis', 'Assessment'], ['program', 'Program'], ['age', 'Age'], ['country', 'Country'], ['started', 'Follow-up started']].forEach(function (f) { if (String(d[f[0]] || '').trim()) add(f[0], (CF[f[0]] && CF[f[0]].label) || T(f[1])); });
       add('gender', T('Gender')); // optional choice, always offered
       if (!String(d.country || '').trim() && countryOf(ph)) d.country = countryOf(ph); // filled from the phone number until someone changes it
       add('notes', T('Case notes'));
@@ -31,7 +31,7 @@
         + '<section class="card cd2-head st-' + esc(st) + '"><div class="cd2-who">' + avatar(ph + '@s.whatsapp.net', c.name || ph) + '<div><h1 dir="auto">' + (c.no ? '<span class="cs-id">ID ' + c.no + '</span> ' : '') + esc(c.name || ('+' + ph)) + '</h1>'
         + '<div class="cd2-meta"><span dir="ltr">📞 +' + esc(ph) + '</span><span>💬 ' + fmt(c.msgs || msgs.length) + ' ' + T('messages') + '</span>' + (c.first ? '<span>📅 ' + esc(day(c.first)) + (c.last ? ' → ' + esc(day(c.last)) : '') + '</span>' : '') + (c.manual ? '<span>📝 ' + T('From the form') + '</span>' : '') + '</div></div></div>'
         + '<div class="cd2-acts"><button class="btn primary sm" id="cd-ai">🤖 ' + T(ai ? 'Analyse again' : 'Analyse with AI') + '</button><a class="btn ghost sm" href="?p=inbox&jid=' + encodeURIComponent(ph + '@s.whatsapp.net') + '">💬 ' + T('Private chat') + '</a>'
-        + '<div class="tool-menu cd2-more"><button type="button" class="btn ghost sm" id="cd-more">⋯</button><div class="menu" hidden><a href="?api=case_export&phone=' + encodeURIComponent(ph) + '">⬇️ ' + T('Export record') + '</a><button type="button" class="link-btn" id="cd-team" title="' + esc(T('Admin / therapist / team member — not a patient')) + '">👤 ' + T('Not a case (team)') + '</button><button type="button" class="link-btn" id="cd-files">📎 ' + T('Case files') + '</button><button type="button" class="link-btn" id="cd-trail">🧭 ' + T('Follow-up trail') + '</button><button type="button" class="link-btn" id="cd-rec">💡 ' + T('Suggestions') + '</button><button type="button" class="link-btn" id="cd-del">🗑️ ' + T('Delete for good') + '</button></div></div></div>'
+        + (r.can_delete ? '<button type="button" class="btn sm" id="cd-del" style="color:#b91c1c;border-color:#fca5a5">🗑️ ' + T('Delete for good') + '</button>' : '') + '<div class="tool-menu cd2-more"><button type="button" class="btn ghost sm" id="cd-more">⋯</button><div class="menu" hidden><a href="?api=case_export&phone=' + encodeURIComponent(ph) + '">⬇️ ' + T('Export record') + '</a><button type="button" class="link-btn" id="cd-team" title="' + esc(T('Admin / therapist / team member — not a patient')) + '">👤 ' + T('Not a case (team)') + '</button><button type="button" class="link-btn" id="cd-files">📎 ' + T('Case files') + '</button><button type="button" class="link-btn" id="cd-trail">🧭 ' + T('Follow-up trail') + '</button><button type="button" class="link-btn" id="cd-rec">💡 ' + T('Suggestions') + '</button></div></div></div>'
         // the stages as a clickable progress line
         + '<div class="cd2-steps">' + keys.map(function (k, i) { return '<button type="button" class="cd2-step' + (i < stepIdx ? ' done' : '') + (k === st ? ' on' : '') + '" data-st="' + esc(k) + '"><i>' + (i < stepIdx ? '✓' : i + 1) + '</i><span>' + esc(T(r.statuses[k])) + '</span></button>'; }).join('') + '</div></section>';
       if (r.registry && r.registry.length) h += '<details class="card cd2-reg"><summary>📋 ' + T('Registry reports') + ' <b>' + fmt(r.registry.length) + '</b></summary>' + r.registry.map(regEntry).join('') + '</details>';
@@ -73,7 +73,7 @@
       document.getElementById('cd-files').onclick = function () { WI.filesPanel(ph); };
       document.getElementById('cd-trail').onclick = function () { WI.trailPanel(ph); };
       document.getElementById('cd-rec').onclick = function () { WI.recPanel(ph + '@s.whatsapp.net', ph); };
-      document.getElementById('cd-del').onclick = function () { if (!confirm(T('Delete this record for good? It disappears from every list (a copy is kept on the server).'))) return; post('case_delete', { phone: ph }).then(function (x) { if (x.ok) location.href = '?p=cases'; else toast('⚠️ ' + T(x.error || 'Failed')); }); };
+      if (document.getElementById('cd-del')) document.getElementById('cd-del').onclick = function () { if (!confirm(T('Delete this record for good? It disappears from every list (a copy is kept on the server).'))) return; post('case_delete', { phone: ph }).then(function (x) { if (x.ok) location.href = '?p=cases'; else toast('⚠️ ' + T(x.error || 'Failed')); }); };
       document.getElementById('cd-team').onclick = function () { if (!confirm(T('Mark this number as a team member? It is removed from cases and never added automatically again (a copy is kept).'))) return; post('case_team', { phone: ph }).then(function (x) { if (x.ok) location.href = '?p=cases'; else toast('⚠️ ' + x.error); }); };
       var runAi = function () { var b = document.getElementById('cd-ai'); b.disabled = true; b.textContent = '⏳ ' + T('AI is analysing…'); post('case_analyze', { phone: ph }).then(function (x) { if (x.ok) caseDetail(ph); else { b.disabled = false; b.textContent = '🤖 ' + T('Analyse with AI'); toast('⚠️ ' + (x.error || T('Failed'))); } }); };
       document.getElementById('cd-ai').onclick = runAi; if (document.getElementById('cd-ai2')) document.getElementById('cd-ai2').onclick = runAi;
@@ -83,7 +83,7 @@
     var a = e.ai && !e.ai.skipped ? e.ai : null;
     return '<div class="reg-e"><div class="reg-h"><b dir="auto">' + esc((a && a.name) || e.name_guess || T('Unnamed')) + '</b> ' + e.phones.map(function (p) { return '<span class="tag" dir="ltr">+' + esc(p) + '</span>'; }).join(' ')
       + ' <small class="muted">' + esc(when(e.time)) + ' · 👥 ' + esc(e.group_name || '') + (e.poster_name ? ' · ✍️ ' + esc(e.poster_name) : '') + '</small></div>'
-      + (a ? '<div class="reg-ai"><span>🩺 <b>' + T('Diagnosis') + ':</b> <span dir="auto">' + esc(a.diagnosis || '—') + '</span></span>' + (a.complaint ? '<span>🗣️ <span dir="auto">' + esc(a.complaint) + '</span></span>' : '') + ([a.gender, a.age, a.country].filter(Boolean).length ? '<span>👤 ' + esc([a.gender, a.age, a.country].filter(Boolean).join(' · ')) + '</span>' : '') + '</div>' : '')
+      + (a ? '<div class="reg-ai"><span>🩺 <b>' + FL('diagnosis', 'Diagnosis') + ':</b> <span dir="auto">' + esc(a.diagnosis || '—') + '</span></span>' + (a.complaint ? '<span>🗣️ <span dir="auto">' + esc(a.complaint) + '</span></span>' : '') + ([a.gender, a.age, a.country].filter(Boolean).length ? '<span>👤 ' + esc([a.gender, a.age, a.country].filter(Boolean).join(' · ')) + '</span>' : '') + '</div>' : '')
       + '<div class="reg-t" dir="auto">' + esc(String(e.text || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim()) + '</div><div class="reg-items">' + e.items.map(itemHtml).join('') + '</div>'
       + '<div class="reg-l">' + (e.labels || []).map(function (l) { return '<span class="lbl">🏷️ ' + esc(l) + '</span>'; }).join('') + '</div></div>';
   }
@@ -167,7 +167,7 @@
     var sev = Number(ai.severity || 0);
     return '<div class="ai-an"><p dir="auto">' + esc(ai.summary || '') + '</p>'
       + (ai.complaint ? '<p><b>' + T('Complaint') + ':</b> <span dir="auto">' + esc(ai.complaint) + '</span></p>' : '')
-      + (ai.symptoms && ai.symptoms.length ? '<p><b>' + T('Symptoms') + ':</b> ' + ai.symptoms.map(function (s) { return '<span class="tag" dir="auto">' + esc(s) + '</span>'; }).join(' ') + '</p>' : '')
+      + (ai.symptoms && ai.symptoms.length ? '<p><b>' + FL('symptoms', 'Symptoms') + ':</b> ' + ai.symptoms.map(function (s) { return '<span class="tag" dir="auto">' + esc(s) + '</span>'; }).join(' ') + '</p>' : '')
       + (ai.suspected && ai.suspected.length ? '<p><b>' + T('Indications') + ':</b></p><ul>' + ai.suspected.map(function (s) { return '<li dir="auto"><b>' + esc(s.type) + '</b> (' + esc(s.confidence) + ') — ' + esc(s.why) + '</li>'; }).join('') + '</ul>' : '')
       + '<p>' + (sev ? '<b>' + T('Severity') + ':</b> ' + '●'.repeat(sev) + '○'.repeat(Math.max(0, 5 - sev)) + ' · ' : '') + (ai.progress ? '<b>' + T('Progress') + ':</b> ' + esc(ai.progress) : '') + '</p>'
       + (ai.recommended ? '<p><b>' + T('Suggested') + ':</b> <span dir="auto">' + esc(ai.recommended) + '</span></p>' : '')

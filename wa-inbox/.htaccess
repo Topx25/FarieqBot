@@ -8,6 +8,11 @@ DirectoryIndex index.php
   RewriteRule ^privacy/?$ index.php?privacy=1 [L,QSA]
   RewriteRule ^terms/?$ index.php?terms=1 [L,QSA]
   RewriteRule ^welcome/?$ index.php?landing=1 [L,QSA]
+  RewriteRule ^welcome2/?$ index.php?landing=1&v=2 [L,QSA]
+  RewriteRule ^welcome3/?$ index.php?landing=1&v=3 [L,QSA]
+  RewriteRule ^welcome4/?$ index.php?landing=1&v=4 [L,QSA]
+  RewriteRule ^welcome6/?$ index.php?landing=1&v=6 [L,QSA]
+  RewriteRule ^welcome1/?$ index.php?landing=1&v=1 [L,QSA]
   RewriteRule ^data-deletion/?$ index.php?privacy=1 [L,QSA]
   RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule !(^|/)(index\.php|install\.php|pricing\.php|app\.css|app\.js|features\.js|theme\.css|pro\.css|google\.css|orchid\.css|studio\.css|aurora\.css)$ - [F,L]

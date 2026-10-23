@@ -14,6 +14,8 @@ $admins = array_values(array_filter(wi_users(), fn($u) => in_array($u['role'] ??
 $instF = WI_DIR . '/installed.json'; $inst = json_decode((string) @file_get_contents($instF), true);
 if (is_array($inst) && empty($inst['first_number_at'])) { foreach (wi_accounts() as $ia) { $ih = wi_gateway('/health', null, $ia); if (!empty($ih['connected'])) { $inst['first_number_at'] = date('c'); file_put_contents($instF, json_encode($inst)); break; } } }
 $tellAdmins = function (string $msg) use ($admins): void { foreach ($admins as $u) wi_send_whatsapp((string) $u['phone'], $msg); };
+// a number's own reports (quality, team) go out from that number, not from the system's number; the system's number only if it cannot send
+$tellFrom = function (array $acc) use ($admins): callable { return function (string $msg) use ($acc, $admins): void { foreach ($admins as $u) { $r = wi_gateway('/send', ['to' => (string) $u['phone'], 'message' => $msg, 'via' => 'inbox'], $acc); if (empty($r['ok'])) wi_send_whatsapp((string) $u['phone'], $msg); } }; };
 
 /* ---- 1) Scheduled messages / statuses: at most 3 per account per minute ---- */
 $S = wi_read('scheduled.json', []); $changed = false; $perAcc = [];
@@ -208,10 +210,10 @@ if ((int) date('i') === 23 && function_exists('wf_lean_run')) foreach ($accounts
 if ((int) date('i') % 5 === 0 && function_exists('wf_idle_numbers')) { try { wf_idle_numbers($tellAdmins, time()); } catch (Throwable $e) {} }
 
 // The weekly bot quality report (people's ratings + a test against the team's answers), on the set day and hour.
-if ((int) date('i') === 37 && function_exists('wf_bot_quality_week')) foreach ($accounts as $acc) { try { $qc = wf_bot_run_cfg((string) $acc['id']); if ($qc['mode'] === 'off' || empty($acc['enabled']) || (int) date('w') !== (int) ($qc['quality_day'] ?? 5) || (int) date('G') !== (int) ($qc['quality_hour'] ?? 10)) continue; wf_bot_quality_week($acc, $tellAdmins); } catch (Throwable $e) {} }
+if ((int) date('i') === 37 && function_exists('wf_bot_quality_week')) foreach ($accounts as $acc) { try { $qc = wf_bot_run_cfg((string) $acc['id']); if ($qc['mode'] === 'off' || empty($acc['enabled']) || (int) date('w') !== (int) ($qc['quality_day'] ?? 5) || (int) date('G') !== (int) ($qc['quality_hour'] ?? 10)) continue; wf_bot_quality_week($acc, $tellFrom($acc)); } catch (Throwable $e) {} }
 
 // The weekly team report (healers' activity and neglected cases), an hour after the quality report.
-if ((int) date('i') === 41 && function_exists('wf_team_report')) foreach ($accounts as $acc) { try { $tc = wf_bot_run_cfg((string) $acc['id']); if (empty($tc['team_report']) || empty($acc['enabled']) || (int) date('w') !== (int) ($tc['quality_day'] ?? 5) || (int) date('G') !== ((int) ($tc['quality_hour'] ?? 10) + 1) % 24 || !wf_deep_axes((string) $acc['id'])) continue; wf_team_report($acc, $tellAdmins); } catch (Throwable $e) {} }
+if ((int) date('i') === 41 && function_exists('wf_team_report')) foreach ($accounts as $acc) { try { $tc = wf_bot_run_cfg((string) $acc['id']); if (empty($tc['team_report']) || empty($acc['enabled']) || (int) date('w') !== (int) ($tc['quality_day'] ?? 5) || (int) date('G') !== ((int) ($tc['quality_hour'] ?? 10) + 1) % 24 || !wf_deep_axes((string) $acc['id'])) continue; wf_team_report($acc, $tellFrom($acc)); } catch (Throwable $e) {} }
 
 // Group watch: questions nobody answered and new cases nobody took — the admins are told (every 5 minutes).
 if ((int) date('i') % 5 === 2 && function_exists('wf_group_watch')) foreach ($accounts as $acc) { try { if (!empty($acc['enabled']) && empty($acc['parked']) && (string) ($acc['channel'] ?? '') === '' && wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off') wf_group_watch($acc, $tellAdmins); } catch (Throwable $e) {} }

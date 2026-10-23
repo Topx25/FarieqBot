@@ -1,12 +1,26 @@
   if (page === 'settings') {
-    root.innerHTML = hero('⚙️', 'General settings', 'Everything that runs the system in one place: the Google account, WhatsApp numbers, users, AI, health, daily report and backup.', '') + '<div id="sys-card"></div><div id="menu-card"></div><div id="gwr-card"></div><div id="msg-card"></div><div id="st"><div class="empty">' + T('Loading…') + '</div></div>';
+    root.innerHTML = hero('⚙️', 'General settings', 'Everything that runs the system in one place: the Google account, WhatsApp numbers, users, AI, health, daily report and backup.', '') + '<nav class="bs-nav" id="set-tabs"></nav><div id="sys-card"></div><div id="menu-card"></div><div id="gwr-card"></div><div id="msg-card"></div><div id="st"><div class="empty">' + T('Loading…') + '</div></div>';
+    // every card of the page is a tab of its own: built from the cards as they load, the last one opened is remembered
+    (function setTabs() { var nav = document.getElementById('set-tabs'), cur = ''; try { cur = localStorage.getItem('wi_set_tab') || ''; } catch (e) {}
+      var cards = function () { var o = []; ['sys-card', 'menu-card', 'gwr-card', 'msg-card'].forEach(function (id) { var c = document.getElementById(id); if (c && c.firstElementChild) o.push(c); });
+        var st = document.getElementById('st'); if (st) [].forEach.call(st.children, function (c) { if (c.classList.contains('st-grid')) o.unshift(c); else if (c.classList.contains('card') || c.querySelector('.card')) o.push(c); }); return o; };
+      var name = function (c) { if (c.classList.contains('st-grid')) return '📋 ' + T('Overview'); var b = c.querySelector('summary b, .st-h b, b'); var i = c.querySelector('.st-i'); return ((i ? i.textContent + ' ' : '') + (b ? b.textContent : '')).trim().slice(0, 40); };
+      var draw = function () { var L = cards(); if (!L.length || !nav) return; if (!L.some(function (c, n) { return name(c) === cur; })) cur = name(L[0]);
+        nav.innerHTML = L.map(function (c) { var n = name(c); return '<a href="#" data-t="' + esc(n) + '"' + (n === cur ? ' class="on"' : '') + '>' + esc(n) + '</a>'; }).join('');
+        L.forEach(function (c) { c.hidden = name(c) !== cur; if (!c.hidden) [].forEach.call(c.querySelectorAll(':scope > details'), function (d) { d.open = true; }); }); };
+      nav.onclick = function (e) { var a = e.target.closest('a'); if (!a) return; e.preventDefault(); cur = a.dataset.t; try { localStorage.setItem('wi_set_tab', cur); } catch (x) {} draw(); };
+      var tm; new MutationObserver(function (m) { if (m.every(function (r) { return nav.contains(r.target); })) return; clearTimeout(tm); tm = setTimeout(draw, 80); }).observe(root, { childList: true, subtree: true }); })();
     // System (super admin): brand, address, time zone, country code, sign-in limits, bridge — no longer in the code
     // Menu: section titles, page names and icons, hidden pages
     (function menuCard() { get('menu_cfg').then(function (x) { var el = document.getElementById('menu-card'); if (!x.ok || !el) return;
       el.innerHTML = '<details class="card"><summary><b>🧭 ' + T('Menu') + '</b> <span class="muted small">' + T('Rename sections and pages, change icons, hide pages you do not use') + '</span></summary>'
-        + x.menu.map(function (s) { return '<div class="ap-p"><label>' + T('Section') + ' <input data-sec="' + s.id + '" value="' + esc(s.title) + '" style="width:220px"></label>'
-          + s.items.map(function (it) { return '<div class="row wrap" style="margin:4px 0"><input data-ic="' + it.key + '" value="' + esc(it.icon) + '" style="width:54px;text-align:center"><input data-lb="' + it.key + '" value="' + esc(it.label) + '" placeholder="' + esc(it.default_label) + '" style="width:240px">'
-            + (it.key === 'settings' ? '' : '<label class="check"><input type="checkbox" data-hd="' + it.key + '"' + (it.hidden ? ' checked' : '') + '> ' + T('Hide') + '</label>') + '<span class="muted small">?p=' + esc(it.key) + '</span></div>'; }).join('') + '</div>'; }).join('')
+        + '<div class="mn-grid">' + x.menu.map(function (s) { var PN = {inbox:'Inbox',search:'Search',library:'Library',audio:'Audio',files:'Files',media:'Media',schedule:'Scheduling',programs:'Programs',status:'Status posts',botrun:'Bot',botgroup:'Group bot',accounts:'WhatsApp numbers',link:'Link',gateway:'Gateway',health:'Number health',report:'Daily report',backup:'Backup',facebook:'Facebook'};
+          var own = function (v, d) { return v && v !== d ? v : ''; };
+          return '<div class="mn-sec"><div class="mn-st"><span class="muted small">' + T('Section') + '</span><input data-sec="' + s.id + '" value="' + esc(own(s.title, s.default_title)) + '" placeholder="' + esc(T(s.default_title)) + '"></div>'
+          + s.items.map(function (it) { var subs = (it.pages || []).filter(function (p) { return p !== it.key; });
+            return '<div class="mn-it' + (it.hidden ? ' off' : '') + '"><input class="mn-ic" data-ic="' + it.key + '" value="' + esc(own(it.icon, it.default_icon)) + '" placeholder="' + esc(it.default_icon) + '"><div class="mn-lb"><input data-lb="' + it.key + '" value="' + esc(own(it.label, it.default_label)) + '" placeholder="' + esc(T(it.default_label)) + '">'
+              + (subs.length ? '<span class="muted small">' + T('Includes') + ': ' + subs.map(function (p) { return esc(T(PN[p] || p)); }).join(' · ') + '</span>' : '') + '</div>'
+              + (it.key === 'settings' ? '' : '<label class="check small"><input type="checkbox" data-hd="' + it.key + '"' + (it.hidden ? ' checked' : '') + '> ' + T('Hide') + '</label>') + '</div>'; }).join('') + '</div>'; }).join('') + '</div>'
         + '<div class="row"><button class="btn primary sm" id="mn-save">💾 ' + T('Save') + '</button><button class="link-btn" id="mn-reset">' + T('Back to the starting values') + '</button></div></details>';
       el.onclick = function (e) {
         if (e.target.closest('#mn-save')) { var sec = {}, items = {}; [].forEach.call(el.querySelectorAll('[data-sec]'), function (i) { sec[i.dataset.sec] = i.value; });
@@ -51,12 +65,31 @@
         if ((b = e.target.closest('[data-mtsave]'))) post('msg_templates', { key: b.dataset.mtsave, text: el.querySelector('[data-mt="' + b.dataset.mtsave + '"]').value }).then(function (r) { toast(r.ok ? '✓ ' + T('Saved') : '⚠️ ' + r.error); });
         if ((b = e.target.closest('[data-mtreset]'))) post('msg_templates', { key: b.dataset.mtreset, reset: 1 }).then(function () { msgCard(); }); }; }); })();
     (function sysCard() { get('sys_settings').then(function (x) { var el = document.getElementById('sys-card'); if (!x.ok || !el) return;
-      el.innerHTML = '<details class="card"><summary><b>🏗️ ' + T('System') + '</b> <span class="muted small">' + T('Brand, address, time zone, country code, sign-in limits — values for this installation') + '</span></summary><div class="gcf" style="margin-top:10px">'
-        + x.fields.map(function (f) { var v = f.value == null ? '' : f.value;
-          return '<label>' + esc(T(f.label)) + (f.type === 'longtext' ? '<textarea data-sys="' + f.key + '" rows="6" dir="auto" placeholder="' + esc(T('Empty = the built-in text')) + '">' + esc(v) + '</textarea>' : f.type === 'tz' ? '<input list="sys-tz" data-sys="' + f.key + '" value="' + esc(v) + '">' : '<input data-sys="' + f.key + '" type="' + (f.type === 'int' ? 'number' : 'text') + '" dir="auto" value="' + esc(v) + '" placeholder="' + esc(f.default) + '">') + '</label>'; }).join('')
+      var by = {}; x.fields.forEach(function (f) { by[f.key] = f; }); var used = {};
+      var SECS = [['brand', '🏷️', 'Brand and address', 'The name, logo and address people see', ['brand_name', 'brand_logo', 'device_name', 'base_url', 'cookie_path']],
+        ['region', '🌍', 'Region and language', 'Time zone, numbers, currency and the language of messages', ['timezone', 'country_code', 'trunk_prefix', 'number_locale', 'currency', 'msg_lang']],
+        ['login', '🔐', 'Sign-in and security', 'Sign-in codes, locks and trusted proxies', ['idle_min', 'otp_min', 'max_fails', 'lock_min', 'trusted_proxies']],
+        ['numbers', '📱', 'Numbers protection', 'Daily limits that keep the WhatsApp numbers safe, and numbers left unlinked', ['group_add_day', 'keyword_per_hour', 'keyword_cooldown_min', 'idle_warn_days', 'idle_stop_days', 'idle_qr_min']],
+        ['files', '📦', 'Files and history', 'Largest file sizes and how many months are read', ['max_send_mb', 'max_learn_mb', 'max_status_mb', 'max_export_mb', 'months_recent', 'months_short', 'months_long', 'refresh_pct']],
+        ['ai', '🤖', 'AI', 'Where the AI runs and its safety filter', ['ai_engine', 'ai_safety', 'bridge_url', 'bridge_host']],
+        ['addons', '🧩', 'Add-ons', 'Turn on only what this installation sells', ['addon_facebook', 'addon_invoices', 'invoices_config', 'notify_clients', 'backup_folder', 'changelog']],
+        ['market', '📣', 'Landing page and plans', 'The public page at /welcome', ['landing_home', 'landing_design', 'landing_cta_url', 'landing_cta_label', 'plan_currency']],
+        ['legal', '⚖️', 'Privacy and terms', 'The owner name and the text of the legal pages', ['legal_owner', 'legal_email', 'privacy_text', 'terms_text']]];
+      var fld = function (f) { var v = f.value == null ? '' : f.value; used[f.key] = 1;
+        if (f.type === 'int01') return '<label class="check"><input type="checkbox" data-sys="' + f.key + '"' + (+v ? ' checked' : '') + '> ' + esc(T(f.label)) + '</label>';
+        return '<label' + (f.type === 'longtext' ? ' class="gcf-wide"' : '') + '>' + esc(T(f.label)) + (f.type === 'longtext' ? '<textarea data-sys="' + f.key + '" rows="6" dir="auto" placeholder="' + esc(T('Empty = the built-in text')) + '">' + esc(v) + '</textarea>' : f.type === 'tz' ? '<input list="sys-tz" data-sys="' + f.key + '" value="' + esc(v) + '">' : '<input data-sys="' + f.key + '" type="' + (f.type === 'int' ? 'number' : 'text') + '" dir="auto" value="' + esc(v) + '" placeholder="' + esc(f.default) + '">') + '</label>'; };
+      var secs = SECS.map(function (s) { var body = s[4].filter(function (k) { return by[k]; }).map(function (k) { return fld(by[k]); }).join(''); return body ? [s, body] : null; }).filter(Boolean);
+      var rest = x.fields.filter(function (f) { return !used[f.key]; }); if (rest.length) secs.push([['other', '⚙️', 'Other', '', []], rest.map(fld).join('')]);
+      el.innerHTML = '<details class="card" open><summary><b>🏗️ ' + T('System') + '</b> <span class="muted small">' + T('Brand, address, time zone, country code, sign-in limits — values for this installation') + '</span></summary><div class="bs-wrap">'
+        + '<nav class="bs-nav">' + secs.map(function (p) { return '<a href="#sys-' + p[0][0] + '">' + p[0][1] + ' ' + esc(T(p[0][2])) + '</a>'; }).join('') + '</nav>'
+        + secs.map(function (p) { var s = p[0]; return '<section class="bs-sec" id="sys-' + s[0] + '"><div class="bs-h"><span>' + s[1] + '</span><div><b>' + esc(T(s[2])) + '</b>' + (s[3] ? '<span class="muted small">' + esc(T(s[3])) + '</span>' : '') + '</div></div><div class="bs-body">' + p[1] + '</div></section>'; }).join('')
         + '</div><datalist id="sys-tz">' + x.timezones.map(function (z) { return '<option value="' + z + '">'; }).join('') + '</datalist>'
-        + '<p class="muted small">' + T('Changing the dashboard address or cookie path signs everyone out; set them to where the dashboard really is.') + '</p><div class="row"><button class="btn primary sm" id="sys-save">💾 ' + T('Save') + '</button></div></details>';
-      document.getElementById('sys-save').onclick = function () { var v = {}; [].forEach.call(el.querySelectorAll('[data-sys]'), function (i) { v[i.dataset.sys] = i.value; });
+        + '<p class="muted small">' + T('Changing the dashboard address or cookie path signs everyone out; set them to where the dashboard really is.') + '</p><div class="row" style="position:sticky;bottom:0;background:var(--card,#fff);padding:8px 0"><button class="btn primary sm" id="sys-save">💾 ' + T('Save') + '</button></div></details>';
+      var tab = function (id) { if (!el.querySelector('#sys-' + id)) id = secs[0][0][0]; [].forEach.call(el.querySelectorAll('.bs-sec'), function (x) { x.hidden = x.id !== 'sys-' + id; });
+        [].forEach.call(el.querySelectorAll('.bs-nav a'), function (a) { a.classList.toggle('on', a.getAttribute('href') === '#sys-' + id); }); try { localStorage.setItem('wi_sys_tab', id); } catch (e) {} };
+      var last = ''; try { last = localStorage.getItem('wi_sys_tab') || ''; } catch (e) {} tab(last);
+      el.querySelector('.bs-nav').onclick = function (e) { var a = e.target.closest('a'); if (!a) return; e.preventDefault(); tab(a.getAttribute('href').slice(5)); };
+      document.getElementById('sys-save').onclick = function () { var v = {}; [].forEach.call(el.querySelectorAll('[data-sys]'), function (i) { v[i.dataset.sys] = i.type === 'checkbox' ? (i.checked ? 1 : 0) : i.value; });
         post('sys_settings', { sys: v }).then(function (r) { toast(r.ok ? '✓ ' + T('Saved') : '⚠️ ' + T(r.error)); }); }; }); })();
     var L2 = function (u, t) { return '<a href="' + u + '" target="_blank" rel="noopener">' + t + ' ↗</a>'; };
     root.addEventListener('change', function (e) { var c = e.target.closest('[data-inv-acc]'); if (!c) return; c.disabled = true;

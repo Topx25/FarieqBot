@@ -9,9 +9,11 @@ wi_boot();
 if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy(); header('Location: ./'); exit; } // another client's address
 // The website (PHP-FPM) and the background jobs run as the account user: the data stays private to it (0700 / 0600).
 
+if (!wi_logged_in() && $_SERVER['REQUEST_METHOD'] === 'GET' && !$_GET && wi_sys('landing_home')) { require __DIR__ . '/features.php'; wi_landing(); } // the product page is the front door; ?login opens the sign-in
 if (isset($_GET['landing'])) { require __DIR__ . '/features.php'; wi_landing(); } // the product's public page
-if (isset($_GET['intro_video'])) { header('Content-Type: text/html; charset=utf-8'); readfile(__DIR__ . '/intro.html'); exit; } // the intro video (public: shown on the landing page and in Help)
-if (isset($_GET['help_doc']) && wi_logged_in()) { header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex'); readfile(__DIR__ . '/help.html'); exit; } // the user guide (Help page)
+if (isset($_GET['mockup']) && is_file($mk = __DIR__ . '/mockups/' . preg_replace('/[^A-Za-z0-9-]/', '', (string) $_GET['mockup']) . '.html')) { header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex'); readfile($mk); exit; } // design mockups of the home page, to compare
+if (isset($_GET['intro_video'])) { header('X-Frame-Options: SAMEORIGIN'); header('Content-Type: text/html; charset=utf-8'); readfile(__DIR__ . '/intro.html'); exit; } // the intro video (public: shown on the landing page and in Help)
+if (isset($_GET['help_doc']) && wi_logged_in()) { header('X-Frame-Options: SAMEORIGIN'); header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex'); readfile(__DIR__ . '/help.html'); exit; } // the user guide (Help page)
 if (isset($_GET['m']) && !isset($_GET['api'])) { require __DIR__ . '/features.php'; wf_meet_page(preg_replace('/[^a-z0-9-]/', '', strtolower((string) $_GET['m']))); } // public meeting gateway (no login)
 if (isset($_GET['fb_hook'])) { require __DIR__ . '/features.php'; wf_fb_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['fb_hook']))); exit; } // Facebook calls this (verified by the app secret)
 if (isset($_GET['privacy']) || isset($_GET['terms'])) { require __DIR__ . '/features.php'; wf_legal_page(isset($_GET['terms']) ? 'terms' : 'privacy'); } // public privacy policy / terms (asked for by Facebook and Google)
@@ -99,8 +101,8 @@ if (wi_logged_in() && isset($_GET['acc']) && isset(wi_my_accounts()[(string) $_G
 // Facebook menu: Messenger and the page's comments / posts / numbers open on a Facebook page (the first one) when a number is open
 if (wi_logged_in() && (($_GET['ch'] ?? '') === 'fb' || $page === 'facebook') && ((wi_current()['channel'] ?? '') !== 'fb')) foreach (wi_my_accounts() as $fbId => $fbA) if (($fbA['channel'] ?? '') === 'fb') { $_SESSION['acc'] = (string) $fbId; break; } // links that open a page for a given number
 if ($page === 'clients' && !wi_is_super()) $page = 'dashboard'; // subscriptions are the super admin's
-if (!in_array($page, ['business', 'clients', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'help', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook'], true)) $page = 'dashboard';
-$fxPages = ['business', 'learning', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'facebook'];
+if (!in_array($page, ['business', 'clients', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'help', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook', 'catalog'], true)) $page = 'dashboard';
+$fxPages = ['business', 'learning', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'facebook', 'catalog'];
 $autoPages = ['schedule', 'programs', 'status'];
 $sysPages = ['health', 'report', 'backup'];
 $versions = (array) require __DIR__ . '/version.php';

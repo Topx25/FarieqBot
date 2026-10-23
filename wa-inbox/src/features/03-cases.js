@@ -108,7 +108,7 @@
         + ta('story', 'Story / history', 'What they describe, what was done before, notes…', 5)
         + ta('symptoms', 'Confirmed symptoms (one per line)', PK('ex_points'), 6)
         + ta('extra', 'Extra symptoms', '', 2) + '</div>'
-        + '<h3>🩺 ' + T('Diagnosis') + '</h3><div class="gcf">' + f('diagnosis', 'Diagnosis', PK('ex_assessment')) + f('diag_by', 'Diagnosed by', '') + f('placement', 'Placement note', T('filled from the group'))
+        + '<h3>🩺 ' + FL('diagnosis', 'Diagnosis') + '</h3><div class="gcf">' + f('diagnosis', 'Diagnosis', PK('ex_assessment')) + f('diag_by', 'Diagnosed by', '') + f('placement', 'Placement note', T('filled from the group'))
         + '<label>' + T('Status') + '<select id="nc-status"><option value="follow">🩺 ' + T('Under follow-up') + '</option><option value="new">🆕 ' + T('New') + '</option></select></label></div>'
         + '<div class="row wrap nc-send"><label class="check"><input type="checkbox" id="nc-send" checked> 📤 ' + T('Post a copy of the report to the group') + '</label><select id="nc-group"></select></div>'
         + '<div class="row"><button class="btn primary" id="nc-save">💾 ' + T('Save the case') + '</button><span class="muted small" id="nc-msg"></span></div></div>'

@@ -48,8 +48,11 @@ function wf_team_watch(array $acc, bool $fresh = false): array {
 }
 /** The weekly team report to the admins: healers by activity, and the neglected cases. */
 function wf_team_report(array $acc, callable $tell): void {
-    $w = wf_team_watch($acc, true); $nm = fn($x) => $x === 'owner' ? wf_msg('trail_owner') : (($w['names'] ?? [])[$x] ?? '') ;
-    $hl = implode("\n", array_map(fn($h) => '• ' . ($h['who'] === 'owner' ? wf_msg('trail_owner') : ($h['name'] !== '' ? $h['name'] : '+' . $h['who'])) . ' — ' . wf_msg('team_line', ['cases' => (string) $h['cases'], 'touches' => (string) $h['touches'], 'speed' => $h['median_min'] === null ? '—' : (string) $h['median_min'], 'last' => date('Y-m-d', (int) $h['last'])]), array_slice($w['healers'], 0, 12)));
+    $w = wf_team_watch($acc, true); $me = preg_replace('/\D/', '', explode(':', (string) (wi_gateway('/status', null, $acc)['account']['id'] ?? ''))[0]);
+    $ownerName = trim((string) ($acc['name'] ?? '')) . ($me !== '' ? ' (+' . $me . ')' : ''); if (trim($ownerName) === '') $ownerName = wf_msg('trail_owner');
+    // the number itself shows by its name and phone
+    $nm = fn($x) => $x === 'owner' ? wf_msg('trail_owner') : (($w['names'] ?? [])[$x] ?? '') ;
+    $hl = implode("\n", array_map(fn($h) => '• ' . ($h['who'] === 'owner' ? $ownerName : ($h['name'] !== '' ? $h['name'] : '+' . $h['who'])) . ' — ' . wf_msg('team_line', ['cases' => (string) $h['cases'], 'touches' => (string) $h['touches'], 'speed' => $h['median_min'] === null ? '—' : (string) $h['median_min'], 'last' => date('Y-m-d', (int) $h['last'])]), array_slice($w['healers'], 0, 12)));
     $ng = array_values(array_filter($w['cases'], fn($c) => !empty($c['neglected'])));
     $nl = implode("\n", array_map(fn($c) => '• ' . $c['name'] . ' (ID ' . $c['no'] . ') — ' . ($c['last_team'] ? date('Y-m-d', (int) $c['last_team']) : '—'), array_slice($ng, 0, 15)));
     $tell(wf_msg('team_report', ['name' => (string) ($acc['name'] ?? $acc['id']), 'healers' => $hl ?: '—', 'neglected' => $nl ?: '—', 'count' => (string) count($ng), 'days' => (string) $w['days']]));

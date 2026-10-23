@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{brand}} — كل رسالة واتساب ليها حد بيرد عليها</title>
+<meta name="description" content="{{brand}}: رقم واتساب واحد لفريقك كله، ومساعد ذكي بيرد من معرفتك ليل ونهار، وملف لكل عميل.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--deep:#0b0a1a;--deep2:#15132b;--em:#a78bfa;--em2:#8b5cf6;--mint:#b8b3d6;--ice:#f4f2ff;--sun:#f472b6;--line:#ffffff17;--ink:#14112b}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--deep);color:var(--ice);font-family:"Readex Pro",Cairo,Tahoma,sans-serif;font-size:17px;line-height:1.75;overflow-x:hidden}
+a{color:inherit}.w{max-width:1240px;margin:0 auto;padding:0 24px}
+.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:800;border-radius:999px;padding:14px 28px;font-size:17px;transition:transform .15s,box-shadow .15s}
+.btn.p{background:var(--em2);color:#fff;box-shadow:0 0 0 1px #c4b5fd55,0 10px 30px -8px var(--em2)}.btn.p:hover{transform:translateY(-2px);box-shadow:0 14px 30px -12px var(--em)}
+.btn.l{background:var(--ice);color:var(--deep)}.btn.o{border:1.5px solid #c4b5fd;padding:12.5px 26px}.btn.o:hover{background:#ffffff10}
+/* header */
+header{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--deep) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header .w{display:flex;align-items:center;gap:30px;height:76px}
+.logo{font-weight:900;font-size:21px;display:flex;align-items:center;gap:10px;text-decoration:none}.logo i{width:40px;height:40px;border-radius:12px;background:var(--em);display:grid;place-items:center;color:var(--deep)}
+header nav{display:flex;gap:28px;flex:1;justify-content:center}header nav a{text-decoration:none;color:var(--mint);font-size:16px}header nav a:hover{color:#fff}
+header .btn{padding:11px 22px;font-size:15px}
+/* hero */
+.hero{position:relative;padding:60px 0 90px;overflow:hidden}
+.hero::before{content:"";position:absolute;width:1100px;height:900px;top:-420px;left:50%;transform:translateX(-50%);background:radial-gradient(closest-side,#6d28d955,transparent)}
+.hero .w{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.pill{display:inline-block;border:1px solid #a78bfa66;color:#c4b5fd;border-radius:999px;padding:6px 16px;font-size:15px;font-weight:700}
+h1{font-size:clamp(38px,4.4vw,62px);line-height:1.08;margin:22px 0;font-weight:900}h1 span{color:var(--em)}
+.lead{font-size:21px;color:var(--mint);margin:0 0 30px;max-width:540px}.ctas{display:flex;gap:14px;flex-wrap:wrap}
+.stats{display:flex;gap:40px;margin-top:38px;flex-wrap:wrap}.stats b{display:block;font-size:34px;font-weight:900;color:var(--em);line-height:1.2}.stats span{font-size:14px;color:var(--mint)}
+/* real WhatsApp chat */
+.phone{position:relative;width:380px;margin-inline-start:auto;margin-inline-end:60px;background:#111;border-radius:46px;padding:12px;box-shadow:0 50px 100px -30px #000c,0 0 0 1px #ffffff14}
+.phone::before{content:"";position:absolute;top:22px;left:50%;transform:translateX(-50%);width:90px;height:24px;border-radius:20px;background:#000;z-index:3}
+.wa{border-radius:36px;overflow:hidden;background:#efeae2;display:flex;flex-direction:column;height:720px;color:#111b21;font-family:"Segoe UI",Cairo,Helvetica,sans-serif}
+.wa-bar{background:#008069;color:#fff;padding:46px 12px 10px;display:flex;align-items:center;gap:10px}
+.wa-bar .av{width:38px;height:38px;border-radius:50%;background:#fbbf24;color:#06322a;display:grid;place-items:center;font-weight:800;flex:none}
+.wa-bar b{display:block;font-size:16px;font-weight:600}.wa-bar small{font-size:12.5px;opacity:.85}
+.wa-bar .ic{margin-inline-start:auto;display:flex;gap:18px}.wa-bar svg{width:20px;height:20px}
+.wa-body{flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:3px;overflow:hidden;font-size:14.2px;
+ background-color:#efeae2;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23d9d2c5' stroke-width='1.4'%3E%3Ccircle cx='20' cy='22' r='7'/%3E%3Cpath d='M70 15l8 8-8 8-8-8z'/%3E%3Cpath d='M95 70c6 0 10 4 10 10'/%3E%3Crect x='18' y='75' width='16' height='12' rx='3'/%3E%3Cpath d='M55 95l6-10 6 10z'/%3E%3Ccircle cx='100' cy='30' r='3'/%3E%3C/g%3E%3C/svg%3E")}
+.wa-day{align-self:center;background:#fff;color:#54656f;font-size:12px;border-radius:8px;padding:4px 10px;margin:4px 0 8px;box-shadow:0 1px .5px #0b141a21}
+.wa-sys{align-self:center;background:#ffeecd;color:#54656f;font-size:12px;border-radius:8px;padding:4px 10px;margin:6px 0;text-align:center}
+.wa-m{position:relative;max-width:82%;padding:6px 9px 8px;border-radius:8px;box-shadow:0 1px .5px #0b141a21;line-height:1.45;margin-top:4px}
+.wa-m.in{background:#fff;align-self:flex-start;border-top-right-radius:0}
+.wa-m.out{background:#d9fdd3;align-self:flex-end;border-top-left-radius:0}
+.wa-m.in::before{content:"";position:absolute;top:0;right:-8px;border-top:0 solid transparent;border-left:8px solid #fff;border-bottom:10px solid transparent}
+.wa-m.out::before{content:"";position:absolute;top:0;left:-8px;border-right:8px solid #d9fdd3;border-bottom:10px solid transparent}
+.wa-t{float:left;margin:6px 10px 0 0;font-size:11px;color:#667781;display:inline-flex;align-items:center;gap:3px;position:relative;top:4px}
+.tk{width:16px;height:11px;color:#53bdeb}
+.wa-who{display:block;font-size:12.5px;font-weight:600;color:#c2410c}.wa-who.bot{color:#008069}
+.wa-img{display:block;height:150px;margin:-2px -5px 6px;border-radius:6px;background:linear-gradient(160deg,#ddd6fe,#a78bfa 60%,#6d28d9)}
+.wa-in{background:#f0f2f5;padding:8px 10px;display:flex;align-items:center;gap:8px}
+.wa-in div{flex:1;background:#fff;border-radius:24px;padding:10px 16px;color:#8696a0;font-size:15px}
+.wa-in span{width:44px;height:44px;border-radius:50%;background:#00a884;display:grid;place-items:center;color:#fff}
+.typing{align-self:flex-end;background:#d9fdd3;border-radius:8px;padding:9px 14px;display:flex;gap:4px;margin-top:4px}.typing i{width:7px;height:7px;border-radius:50%;background:#5f8f74;animation:bl 1s infinite}.typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}@keyframes bl{50%{opacity:.3}}
+.wa-body .wa-m,.wa-body .wa-day{animation:pop .45s both}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.fl{position:absolute;border-radius:18px;padding:13px 18px;font-size:15px;box-shadow:0 22px 44px -18px #000;z-index:4}
+.fl1{top:120px;inset-inline-end:-30px;background:#8b5cf6;color:#fff;font-weight:800}
+.fl2{bottom:-10px;inset-inline-start:10px;background:#fff;color:var(--ink);width:230px;line-height:1.5}.fl2 b{display:block}
+.fl3{bottom:260px;inset-inline-end:-30px;background:#15132b;border:1px solid #a78bfa55;color:var(--mint);font-size:14px;width:210px;line-height:1.5}
+/* sections */
+section.s{padding:110px 0;position:relative}.light{background:var(--ice);color:var(--ink)}
+.sh{max-width:760px;margin:0 0 50px}.sh.c{text-align:center;margin-inline:auto}.ey{color:var(--em);font-weight:800;font-size:15px}.light .ey{color:#6d28d9}
+.sh h2{font-size:clamp(32px,4vw,52px);line-height:1.2;margin:8px 0 12px;font-weight:900}.sh p{font-size:19px;margin:0;color:var(--mint)}.light .sh p{color:#475569}
+/* features */
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:18px}
+.f{background:#fff;border-radius:26px;padding:30px;color:var(--ink);border:1px solid #e4dcff;transition:transform .2s,box-shadow .2s}.f:hover{transform:translateY(-4px);box-shadow:0 30px 60px -30px #2e106555}
+.f h3{margin:14px 0 6px;font-size:22px;font-weight:800}.f p{margin:0;color:#475569;font-size:16px}
+.f .ic{width:52px;height:52px;border-radius:16px;background:var(--ice);display:grid;place-items:center;color:#6d28d9}.f .ic svg{width:26px;height:26px}
+.f.big{grid-column:span 3}.f.mid{grid-column:span 2}.f.dark{background:var(--deep);color:var(--ice);border:0}.f.dark p{color:var(--mint)}.f.dark .ic{background:#ffffff14;color:var(--em)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.chips span{font-size:13px;border-radius:99px;padding:4px 12px;background:var(--ice);color:#6d28d9;font-weight:700}.f.dark .chips span{background:#ffffff14;color:var(--mint)}
+/* demo */
+.demo{display:grid;grid-template-columns:1fr 400px;gap:60px;align-items:center}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 16px}.tabs button{font:inherit;font-weight:700;border:1.5px solid #a78bfa66;background:transparent;color:var(--ice);border-radius:99px;padding:8px 18px;cursor:pointer}.tabs button.on{background:var(--em);color:var(--deep);border-color:var(--em)}
+.qs{display:flex;flex-direction:column;gap:10px}.qs button{font:inherit;text-align:start;background:#ffffff0d;border:1px solid var(--line);color:var(--ice);border-radius:16px;padding:13px 18px;cursor:pointer}.qs button:hover{background:#ffffff1a}
+.demo .phone{margin:0}.demo .wa{height:640px}.demo .wa-body{overflow-y:auto}
+/* compare */
+.cmp{background:#fff;border-radius:24px;overflow:hidden;overflow-x:auto;border:1px solid #e4dcff}.cmp table{width:100%;border-collapse:collapse;min-width:680px}
+.cmp th,.cmp td{padding:15px 20px;text-align:start;border-bottom:1px solid #ece6ff;vertical-align:top;font-size:15.5px}.cmp thead th{background:#f7f5ff;font-size:17px}.cmp tbody th{color:#475569;font-weight:700;width:20%}.cmp .us{background:#f3efff;font-weight:600}.cmp thead .us{background:var(--deep);color:#fff}
+.note{font-size:13px;color:#64748b;text-align:center;margin-top:14px}
+/* providers */
+.prov{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}.prov span{border:1px solid var(--line);background:#ffffff0a;border-radius:14px;padding:10px 18px;font-weight:700}.prov i{font-style:normal;font-size:12px;margin-inline-start:8px;color:var(--em)}.prov .pd i{color:var(--sun)}
+/* video */
+.video{max-width:1000px;margin:0 auto;aspect-ratio:16/9;border-radius:26px;overflow:hidden;background:#000;box-shadow:0 40px 90px -40px #000}.video iframe{width:100%;height:100%;border:0}
+/* plans */
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:20px}
+.plan{background:#fff;color:var(--ink);border-radius:26px;padding:30px;display:flex;flex-direction:column;gap:10px;position:relative;border:1px solid #e4dcff}
+.plan.hot{background:#15132b;color:var(--ice);border:2px solid var(--em);transform:translateY(-8px)}.plan .eyebrow{position:absolute;top:-14px;inset-inline-start:24px;background:var(--sun);color:var(--deep);border-radius:99px;padding:3px 14px;font-size:13px;font-weight:800}
+.plan h3{margin:0;font-size:22px}.price{font-size:44px;font-weight:900}.price small{font-size:15px;opacity:.7;font-weight:600}
+.plan ul{list-style:none;padding:0;margin:6px 0 16px;flex:1}.plan li{padding:7px 0;border-bottom:1px dashed #e4dcff;font-size:15px}.plan.hot li{border-color:#ffffff22}.plan li::before{content:"✓";color:var(--em2);font-weight:900;margin-inline-end:10px}
+.plan .btn{justify-content:center}.plan .btn.g{border:1.5px solid var(--deep);color:var(--deep)}.plan.hot .btn.p{background:var(--em)}
+.ltabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:26px}.ltabs button{font:inherit;font-weight:700;border:1px solid #e4dcff;background:#fff;color:var(--ink);border-radius:99px;padding:9px 20px;cursor:pointer}.ltabs button.on{background:var(--em2);color:#fff;border-color:var(--em2)}
+.lp{display:none;max-width:900px;margin:0 auto}.lp.on{display:block}
+.lq{background:#fff;border:1px solid #e4dcff;border-radius:18px;margin-bottom:12px;padding:2px 22px;color:var(--ink)}.lq summary{cursor:pointer;font-weight:800;padding:16px 0;list-style:none;display:flex;align-items:center;gap:14px;font-size:17px}.lq summary::-webkit-details-marker{display:none}
+.lq summary::after{content:"+";margin-inline-start:auto;font-size:24px;color:var(--em2)}.lq[open] summary::after{content:"−"}.ln{font-size:13px;color:#6d28d9;background:#f3efff;border-radius:8px;padding:2px 8px}
+.lq p{margin:0 0 18px;color:#475569;line-height:1.9}.lq code{background:#f3efff;color:#6d28d9;border-radius:6px;padding:1px 6px}
+
+.lgrid{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:34px;align-items:start;max-width:1160px;margin:0 auto}.lgrid .lp{max-width:none}
+.lscr{position:sticky;top:96px;background:#14112b;border-radius:24px;padding:10px;box-shadow:0 40px 80px -40px #2e1065aa;transition:transform .35s}
+.lscr:hover{transform:translateY(-4px) rotate(-.4deg)}
+.lbar{display:flex;align-items:center;gap:6px;padding:4px 8px 10px;color:#b8b3d6;font-size:12px}.lbar i{width:10px;height:10px;border-radius:50%;background:#f87171}.lbar i+i{background:#fbbf24}.lbar i+i+i{background:#34d399}.lbar span{margin-inline-start:auto}
+.lstage{background:#f7f5ff;border-radius:16px;height:330px;overflow:hidden;position:relative;color:#14112b;font-size:14px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.lhint{color:#b8b3d6;font-size:12.5px;text-align:center;padding:10px 0 4px}
+.lq{transition:border-color .2s,box-shadow .2s,transform .2s}.lq:hover{border-color:#a78bfa;transform:translateX(-3px)}.lq[open]{border-color:#8b5cf6;box-shadow:0 14px 30px -18px #6d28d9}
+/* scene pieces */
+.sc-row{background:#fff;border:1px solid #e4dcff;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;opacity:0;transform:translateY(10px);animation:scin .5s forwards}
+.sc-row:nth-child(2){animation-delay:.35s}.sc-row:nth-child(3){animation-delay:.7s}.sc-row:nth-child(4){animation-delay:1.05s}.sc-row:nth-child(5){animation-delay:1.4s}
+@keyframes scin{to{opacity:1;transform:none}}
+.av2{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;flex:none}
+.pill2{margin-inline-start:auto;font-size:11px;border-radius:99px;padding:2px 9px;background:#f3efff;color:#6d28d9;font-weight:700}
+.ok2{background:#dcfce7;color:#15803d}
+.qrbox{margin:auto;width:170px;height:170px;border-radius:16px;background:repeating-conic-gradient(#14112b 0 25%,#fff 0 50%) 0 0/22px 22px;position:relative;box-shadow:0 0 0 8px #fff,0 0 0 9px #e4dcff}
+.qrbox::after{content:"";position:absolute;inset-inline:0;height:3px;background:#8b5cf6;box-shadow:0 0 12px #8b5cf6;animation:scan 1.6s ease-in-out infinite}
+@keyframes scan{0%{top:6%}50%{top:92%}100%{top:6%}}
+.done{margin:0 auto;font-weight:800;color:#15803d;opacity:0;animation:scin .5s 2.2s forwards}
+.bub2{max-width:80%;padding:9px 12px;border-radius:12px;opacity:0;animation:scin .45s forwards}.bub2.i{background:#fff;align-self:flex-start;border:1px solid #e4dcff}.bub2.o{background:#d9fdd3;align-self:flex-end}
+.bub2:nth-child(2){animation-delay:.6s}.bub2:nth-child(3){animation-delay:1.4s}.bub2:nth-child(4){animation-delay:2.2s}
+.typ{align-self:flex-end;display:flex;gap:4px;background:#d9fdd3;border-radius:10px;padding:9px 12px;opacity:0;animation:scin .3s .9s forwards,fade .3s 1.35s forwards}.typ i{width:6px;height:6px;border-radius:50%;background:#5f8f74;animation:bl 1s infinite}
+@keyframes fade{to{opacity:0;height:0;padding:0}}
+.srch{background:#fff;border:1.5px solid #8b5cf6;border-radius:12px;padding:10px 12px;font-weight:600}.srch b{border-inline-end:2px solid #6d28d9;padding-inline-end:2px;animation:caret .8s steps(1) infinite;white-space:nowrap;overflow:hidden;display:inline-block;max-width:0;vertical-align:bottom;animation:type 1.2s steps(6) forwards,caret .8s steps(1) infinite}
+@keyframes type{to{max-width:120px}}@keyframes caret{50%{border-color:transparent}}
+.tog{margin:6px auto 0;width:220px;display:flex;background:#fff;border:1px solid #e4dcff;border-radius:99px;padding:4px;position:relative}.tog span{flex:1;text-align:center;padding:8px 0;font-weight:700;z-index:1;font-size:13px}.tog::before{content:"";position:absolute;top:4px;bottom:4px;width:calc(33.3% - 3px);border-radius:99px;background:#8b5cf6;inset-inline-start:4px;animation:tg 2.4s ease-in-out forwards}
+@keyframes tg{0%,30%{inset-inline-start:4px}60%,100%{inset-inline-start:calc(66.6% - 1px)}}
+.bars2{display:flex;align-items:flex-end;gap:10px;height:150px;padding:10px;background:#fff;border-radius:12px;border:1px solid #e4dcff}.bars2 i{flex:1;background:linear-gradient(#a78bfa,#6d28d9);border-radius:6px 6px 0 0;height:0;animation:grow 1s forwards}
+.bars2 i:nth-child(2){animation-delay:.15s}.bars2 i:nth-child(3){animation-delay:.3s}.bars2 i:nth-child(4){animation-delay:.45s}.bars2 i:nth-child(5){animation-delay:.6s}.bars2 i:nth-child(6){animation-delay:.75s}
+@keyframes grow{to{height:var(--h)}}
+.cloud{margin:20px auto 0;font-size:72px;animation:float 2s ease-in-out infinite}@keyframes float{50%{transform:translateY(-10px)}}
+.prog2{height:10px;background:#ece6ff;border-radius:99px;overflow:hidden}.prog2 i{display:block;height:100%;width:0;background:#8b5cf6;animation:pg 2.2s forwards}@keyframes pg{to{width:100%}}
+.clock{margin:6px auto;width:120px;height:120px;border-radius:50%;border:6px solid #8b5cf6;position:relative;background:#fff}.clock::before,.clock::after{content:"";position:absolute;left:50%;bottom:50%;transform-origin:bottom;background:#14112b;border-radius:3px}
+.clock::before{width:4px;height:34px;margin-left:-2px;animation:rot 6s linear infinite}.clock::after{width:3px;height:46px;margin-left:-1.5px;animation:rot 1.5s linear infinite}@keyframes rot{to{transform:rotate(360deg)}}
+.prod2{align-self:flex-end;width:200px;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e4dcff;opacity:0;animation:scin .5s 2.4s forwards}.prod2 div:first-child{height:90px;background:linear-gradient(135deg,#ddd6fe,#8b5cf6)}.prod2 div+div{padding:8px 12px;font-size:13px}
+.big{font-size:40px;text-align:center;margin-top:8px}
+@media (max-width:1000px){.lgrid{grid-template-columns:1fr}.lscr{position:relative;top:0;order:-1}}
+@media (prefers-reduced-motion:reduce){.lstage *{animation-duration:.01s!important;animation-delay:0s!important}}
+.acs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.ac{background:#15132b;border:1px solid #2c2754;border-radius:22px;padding:22px;transition:transform .25s,border-color .25s,box-shadow .25s}.ac:hover{transform:translateY(-5px);border-color:#8b5cf6;box-shadow:0 24px 50px -24px #8b5cf6}
+.ach{display:flex;align-items:center;gap:10px;margin-bottom:12px}.ach span{font-size:24px;width:44px;height:44px;border-radius:14px;background:#1e1b4b;display:grid;place-items:center}.ach h3{margin:0;font-size:18px;font-weight:800;flex:1}.ach em{font-style:normal;font-size:12px;font-weight:800;color:#c4b5fd;background:#2e1065;border-radius:99px;padding:2px 9px}
+.ac ul{list-style:none;padding:0;margin:0}.ac li{font-size:14.5px;color:var(--mint);padding:6px 0;border-top:1px solid #ffffff0f;line-height:1.6}.ac li::before{content:"✓";color:var(--em);font-weight:900;margin-inline-end:8px}
+@media (max-width:1100px){.acs{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (max-width:600px){.acs{grid-template-columns:1fr}}
+.acx{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s ease;overflow:hidden}.acx>li{min-height:0}.ac.open .acx{grid-template-rows:1fr}
+.acx{display:block;max-height:0;transition:max-height .4s ease}.ac.open .acx{max-height:600px}
+.acm{margin-top:10px;font:inherit;font-size:13px;font-weight:800;color:#c4b5fd;background:#1e1b4b;border:1px solid #2c2754;border-radius:99px;padding:6px 14px;cursor:pointer}.acm:hover{border-color:#8b5cf6;color:#fff}
+.acs{align-items:start}
+/* faq */
+.q{border-bottom:1px solid var(--line)}.q summary{cursor:pointer;font-weight:800;padding:18px 0;list-style:none;display:flex;justify-content:space-between;gap:12px;font-size:18px}.q summary::after{content:"+";font-size:26px;color:var(--em)}.q[open] summary::after{content:"−"}.q p{margin:0 0 18px;color:var(--mint)}
+/* cta */
+.cta{background:linear-gradient(135deg,#6d28d9,#8b5cf6);color:#fff;border-radius:36px;padding:72px 40px;text-align:center}.cta h2{font-size:clamp(34px,5vw,62px);margin:0 0 12px;font-weight:900;line-height:1.15}.cta p{font-size:20px;margin:0 0 28px;font-weight:600}.cta .btn{background:#fff;color:#2e1065}
+footer{padding:40px 0;color:var(--mint);font-size:14px;border-top:1px solid var(--line)}footer .w{display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.rv{opacity:1}.js .rv{opacity:0;transform:translateY(24px);transition:opacity .7s,transform .7s}.js .rv.in{opacity:1;transform:none}
+@media (max-width:1000px){header nav{display:none}.hero .w,.demo{grid-template-columns:1fr}.phone{margin:20px auto 0;width:min(380px,100%)}.fl{display:none}.grid{grid-template-columns:1fr 1fr}.f.big,.f.mid{grid-column:span 2}}
+@media (max-width:600px){header .btn.o{display:none}.grid{grid-template-columns:1fr}.f.big,.f.mid{grid-column:auto}section.s{padding:72px 0}.wa{height:600px}}
+@media (prefers-reduced-motion:reduce){.js .rv{opacity:1;transform:none}.wa-body .wa-m{animation:none}}
+</style>
+<script>document.documentElement.classList.add("js");document.addEventListener("DOMContentLoaded",function(){var L=document.querySelectorAll(".rv");if(!("IntersectionObserver" in window)){[].forEach.call(L,function(e){e.classList.add("in")});return}var io=new IntersectionObserver(function(E){E.forEach(function(x){if(x.isIntersecting){x.target.classList.add("in");io.unobserve(x.target)}})},{rootMargin:"0px 0px -8% 0px"});[].forEach.call(L,function(e){io.observe(e)})});</script>
+</head>
+<body>
+<header><div class="w"><a class="logo" href="#"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.9A8 8 0 1 1 21 12z"/></svg></i>{{brand}}</a>
+<nav><a href="#all">المميزات</a><a href="#try">جرّب بنفسك</a><a href="#compare">المقارنة</a><a href="#learn">تعلّم</a><a href="#pricing">الأسعار</a><a href="#faq">أسئلة</a></nav>
+<a class="btn o" href="{{login_url}}">دخول</a><a class="btn p" href="{{cta_url}}">{{cta_label}}</a></div></header>
+
+<section class="hero"><div class="w">
+<div><span class="pill">لفرق المبيعات وخدمة العملاء</span>
+<h1>كل رسالة واتساب<br>ليها <span>حد بيرد عليها.</span></h1>
+<p class="lead">رقم واتساب واحد، فريقك كله عليه، ومساعد ذكي بيرد من معرفتك ليل ونهار. وانت شايف كل حاجة.</p>
+<div class="ctas"><a class="btn l" href="{{cta_url}}">{{cta_label}}</a><a class="btn o" href="#video">▶ شوف الفيديو</a></div>
+<div class="stats"><div><b>24/7</b><span>رد من غير توقف</span></div><div><b>QR</b><span>ربط في دقيقة</span></div><div><b>رقم واحد</b><span>لفريق كامل</span></div></div></div>
+<div style="position:relative">
+<div class="fl fl1">⚡ اترد في 4 ثواني</div>
+<div class="fl fl2"><b>✓ طلب جديد اتسجّل</b>نور · فستان أخضر M</div>
+<div class="phone"><div class="wa">
+<div class="wa-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="av" id="hav">ن</span><div><b id="hnm">نور</b><small id="hst">متصل الآن</small></div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></span></div>
+<div class="wa-body" id="hb"><div class="wa-day">اليوم</div><div class="wa-m in">مساء الخير، عندكم الفستان الأخضر مقاس M؟<span class="wa-t">11:42 م</span></div><div class="wa-m out"><span class="wa-who">سارة</span>أيوه موجود 🌿 وده آخر مقاس M عندنا. تحبي أحجزهولك؟<span class="wa-t">11:43 م<svg class="tk" viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 7.2 2.3 4.6 1.3 5.6l3.6 3.6 7.2-7.6zM15 .6 8.8 7.2l-.9-.9-1 1 1.9 1.9 7.2-7.6z" fill="currentColor"/></svg></span></div><div class="wa-m in">طب التوصيل للإسكندرية بكام؟<span class="wa-t">2:10 ص</span></div><div class="wa-m out"><span class="wa-who bot">المساعد</span>التوصيل للإسكندرية 60 جنيه وبيوصل في يومين 🚚<span class="wa-t">2:10 ص<svg class="tk" viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 7.2 2.3 4.6 1.3 5.6l3.6 3.6 7.2-7.6zM15 .6 8.8 7.2l-.9-.9-1 1 1.9 1.9 7.2-7.6z" fill="currentColor"/></svg></span></div><div class="wa-m out"><span class="wa-img"></span><b>فستان أخضر قطن — مقاس M</b><br>💰 450 جنيه<span class="wa-t">2:10 ص<svg class="tk" viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 7.2 2.3 4.6 1.3 5.6l3.6 3.6 7.2-7.6zM15 .6 8.8 7.2l-.9-.9-1 1 1.9 1.9 7.2-7.6z" fill="currentColor"/></svg></span></div><div class="wa-m in">تمام احجزيه 😍<span class="wa-t">2:11 ص</span></div></div>
+<div class="wa-in"><div>مراسلة</div><span><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12z"/></svg></span></div>
+</div></div></div>
+</div></section>
+
+<section class="s light" id="features"><div class="w"><div class="sh rv"><span class="ey">المميزات</span><h2>كل اللي فريقك محتاجه… من غير لف</h2><p>من أول رسالة لحد ما العميل يشتري ويرجع تاني.</p></div>
+<div class="grid">
+<div class="f dark big rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01"/></svg></div><h3>مساعد بيتعلّم أسلوبكم</h3><p>بيرد من معرفتكم وكتالوج منتجاتكم، وبيتعلّم من تعديلات الفريق على ردوده. ولو مش متأكد بيحوّل للإنسان بدل ما يغلط.</p><div class="chips"><span>رد 24 ساعة</span><span>يفهم العامية</span><span>تحويل للموظف</span><span>ساعات هدوء</span></div></div>
+<div class="f big rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19c0-3 3-5 6-5s6 2 6 5M15 19c0-2 1.5-3.5 4-3.5"/></svg></div><h3>فريق كامل على رقم واحد</h3><p>كل واحد بحسابه وصلاحياته، وكل رد عارف مين كتبه. الخاص والجروبات وكل الأرقام في لوحة واحدة.</p><div class="chips"><span>صلاحيات لكل صفحة</span><span>أكتر من رقم</span></div></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div><h3>بيسمع الفويس</h3><p>الرسالة الصوتية بتتحوّل لكلام ويترد عليها.</p></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg></div><h3>كتالوج منتجات</h3><p>بالصور والأسعار، والمساعد بيبعت صورة المنتج اللي اتسأل عنه.</p></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg></div><h3>ملف لكل عميل</h3><p>مراحل وسجل كامل بكل رد وملف، ورسايل متابعة تلقائية.</p></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 8-3 8h18s-3-1-3-8M13.7 20a2 2 0 0 1-3.4 0"/></svg></div><h3>عين على الجروبات</h3><p>سؤال محدش رد عليه؟ تنبيه للمسؤول بمنشن.</p></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div><h3>تقارير بتفهمها</h3><p>سرعة رد كل موظف، ومين مستني، وجودة الردود كل أسبوع.</p></div>
+<div class="f mid rv"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></div><h3>خصوصية ونسخ احتياطي</h3><p>الرسايل محفوظة حتى لو اتمسحت، ونسخة كاملة على Google Drive.</p></div>
+</div></div></section>
+
+<section class="s" id="all"><div class="w"><div class="sh c rv"><span class="ey">كل المميزات</span><h2>50 ميزة في نظام واحد</h2><p>كل اللي محتاجه شغلك على واتساب، من غير ما تجمع أدوات من هنا وهناك.</p></div>
+<div class="acs"><div class="ac rv"><div class="ach"><span>💬</span><h3>المحادثات والفريق</h3><em>8</em></div><ul><li>صندوق واحد للخاص والجروبات</li><li>أكتر من رقم واتساب في لوحة واحدة</li><li>فريق كامل بصلاحيات لكل صفحة (عرض / تعديل)</li></ul><ul class="acx"><li>ردود جاهزة بالهاشتاج و/</li><li>بحث ذكي بالاقتراحات في الرسايل والعملاء والملفات</li><li>الرسايل محفوظة حتى لو اتمسحت من الموبايل</li><li>تصدير المحادثة بملفاتها</li><li>زرار اقتراحات للرد من معرفتك</li></ul><button type="button" class="acm" aria-expanded="false">عرض الكل (8) ▾</button></div><div class="ac rv"><div class="ach"><span>🤖</span><h3>المساعد الذكي</h3><em>8</em></div><ul><li>رد تلقائي أو مسودات للمراجعة</li><li>بيتعلّم من محادثاتك وتعديلات الفريق</li><li>بيفهم الرسايل الصوتية ويرد عليها</li></ul><ul class="acx"><li>كتالوج منتجات بالصور والأسعار</li><li>ساعات عمل وساعات هدوء ومواعيد لكل جروب</li><li>تحويل للموظف لما مش متأكد</li><li>اختبار البوت على رسايل حقيقية قبل التشغيل</li><li>أكتر من مزوّد ذكاء اصطناعي: مجاني ومدفوع</li></ul><button type="button" class="acm" aria-expanded="false">عرض الكل (8) ▾</button></div><div class="ac rv"><div class="ach"><span>👥</span><h3>الجروبات</h3><em>7</em></div><ul><li>رد على أسئلة الأعضاء في الجروب</li><li>تنبيه بمنشن لو سؤال فضل من غير رد</li><li>أوامر بالهاشتاج وأوامر خاصة بيك</li></ul><ul class="acx"><li>ترحيب بالأعضاء الجداد وقبول طلبات الانضمام</li><li>منع السبام: مسح اللينكات وطرد صاحبها</li><li>جروب استقبال يسجّل الحالات الجديدة</li><li>سحب أرقام أعضاء الجروبات بصيغة واتساب</li></ul><button type="button" class="acm" aria-expanded="false">عرض الكل (7) ▾</button></div><div class="ac rv"><div class="ach"><span>🗂️</span><h3>العملاء والمتابعة</h3><em>6</em></div><ul><li>ملف لكل عميل بمراحل بتسمّيها انت</li><li>سجل دائم بكل رد وكل ملف اتبعت</li><li>رسايل متابعة تلقائية كل كام يوم</li></ul><ul class="acx"><li>حقول وبيانات حسب نوع نشاطك</li><li>ملخص وتحليل للمحادثة بالذكاء الاصطناعي</li><li>متابعة الفريق: مين مسؤول عن مين</li></ul><button type="button" class="acm" aria-expanded="false">عرض الكل (6) ▾</button></div><div class="ac rv"><div class="ach"><span>📣</span><h3>الإرسال والجدولة</h3><em>6</em></div><ul><li>إرسال جماعي على دفعات يحمي رقمك</li><li>رسايل مجدولة في ميعاد محدد</li><li>برامج متابعة يومية برسايل متتابعة</li></ul><ul class="acx"><li>نشر حالات واتساب (Status) لعملاءك</li><li>اجتماعات بلينك ثابت وغرفة انتظار فوق Google Meet</li><li>فيسبوك وماسنجر وتعليقات الصفحة (اختياري)</li></ul><button type="button" class="acm" aria-expanded="false">عرض الكل (6) ▾</button></div><div class="ac rv"><div class="ach"><span>📚</span><h3>المكتبة والملفات</h3><em>5</em></div><ul><li>مكتبة لكل الصور والفيديو والفويس والملفات</li><li>تصنيفات وفولدرات وبحث بالاسم أو الرقم</li><li>فولدر خاص مقفول بكلمة سر</li></ul><ul class="acx"><li>اختصار لأي ملف يتبعت بكلمة في الشات</li><li>الصوتيات في مكان لوحدها</li></ul><button type="button" class="acm" aria-expanded="false">عرض الكل (5) ▾</button></div><div class="ac rv"><div class="ach"><span>📊</span><h3>التقارير والإدارة</h3><em>6</em></div><ul><li>تقرير يومي على الواتساب</li><li>تقرير أسبوعي لأداء الفريق والعملاء المهملين</li><li>تقرير جودة ردود البوت</li></ul><ul class="acx"><li>صحة الأرقام وتنبيه لو رقم فصل</li><li>نسخ احتياطي يومي على Google Drive</li><li>دخول بكود وصلاحيات وحالات خاصة لصاحب الحساب</li></ul><button type="button" class="acm" aria-expanded="false">عرض الكل (6) ▾</button></div><div class="ac rv"><div class="ach"><span>🏪</span><h3>للبيع لعملاءك</h3><em>4</em></div><ul><li>لوحة لكل عميل بأرقامه وفريقه</li><li>باقات وأسعار واشتراكات</li><li>الاسم واللوجو والعنوان بتاعك</li></ul><ul class="acx"><li>ملف نشاط جاهز لكل نوع شغل</li></ul><button type="button" class="acm" aria-expanded="false">عرض الكل (4) ▾</button></div></div></div></section>
+<section class="s" id="try"><div class="w demo">
+<div class="rv"><span class="ey">جرّب بنفسك</span><h2 style="font-size:clamp(32px,4vw,52px);line-height:1.2;margin:8px 0 12px;font-weight:900">اسأل زي العميل… وشوف الرد</h2><p style="color:var(--mint);margin:0">مثال لطريقة الرد. في الحقيقة المساعد بيرد من بياناتك أنت. جرّب "عايز أكلم حد".</p>
+<div class="tabs" id="tabs"><button class="on" data-k="shop">متجر</button><button data-k="clinic">عيادة</button><button data-k="support">دعم فني</button><button data-k="course">كورسات</button></div>
+<div class="qs" id="qs"></div></div>
+<div class="phone rv"><div class="wa">
+<div class="wa-bar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="av" id="dav">م</span><div><b id="dnm">متجر نور</b><small id="dst">متصل الآن</small></div></div>
+<div class="wa-body" id="db"></div>
+<div class="wa-in"><div>مراسلة</div><span><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-2.1A7 7 0 0 0 19 12z"/></svg></span></div>
+</div></div>
+</div></section>
+
+<section class="s light" id="compare"><div class="w"><div class="sh c rv"><span class="ey">بصراحة</span><h2>واتساب بزنس ولا {{brand}}؟</h2><p>واتساب بزنس كويس لمحل صغير بيرد بنفسه. لو عندك فريق وعملاء كتير، الفرق كبير.</p></div>
+<div class="cmp rv"><table><thead><tr><th></th><th>واتساب بزنس (التطبيق)</th><th class="us">{{brand}}</th></tr></thead><tbody><tr><th>السعر</th><td>مجاني</td><td class="us">اشتراك شهري حسب الباقة</td></tr><tr><th>الرد التلقائي</th><td>رسالة ترحيب وغياب وردود سريعة بتكتبها بإيدك</td><td class="us">بوت ذكاء اصطناعي بيفهم السؤال ويرد من معرفة شغلك 24 ساعة</td></tr><tr><th>الذكاء الاصطناعي</th><td>مساعد Meta في بعض الدول بس، وإعداداته بسيطة</td><td class="us">بيتعلّم من ردود فريقك، وتختار المزوّد (Gemini أو Groq أو OpenAI أو Claude وغيرهم) مجاني أو مدفوع</td></tr><tr><th>الرسايل الصوتية</th><td>❌</td><td class="us">✅ يفهم الفويس ويرد عليه</td></tr><tr><th>الفريق على نفس الرقم</th><td>الموبايل + لحد 4 أجهزة مربوطة</td><td class="us">فريق كامل بصلاحيات لكل موظف</td></tr><tr><th>متابعة الجروبات</th><td>❌</td><td class="us">✅ يرد في الجروبات وينبّه لو سؤال اتساب من غير رد</td></tr><tr><th>ملف العميل</th><td>تصنيفات (Labels) وملاحظة قصيرة</td><td class="us">ملف كامل: مراحل، سجل دائم بكل رد وملف، رسايل متابعة تلقائية</td></tr><tr><th>التقارير</th><td>إحصائيات بسيطة للرسايل</td><td class="us">تقارير يومية وأسبوعية للجودة وأداء كل موظف</td></tr><tr><th>أكتر من رقم</th><td>كل رقم في تطبيق لوحده</td><td class="us">كل الأرقام في لوحة واحدة</td></tr><tr><th>الإرسال الجماعي</th><td>قوائم بث لحد 256 شخص، ويوصل بس للي حافظ رقمك</td><td class="us">إرسال جماعي على دفعات بحدود تحمي رقمك</td></tr><tr><th>كتالوج المنتجات</th><td>✅ موجود</td><td class="us">✅ كتالوج بالصور والأسعار، والبوت بيرد على الأسعار منه ويبعت صورة المنتج</td></tr><tr><th>طريقة الربط</th><td>تطبيق رسمي من Meta</td><td class="us">بيتربط على رقمك بالـ QR زي واتساب ويب</td></tr></tbody></table></div>
+<p class="note">المقارنة مع تطبيق واتساب بزنس المجاني. المميزات عندهم بتختلف حسب الدولة وبتتغيّر مع التحديثات.</p></div></section>
+
+<section class="s"><div class="w"><div class="sh c rv"><span class="ey">الذكاء اللي يناسب ميزانيتك</span><h2>أكتر من مزوّد… والنظام بيختار الأفضل</h2><p>ولو واحد وقف، التاني بيكمّل. ابدأ ببلاش بمفتاح مجاني من غير كارت بنكي.</p></div>
+<div class="prov rv"><span>Google Gemini<i>مجاني</i></span><span>Groq<i>مجاني</i></span><span>Mistral<i>مجاني</i></span><span>OpenRouter<i>موديلات مجانية</i></span><span class="pd">OpenAI<i>مدفوع</i></span><span class="pd">Claude<i>مدفوع</i></span></div></div></section>
+
+<section class="s" id="video" style="padding-top:20px"><div class="w"><div class="sh c rv"><span class="ey">دقيقتين</span><h2>شوف النظام وهو شغال</h2></div><div class="video rv"><iframe src="{{video_url}}" title="video" loading="lazy" allowfullscreen></iframe></div></div></section>
+
+<section class="s light" id="pricing"><div class="w"><div class="sh c rv"><span class="ey">الأسعار</span><h2>باقات بسيطة ومن غير عقود</h2><p>ابدأ بتجربة، وكبّر لما تحتاج.</p></div><div class="plans rv">{{plans}}</div></div></section>
+
+<section class="s light" id="learn"><div class="w"><div class="sh c rv"><span class="ey">تعلّم النظام</span><h2>إزاي تشتغل عليه… خطوة بخطوة</h2><p>أهم الحاجات اللي هتحتاجها من أول يوم.</p></div>
+<div class="ltabs rv" id="ltabs"><button data-l="start" class="on">🚀 البداية</button><button data-l="chat">💬 المحادثات والفريق</button><button data-l="bot">🤖 البوت</button><button data-l="follow">📊 المتابعة والتقارير</button></div><div class="lgrid rv"><div id="lpanes"><div class="lp on" data-l="start"><details class="lq" data-sc="qr" open><summary><span class="ln">01</span>إزاي أربط رقمي؟</summary><p>من <b>الإدارة ← واتساب</b> دوس "ربط رقم"، وافتح واتساب على موبايلك ← الأجهزة المرتبطة ← ربط جهاز، وامسح الكود. في دقيقة المحادثات بتبدأ تظهر، والموبايل بيفضل شغال عادي.</p></details><details class="lq" data-sc="team"><summary><span class="ln">02</span>إزاي أضيف فريقي؟</summary><p>من <b>الإدارة ← المستخدمين</b> ضيف كل موظف بإيميله، واختار الصفحات اللي يشوفها: عرض بس أو تعديل. الدخول بكود بيوصله على الواتساب.</p></details><details class="lq" data-sc="biz"><summary><span class="ln">03</span>إزاي أعرّف النظام بنوع نشاطي؟</summary><p>من <b>ملف النشاط</b> اختار نوع شغلك (مبيعات، دعم فني، وغيرهم). النظام بيظبط الكلمات والحقول ومراحل العملاء على نشاطك.</p></details><details class="lq" data-sc="key"><summary><span class="ln">04</span>أربط مزوّد ذكاء اصطناعي ببلاش إزاي؟</summary><p>اعمل حساب مجاني عند Google AI Studio أو Groq، وانسخ مفتاح الـ API، والصقه في <b>مزوّدي الذكاء الاصطناعي</b>. النظام بيجرّبه ويوريك الموديلات المتاحة.</p></details></div><div class="lp" data-l="chat"><details class="lq" data-sc="reply" open><summary><span class="ln">01</span>الرد على عميل</summary><p>افتح <b>المحادثات</b>، اختار الشات، واكتب ردك أو دوس <code>/</code> للردود الجاهزة. كل رد بيتسجّل باسم الموظف اللي كتبه.</p></details><details class="lq" data-sc="search"><summary><span class="ln">02</span>البحث في كل حاجة</summary><p>اكتب حرفين في البحث فوق، وهتطلعلك اقتراحات: عملاء، أرقام، رسايل، ملفات. ممكن تدوّر بالاسم أو بجزء من الرقم.</p></details><details class="lq" data-sc="groups"><summary><span class="ln">03</span>الجروبات</summary><p>من <b>الجروبات</b> شوف الأعضاء، وتابع الأسئلة اللي ما اترد عليهاش، وفعّل الترحيب ومنع السبام (لينكات وأرقام من بره الفريق بتتمسح وصاحبها بيطلع).</p></details><details class="lq" data-sc="bcast"><summary><span class="ln">04</span>الإرسال الجماعي</summary><p>من <b>الإرسال الجماعي</b> اختار القايمة واكتب الرسالة. الإرسال بيمشي على دفعات بحدود تحمي رقمك من الحظر.</p></details></div><div class="lp" data-l="bot"><details class="lq" data-sc="bot" open><summary><span class="ln">01</span>أشغّل البوت إزاي؟</summary><p>من <b>البوت ← تشغيل/إيقاف</b> اختار الوضع: <b>مسودات</b> (البوت بيكتب والفريق يراجع ويبعت) أو <b>تلقائي</b> (بيرد لوحده لما يكون واثق). ابدأ بالمسودات أسبوع.</p></details><details class="lq" data-sc="learn"><summary><span class="ln">02</span>أعلّم البوت شغلي إزاي؟</summary><p>من <b>التعلّم</b> خليه يقرا محادثاتك القديمة، وضيف أسئلة وإجابات وملفات. وكل ما حد من الفريق يعدّل رد البوت، بيتعلّم الأسلوب.</p></details><details class="lq" data-sc="hours"><summary><span class="ln">03</span>مواعيد البوت</summary><p>حدّد ساعات العمل، وساعات الهدوء بالليل، وكل جروب يقدر يبقى ليه مواعيده. ولو حد من الفريق دخل الشات، البوت بيسكت ويسيبه.</p></details><details class="lq" data-sc="tags"><summary><span class="ln">04</span>الأوامر بالهاشتاج</summary><p>زي <code>#menu</code> لقايمة الأوامر، و<code>#سؤال</code> لسؤال البوت في الجروب. وتقدر تعمل أوامرك الخاصة من <b>البوت ← الأوامر</b>.</p></details><details class="lq" data-sc="cat"><summary><span class="ln">05</span>كتالوج المنتجات</summary><p>من <b>كتالوج المنتجات</b> ضيف منتجاتك بالسعر والصورة. البوت بيرد على الأسعار منه ويبعت صورة المنتج اللي اتسأل عنه.</p></details></div><div class="lp" data-l="follow"><details class="lq" data-sc="card" open><summary><span class="ln">01</span>ملف العميل</summary><p>كل عميل ليه ملف فيه مرحلته وبياناته وملاحظات الفريق وسجل بكل رد وملف اتبعتله. غيّر المرحلة من الملف أو من لوحة المتابعة.</p></details><details class="lq" data-sc="check"><summary><span class="ln">02</span>رسايل المتابعة التلقائية</summary><p>فعّلها من إعدادات البوت: البوت بيسأل العملاء اللي تحت المتابعة عن أحوالهم كل كام يوم، في الساعة اللي تحددها.</p></details><details class="lq" data-sc="report"><summary><span class="ln">03</span>التقارير</summary><p>تقرير يومي، وتقرير أسبوعي بسرعة رد كل موظف والعملاء المهملين، وتقرير جودة ردود البوت. بيوصلك على الواتساب.</p></details><details class="lq" data-sc="backup"><summary><span class="ln">04</span>النسخ الاحتياطي</summary><p>اربط Google Drive من <b>الإعدادات العامة</b>، وفعّل النسخ اليومي. الرسايل بتفضل محفوظة عندك حتى لو اتمسحت من الموبايل.</p></details></div></div><div class="lscr"><div class="lbar"><i></i><i></i><i></i><span id="lsct">WhatsApp Inbox</span></div><div class="lstage" id="lstage"></div><div class="lhint">اضغط على أي خطوة وشوفها بتحصل ←</div></div></div></div></section>
+<section class="s" id="faq"><div class="w" style="max-width:880px"><div class="sh c rv"><span class="ey">أسئلة</span><h2>عندك سؤال؟</h2></div>
+<details class="q"><summary>محتاج أغيّر رقمي أو أعمل حساب واتساب بيزنس؟</summary><p>لا. بتربط رقمك الحالي (عادي أو بيزنس) بكود QR زي الواتساب ويب، والموبايل بيفضل شغال عادي.</p></details>
+<details class="q"><summary>البوت هيرد غلط على عملائي؟</summary><p>البوت بيرد من معرفة شركتك بس، ولما مش متأكد بيكتب مسودة لفريقك أو بيحوّل للموظف. وتقدر تجرّبه الأول قبل ما تشغّله.</p></details>
+<details class="q"><summary>ينفع أكتر من موظف يشتغل في نفس الوقت؟</summary><p>أيوه، كل موظف بحسابه وصلاحياته، والنظام بيوضح مين رد على مين.</p></details>
+<details class="q"><summary>البوت بيفهم العامية واللهجات؟</summary><p>أيوه، بيرد بلهجة العميل، وبيفهم الرسايل الصوتية كمان.</p></details>
+<details class="q"><summary>رسايلي القديمة هتظهر؟</summary><p>من لحظة الربط كل الرسايل بتتحفظ، والقديم بيتسحب على قد ما الواتساب بيسمح.</p></details>
+<details class="q"><summary>ينفع ألغي في أي وقت؟</summary><p>أيوه، من غير عقود.</p></details></div></section>
+
+<section class="s" style="padding-top:0"><div class="w"><div class="cta rv"><h2>ولا عميل يستنى تاني.</h2><p>اربط رقمك في دقيقة وجرّب مع فريقك.</p><a class="btn" href="{{cta_url}}">{{cta_label}}</a></div></div></section>
+<footer><div class="w"><span>© {{year}} {{brand}}</span><span><a href="{{privacy_url}}">سياسة الخصوصية</a> · <a href="{{terms_url}}">شروط الاستخدام</a></span></div></footer>
+
+<script>
+(function(){
+var TK='<svg class="tk" viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 7.2 2.3 4.6 1.3 5.6l3.6 3.6 7.2-7.6zM15 .6 8.8 7.2l-.9-.9-1 1 1.9 1.9 7.2-7.6z" fill="currentColor"/></svg>';
+function now(){var d=new Date(),h=d.getHours(),m=('0'+d.getMinutes()).slice(-2);return (h%12||12)+':'+m+(h<12?' ص':' م')}
+var D={shop:{n:'متجر نور',a:'م',q:[['عندكم الشنطة الجلد البني؟','أيوه موجودة 🌸 بـ 850 جنيه، جلد طبيعي وفيها جيبين من جوه.',['<b>شنطة جلد بني</b><br>💰 850 جنيه']],['التوصيل بياخد قد إيه؟','القاهرة والجيزة يوم واحد، والمحافظات من 2 لـ 3 أيام 🚚'],['عايز أكلم حد',null,'سارة']]},
+clinic:{n:'عيادة د. منى',a:'ع',q:[['الكشف بكام؟','الكشف 400 جنيه، والاستشارة خلال أسبوعين ببلاش 🩺'],['في مواعيد بكرة؟','بكرة في ميعادين: 5:30 و7:00 مساءً. أحجزلك أنهي واحد؟'],['عايز أكلم حد',null,'السكرتارية']]},
+support:{n:'دعم شركة النت',a:'د',q:[['النت فاصل من الصبح','آسفين 🙏 جرّب تطفي الراوتر دقيقة وترجّعه. ولو لسه، ابعتلي رقم الاشتراك.'],['عايز أغيّر الباقة','المتاح 100 و200 و500 ميجا. تحب أعرّفك الفرق؟'],['عايز أكلم حد',null,'الدعم الفني']]},
+course:{n:'أكاديمية التصميم',a:'أ',q:[['الكورس الجاي امتى؟','الدفعة الجديدة تبدأ السبت، 8 أسابيع أونلاين 🎓'],['بكام؟','1,800 جنيه، وينفع على قسطين.'],['عايز أكلم حد',null,'منسّق الكورس']]}};
+var cur='shop',db=document.getElementById('db'),qs=document.getElementById('qs'),busy=0;
+function add(cls,inner){var d=document.createElement('div');d.className=cls;d.innerHTML=inner;db.appendChild(d);db.scrollTop=db.scrollHeight;return d}
+function msg(dir,txt,who,img){return add('wa-m '+dir,(who?'<span class="wa-who'+(who==='المساعد'?' bot':'')+'">'+who+'</span>':'')+(img?'<span class="wa-img"></span>':'')+txt+'<span class="wa-t">'+now()+(dir==='out'?TK:'')+'</span>')}
+function load(k){cur=k;var x=D[k];document.getElementById('dnm').textContent=x.n;document.getElementById('dav').textContent=x.a;document.getElementById('dst').textContent='متصل الآن';db.innerHTML='<div class="wa-day">اليوم</div>';msg('out','أهلًا بيك 👋 اسأل وأنا أرد عليك.','المساعد');qs.innerHTML=x.q.map(function(q,i){return'<button data-i="'+i+'">'+q[0]+'</button>'}).join('')}
+qs.onclick=function(e){var b=e.target.closest('button');if(!b||busy)return;busy=1;var q=D[cur].q[+b.dataset.i];msg('in',q[0]);document.getElementById('dst').textContent='يكتب…';
+setTimeout(function(){var t=add('typing','<i></i><i></i><i></i>');setTimeout(function(){t.remove();document.getElementById('dst').textContent='متصل الآن';
+if(q[1]){msg('out',q[1],'المساعد');if(q[2])setTimeout(function(){msg('out',q[2][0],'المساعد',1)},600)}else{add('wa-sys','تم التحويل لـ '+q[2]);setTimeout(function(){msg('out','أهلًا، أنا '+q[2]+' معاك دلوقتي. اتفضّل 🙏',q[2])},800)}busy=0},1200)},400)};
+document.getElementById('tabs').onclick=function(e){var b=e.target.closest('button');if(!b)return;[].forEach.call(this.children,function(x){x.classList.toggle('on',x===b)});load(b.dataset.k)};load('shop');
+(function(){var hb=document.getElementById('hb');if(!hb)return;
+var TK='<svg class="tk" viewBox="0 0 16 11" aria-hidden="true"><path d="M11.1.6 4.9 7.2 2.3 4.6 1.3 5.6l3.6 3.6 7.2-7.6zM15 .6 8.8 7.2l-.9-.9-1 1 1.9 1.9 7.2-7.6z" fill="currentColor"/></svg>';
+var C=[{n:'نور',a:'ن',m:[['in','مساء الخير، عندكم الفستان الأخضر مقاس M؟'],['out','أيوه موجود 🌿 وده آخر مقاس M عندنا. تحبي أحجزهولك؟'],['in','التوصيل للإسكندرية بكام؟'],['out','60 جنيه وبيوصل في يومين 🚚'],['img','<b>فستان أخضر قطن — M</b><br>💰 450 جنيه'],['in','تمام احجزيه 😍'],['out','اتحجز ✅ هبعتلك رقم الطلب حالًا']]},
+{n:'محمد',a:'م',m:[['in','السلام عليكم، الكشف بكام؟'],['out','وعليكم السلام 🌸 الكشف 400 جنيه، والاستشارة خلال أسبوعين ببلاش'],['in','في مواعيد بكرة؟'],['out','بكرة في ميعادين: 5:30 و7:00 مساءً. أحجزلك أنهي واحد؟'],['in','7 لو سمحت'],['out','اتحجز بكرة الساعة 7 ✅ هبعتلك تذكير قبلها بساعة']]},
+{n:'أحمد',a:'أ',m:[['in','النت فاصل عندي من الصبح 😕'],['out','آسفين جدًا 🙏 جرّب تطفي الراوتر دقيقة وترجّعه'],['in','جربت ولسه'],['out','تمام، اتفتح لك بلاغ رقم 3381، والفني هيكلمك خلال ساعتين ✅'],['in','شكرًا'],['out','العفو، لو احتجت أي حاجة أنا هنا 👋']]}];
+var ci=0,stop=false;
+function now(){var d=new Date(),h=d.getHours(),m=('0'+d.getMinutes()).slice(-2);return (h%12||12)+':'+m+(h<12?' ص':' م')}
+function add(cls,html){var d=document.createElement('div');d.className=cls;d.innerHTML=html;hb.appendChild(d);while(hb.scrollHeight>hb.clientHeight+4&&hb.children.length>2)hb.removeChild(hb.children[1]);return d}
+function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+async function run(){while(!stop){var c=C[ci%C.length];ci++;document.getElementById('hnm').textContent=c.n;document.getElementById('hav').textContent=c.a;hb.innerHTML='<div class="wa-day">اليوم</div>';
+for(var i=0;i<c.m.length;i++){var x=c.m[i];
+if(x[0]==='in'){document.getElementById('hst').textContent='يكتب…';await wait(900+x[1].length*25);document.getElementById('hst').textContent='متصل الآن';add('wa-m in',x[1]+'<span class="wa-t">'+now()+'</span>');await wait(700)}
+else{var t=add('typing','<i></i><i></i><i></i>');await wait(x[0]==='img'?700:1100+Math.min(1400,x[1].length*18));t.remove();
+add('wa-m out',(i<2||x[0]==='img'?'':'')+'<span class="wa-who bot">المساعد</span>'+(x[0]==='img'?'<span class="wa-img"></span>':'')+x[1]+'<span class="wa-t">'+now()+TK+'</span>');await wait(900)}}
+await wait(3500)}}
+if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;run();})();
+document.querySelector('.acs').addEventListener('click',function(e){var b=e.target.closest('.acm');if(!b)return;var c=b.closest('.ac'),o=c.classList.toggle('open'),n=c.querySelectorAll('li').length;b.setAttribute('aria-expanded',o);b.textContent=o?'عرض أقل ▴':'عرض الكل ('+n+') ▾'});
+
+var SC={
+qr:'<div class="qrbox"></div><div class="done">✓ الرقم اتربط، والمحادثات بتظهر</div>',
+team:'<div class="sc-row"><span class="av2" style="background:#8b5cf6">س</span><b>سارة</b><span class="pill2">المحادثات · تعديل</span></div><div class="sc-row"><span class="av2" style="background:#f472b6">أ</span><b>أحمد</b><span class="pill2">المحادثات · عرض</span></div><div class="sc-row"><span class="av2" style="background:#14112b">ك</span><b>كريم</b><span class="pill2 ok2">كود الدخول اتبعت</span></div>',
+biz:'<div class="sc-row">🛍️ <b>مبيعات</b><span class="pill2 ok2">✓ مختار</span></div><div class="sc-row">🛠️ دعم فني</div><div class="sc-row">📋 مراحل العميل: جديد ← تفاوض ← تم</div>',
+key:'<div class="sc-row">🔑 <b>Google Gemini</b><span class="pill2">بنجرّب المفتاح…</span></div><div class="sc-row">✓ متاح: Flash · Flash-Lite<span class="pill2 ok2">مجاني</span></div><div class="sc-row">⚡ أسرع رد: 0.8 ثانية</div>',
+reply:'<div class="bub2 i">عندكم توصيل للمنصورة؟</div><div class="typ"><i></i><i></i><i></i></div><div class="bub2 o"><small style="color:#6d28d9;font-weight:700;display:block">سارة</small>أيوه، بيوصل في يومين 🚚</div>',
+search:'<div class="srch">🔎 <b>فاتورة</b></div><div class="sc-row">💬 عميل: فاتورة الشهر<span class="pill2">94%</span></div><div class="sc-row">📎 نموذج_الفاتورة.pdf<span class="pill2">86%</span></div><div class="sc-row">👤 أحمد · +20 10…<span class="pill2">78%</span></div>',
+groups:'<div class="sc-row">👥 <b>جروب العملاء</b><span class="pill2">120 عضو</span></div><div class="sc-row">❓ عضو: التجديد إزاي؟<span class="pill2">30 دقيقة</span></div><div class="sc-row">🔔 تنبيه للمسؤول: @أحمد<span class="pill2 ok2">اتبعت</span></div><div class="sc-row">🛡️ لينك سبام اتمسح وصاحبه طلع</div>',
+bcast:'<div class="sc-row">📣 <b>عرض الأسبوع</b><span class="pill2">300 عميل</span></div><div class="prog2"><i></i></div><div class="sc-row">✓ على دفعات · 20 في الساعة<span class="pill2 ok2">رقمك في أمان</span></div>',
+bot:'<div class="tog"><span>مقفول</span><span>مسودات</span><span>تلقائي</span></div><div class="bub2 i" style="animation-delay:1.6s">بكام الشحن؟</div><div class="bub2 o" style="animation-delay:2.2s"><small style="color:#6d28d9;font-weight:700;display:block">🤖 المساعد</small>الشحن 60 جنيه ويوصل في يومين</div>',
+learn:'<div class="sc-row">📚 بقرا محادثاتك القديمة…</div><div class="prog2"><i></i></div><div class="sc-row">✏️ سارة عدّلت رد<span class="pill2">اتعلّمت الأسلوب</span></div><div class="sc-row">🧠 320 سؤال وإجابة<span class="pill2 ok2">جاهز</span></div>',
+hours:'<div class="clock"></div><div class="sc-row">🕘 ساعات العمل: 9 ص ← 11 م</div><div class="sc-row">🌙 ساعات الهدوء: المساعد بيرد بحذر</div>',
+tags:'<div class="bub2 i">#menu</div><div class="bub2 o"><small style="color:#6d28d9;font-weight:700;display:block">🤖 المساعد</small>📋 الأوامر: #سؤال · #كتالوج · #مواعيد</div><div class="bub2 i">#سؤال المواعيد إيه؟</div>',
+cat:'<div class="bub2 i">بكام الشنطة الجلد؟</div><div class="bub2 o"><small style="color:#6d28d9;font-weight:700;display:block">🤖 المساعد</small>بـ 850 جنيه، وده شكلها 👇</div><div class="prod2"><div></div><div><b>شنطة جلد</b> · 850 ج</div></div>',
+card:'<div class="sc-row"><span class="av2" style="background:#f472b6">ن</span><b>نور</b><span class="pill2">تفاوض</span></div><div class="sc-row">📝 ملاحظة: عايزة مقاس M</div><div class="sc-row">📎 عرض_السعر.pdf<span class="pill2">اتبعت</span></div><div class="sc-row">🗓️ متابعة بكرة<span class="pill2 ok2">تلقائي</span></div>',
+check:'<div class="bub2 o"><small style="color:#6d28d9;font-weight:700;display:block">🤖 متابعة تلقائية</small>طمّنا عليك، وصلك الطلب؟ 🌿</div><div class="bub2 i">أيوه وصل، شكرًا 🙏</div><div class="sc-row" style="animation-delay:2s">✓ اتسجّل في ملف العميل</div>',
+report:'<div class="bars2"><i style="--h:45%"></i><i style="--h:70%"></i><i style="--h:55%"></i><i style="--h:90%"></i><i style="--h:75%"></i><i style="--h:60%"></i></div><div class="sc-row">⏱️ سارة: رد في دقيقتين<span class="pill2 ok2">الأسرع</span></div>',
+backup:'<div class="cloud">☁️</div><div class="prog2"><i></i></div><div class="sc-row">✓ نسخة النهارده على Google Drive<span class="pill2 ok2">تمت</span></div>'};
+var stage=document.getElementById('lstage');
+function play(k){if(!SC[k])return;stage.innerHTML='';void stage.offsetWidth;stage.innerHTML=SC[k]}
+document.getElementById('lpanes').addEventListener('toggle',function(e){var d=e.target;if(d.tagName==='DETAILS'&&d.open){[].forEach.call(d.parentNode.querySelectorAll('details[open]'),function(x){if(x!==d)x.open=false});play(d.dataset.sc)}},true);
+document.getElementById('lpanes').addEventListener('mouseover',function(e){var d=e.target.closest('details.lq');if(d&&!d.open&&d.dataset.sc!==stage.dataset.k){stage.dataset.k=d.dataset.sc;play(d.dataset.sc)}});
+document.getElementById('ltabs').addEventListener('click',function(){setTimeout(function(){var d=document.querySelector('#lpanes .lp.on details[open]')||document.querySelector('#lpanes .lp.on details');if(d)play(d.dataset.sc)},0)});
+play('qr');
+
+document.getElementById('ltabs').onclick=function(e){var b=e.target.closest('button');if(!b)return;[].forEach.call(this.children,function(x){x.classList.toggle('on',x===b)});[].forEach.call(document.querySelectorAll('#lpanes .lp'),function(p){p.classList.toggle('on',p.dataset.l===b.dataset.l)})};
+
+
+})();
+</script>
+</body></html>

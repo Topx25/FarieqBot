@@ -14,7 +14,7 @@ function wi_sys_defaults(): array {
     $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost'); $dir = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))), '/');
     return ['signup_on' => 0, 'saas_domain' => '', 'privacy_text' => '', 'terms_text' => '', 'legal_owner' => '', 'legal_email' => '', 'brand_name' => 'WhatsApp Inbox', 'brand_logo' => '💬', 'device_name' => 'WhatsGuard', 'base_url' => 'https://' . $host . $dir . '/',
         'timezone' => date_default_timezone_get() ?: 'UTC', 'country_code' => '', 'trunk_prefix' => '0', 'idle_min' => 30, 'otp_min' => 5, 'max_fails' => 5, 'lock_min' => 15,
-        'cookie_path' => ($dir ?: '') . '/', 'backup_folder' => 'WhatsApp Inbox Backups', 'archive_months' => 3, 'refresh_pct' => 100, 'changelog' => 'product', 'max_send_mb' => 70, 'addon_facebook' => 1, 'landing_cta_url' => '', 'landing_cta_label' => '', 'plan_currency' => '$', 'idle_warn_days' => 3, 'idle_stop_days' => 5, 'idle_qr_min' => 15, 'group_add_day' => 20, 'notify_clients' => 1, 'keyword_per_hour' => 30, 'keyword_cooldown_min' => 10, 'max_learn_mb' => 20, 'max_status_mb' => 60, 'max_export_mb' => 25, 'months_recent' => 1, 'months_short' => 3, 'months_long' => 36, 'msg_lang' => 'ar', 'ai_engine' => 'bridge', 'addon_invoices' => 0, 'currency' => '', 'ai_safety' => 'BLOCK_ONLY_HIGH', 'number_locale' => 'ar', 'trusted_proxies' => '173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32', 'invoices_config' => '', 'bridge_url' => '', 'bridge_host' => ''];
+        'cookie_path' => ($dir ?: '') . '/', 'landing_home' => 1, 'landing_design' => 1, 'backup_folder' => 'WhatsApp Inbox Backups', 'archive_months' => 3, 'refresh_pct' => 100, 'changelog' => 'product', 'max_send_mb' => 70, 'addon_facebook' => 1, 'landing_cta_url' => '', 'landing_cta_label' => '', 'plan_currency' => '$', 'idle_warn_days' => 3, 'idle_stop_days' => 5, 'idle_qr_min' => 15, 'group_add_day' => 20, 'notify_clients' => 1, 'keyword_per_hour' => 30, 'keyword_cooldown_min' => 10, 'max_learn_mb' => 20, 'max_status_mb' => 60, 'max_export_mb' => 25, 'months_recent' => 1, 'months_short' => 3, 'months_long' => 36, 'msg_lang' => 'ar', 'ai_engine' => 'bridge', 'addon_invoices' => 0, 'currency' => '', 'ai_safety' => 'BLOCK_ONLY_HIGH', 'number_locale' => 'ar', 'trusted_proxies' => '173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32', 'invoices_config' => '', 'bridge_url' => '', 'bridge_host' => ''];
 }
 function wi_sys(?string $k = null) {
     static $S = null;
@@ -512,7 +512,8 @@ function wi_menu_registry(): array {
             ['key' => 'learning', 'icon' => '🎓', 'label' => 'Learning', 'who' => 'all'],
             ['key' => 'bot', 'icon' => '🧠', 'label' => 'Bot: learning & test', 'who' => 'all'],
             ['key' => 'analytics', 'icon' => '📈', 'label' => 'Analytics & data', 'who' => 'all'],
-            ['key' => 'numbers', 'icon' => '📇', 'label' => 'Numbers', 'who' => 'all']]],
+            ['key' => 'numbers', 'icon' => '📇', 'label' => 'Numbers', 'who' => 'all'],
+            ['key' => 'catalog', 'icon' => '🛍️', 'label' => 'Product catalog', 'who' => 'all']]],
         ['id' => 'admin', 'title' => 'Administration', 'items' => [
             ['key' => 'accounts', 'icon' => '📱', 'label' => 'WhatsApp', 'who' => 'manager', 'pages' => ['accounts', 'link', 'gateway']],
             ['key' => 'business', 'icon' => '🏢', 'label' => 'Business settings', 'who' => 'manager'],
@@ -528,7 +529,7 @@ function wi_menu(): array {
     $own = (array) (wi_read('config.json', [])['menu'] ?? []); $out = [];
     foreach (wi_menu_registry() as $sec) {
         if ($sec['id'] === 'facebook' && !wi_sys('addon_facebook')) continue; // Facebook is an add-on, like the invoices (General settings)
-        $sec['title'] = (string) ($own['sections'][$sec['id']] ?? $sec['title']);
+        $sec['default_title'] = $sec['title']; $sec['title'] = (string) ($own['sections'][$sec['id']] ?? $sec['title']);
         foreach ($sec['items'] as &$it) { $o = (array) ($own['items'][$it['key']] ?? []); $it['default_label'] = $it['label']; $it['default_icon'] = $it['icon'];
             if (trim((string) ($o['label'] ?? '')) !== '') $it['label'] = (string) $o['label']; if (trim((string) ($o['icon'] ?? '')) !== '') $it['icon'] = (string) $o['icon'];
             // the records item follows the open number's own names (Business settings / Case settings), over the installation's menu
@@ -541,7 +542,7 @@ function wi_menu_can(string $who, bool $manager): bool {
     return match ($who) { 'manager' => $manager, 'users' => wi_can_users(), 'admin' => wi_is_admin() || (wi_me()['role'] ?? '') === 'client', 'super' => wi_is_super(), 'ai' => wi_is_super() || (($w = wi_me()) && ($w['role'] ?? '') === 'client' && !empty($w['can_bot'])), default => true };
 }
 function wi_page_names(): array {
-    return ['inbox' => 'Inbox', 'search' => 'Search', 'library' => 'Library', 'audio' => 'Audio', 'files' => 'Files', 'analytics' => 'Analytics', 'numbers' => 'Numbers',
+    return ['inbox' => 'Inbox', 'search' => 'Search', 'library' => 'Library', 'audio' => 'Audio', 'files' => 'Files', 'analytics' => 'Analytics', 'numbers' => 'Numbers', 'catalog' => 'Product catalog',
         'cases' => 'Cases', 'groups' => 'Groups', 'customer' => 'Customer profile', 'schedule' => 'Scheduling', 'programs' => 'Programs', 'status' => 'Status posts', 'facebook' => 'Facebook',
         'meetings' => 'Meetings', 'learning' => 'Learning', 'bot' => 'Bot learning', 'botrun' => 'Bot', 'botgroup' => 'Group bot', 'broadcast' => 'Broadcast',
         'health' => 'Number health', 'business' => 'Business settings', 'report' => 'Daily report', 'backup' => 'Backup', 'ai' => 'AI providers', 'settings' => 'Settings', 'accounts' => 'WhatsApp numbers'];
@@ -595,11 +596,11 @@ function wi_can_share(string $page): bool { $u = wi_me(); if (wi_tenant($u)) ret
 function wi_api_page(string $api): string {
     static $map = null;
     if ($map === null) { $map = [];
-        foreach (['inbox' => 'chats thread chat_media send send_media media_send forward_text delete_msg delete_chat trash trash_restore export group_add group_invite_send group_admin_list group_removed group_members send_invoice chat_invoices notes meta_set summarize reply_fill inv_reminder suggest_reply react fetch_media meta contact events photo presence', 'search' => 'search', 'analytics' => 'stats analyze export',
+        foreach (['inbox' => 'catalog_send chats thread chat_media send send_media media_send forward_text delete_msg delete_chat trash trash_restore export group_add group_invite_send group_admin_list group_removed group_members send_invoice chat_invoices notes meta_set summarize reply_fill inv_reminder suggest_reply react fetch_media meta contact events photo presence', 'search' => 'search', 'analytics' => 'stats analyze export',
             'library' => 'library media_lib media_inventory media_meta media_folders media_bulk media_dupes media_zip media_youtube lib_ai lib_ai_best lib_ai_group lib_hide media_queue media_vault media_vault_set media_vault_unlock media_vault_lock media_vault_move media_vault_otp media_vault_file lib_text_save lib_text_delete lib_upload youtube_connect', 'audio' => 'audio_lib audio_meta', 'files' => 'files', 'ai' => 'ai_providers',
             'broadcast' => 'broadcast broadcast_control broadcast_status lists', 'accounts' => 'accounts gateway gw_action qr relink',
             'cases' => 'case_cfg case_intake_cfg cases case case_new case_team case_set case_analyze case_export registry registry_set registry_ai registry_group group_monitor', 'groups' => 'groups group_detail group_view case_track',
-            'numbers' => 'numbers', 'facebook' => 'fb_comments fb_comment_act fb_cfg fb_posts fb_post_act fb_upload fb_insights', 'schedule' => 'schedule', 'programs' => 'programs program_save program_enroll', 'status' => 'status_upload status_post', 'health' => 'health',
+            'numbers' => 'numbers', 'catalog' => 'catalog catalog_save catalog_del catalog_img', 'facebook' => 'fb_comments fb_comment_act fb_cfg fb_posts fb_post_act fb_upload fb_insights', 'schedule' => 'schedule', 'programs' => 'programs program_save program_enroll', 'status' => 'status_upload status_post', 'health' => 'health',
             'report' => 'report_cfg', 'backup' => 'backup_cfg', 'business' => 'business_cfg', 'customer' => 'customer', 'settings' => 'settings_overview',
             'learning' => 'learn_guide learn_cache learn_suggest learn_docs learn_rules learn_drive learn_clean learn_grow ai_prompts', 'bot' => 'learn_state learn_build kb_table kb_bulk kb_set bot_test bot_eval bot_rate bot_profile bot_cfg', 'botrun' => 'bot_run bot_chats bot_pause bot_team bot_draft bot_health bot_retry bot_join_cfg bot_roles', 'botgroup' => 'bot_group bot_group_set'] as $pg => $list)
             foreach (explode(' ', $list) as $a) $map[$a] = $pg; }

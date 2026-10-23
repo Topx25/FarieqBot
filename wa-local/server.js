@@ -322,7 +322,7 @@ function gateGroups() {
   if (Date.now() - gateCache.at < 60000) return gateCache.set;
   const set = new Set();
   try { const b = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'wa-inbox', '.data', 'bot.json'), 'utf8')); const g = ((b[process.env.ACCOUNT_ID || 'main'] || {}).run || {}).groups || {};
-    for (const [j, x] of Object.entries(g)) if (x && x.gate && x.gate !== '0') set.add(j); } catch { /* none */ }
+    for (const [j, x] of Object.entries(g)) if (x && ((x.gate && x.gate !== '0') || (x.antispam && x.antispam !== '0'))) set.add(j); } catch { /* none */ } // reception gate and anti-spam groups: every message
   gateCache = { at: Date.now(), set };
   return set;
 }
@@ -1620,7 +1620,7 @@ app.post('/chat/delete-msg', requireToken, async (req, res) => {
     if (connected && socket) {
       const key = rowKey(jid, q), ageH = (Date.now() - Date.parse(q.time)) / 3600000;
       try {
-        if (q.dir === 'out' && ageH < 48 && req.body.everyone !== false) { await socket.sendMessage(jid, { delete: key }); everyone = true; }
+        if ((q.dir === 'out' || (jid.endsWith('@g.us') && req.body.admin === true)) && ageH < 48 && req.body.everyone !== false) { await socket.sendMessage(jid, { delete: key }); everyone = true; }
         else { await socket.chatModify({ deleteForMe: { deleteMedia: true, key, timestamp: Math.floor(Date.parse(q.time) / 1000) } }, jid); }
         phone = true;
       } catch { /* WhatsApp refused (too old, not ours): the dashboard still hides it */ }
@@ -2530,10 +2530,12 @@ if (isPassenger) {
 } else {
   // Only this server talks to the gateway (dashboard, invoice add-on, proxy): listen on localhost unless configured otherwise.
   const listenHost = process.env.LISTEN_HOST || gwConf.listen_host || '127.0.0.1';
-  app.listen(port, listenHost, () => {
+  const srv = app.listen(port, listenHost, () => {
     console.log(`WhatsApp gateway listening on ${listenHost}:${port}`);
     startAfterListen();
   });
+  // another copy of this number's gateway already holds the port: this one leaves at once (two copies waste memory and fight for the session)
+  srv.on('error', (e) => { console.error(`gateway not started: ${e.code || e.message} on port ${port}`); process.exit(0); });
 }
 
 // Join requests that came while the gateway was offline: approved every 10 minutes (groups set to approve automatically).

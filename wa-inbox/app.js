@@ -1855,7 +1855,22 @@ document.addEventListener('keydown', function (e) {
     var mroot = document.getElementById('ml-page'), mk = '', mf = '', mq = '', mcur = null, mbin = /[?&]bin=1/.test(location.search), mvault = false, msel = {}, mfolders = [], msort = 'new';
     try { msort = localStorage.getItem('wi_ml_sort') || 'new'; } catch (e) {}
     var mchat = '', mfrom = '', mto = '', mview = 'grid', mdet = false; try { mview = localStorage.getItem('wi_ml_view') || 'grid'; mdet = localStorage.getItem('wi_ml_det') === '1'; } catch (e) {}
+    var MLC = [];
+    // the chat filter: type a name or a number, matching chats are suggested as you type
+    function mlChatBox() { var sel = document.getElementById('ml-chat'); if (!sel || document.getElementById('ml-chat-q')) return; sel.hidden = true;
+      var w = document.createElement('span'); w.className = 'mlq'; w.innerHTML = '<input type="search" id="ml-chat-q" dir="auto" autocomplete="off" placeholder="' + esc('💬 ' + T('Chat or group: name or number')) + '"><div class="sg-box" hidden></div>'; sel.parentNode.insertBefore(w, sel);
+      var q = w.querySelector('input'), box = w.querySelector('.sg-box'), cur = -1, hits = [];
+      var pick = function (c) { sel.value = c ? c.j : ''; q.value = c ? c.name : ''; box.hidden = true; sel.dispatchEvent(new Event('change')); };
+      var draw = function () { var t = q.value.trim().toLowerCase(), d = t.replace(/\D/g, ''); if (!t) { box.hidden = true; if (sel.value) pick(null); return; }
+        hits = MLC.map(function (c) { var nm = String(c.name).toLowerCase(), sc = nm.indexOf(t) === 0 ? 3 : nm.indexOf(t) > -1 ? 2 : (d.length >= 3 && c.num.indexOf(d) > -1) ? 1 : 0; return [sc, c]; }).filter(function (x) { return x[0]; }).sort(function (a, b) { return b[0] - a[0] || b[1].n - a[1].n; }).slice(0, 8).map(function (x) { return x[1]; });
+        cur = -1; box.innerHTML = hits.length ? hits.map(function (c, i) { return '<button type="button" class="sg-it" data-i="' + i + '">' + (c.g ? '👥 ' : '👤 ') + '<b dir="auto">' + esc(c.name) + '</b> <small class="muted" dir="ltr">' + (c.g ? '' : '+' + esc(c.num)) + ' · ' + fmt(c.n) + '</small></button>'; }).join('') : '<div class="sg-it muted">' + T('No match') + '</div>'; box.hidden = false; };
+      q.addEventListener('input', draw); q.addEventListener('focus', function () { if (q.value) draw(); });
+      q.addEventListener('keydown', function (e) { var it = box.querySelectorAll('[data-i]'); if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); cur = Math.max(0, Math.min(it.length - 1, cur + (e.key === 'ArrowDown' ? 1 : -1))); [].forEach.call(it, function (b, i) { b.classList.toggle('on', i === cur); }); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (hits[cur < 0 ? 0 : cur]) pick(hits[cur < 0 ? 0 : cur]); } else if (e.key === 'Escape') box.hidden = true; });
+      box.addEventListener('mousedown', function (e) { var b = e.target.closest('[data-i]'); if (b) { e.preventDefault(); pick(hits[+b.dataset.i]); } });
+      q.addEventListener('blur', function () { setTimeout(function () { box.hidden = true; }, 150); }); }
     function mlChats(items) { var by = {}; items.forEach(function (i) { if (!i.jid) return; by[i.jid] = by[i.jid] || { n: 0, name: i.chat || i.jid.split('@')[0], g: /@g\.us$/.test(i.jid) }; by[i.jid].n++; });
+      MLC = Object.keys(by).map(function (j) { return { j: j, name: by[j].name, n: by[j].n, g: by[j].g, num: j.split('@')[0] }; }).sort(function (a, b) { return b.n - a.n; });
       var el = document.getElementById('ml-chat'); if (!el) return; el.innerHTML = '<option value="">💬 ' + T('All chats and groups') + '</option>' + Object.keys(by).sort(function (a, b) { return by[b].n - by[a].n; }).map(function (j) { return '<option value="' + esc(j) + '"' + (j === mchat ? ' selected' : '') + '>' + (by[j].g ? '👥 ' : '👤 ') + esc(by[j].name) + ' (' + fmt(by[j].n) + ')</option>'; }).join(''); }
     // storage used: the whole library and each kind, as bars
     function mlSpace(items) { // space used by kind: files, size and share of the total (+ what waits in Deleted)
@@ -1963,6 +1978,7 @@ document.addEventListener('keydown', function (e) {
         mlBar();
       });
     }
+    mlChatBox();
     [['ml-chat', function (v) { mchat = v; }], ['ml-from', function (v) { mfrom = v; }], ['ml-to', function (v) { mto = v; }], ['ml-view', function (v) { mview = v; try { localStorage.setItem('wi_ml_view', v); } catch (e) {} }]].forEach(function (p) { var el = document.getElementById(p[0]); if (el) { if (p[0] === 'ml-view') el.value = mview; el.addEventListener('change', function () { p[1](el.value); mlPage(); }); } });
     function segSync() { [].forEach.call(document.querySelectorAll('[data-mv]'), function (b) { b.classList.toggle('on', b.dataset.mv === mview); }); }
     document.addEventListener('click', function (e) { var b = e.target.closest('[data-mv]'); if (!b) return; var sel = document.getElementById('ml-view'); sel.value = b.dataset.mv; sel.dispatchEvent(new Event('change')); segSync(); }); segSync();

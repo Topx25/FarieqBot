@@ -236,6 +236,27 @@ function wf_group_tag(string $from): array { $from = preg_replace('/\D/', '', $f
 /** Called by the gateway for a group message that has the keyword, or from someone the bot is waiting for. */
 /** Reception gate (a group setting): a new member writes "woman" / "man" → asked once for a recording, quoting them;
  *  their recording → the reviewers are tagged to check it and move them. True when it handled the message. */
+/** A link, a group / channel invite or a phone number in a message (mentions do not count). */
+function wf_spam_is(string $text): bool {
+    $t = preg_replace('/@\d{6,}/', '', $text);
+    return (bool) preg_match('~https?://|www\.|chat\.whatsapp\.com|wa\.me/|whatsapp\.com/channel|t\.me/|telegram\.me|bit\.ly|tinyurl|\b[a-z0-9-]{2,}\.(com|net|org|info|xyz|link|site|online|shop|store|me|io|co)\b~i', $t)
+        || preg_match('/(?:\+|00)?\d[\d\s\-]{8,}\d/', $t);
+}
+/** Anti-spam in a group (Bot → groups): a member outside the team sends a link, an invite or a number → the message is deleted for everyone and the number removed. */
+function wf_spam_hook(array $acc, array $in, callable $reply): bool {
+    $aid = (string) $acc['id']; $jid = wf_jid($in['jid'] ?? ''); if (!str_ends_with($jid, '@g.us') || !empty($in['from_me'])) return false;
+    $c = wf_bot_run_cfg($aid); if ($c['mode'] === 'off' || wi_account_blocked($acc)) return false;
+    $g = wf_bot_group_cfg($c, $jid); if (!$g || empty($g['antispam'])) return false;
+    $text = trim((string) ($in['text'] ?? '')); if ($text === '' || !wf_spam_is($text)) return false;
+    $from = wf_phone((string) ($in['from'] ?? '')); if ($from === '' || isset(wf_team($acc, (array) ($c['groups'] ?? []))[$from])) return false; // the team posts links freely
+    $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(90);
+    $id = preg_replace('/[^0-9A-Za-z]/', '', (string) ($in['id'] ?? '')); $del = [];
+    for ($i = 0; $i < 4 && empty($del['ok']); $i++) { if ($i) sleep(2); $del = wi_gateway('/chat/delete-msg', ['jid' => $jid, 'id' => $id, 'admin' => true, 'by' => 'antispam'], $acc); } // the message reaches the archive a moment later
+    $who = (string) ($in['from'] ?? ''); $who = str_contains($who, '@') ? $who : $from . (strlen($from) >= 14 ? '@lid' : '@s.whatsapp.net');
+    $rm = wi_gateway('/groups/remove', ['group' => $jid, 'jid' => $who], $acc);
+    wi_log('group_spam', ['account' => $aid, 'group' => $jid, 'from' => $from, 'deleted' => !empty($del['everyone']), 'removed' => (string) ($rm['result'] ?? ($rm['error'] ?? '')), 'text' => mb_substr($text, 0, 200)]);
+    return true;
+}
 function wf_gate_hook(array $acc, array $in, callable $reply): bool {
     $aid = (string) $acc['id']; $jid = wf_jid($in['jid'] ?? ''); if (!str_ends_with($jid, '@g.us') || !empty($in['from_me'])) return false;
     $c = wf_bot_run_cfg($aid); if ($c['mode'] !== 'auto' || wi_account_blocked($acc)) return false;
@@ -326,6 +347,11 @@ function wf_intake_hook(array $acc, array $in): void {
     $aid = (string) $acc['id']; $c = wf_intake_cfg($aid); $jid = wf_jid($in['jid'] ?? ''); $from = preg_replace('/\D/', '', (string) ($in['from'] ?? ''));
     $text = trim(mb_substr((string) ($in['text'] ?? ''), 0, 8000)); $id = preg_replace('/[^0-9A-Za-z]/', '', (string) ($in['id'] ?? ''));
     $reply = function (array $x) { header('Content-Type: application/json'); header('Connection: close'); $b = json_encode($x); header('Content-Length: ' . strlen($b)); echo $b; flush(); if (function_exists('fastcgi_finish_request')) fastcgi_finish_request(); };
+    // the same message reaches this hook more than once (the gateway sends it again): only the first one is handled
+    if ($id !== '') { $sd = WI_DIR . '/intake_seen'; if (!is_dir($sd)) @mkdir($sd, 0700, true);
+        if (mt_rand(1, 50) === 1) foreach ((array) glob($sd . '/*') as $f) if (@filemtime($f) < time() - 86400) @unlink($f);
+        $fh = @fopen($sd . '/' . preg_replace('/\W/', '', $aid) . '_' . $id, 'x'); if (!$fh) { $reply(['ok' => false, 'done' => true]); exit; } fclose($fh); }
+    if (wf_spam_hook($acc, $in, $reply)) exit; // anti-spam: delete and remove
     if (wf_gate_hook($acc, $in, $reply)) exit; // reception gate: woman / man → recording → reviewers
     $diag = wf_intake_diag($aid);
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && wf_libcmd_which($aid, $text) !== '') { // library commands (spiritual healing numbers)
