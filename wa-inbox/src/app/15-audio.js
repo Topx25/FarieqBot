@@ -2,7 +2,7 @@
     var A = { items: [], cat: '', view: 'active', sort: 'copies', sel: {} }, acsrf = app.getAttribute('data-csrf');
     var ACAT = { '': ['❔', 'Uncategorised', '#94a3b8'] }, AKEYS = []; // audio categories come from the business profile
     ((window.WI_PACK || {}).audio_cats || []).forEach(function (c) { ACAT[c.key] = [c.icon, c.label, c.color]; AKEYS.push(c.key); });
-    function aUrl(att, name, dl) { if (!att) return ''; var p = att.split('/'), u = p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p[2]); return u + (name ? '&name=' + encodeURIComponent(name) : '') + (dl ? '&dl=1' : ''); }
+    function aUrl(att, name, dl) { if (!att) return ''; var p = att.split('/'), u = p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p.slice(2).join('/')); return u + (name ? '&name=' + encodeURIComponent(name) : '') + (dl ? '&dl=1' : ''); }
     function adur(x) { x = Number(x || 0); return x ? Math.floor(x / 60) + ':' + ('0' + x % 60).slice(-2) : '—'; }
     function aname(it) { return it.title || it.auto_title || (it.kind === 'voice' ? T('🎤 Voice message') : T('🎵 Audio')); }
     function post(body) { return WI.post('audio_meta', body); }

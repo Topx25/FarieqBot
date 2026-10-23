@@ -506,6 +506,7 @@
       <div class="card"><div class="search-bar"><input type="search" id="sq" placeholder="Type a word or number…" autofocus dir="auto"></div><div id="results" class="results"><div class="empty">Type at least 2 characters.</div></div></div>
 
     <?php elseif ($page === 'link'): ?>
+      <div class="card" style="border-color:#f59e0b;background:#fffbeb;color:#78350f">⚠️ <?= wi_e(wi_t('Linked by QR code like WhatsApp Web, not through Meta\'s official API: the number stays subject to WhatsApp\'s rules. Bulk or unwanted messages and spam can get it limited or banned by WhatsApp, and we are not responsible for a ban caused by misuse.')) ?> <a href="index.php?terms" target="_blank" rel="noopener"><?= wi_e(wi_t('Terms of service')) ?></a></div>
       <header class="head"><div><h1><?= wi_e(wi_t('Link / QR')) ?> — <?= wi_e(wi_t((string) ($cur['name'] ?? ''))) ?></h1><p class="muted">Connection status of this account, linking a new number, and pulling old chats.</p></div><a href="?p=accounts#add" class="btn primary">➕ Add another WhatsApp account</a></header>
       <div class="acc-tabs">
         <?php foreach (array_filter(wi_my_accounts(), 'wi_can_manage') as $a): ?>

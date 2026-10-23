@@ -25,7 +25,7 @@
     var LIB = (window.WI_PACK || {}).library || {}, PAL = ['#8b5cf6', '#0ea5e9', '#6366f1', '#10b981', '#14b8a6', '#f59e0b', '#eab308', '#ef4444', '#ec4899', '#22c55e'];
     var SEC = [[LIB.audio || 'Audio', '🎧', PAL[0]]].concat((LIB.sections || []).map(function (x, i) { return [x.name, x.icon || '📁', PAL[(i + 1) % PAL.length]]; }), [[LIB.other || 'Other', '📁', '#64748b']]);
     function secInfo(n) { return SEC.filter(function (x) { return x[0] === n; })[0] || [n, '📁', '#64748b']; }
-    function mediaUrl(att) { if (!att) return ''; var p = att.split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p[2]); }
+    function mediaUrl(att) { if (!att) return ''; var p = att.split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p.slice(2).join('/')); }
     function dur(x) { x = Number(x || 0); return x ? Math.floor(x / 60) + ':' + ('0' + x % 60).slice(-2) : ''; }
     function sender(v) { if (v.dir === 'out') return T('You'); if (v.group) return v.from_name || (v.from ? '+' + v.from : '—'); return who(v); }
     function who(r) { return r.customer ? r.customer.name : (r.name || (r.phone ? '+' + r.phone : String(r.jid || '').split('@')[0])); }

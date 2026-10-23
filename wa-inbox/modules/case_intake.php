@@ -245,10 +245,11 @@ function wf_spam_is(string $text): bool {
 /** Anti-spam in a group (Bot → groups): a member outside the team sends a link, an invite or a number → the message is deleted for everyone and the number removed. */
 function wf_spam_hook(array $acc, array $in, callable $reply): bool {
     $aid = (string) $acc['id']; $jid = wf_jid($in['jid'] ?? ''); if (!str_ends_with($jid, '@g.us') || !empty($in['from_me'])) return false;
-    $c = wf_bot_run_cfg($aid); if ($c['mode'] === 'off' || wi_account_blocked($acc)) return false;
+    $c = wf_bot_run_cfg($aid); if ($c['mode'] !== 'auto' || wi_account_blocked($acc)) return false; // removing people is done only when the bot runs on its own
     $g = wf_bot_group_cfg($c, $jid); if (!$g || empty($g['antispam'])) return false;
-    $text = trim((string) ($in['text'] ?? '')); if ($text === '' || !wf_spam_is($text)) return false;
+    $text = trim((string) ($in['text'] ?? '')); if ($text === '' || str_contains($text, '#') || !wf_spam_is($text)) return false; // a #command (a case with its number) is never spam
     $from = wf_phone((string) ($in['from'] ?? '')); if ($from === '' || isset(wf_team($acc, (array) ($c['groups'] ?? []))[$from])) return false; // the team posts links freely
+    if (strlen($from) >= 14) { $lp = wf_phone((string) (wi_contact($from . '@lid', $acc)['phone'] ?? '')); if ($lp === '' || isset(wf_team($acc, (array) ($c['groups'] ?? []))[$lp])) return false; } // a hidden id that cannot be matched to a phone: never removed (it may be a team member)
     $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(90);
     $id = preg_replace('/[^0-9A-Za-z]/', '', (string) ($in['id'] ?? '')); $del = [];
     for ($i = 0; $i < 4 && empty($del['ok']); $i++) { if ($i) sleep(2); $del = wi_gateway('/chat/delete-msg', ['jid' => $jid, 'id' => $id, 'admin' => true, 'by' => 'antispam'], $acc); } // the message reaches the archive a moment later
@@ -273,10 +274,11 @@ function wf_gate_hook(array $acc, array $in, callable $reply): bool {
         if ($tok && count($tok) <= 15 && !wf_is_question($text)) { if ($hit($g['gate_f'] !== '' ? $g['gate_f'] : (string) ($W['f'] ?? ''))) $act = 'f'; elseif ($hit($g['gate_m'] !== '' ? $g['gate_m'] : (string) ($W['m'] ?? ''))) $act = 'm'; }
     }
     if ($act === '') return false;
+    // the gender said again with no recording yet: asked again after an hour
     $go = false; // once per member: the question once a day, the reviewers once per 30 minutes
     wi_update('gate_state.json', function ($S) use ($aid, $jid, $from, $act, $now, $name, &$go) { $k = $act === 'voice' ? 'v' : 'a'; $last = (int) ($S[$aid][$jid][$from][$k] ?? 0);
         if ($name !== '') $S[$aid][$jid][$from]['n'] = $name;
-        $go = $now - $last > ($act === 'voice' ? 1800 : 86400); if ($go) { $S[$aid][$jid][$from][$k] = $now; if ($act !== 'voice') $S[$aid][$jid][$from]['g'] = $act; }
+        $go = $now - $last > ($act === 'voice' ? 1800 : (empty($S[$aid][$jid][$from]['v']) ? 3600 : 86400)); if ($go) { $S[$aid][$jid][$from][$k] = $now; if ($act !== 'voice') $S[$aid][$jid][$from]['g'] = $act; }
         foreach ((array) ($S[$aid][$jid] ?? []) as $p => $r) if (max((int) ($r['a'] ?? 0), (int) ($r['v'] ?? 0), (int) ($r['j'] ?? 0)) < $now - 30 * 86400) unset($S[$aid][$jid][$p]); return $S; });
     $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(60);
     if (!$go) return true;
@@ -317,7 +319,7 @@ function wf_gate_joined(array $acc, string $gjid, array $members): void {
     wi_update('gate_state.json', function ($S) use ($aid, $gjid, $nums, $now) { foreach ($nums as $n) { $p = (array) ($S[$aid][$gjid][$n] ?? []);
         unset($p['r'], $p['rm'], $p['fn'], $p['k']); $p['j'] = $now; $S[$aid][$gjid][$n] = $p; } return $S; });
 }
-/** Every minute (cron): members who joined a reception group and never answered get a reminder, then a last notice, then are removed. */
+/** Every minute (cron): members who joined a reception group and did not finish (no recording sent, not moved) get a reminder, then a last notice, then are removed. */
 function wf_gate_due(array $accounts): void {
     $now = time(); $all = wi_read('gate_state.json', []);
     foreach ($accounts as $acc) {
@@ -328,7 +330,7 @@ function wf_gate_due(array $accounts): void {
             $rh = (int) ($g['gate_remind_h'] ?? 3) * 3600; $fh = $rh + (int) ($g['gate_final_h'] ?? 3) * 3600; $km = (int) ($g['gate_kick_m'] ?? 30) * 60;
             foreach ((array) $people as $num => $p) {
                 if ($sent >= 5) break 2; // a few per minute
-                $j = (int) ($p['j'] ?? 0); if (!$j || !empty($p['r']) || !empty($p['moved']) || !empty($p['k']) || $j < $now - 7 * 86400) continue;
+                $j = (int) ($p['j'] ?? 0); if (!$j || !empty($p['v']) || !empty($p['moved']) || !empty($p['k']) || $j < $now - 7 * 86400) continue;
                 $step = ''; if (empty($p['rm']) && $now - $j >= $rh && $now - $j < $fh) $step = 'rm'; elseif (empty($p['fn']) && $now - $j >= $fh) $step = 'fn'; elseif (!empty($p['fn']) && $km > 0 && $now - (int) $p['fn'] >= $km) $step = 'k';
                 if ($step === '') continue;
                 static $mem = []; if (!isset($mem[$gjid])) { $mem[$gjid] = []; foreach ((array) (wi_gateway('/groups/members?jid=' . rawurlencode((string) $gjid), null, $acc)['members'] ?? []) as $pp) { $ph = wf_phone((string) ($pp['phone'] ?? '')); $id = (string) ($pp['jid'] ?? $pp['id'] ?? ''); if ($ph !== '') $mem[$gjid][$ph] = $id; $mem[$gjid][wf_phone(explode('@', $id)[0])] = $id; } }
@@ -399,7 +401,7 @@ function wf_intake_hook(array $acc, array $in): void {
     foreach ((array) ($in['people'] ?? []) as $pp) { $pj = (string) ($pp['jid'] ?? ''); if ($pj !== '') $pend['people'][$pj] = mb_substr(trim((string) ($pp['name'] ?? '')), 0, 60); }
     if ($text !== '') $pend['texts'][] = $text; $pend['ids'][] = $id;
     foreach ((array) ($in['voices'] ?? []) as $vo) { $vf = (string) ($vo['file'] ?? ''); $vi = preg_replace('/[^0-9A-Za-z]/', '', (string) ($vo['id'] ?? ''));
-        if (preg_match('#^inbox_media/' . preg_quote($aid, '#') . '/[A-Za-z0-9_.-]{1,80}$#', $vf) && $vi !== '' && !in_array($vi, array_column((array) ($pend['voices'] ?? []), 'id'), true)) $pend['voices'][] = ['id' => $vi, 'file' => $vf]; }
+        if (preg_match('#^inbox_media/' . preg_quote($aid, '#') . '/(?:[0-9-]{3,40}/)?[A-Za-z0-9_.-]{1,80}$#', $vf) && $vi !== '' && !in_array($vi, array_column((array) ($pend['voices'] ?? []), 'id'), true)) $pend['voices'][] = ['id' => $vi, 'file' => $vf]; }
     $pend['voices'] = array_slice((array) ($pend['voices'] ?? []), 0, 5);
     $pend['mentions'] = array_values(array_unique(array_merge((array) $pend['mentions'], array_map('strval', array_slice((array) ($in['mentions'] ?? []), 0, 10)))));
     if ($text !== '') { $x = wf_intake_extract($aid, implode("\n\n", $pend['texts'])); $pend['fields'] = $x['fields'] + (array) ($pend['fields'] ?? []); } // a recording alone needs no AI

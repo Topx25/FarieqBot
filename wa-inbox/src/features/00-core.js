@@ -53,7 +53,7 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
   function localInput(d) { var z = new Date(d.getTime() - d.getTimezoneOffset() * 60000); return z.toISOString().slice(0, 16); }
   function fail(el, r) { el.innerHTML = '<div class="empty">⚠️ ' + esc((r && r.error) || T('Failed')) + '</div>'; }
   function toast(msg) { var t = document.createElement('div'); t.className = 'fx-toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 3500); }
-  function mediaUrl(att) { if (!att) return ''; var p = String(att).split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : (p[0] === 'inbox_media' ? '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p[2]) : ''); }
+  function mediaUrl(att) { if (!att) return ''; var p = String(att).split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : (p[0] === 'inbox_media' ? '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p.slice(2).join('/')) : ''); }
   function itemHtml(i) {
     var u = mediaUrl(i.attachment);
     if (i.kind === 'voice' || i.kind === 'audio') return u ? '<audio controls preload="none" src="' + u + '"></audio>' : (i.fetchable ? '<button class="chip-btn sm" data-fetch="' + esc(i.id) + '">🎤 ' + T('Download voice note') + '</button>' : '<span class="muted small">🎤 ' + T('Voice note (not kept)') + '</span>');

@@ -15,7 +15,7 @@ function wf_libcmd_which(string $aid, string $text): string {
 function wf_libcmd_media(array $acc): array {
     $aid = (string) $acc['id']; $root = dirname(__DIR__, 2) . '/storage/'; $meta = (array) (wi_read('media_meta.json', [])[$aid] ?? []);
     $names = (array) (wi_gateway('/archive/media-kinds', null, $acc)['names'] ?? []); $out = [];
-    $keys = []; foreach (glob($root . 'inbox_media/' . $aid . '/*') ?: [] as $p) $keys[] = 'inbox_media/' . $aid . '/' . basename($p);
+    $keys = []; foreach (array_merge(glob($root . 'inbox_media/' . $aid . '/*.*') ?: [], glob($root . 'inbox_media/' . $aid . '/*/*.*') ?: []) as $p) $keys[] = substr($p, strlen($root));
     foreach ((array) wi_read('uploads.json', []) as $f => $a) if ($a === $aid) $keys[] = 'inbox_uploads/' . $f;
     foreach ($keys as $k) { $m = (array) ($meta[$k] ?? []); if (!empty($m['hidden']) || !empty($m['vault']) || !is_file($root . $k)) continue;
         $out[$k] = ['key' => $k, 'title' => (string) ($m['title'] ?? ''), 'name' => preg_replace('/\.[A-Za-z0-9]{2,4}$/', '', (string) ($names[$k] ?? '')), 'caption' => (string) ($m['caption'] ?? ''), 'tags' => implode(' ', (array) ($m['tags'] ?? []))]; }
@@ -205,7 +205,7 @@ function wf_lib_inventory(array $acc): array {
     $aid = (string) $acc['id']; $root = dirname(__DIR__, 2) . '/storage/'; $meta = (array) (wi_read('media_meta.json', [])[$aid] ?? []);
     $mk = wi_gateway('/archive/media-kinds', null, $acc); $kinds = (array) ($mk['kinds'] ?? []); $names = (array) ($mk['names'] ?? []);
     $items = []; $keys = [];
-    foreach (glob($root . 'inbox_media/' . $aid . '/*') ?: [] as $pf) { $f = basename($pf); if (preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $f) && !str_ends_with($f, '.part')) $keys[] = 'inbox_media/' . $aid . '/' . $f; }
+    foreach (array_merge(glob($root . 'inbox_media/' . $aid . '/*.*') ?: [], glob($root . 'inbox_media/' . $aid . '/*/*.*') ?: []) as $pf) { $f = basename($pf); if (preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $f) && !str_ends_with($f, '.part') && is_file($pf)) $keys[] = substr($pf, strlen($root)); }
     foreach ((array) wi_read('uploads.json', []) as $f => $a) if ($a === $aid) $keys[] = 'inbox_uploads/' . $f;
     foreach ($keys as $k) { $m = (array) ($meta[$k] ?? []); if (!empty($m['hidden']) || !empty($m['vault']) || !is_file($root . $k)) continue;
         $ext = strtolower(pathinfo($k, PATHINFO_EXTENSION)); $kind = (string) ($kinds[$k] ?? (in_array($ext, ['jpg', 'png'], true) ? 'image' : ($ext === 'webp' ? 'sticker' : (in_array($ext, ['mp4', '3gp', 'mov'], true) ? 'video' : (in_array($ext, ['ogg', 'opus', 'mp3', 'm4a', 'aac', 'wav'], true) ? 'audio' : 'document')))));

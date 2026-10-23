@@ -432,6 +432,8 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
             if (!$isTest && !isset($heal24[$role])) { wi_update('bot_paused.json', function ($P) use ($aid, $x, $c) { $P[$aid][$x['jid']] = ['at' => date('c'), 'by' => 'handoff', 'until' => date('c', time() + max(1, (int) $c['human_pause']) * 3600)]; return $P; }); }
             wi_update('bot_drafts.json', function ($d) use ($aid, $x, $text, $r, $why2) { $d[$aid][$x['jid']] = ['jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => mb_substr($text, 0, 600), 'reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => true, 'model' => $r['task']['model'] ?? '', 'at' => date('c'), 'why' => $why2]; return $d; });
             wi_bot_log_add($aid, (wi_read('bot_drafts.json', [])[$aid][$x['jid']] ?? ['jid' => $x['jid'], 'why' => $why2]) + ['result' => 'draft']);
+            // the person asked for someone: told here too, as this path skips the notice further down
+            if (!empty($r['handoff']) && function_exists('wf_handoff_notify')) wf_handoff_notify($acc, $c, (string) $x['jid'], (string) ($x['name'] ?? ''), $text, (string) ($r['reason'] ?? ''), $st);
             $did[] = ['jid' => $x['jid'], 'result' => 'draft', 'why' => $why2]; continue;
         }
         // Handing over to a person: the polite "someone from the team will answer" reply is still sent,
@@ -453,7 +455,12 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         if (!$send && $quiet && $c['mode'] === 'auto' && $inH && empty($r['handoff']) && (float) $r['confidence'] >= (float) ($c['quiet_min_conf'] ?? 0.5) && ((int) $c['per_hour'] === 0 || count($st['sent']) < (int) $c['per_hour'])) { $send = true; $r['reply'] = rtrim((string) $r['reply']) . "\n\n" . wf_msg('bot_hedge'); }
         $why = $c['mode'] !== 'auto' ? 'suggest-only mode' : (!$inH ? 'outside working hours' : (((int) $c['per_hour'] > 0 && count($st['sent']) >= (int) $c['per_hour']) ? 'hourly limit' : ($r['handoff'] ? 'handed over to a person' : ($r['confidence'] < $c['min_conf'] ? 'low confidence' : ''))));
         $log = ['role' => $role, 'jid' => $x['jid'], 'name' => $x['name'] ?? '', 'q' => mb_substr($text, 0, 600), 'reply' => $r['reply'], 'confidence' => $r['confidence'], 'handoff' => $r['handoff'], 'model' => $r['task']['model'] ?? '', 'at' => date('c')];
+        if (!empty($r['handoff']) && !$isTest && function_exists('wf_handoff_notify')) wf_handoff_notify($acc, $c, (string) $x['jid'], (string) ($x['name'] ?? ''), $text, (string) ($r['reason'] ?? ''), $st); // the person asked for someone: that someone is told on their own WhatsApp
         if ($send) {
+            // 9) the person spoke a voice note: the answer goes back as a voice note too (Bot → Switch on / off: voice_tts), the text if it cannot be made
+            $vNote = !empty($c['voice_tts']) && function_exists('wf_voice_speak') && array_filter($q, fn($m) => in_array($m['kind'] ?? '', ['voice', 'audio'], true)) ? wf_voice_speak($aid, wf_bot_style($r['reply'], $aid), wf_person_gender($aid, (string) $x['jid'], (string) ($x['name'] ?? ''), $text)) : '';
+            if ($vNote !== '') { $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => '', 'attachment' => $vNote, 'by' => 'bot', 'via' => 'bot'], $acc); $log['voice'] = true; if (empty($s['ok'])) $vNote = ''; }
+            if ($vNote === '')
             $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => wf_bot_style($r['reply'], $aid, $isTest ? '' : (string) $x['jid']), 'by' => 'bot', 'via' => 'bot', 'typing_ms' => (int) round(1000 * min(max(1, (float) $c['typing_max']), max((float) $c['typing_min'], mb_strlen($r['reply']) / 25) * (0.85 + mt_rand(0, 30) / 100)))], $acc); wf_bot_intro_done(!empty($s['ok']));
             if (!empty($s['ok']) && empty($r['handoff']) && (string) ($r['product'] ?? '') !== '' && function_exists('wf_catalog_send')) { sleep(2); wf_catalog_send($acc, (string) $x['jid'], (string) $r['product'], 'bot'); $log['product'] = $r['product']; } // the product asked about, with its photo
             $log['result'] = !empty($s['ok']) ? ($r['handoff'] ? 'handoff' : 'sent') : 'send_failed'; if (!empty($s['ok'])) { $st['sent'][] = time(); $st['last_sent'] = date('c'); } else $log['error'] = $s['error'] ?? '';
@@ -572,4 +579,20 @@ function wf_api_bot_health(string $api): void {
     $state = $c['mode'] === 'off' ? 'off' : (empty($h['connected']) ? 'disconnected' : ($tickAge === null || $tickAge > 180 ? 'not running' : (((int) $c['per_hour'] > 0 && $sent >= (int) $c['per_hour']) ? 'hourly limit' : 'ok')));
     wi_json(['ok' => true, 'state' => $state, 'mode' => $c['mode'], 'connected' => !empty($h['connected']), 'last_tick' => $S['last_tick'] ?? null, 'last_sent' => $S['last_sent'] ?? null,
         'sent_hour' => $sent, 'per_hour' => (int) $c['per_hour'], 'waiting' => array_slice($waiting, 0, 50)]);
+}
+
+/** A person in a private chat asks for someone of the team (or the bot hands over): the chosen team phone gets a WhatsApp message from this number
+ * with who it is and what about. Once per chat every few hours. Bot → Switch on / off: handoff_to (phones; empty = this number's own chat). */
+function wf_handoff_notify(array $acc, array $c, string $jid, string $name, string $text, string $reason, array &$st): void {
+    if (empty($c['handoff_notify'])) return;
+    $last = (int) ($st['hn'][$jid] ?? 0); if ($last > time() - 3600 * max(1, (int) ($c['handoff_notify_h'] ?? 6))) return;
+    $to = array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) ($c['handoff_to'] ?? '')))));
+    if (!$to) { $me = preg_replace('/\D/', '', explode(':', (string) (wi_gateway('/status', null, $acc)['account']['id'] ?? ''))[0]); if ($me !== '') $to = [$me]; }
+    if (!$to) return;
+    $ph = wf_phone(explode('@', $jid)[0]); if (str_ends_with($jid, '@lid')) $ph = wf_phone((string) (wi_contact($jid, $acc)['phone'] ?? '')) ?: $ph;
+    $msg = wf_msg('handoff_notify', ['name' => $name !== '' ? $name : '+' . $ph, 'phone' => $ph !== '' ? '+' . $ph : '', 'about' => mb_substr(preg_replace('/\s+/u', ' ', trim($text)), 0, 300), 'reason' => mb_substr($reason, 0, 200), 'link' => $ph !== '' ? 'https://wa.me/' . $ph : '']);
+    $ok = false; foreach (array_slice($to, 0, 3) as $p) { $r = wi_gateway('/send', ['to' => $p, 'message' => $msg, 'via' => 'inbox'], $acc); $ok = $ok || !empty($r['ok']); }
+    if ($ok) $st['hn'][$jid] = time();
+    foreach ((array) ($st['hn'] ?? []) as $k => $t) if ($t < time() - 7 * 86400) unset($st['hn'][$k]);
+    wi_log('handoff_notify', ['account' => (string) $acc['id'], 'jid' => $jid, 'to' => $to, 'ok' => $ok]);
 }

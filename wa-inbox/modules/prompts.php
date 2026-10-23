@@ -8,7 +8,7 @@
 function wf_pack_presets(): array {
     $P = [
         'general' => ['label' => 'General business', 'industry' => 'a business that serves its customers on WhatsApp', 'language' => 'the customer\'s language',
-            'dialect_rule' => 'Reply in the customer\'s own language and dialect.', 'output_language' => 'Arabic', 'staff' => 'Team', 'client' => 'Customer',
+            'dialect_rule' => 'Reply in the customer\'s own language: in Arabic, in their own country\'s dialect (Egyptian, Saudi and Gulf, Levantine, Iraqi, Moroccan…); if they write English, French or any other language, reply in that language.', 'output_language' => 'Arabic', 'staff' => 'Team', 'client' => 'Customer',
             'sacred_rule' => '', 'outside_people' => 'people who are not part of the team (outside experts, other companies)', 'case_types' => 'needs a specialist|not clear',
             'case_scope' => 'Do not give professional diagnoses; describe what they report.', 'concept_example' => 'a key idea the team relies on', 'term_example' => 'everyday words customers use for it',
             'choices_example' => '1️⃣ … 2️⃣ … 3️⃣ …', 'newcomer_rule' => 'Never assume a new person already has anything from you (an order, a plan, a file).',

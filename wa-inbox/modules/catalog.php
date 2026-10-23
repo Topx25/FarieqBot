@@ -53,3 +53,58 @@ function wf_api_catalog(string $api): void {
         if (!$f) $L[] = $row + ['img' => (string) $img, 'at' => date('c')]; $C[$aid] = array_values($L); return $C; });
     wi_log('catalog_save', ['id' => $id]); wi_json(['ok' => true, 'id' => $id]);
 }
+/* ---------- Market: what sets this business apart, and its competitors — the bot answers comparisons and hesitation with it ---------- */
+function wf_market(string $aid): array {
+    $m = (array) (wi_read('market.json', [])[$aid] ?? []);
+    return ['edge' => (string) ($m['edge'] ?? ''), 'offer' => (string) ($m['offer'] ?? ''), 'rivals' => array_values(array_filter((array) ($m['rivals'] ?? []), 'is_array'))];
+}
+/** The market as a block for the bot's prompt ('' when nothing is filled in). */
+function wf_market_prompt(string $aid): string {
+    $m = wf_market($aid); $o = '';
+    if (trim($m['edge']) !== '') $o .= "WHAT SETS US APART:\n" . mb_substr(trim($m['edge']), 0, 1500) . "\n";
+    if (trim($m['offer']) !== '') $o .= "WHAT WE CAN OFFER A HESITANT CUSTOMER (only this, nothing more):\n" . mb_substr(trim($m['offer']), 0, 600) . "\n";
+    $r = array_filter($m['rivals'], fn($x) => !empty($x['on']) && trim((string) ($x['name'] ?? '')) !== '');
+    if ($r) { $o .= "COMPETITORS (for your judgement only):\n"; foreach (array_slice($r, 0, 12) as $x) $o .= '- ' . $x['name'] . ((string) ($x['prices'] ?? '') !== '' ? ' — prices: ' . mb_substr((string) $x['prices'], 0, 200) : '') . ((string) ($x['weak'] ?? '') !== '' ? ' — where we do better: ' . mb_substr((string) $x['weak'], 0, 300) : '') . "\n"; }
+    return $o === '' ? '' : $o . "When the customer compares us, names a competitor, says it is cheaper elsewhere or hesitates: answer politely with what sets us apart and, if listed, the offer. Never speak badly of a competitor by name, never claim anything not written above, never invent a discount.\n";
+}
+function wf_api_market(string $api): void {
+    if ($api !== 'market') return;
+    $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number chosen.'], 422); $aid = (string) $acc['id'];
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') { if (wi_page_perm('catalog') !== 'edit') wi_json(['ok' => false, 'error' => 'View only.'], 403); $in = wf_post();
+        $rv = []; foreach (array_slice((array) ($in['rivals'] ?? []), 0, 30) as $x) { $n = mb_substr(trim((string) ($x['name'] ?? '')), 0, 80); if ($n === '') continue;
+            $rv[] = ['name' => $n, 'prices' => mb_substr(trim((string) ($x['prices'] ?? '')), 0, 300), 'weak' => mb_substr(trim((string) ($x['weak'] ?? '')), 0, 500), 'on' => !empty($x['on']) ? 1 : 0]; }
+        $m = ['edge' => mb_substr(trim((string) ($in['edge'] ?? '')), 0, 2000), 'offer' => mb_substr(trim((string) ($in['offer'] ?? '')), 0, 800), 'rivals' => $rv];
+        wi_update('market.json', function ($M) use ($aid, $m) { $M[$aid] = $m; return $M; }); wi_log('market_save', ['rivals' => count($rv)]); wi_json(['ok' => true]); }
+    wi_json(['ok' => true] + wf_market($aid));
+}
+/** AI market analysis from the business's own data: its catalog, what sets it apart, its competitors and what customers wrote lately
+ * (price objections, competitors they named, why they hesitated). Saved with the market; also run once a week by itself. */
+function wf_market_analyze(array $acc, string $focus = ''): array {
+    $aid = (string) $acc['id']; wi_ctx_set('ai_acc', $acc); $m = wf_market($aid); $pack = function_exists('wf_pack') ? wf_pack($aid) : [];
+    $cat = ''; foreach (array_slice(wf_catalog($aid, true), 0, 40) as $p) $cat .= '- ' . $p['name'] . (($pr = wf_catalog_price($p)) !== '' ? ' — ' . $pr : '') . "\n";
+    $msgs = []; $since = time() - 30 * 86400;
+    foreach (array_slice((array) (wi_gateway('/archive/chats?months=1', null, $acc)['chats'] ?? []), 0, 120) as $ch) { if (!empty($ch['group']) || strtotime((string) ($ch['last']['time'] ?? '')) < $since) continue;
+        foreach ((array) (wi_gateway('/archive/thread?limit=30&jid=' . rawurlencode((string) $ch['jid']), null, $acc)['rows'] ?? []) as $r) { $t = trim((string) ($r['text'] ?? ''));
+            if (($r['dir'] ?? '') === 'in' && mb_strlen($t) >= 12 && strtotime((string) ($r['time'] ?? '')) >= $since) $msgs[] = mb_substr(preg_replace('/\s+/u', ' ', $t), 0, 220); }
+        if (count($msgs) >= 260) break; }
+    $prompt = "You analyse the market of a business that sells and supports customers on WhatsApp. Write in the customers' Arabic dialect, short and practical.\n"
+        . 'BUSINESS: ' . (string) ($pack['label'] ?? ($pack['preset'] ?? '')) . ' ' . mb_substr((string) ($pack['business'] ?? ($pack['about'] ?? '')), 0, 600) . "\n"
+        . "OUR PRODUCTS AND PRICES:\n" . ($cat ?: "(none)\n") . "WHAT SETS US APART (owner's words):\n" . ($m['edge'] ?: '(empty)') . "\nOUR OFFER FOR THE HESITANT:\n" . ($m['offer'] ?: '(empty)') . "\nCOMPETITORS (owner's list):\n"
+        . (implode("\n", array_map(fn($x) => '- ' . $x['name'] . ' | prices: ' . ($x['prices'] ?? '') . ' | we do better: ' . ($x['weak'] ?? ''), $m['rivals'])) ?: '(none)') . "\n"
+        . "WHAT CUSTOMERS WROTE IN THE LAST 30 DAYS (one per line):\n" . (implode("\n", array_slice($msgs, 0, 260)) ?: '(none)') . "\n"
+        . ($focus !== '' ? "THE OWNER WANTS THIS LOOKED AT IN PARTICULAR: " . mb_substr($focus, 0, 400) . "\n" : '')
+        . "Use only what is written above; never invent competitors, prices or numbers. Return JSON: {\"summary\":\"3-4 lines\",\"objections\":[{\"what\":\"…\",\"count\":n,\"answer\":\"how the bot should answer it\"}],"
+        . "\"competitors_seen\":[{\"name\":\"…\",\"mentions\":n,\"what\":\"what customers said\"}],\"price_notes\":\"…\",\"edge_suggestion\":\"a better 'what sets us apart' text\",\"offer_suggestion\":\"an offer idea, or empty\",\"actions\":[\"…\"]}";
+    $ai = wi_ai('Market analysis', $prompt, 150, ['subject' => 'market']);
+    if (empty($ai['ok']) || !is_array($ai['data'] ?? null)) return ['ok' => false, 'error' => (string) ($ai['error'] ?? 'AI failed.')];
+    $a = $ai['data'] + ['at' => date('c'), 'messages' => count($msgs), 'focus' => mb_substr($focus, 0, 400)];
+    wi_update('market.json', function ($M) use ($aid, $a) { $M[$aid]['analysis'] = $a; return $M; });
+    return ['ok' => true, 'analysis' => $a];
+}
+function wf_api_market_ai(string $api): void {
+    if ($api !== 'market_ai') return;
+    $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number chosen.'], 422);
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') wi_json(['ok' => true, 'analysis' => (wi_read('market.json', [])[(string) $acc['id']]['analysis'] ?? null)]);
+    if (wi_page_perm('catalog') !== 'edit') wi_json(['ok' => false, 'error' => 'View only.'], 403); @set_time_limit(240);
+    wi_json(wf_market_analyze($acc, (string) (wf_post()['focus'] ?? '')));
+}

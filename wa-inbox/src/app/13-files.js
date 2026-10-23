@@ -1,6 +1,6 @@
   if (page === 'files') {
     var F = { items: [], kind: '', timer: null }, fcsrf = app.getAttribute('data-csrf');
-    function fUrl(att, name, dl) { if (!att) return ''; var p = att.split('/'), u = p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : (p[0] === 'inbox_media' ? '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p[2]) : ''); return u ? u + (name ? '&name=' + encodeURIComponent(name.replace(/\.[a-z0-9]{2,4}$/i, '')) : '') + (dl ? '&dl=1' : '') : ''; }
+    function fUrl(att, name, dl) { if (!att) return ''; var p = att.split('/'), u = p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : (p[0] === 'inbox_media' ? '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p.slice(2).join('/')) : ''); return u ? u + (name ? '&name=' + encodeURIComponent(name.replace(/\.[a-z0-9]{2,4}$/i, '')) : '') + (dl ? '&dl=1' : '') : ''; }
     function fIcon(x) { var m = String(x.mimetype || '') + ' ' + (x.file_name || ''); return x.kind === 'image' ? '🖼️' : (x.kind === 'video' ? '🎬' : (/pdf/i.test(m) ? '📕' : (/word|docx?$/i.test(m) ? '📘' : (/sheet|excel|xlsx?$/i.test(m) ? '📗' : (/zip|rar/i.test(m) ? '🗜️' : '📄'))))); }
     function drawF() {
       var rows = F.items.filter(function (x) { return !F.kind || x.kind === F.kind; });

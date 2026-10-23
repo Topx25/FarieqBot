@@ -600,7 +600,7 @@ function wi_api_page(string $api): string {
             'library' => 'library media_lib media_inventory media_meta media_folders media_bulk media_dupes media_zip media_youtube lib_ai lib_ai_best lib_ai_group lib_hide media_queue media_vault media_vault_set media_vault_unlock media_vault_lock media_vault_move media_vault_otp media_vault_file lib_text_save lib_text_delete lib_upload youtube_connect', 'audio' => 'audio_lib audio_meta', 'files' => 'files', 'ai' => 'ai_providers',
             'broadcast' => 'broadcast broadcast_control broadcast_status lists', 'accounts' => 'accounts gateway gw_action qr relink',
             'cases' => 'case_cfg case_intake_cfg cases case case_new case_team case_set case_analyze case_export registry registry_set registry_ai registry_group group_monitor', 'groups' => 'groups group_detail group_view case_track',
-            'numbers' => 'numbers', 'catalog' => 'catalog catalog_save catalog_del catalog_img', 'facebook' => 'fb_comments fb_comment_act fb_cfg fb_posts fb_post_act fb_upload fb_insights', 'schedule' => 'schedule', 'programs' => 'programs program_save program_enroll', 'status' => 'status_upload status_post', 'health' => 'health',
+            'numbers' => 'numbers', 'catalog' => 'catalog catalog_save catalog_del catalog_img market market_ai', 'facebook' => 'fb_comments fb_comment_act fb_cfg fb_posts fb_post_act fb_upload fb_insights', 'schedule' => 'schedule', 'programs' => 'programs program_save program_enroll', 'status' => 'status_upload status_post', 'health' => 'health',
             'report' => 'report_cfg', 'backup' => 'backup_cfg', 'business' => 'business_cfg', 'customer' => 'customer', 'settings' => 'settings_overview',
             'learning' => 'learn_guide learn_cache learn_suggest learn_docs learn_rules learn_drive learn_clean learn_grow ai_prompts', 'bot' => 'learn_state learn_build kb_table kb_bulk kb_set bot_test bot_eval bot_rate bot_profile bot_cfg', 'botrun' => 'bot_run bot_chats bot_pause bot_team bot_draft bot_health bot_retry bot_join_cfg bot_roles', 'botgroup' => 'bot_group bot_group_set'] as $pg => $list)
             foreach (explode(' ', $list) as $a) $map[$a] = $pg; }
@@ -713,6 +713,7 @@ function wi_gateway(string $path, ?array $post = null, $acc = null): array {
     if ($acc === null) $acc = wi_current();
     if (!$acc) return ['ok' => false, 'error' => 'No WhatsApp account available for this user.'];
     if (($acc['channel'] ?? '') === 'fb' && function_exists('wf_fb_gateway')) return wf_fb_gateway($path, $post, $acc); // a Facebook page: answered by the Messenger channel, no phone gateway
+    if ($path === '/chat/send' && is_array($post) && !empty($post['mentions']) && str_ends_with((string) ($post['jid'] ?? ''), '@g.us')) $post = wi_mentions_present($post, $acc); // nobody is tagged who is not in the group now
     $token = (string) ($acc['token'] ?? '');
     if ($token === '') return ['ok' => false, 'error' => 'Gateway token missing.'];
     $ch = curl_init('http://127.0.0.1:' . (int) $acc['port'] . $path); // the token travels in the Authorization header, never in the address
@@ -1022,3 +1023,20 @@ function wi_ai(string $task, string $prompt, int $timeout = 180, array $meta = [
     return $r;
 }
 require_once __DIR__ . '/modules/saas.php'; // plans, sign-up, AI allowance
+
+/** A group message's tags kept only for people who are in the group right now (members read once a few minutes); a tag of someone gone is dropped from the text too. */
+function wi_mentions_present(array $post, array $acc): array {
+    static $mem = [];
+    $g = (string) $post['jid']; $k = (string) ($acc['id'] ?? '') . '|' . $g;
+    if (!isset($mem[$k])) { $mem[$k] = null; $c = wi_read('group_members_cache.json', [])[$k] ?? null;
+        if (is_array($c) && ($c['at'] ?? 0) > time() - 300) $mem[$k] = $c['m'];
+        else { $r = wi_gateway('/groups/members?jid=' . rawurlencode($g), null, $acc); if (!empty($r['members'])) { $m = [];
+            foreach ((array) $r['members'] as $x) { foreach ([(string) ($x['phone'] ?? ''), (string) ($x['jid'] ?? ''), (string) ($x['id'] ?? ''), (string) ($x['lid'] ?? '')] as $v) { $d = preg_replace('/\D/', '', explode('@', $v)[0]); if ($d !== '') $m[$d] = 1; } }
+            $mem[$k] = $m; wi_update('group_members_cache.json', function ($C) use ($k, $m) { $C[$k] = ['at' => time(), 'm' => $m]; foreach ($C as $kk => $v) if (($v['at'] ?? 0) < time() - 86400) unset($C[$kk]); return $C; }); } } }
+    $m = $mem[$k]; if (!$m) return $post; // members could not be read: sent as it is
+    $keep = []; $gone = [];
+    foreach ((array) $post['mentions'] as $j) { $d = preg_replace('/\D/', '', explode('@', (string) $j)[0]); if (isset($m[$d])) $keep[] = $j; else $gone[] = $d; }
+    $post['mentions'] = $keep;
+    if ($gone) { $post['text'] = trim(preg_replace('/@(' . implode('|', array_map('preg_quote', array_filter($gone))) . ')\b\s?/u', '', (string) ($post['text'] ?? ''))); if (function_exists('wi_log')) wi_log('mention_dropped', ['group' => $g, 'who' => $gone]); }
+    return $post;
+}

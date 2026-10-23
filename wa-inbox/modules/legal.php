@@ -13,6 +13,8 @@ function wf_legal_lines(string $kind): array {
         'The dashboard connects the business accounts you choose (WhatsApp numbers, Facebook pages) and lets your team read and answer their messages, comments and posts, with optional automatic replies.',
         '# Your responsibilities',
         'You connect only accounts you are allowed to manage, you follow the rules of WhatsApp and Meta, and you do not send spam or unlawful content.',
+        '# Linking by QR code',
+        'Numbers are linked the way WhatsApp Web is (a QR code), not through Meta\'s official business API. Using a number stays subject to WhatsApp\'s terms and rules: bulk or unwanted messages, spam or many messages to new contacts can get the number limited or banned by WhatsApp. We are not responsible for a number stopped by WhatsApp because of such use.',
         '# Availability',
         'The service is provided as it is; we work to keep it running but cannot promise it will never stop. We may change or end features with notice.',
         '# Ending',

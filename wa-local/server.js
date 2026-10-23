@@ -532,7 +532,7 @@ async function saveArchiveMedia(message, kind) {
     if (size && size > (isAudio ? mediaCfg().max.audio : mediaCfg().max.image) * 1048576) return ''; // limits: Settings → Gateway rules
     const mime = String(media?.mimetype || '');
     const ext = kind === 'sticker' ? 'webp' : (kind === 'image' ? (mime.includes('png') ? 'png' : (mime.includes('webp') ? 'webp' : 'jpg')) : (mime.includes('mpeg') ? 'mp3' : (mime.includes('mp4') ? 'm4a' : 'ogg')));
-    const dir = path.join(storageRoot, 'inbox_media', accountId);
+    const dir = chatMediaDir(message.key?.remoteJid);
     fs.mkdirSync(dir, { recursive: true });
     // A recording already on disk (same length, duration and type) is linked, not downloaded again.
     const sg = isAudio ? mediaSig(mediaRef(message)) : '';
@@ -1528,7 +1528,7 @@ app.post('/chat/send', requireToken, async (req, res) => {
   // Optional photo / audio / file uploaded through the Inbox (kept under storage/inbox_uploads).
   const attachment = req.body.attachment ? safeAttachment(String(req.body.attachment)) : null;
   // files sent from the dashboard, the payment bot, or this number's own media library (never another number's folder)
-  const ownMedia = new RegExp(`^inbox_media/${String(accountId).replace(/[^A-Za-z0-9_-]/g, '')}/[A-Za-z0-9_.-]+$`);
+  const ownMedia = new RegExp(`^inbox_media/${String(accountId).replace(/[^A-Za-z0-9_-]/g, '')}/(?:[0-9-]{3,40}/)?[A-Za-z0-9_.-]+$`);
   const attRel = attachment ? path.relative(storageRoot, attachment).replace(/\\/g, '/') : ''; // checked after resolving, so "inbox_uploads/../" cannot reach another folder
   if (req.body.attachment && (!attachment || String(req.body.attachment).includes('..') || !(/^(inbox_uploads|payment_bot)\/[^/]+$/.test(attRel) || ownMedia.test(attRel)))) { res.status(422).json({ ok: false, error: 'File not found.' }); return; }
   if (attachment && fs.statSync(attachment).size > 70 * 1048576) { res.status(422).json({ ok: false, error: 'File is larger than 70 MB.' }); return; }
@@ -1604,6 +1604,11 @@ app.post('/chat/react', requireToken, async (req, res) => {
 });
 
 /** A message's WhatsApp key from its archive row. */
+/** Where a chat's files are kept: storage/inbox_media/<this number>/<the chat's number or group id>/ (files from before stay where they are). */
+function chatMediaDir(jid) {
+  const id = String(jid || '').split('@')[0].split(':')[0].replace(/[^0-9-]/g, '').slice(0, 40);
+  return path.join(storageRoot, 'inbox_media', accountId, id.length >= 3 ? id : '000');
+}
 function rowKey(jid, q) {
   const key = { remoteJid: jid, id: q.id, fromMe: q.dir === 'out' };
   if (jid.endsWith('@g.us') && q.dir !== 'out' && q.from) { const p = String(q.from); key.participant = p.includes('@') ? p : (p.length >= 14 ? `${p}@lid` : `${p}@s.whatsapp.net`); }
@@ -2157,7 +2162,7 @@ async function downloadRow(row) {
   const mime = String(m.mimetype || '');
   const docExt = String(m.fileName || '').toLowerCase().match(/\.(pdf|docx?|xlsx?|pptx?|txt|csv|zip|rar|7z|mp4|mov|3gp|mp3|m4a|ogg|opus|wav|jpg|jpeg|png|webp)$/);
   const ext = m.type === 'image' ? 'jpg' : (m.type === 'sticker' ? 'webp' : (m.type === 'video' ? (mime.includes('3gpp') ? '3gp' : 'mp4') : (m.type === 'document' && docExt ? docExt[1].replace('jpeg', 'jpg') : (mime.includes('mpeg') ? 'mp3' : (mime.includes('mp4') ? 'm4a' : (mime.includes('ogg') ? 'ogg' : (mime.includes('pdf') ? 'pdf' : 'bin')))))));
-  const dir = path.join(storageRoot, 'inbox_media', accountId); fs.mkdirSync(dir, { recursive: true });
+  const dir = chatMediaDir(row.jid); fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, `${String(row.id).replace(/[^A-Za-z0-9_-]+/g, '_').slice(0, 60)}.${ext}`);
   // Written to disk piece by piece (big recordings never sit whole in memory).
   const tmp = file + '.part';

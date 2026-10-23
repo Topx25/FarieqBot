@@ -12,9 +12,10 @@ function wi_plans(): array {
     $saved = wi_read('plans.json', []);
     if (is_array($saved) && $saved) return $saved;
     return [
-        'trial' => ['name' => 'Trial', 'price' => 0, 'days' => 7, 'numbers' => 1, 'team' => 2, 'bot' => true, 'meetings' => true, 'cases' => true, 'backup' => false, 'ai_calls' => 200, 'public' => true, 'trial' => true],
-        'basic' => ['name' => 'Basic', 'price' => 10, 'days' => 30, 'numbers' => 1, 'team' => 3, 'bot' => false, 'meetings' => false, 'cases' => true, 'backup' => true, 'ai_calls' => 0, 'public' => true, 'trial' => false],
-        'pro' => ['name' => 'Pro', 'price' => 25, 'days' => 30, 'numbers' => 3, 'team' => 10, 'bot' => true, 'meetings' => true, 'cases' => true, 'backup' => true, 'ai_calls' => 2000, 'public' => true, 'trial' => false],
+        'trial' => ['name' => 'Trial', 'price' => 0, 'days' => 14, 'numbers' => 1, 'team' => 2, 'bot' => true, 'meetings' => true, 'cases' => true, 'backup' => false, 'ai_calls' => 300, 'public' => true, 'trial' => true],
+        'starter' => ['name' => 'Starter', 'price' => 7, 'days' => 30, 'numbers' => 1, 'team' => 2, 'bot' => true, 'meetings' => false, 'cases' => true, 'backup' => false, 'ai_calls' => 500, 'public' => true, 'trial' => false],
+        'basic' => ['name' => 'Basic', 'price' => 15, 'days' => 30, 'numbers' => 1, 'team' => 5, 'bot' => true, 'meetings' => false, 'cases' => true, 'backup' => true, 'ai_calls' => 2000, 'public' => true, 'trial' => false],
+        'pro' => ['name' => 'Pro', 'price' => 35, 'days' => 30, 'numbers' => 3, 'team' => 15, 'bot' => true, 'meetings' => true, 'cases' => true, 'backup' => true, 'ai_calls' => 6000, 'public' => true, 'trial' => false],
     ];
 }
 /** One plan, cleaned. */

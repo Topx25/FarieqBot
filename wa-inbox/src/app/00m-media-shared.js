@@ -5,7 +5,7 @@
   function mlToast(msg) { var x = document.createElement('div'); x.className = 'fx-toast'; x.textContent = msg; document.body.appendChild(x); setTimeout(function () { x.remove(); }, 3000); }
   // the library's kinds, in the order they are shown
   var ML_KINDS = [['sticker', '🙂', 'Stickers'], ['image', '🖼️', 'Photos'], ['gif', '🎞️', 'GIFs'], ['video', '🎬', 'Videos'], ['voice', '🎙️', 'Voice notes'], ['audio', '🎧', 'Audio'], ['document', '📄', 'Documents']];
-  function mlUrl(key) { if (ML.vkeys && ML.vkeys[key]) return '?api=media_vault_file&k=' + encodeURIComponent(key); var p = String(key).split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p[2]); }
+  function mlUrl(key) { if (ML.vkeys && ML.vkeys[key]) return '?api=media_vault_file&k=' + encodeURIComponent(key); var p = String(key).split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p.slice(2).join('/')); }
   function mlThumb(it) {
     var u = mlUrl(it.key);
     if (it.kind === 'image' || it.kind === 'sticker') return '<img src="' + u + '" alt="" loading="lazy"' + (it.kind === 'sticker' ? ' class="ml-stk"' : '') + '>';

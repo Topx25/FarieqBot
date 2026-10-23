@@ -8,3 +8,4 @@ wa-local/data/
 wa-local/*.log
 wa-local/*.pid
 wa-local/gateway.json
+error_log

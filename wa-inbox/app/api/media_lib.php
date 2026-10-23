@@ -4,7 +4,7 @@
 
 /** A media key is the file's place in storage: inbox_media/<this number>/<file> or inbox_uploads/<file> sent from this number. */
 $mlOk = function (string $key, string $aid): bool {
-    if (preg_match('#^inbox_media/([a-z0-9_-]+)/[A-Za-z0-9_.-]{1,80}$#', $key, $m)) return $m[1] === $aid && is_file(dirname(__DIR__, 3) . '/storage/' . $key);
+    if (preg_match('#^inbox_media/([a-z0-9_-]+)/(?:[0-9-]{3,40}/)?[A-Za-z0-9_.-]{1,80}$#', $key, $m)) return $m[1] === $aid && is_file(dirname(__DIR__, 3) . '/storage/' . $key);
     if (preg_match('#^inbox_uploads/([A-Za-z0-9_.-]{1,80})$#', $key, $m)) return (string) (wi_read('uploads.json', [])[$m[1]] ?? '') === $aid && is_file(dirname(__DIR__, 3) . '/storage/' . $key);
     return false;
 };
@@ -77,7 +77,7 @@ if ($api === 'media_lib') { // the index of this number's media
     $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number.']); $aid = (string) $acc['id']; $root = dirname(__DIR__, 3) . '/storage/';
     $meta = (array) (wi_read('media_meta.json', [])[$aid] ?? []); $items = [];
     $mk = wi_gateway('/archive/media-kinds', null, $acc); $real = (array) ($mk['kinds'] ?? []); $names = (array) ($mk['names'] ?? []); $fromChat = (array) ($mk['chats'] ?? []); $senders = (array) ($mk['senders'] ?? []); $cust = wi_customers(); $chatNames = []; foreach ((array) (wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long'), null, $acc)['chats'] ?? []) as $ch) $chatNames[(string) $ch['jid']] = (string) ($ch['name'] ?? '') ?: (string) ($ch['phone'] ?? ''); // the real kind from WhatsApp (gif vs video, voice vs audio, sticker vs photo) and the file's own name
-    foreach (glob($root . 'inbox_media/' . $aid . '/*') ?: [] as $p) { $f = basename($p); if (!preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $f) || str_ends_with($f, '.part')) continue; $items['inbox_media/' . $aid . '/' . $f] = $p; }
+    foreach (array_merge(glob($root . 'inbox_media/' . $aid . '/*.*') ?: [], glob($root . 'inbox_media/' . $aid . '/*/*.*') ?: []) as $p) { $f = basename($p); if (!preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $f) || str_ends_with($f, '.part') || !is_file($p)) continue; $items[substr($p, strlen($root))] = $p; }
     foreach ((array) wi_read('uploads.json', []) as $f => $a) if ($a === $aid && is_file($root . 'inbox_uploads/' . $f)) $items['inbox_uploads/' . $f] = $root . 'inbox_uploads/' . $f;
     $bin = !empty($_GET['bin']); // the deleted ones (they can be put back)
     $vaultMode = !empty($_GET['vault']) && $mlVaultOn($aid); $vaultN = 0; // the private ones: shown only after the password
@@ -95,7 +95,7 @@ if ($api === 'media_lib') { // the index of this number's media
 if ($api === 'media_zip') { // the selected files in one .zip download
     $acc = wi_current(); if (!$acc || !class_exists('ZipArchive')) wi_json(['ok' => false, 'error' => 'Not available on this server.']); $aid = (string) $acc['id']; $root = dirname(__DIR__, 3) . '/storage/';
     $keys = array_slice(array_filter(explode(',', (string) ($_GET['keys'] ?? ''))), 0, 300); $tmp = tempnam(sys_get_temp_dir(), 'wiz'); $z = new ZipArchive(); $z->open($tmp, ZipArchive::OVERWRITE); $n = 0; $meta = (array) (wi_read('media_meta.json', [])[$aid] ?? []);
-    foreach ($keys as $k) { if (!preg_match('#^(inbox_media/' . preg_quote($aid, '#') . '|inbox_uploads)/[A-Za-z0-9_.-]{1,80}$#', $k)) continue; $p = $root . $k; if (!is_file($p)) continue; // only this number's files
+    foreach ($keys as $k) { if (!preg_match('#^(inbox_media/' . preg_quote($aid, '#') . '/(?:[0-9-]{3,40}/)?|inbox_uploads/)[A-Za-z0-9_.-]{1,80}$#', $k)) continue; $p = $root . $k; if (!is_file($p)) continue; // only this number's files
         $t = trim((string) ($meta[$k]['title'] ?? '')); $nm = $t !== '' ? preg_replace('/[\\\\\/:*?"<>|]+/u', '_', mb_substr($t, 0, 60)) . '.' . pathinfo($p, PATHINFO_EXTENSION) : basename($p); $z->addFile($p, (++$n) . '-' . $nm); }
     $z->close(); if (!$n) { @unlink($tmp); wi_json(['ok' => false, 'error' => 'Nothing to download.']); }
     header('Content-Type: application/zip'); header('Content-Disposition: attachment; filename="media-' . date('Y-m-d') . '.zip"'); header('Content-Length: ' . filesize($tmp)); readfile($tmp); @unlink($tmp); exit;
@@ -222,7 +222,7 @@ if ($api === 'media_youtube') { // queue videos for upload to YouTube (title / d
 if ($api === 'media_dupes') {
     $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number.']); $aid = (string) $acc['id']; $root = dirname(__DIR__, 3) . '/storage/';
     $meta = (array) (wi_read('media_meta.json', [])[$aid] ?? []); $files = [];
-    foreach (glob($root . 'inbox_media/' . $aid . '/*') ?: [] as $p) { $f = basename($p); if (preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $f) && !str_ends_with($f, '.part')) $files['inbox_media/' . $aid . '/' . $f] = $p; }
+    foreach (array_merge(glob($root . 'inbox_media/' . $aid . '/*.*') ?: [], glob($root . 'inbox_media/' . $aid . '/*/*.*') ?: []) as $p) { $f = basename($p); if (preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $f) && !str_ends_with($f, '.part') && is_file($p)) $files[substr($p, strlen($root))] = $p; }
     foreach ((array) wi_read('uploads.json', []) as $f => $a) if ($a === $aid && is_file($root . 'inbox_uploads/' . $f)) $files['inbox_uploads/' . $f] = $root . 'inbox_uploads/' . $f;
     $bySize = []; foreach ($files as $k => $p) { if (!empty($meta[$k]['hidden'])) continue; $s = (int) @filesize($p); if ($s > 0) $bySize[$s][] = $k; }
     // only files of the same size are read (hashes are remembered by size + date, so the next look is instant)

@@ -227,7 +227,7 @@
           if ((m.kind || 'text') === 'text' && !m.text && !m.attachment) return; // empty system message
           var file = '';
           if (m.attachment && /^inbox_uploads\//.test(m.attachment)) file = '?api=media&f=' + encodeURIComponent(m.attachment.split('/').pop());
-          else if (m.attachment && /^inbox_media\//.test(m.attachment)) { var pp = m.attachment.split('/'); file = '?api=media&a=' + encodeURIComponent(pp[1]) + '&f=' + encodeURIComponent(pp[2]); }
+          else if (m.attachment && /^inbox_media\//.test(m.attachment)) { var pp = m.attachment.split('/'); file = '?api=media&a=' + encodeURIComponent(pp[1]) + '&f=' + encodeURIComponent(pp.slice(2).join('/')); }
           var media = '';
           if (file && m.kind === 'image') media = '<a href="' + file + '" target="_blank" rel="noopener"><img class="thumb" src="' + file + '" alt="" loading="lazy"></a>';
           else if (file && m.kind === 'sticker') media = '<img class="sticker" src="' + file + '" alt="" loading="lazy">';

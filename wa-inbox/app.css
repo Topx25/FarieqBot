@@ -1324,3 +1324,5 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .cat-b{padding:12px 14px;display:flex;flex-direction:column;gap:4px}.cat-p{font-weight:800;color:var(--brand,#059669);font-size:18px}.cat-b p{margin:0}
 .modal-bg{position:fixed;inset:0;background:#0007;z-index:60;display:grid;place-items:center;padding:16px}.cat-f{width:min(520px,100%);max-height:90vh;overflow:auto;display:flex;flex-direction:column;gap:8px}.cat-f label{display:flex;flex-direction:column;gap:4px}
 .mlq{position:relative;display:inline-block}.mlq input{min-width:240px}.mlq .sg-box{min-width:300px}.mlq .sg-it{width:100%;border:0;background:none;font:inherit;text-align:start;cursor:pointer}
+.mk{margin-top:16px;display:flex;flex-direction:column;gap:10px}.mk label{display:flex;flex-direction:column;gap:4px}.mk .tbl input{width:100%}
+.mk-ai{margin-top:14px;border-top:1px dashed var(--line,#e5e7eb);padding-top:14px;display:flex;flex-direction:column;gap:8px}.mk-ai h4{margin:0}.mk-ai h5{margin:10px 0 4px}.mk-ai ul{margin:0;padding-inline-start:20px}.mk-ai li{margin:4px 0}

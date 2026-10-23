@@ -43,7 +43,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
   WI.filesPanel = function (phone) { var T = window.T || function (x) { return x; }, E = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
     var d = document.createElement('dialog'); d.className = 'rec-dlg'; d.innerHTML = '<div class="rec-h"><b>📎 ' + T('Case files') + '</b><button type="button" class="btn ghost sm" data-x>✕</button></div><div class="rec-b"><div class="empty">' + T('Loading…') + '</div></div>';
     document.body.appendChild(d); d.showModal(); d.addEventListener('close', function () { d.remove(); }); d.querySelector('[data-x]').onclick = function () { d.close(); };
-    var url = function (a) { var p = String(a).split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p[2]); };
+    var url = function (a) { var p = String(a).split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p.slice(2).join('/')); };
     WI.get('case_files', { phone: phone }).then(function (r) { var b = d.querySelector('.rec-b'); if (!r || !r.ok) { b.innerHTML = '⚠️ ' + E(T((r && r.error) || 'Failed')); return; }
       b.innerHTML = (r.files || []).length ? r.files.map(function (f) { var ic = /\.(jpe?g|png|webp|gif)$/i.test(f.att) ? '🖼️' : /\.(ogg|mp3|m4a|opus|wav)$/i.test(f.att) ? '🎙️' : /\.(mp4|mov|webm)$/i.test(f.att) ? '🎬' : '📄';
         return '<a class="rec-it" href="' + url(f.att) + '" target="_blank" rel="noopener"><span class="rec-ic">' + ic + '</span><div class="rec-tx"><b dir="auto">' + E(f.txt) + '</b><small>' + new Date(f.t * 1000).toISOString().slice(0, 16).replace('T', ' ') + ' · ' + (f.who === 'person' ? T('from the person') : T('to the person')) + ' · ' + (f.place === 'private' ? T('Private chat') : T('Group')) + '</small></div></a>'; }).join('') : '<div class="muted small">' + T('No files recorded yet (the record starts from now).') + '</div>'; }); };
@@ -217,7 +217,7 @@ document.addEventListener('keydown', function (e) {
   function mlToast(msg) { var x = document.createElement('div'); x.className = 'fx-toast'; x.textContent = msg; document.body.appendChild(x); setTimeout(function () { x.remove(); }, 3000); }
   // the library's kinds, in the order they are shown
   var ML_KINDS = [['sticker', '🙂', 'Stickers'], ['image', '🖼️', 'Photos'], ['gif', '🎞️', 'GIFs'], ['video', '🎬', 'Videos'], ['voice', '🎙️', 'Voice notes'], ['audio', '🎧', 'Audio'], ['document', '📄', 'Documents']];
-  function mlUrl(key) { if (ML.vkeys && ML.vkeys[key]) return '?api=media_vault_file&k=' + encodeURIComponent(key); var p = String(key).split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p[2]); }
+  function mlUrl(key) { if (ML.vkeys && ML.vkeys[key]) return '?api=media_vault_file&k=' + encodeURIComponent(key); var p = String(key).split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p.slice(2).join('/')); }
   function mlThumb(it) {
     var u = mlUrl(it.key);
     if (it.kind === 'image' || it.kind === 'sticker') return '<img src="' + u + '" alt="" loading="lazy"' + (it.kind === 'sticker' ? ' class="ml-stk"' : '') + '>';
@@ -564,7 +564,7 @@ document.addEventListener('keydown', function (e) {
           if ((m.kind || 'text') === 'text' && !m.text && !m.attachment) return; // empty system message
           var file = '';
           if (m.attachment && /^inbox_uploads\//.test(m.attachment)) file = '?api=media&f=' + encodeURIComponent(m.attachment.split('/').pop());
-          else if (m.attachment && /^inbox_media\//.test(m.attachment)) { var pp = m.attachment.split('/'); file = '?api=media&a=' + encodeURIComponent(pp[1]) + '&f=' + encodeURIComponent(pp[2]); }
+          else if (m.attachment && /^inbox_media\//.test(m.attachment)) { var pp = m.attachment.split('/'); file = '?api=media&a=' + encodeURIComponent(pp[1]) + '&f=' + encodeURIComponent(pp.slice(2).join('/')); }
           var media = '';
           if (file && m.kind === 'image') media = '<a href="' + file + '" target="_blank" rel="noopener"><img class="thumb" src="' + file + '" alt="" loading="lazy"></a>';
           else if (file && m.kind === 'sticker') media = '<img class="sticker" src="' + file + '" alt="" loading="lazy">';
@@ -1250,7 +1250,7 @@ document.addEventListener('keydown', function (e) {
   /* ---------------- Files ---------------- */
   if (page === 'files') {
     var F = { items: [], kind: '', timer: null }, fcsrf = app.getAttribute('data-csrf');
-    function fUrl(att, name, dl) { if (!att) return ''; var p = att.split('/'), u = p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : (p[0] === 'inbox_media' ? '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p[2]) : ''); return u ? u + (name ? '&name=' + encodeURIComponent(name.replace(/\.[a-z0-9]{2,4}$/i, '')) : '') + (dl ? '&dl=1' : '') : ''; }
+    function fUrl(att, name, dl) { if (!att) return ''; var p = att.split('/'), u = p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : (p[0] === 'inbox_media' ? '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p.slice(2).join('/')) : ''); return u ? u + (name ? '&name=' + encodeURIComponent(name.replace(/\.[a-z0-9]{2,4}$/i, '')) : '') + (dl ? '&dl=1' : '') : ''; }
     function fIcon(x) { var m = String(x.mimetype || '') + ' ' + (x.file_name || ''); return x.kind === 'image' ? '🖼️' : (x.kind === 'video' ? '🎬' : (/pdf/i.test(m) ? '📕' : (/word|docx?$/i.test(m) ? '📘' : (/sheet|excel|xlsx?$/i.test(m) ? '📗' : (/zip|rar/i.test(m) ? '🗜️' : '📄'))))); }
     function drawF() {
       var rows = F.items.filter(function (x) { return !F.kind || x.kind === F.kind; });
@@ -1287,7 +1287,7 @@ document.addEventListener('keydown', function (e) {
     var A = { items: [], cat: '', view: 'active', sort: 'copies', sel: {} }, acsrf = app.getAttribute('data-csrf');
     var ACAT = { '': ['❔', 'Uncategorised', '#94a3b8'] }, AKEYS = []; // audio categories come from the business profile
     ((window.WI_PACK || {}).audio_cats || []).forEach(function (c) { ACAT[c.key] = [c.icon, c.label, c.color]; AKEYS.push(c.key); });
-    function aUrl(att, name, dl) { if (!att) return ''; var p = att.split('/'), u = p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p[2]); return u + (name ? '&name=' + encodeURIComponent(name) : '') + (dl ? '&dl=1' : ''); }
+    function aUrl(att, name, dl) { if (!att) return ''; var p = att.split('/'), u = p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p.slice(2).join('/')); return u + (name ? '&name=' + encodeURIComponent(name) : '') + (dl ? '&dl=1' : ''); }
     function adur(x) { x = Number(x || 0); return x ? Math.floor(x / 60) + ':' + ('0' + x % 60).slice(-2) : '—'; }
     function aname(it) { return it.title || it.auto_title || (it.kind === 'voice' ? T('🎤 Voice message') : T('🎵 Audio')); }
     function post(body) { return WI.post('audio_meta', body); }
@@ -1437,7 +1437,7 @@ document.addEventListener('keydown', function (e) {
     var LIB = (window.WI_PACK || {}).library || {}, PAL = ['#8b5cf6', '#0ea5e9', '#6366f1', '#10b981', '#14b8a6', '#f59e0b', '#eab308', '#ef4444', '#ec4899', '#22c55e'];
     var SEC = [[LIB.audio || 'Audio', '🎧', PAL[0]]].concat((LIB.sections || []).map(function (x, i) { return [x.name, x.icon || '📁', PAL[(i + 1) % PAL.length]]; }), [[LIB.other || 'Other', '📁', '#64748b']]);
     function secInfo(n) { return SEC.filter(function (x) { return x[0] === n; })[0] || [n, '📁', '#64748b']; }
-    function mediaUrl(att) { if (!att) return ''; var p = att.split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p[2]); }
+    function mediaUrl(att) { if (!att) return ''; var p = att.split('/'); return p[0] === 'inbox_uploads' ? '?api=media&f=' + encodeURIComponent(p[1]) : '?api=media&a=' + encodeURIComponent(p[1]) + '&f=' + encodeURIComponent(p.slice(2).join('/')); }
     function dur(x) { x = Number(x || 0); return x ? Math.floor(x / 60) + ':' + ('0' + x % 60).slice(-2) : ''; }
     function sender(v) { if (v.dir === 'out') return T('You'); if (v.group) return v.from_name || (v.from ? '+' + v.from : '—'); return who(v); }
     function who(r) { return r.customer ? r.customer.name : (r.name || (r.phone ? '+' + r.phone : String(r.jid || '').split('@')[0])); }

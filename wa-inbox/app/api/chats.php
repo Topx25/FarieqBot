@@ -48,7 +48,7 @@
         $r = wi_gateway('/archive/thread?jid=' . rawurlencode($jid) . '&limit=5000'); if (empty($r['ok'])) wi_json($r);
         $root = dirname(__DIR__, 3) . '/storage/'; $items = []; $seen = [];
         foreach (array_reverse((array) ($r['rows'] ?? [])) as $m) { $att = (string) ($m['attachment'] ?? '');
-            if ($att === '' || isset($seen[$att]) || !preg_match('#^(inbox_media/[a-z0-9_-]+|inbox_uploads)/[A-Za-z0-9_.-]+$#', $att) || !is_file($root . $att)) continue; $seen[$att] = 1;
+            if ($att === '' || isset($seen[$att]) || !preg_match('#^(inbox_media/[a-z0-9_-]+/(?:[0-9-]{3,40}/)?|inbox_uploads/)[A-Za-z0-9_.-]+$#', $att) || !is_file($root . $att)) continue; $seen[$att] = 1;
             $k = (string) ($m['kind'] ?? ''); $k = in_array($k, ['sticker', 'image', 'gif', 'video', 'voice', 'audio', 'document'], true) ? $k : 'document';
             $items[] = ['key' => $att, 'kind' => $k, 'name' => (string) ($m['file_name'] ?? ''), 'caption' => (string) ($m['text'] ?? ''), 'title' => '', 'tags' => [], 'size' => (int) filesize($root . $att), 'at' => (string) ($m['time'] ?? ''), 'dir' => (string) ($m['dir'] ?? '')]; }
         wi_json(['ok' => true, 'items' => $items]);
@@ -120,11 +120,12 @@
     }
     if ($api === 'media') {
         // Files sent from the Inbox (inbox_uploads) and photos/voice kept by the archive (inbox_media/<account>).
-        $f = basename((string) ($_GET['f'] ?? ''));
+        $f0 = (string) ($_GET['f'] ?? ''); $sub = preg_match('#^([0-9-]{3,40})/#', $f0, $sm) ? $sm[1] . '/' : ''; // a file inside its chat's folder (inbox_media/<number>/<chat>/<file>)
+        $f = basename($f0);
         $a = preg_replace('/[^a-z0-9_-]/', '', strtolower((string) ($_GET['a'] ?? '')));
         if ($a !== '') {
             if (!isset(wi_my_accounts()[$a])) { http_response_code(403); exit; }
-            $path = dirname(__DIR__, 3) . '/storage/inbox_media/' . $a . '/' . $f;
+            $path = dirname(__DIR__, 3) . '/storage/inbox_media/' . $a . '/' . $sub . $f;
             $okName = preg_match('/^[A-Za-z0-9_-]{1,60}\.(jpg|png|webp|ogg|opus|mp3|m4a|wav|mp4|3gp|mov|pdf|docx?|xlsx?|pptx?|txt|csv|zip|rar|7z|bin)$/', $f);
         } else {
             $upA = (string) (wi_read('uploads.json', [])[$f] ?? ''); if ($upA !== '' && !isset(wi_my_accounts()[$upA])) { http_response_code(403); exit; } // a file sent from someone else's number
@@ -193,7 +194,7 @@
                 $d = date('d/m/Y', $t); if ($d !== $day) { echo '<div class="day">' . $d . '</div>'; $day = $d; }
                 $media = '';
                 $att = (string) ($m['attachment'] ?? '');
-                if ($att !== '' && in_array($kind, ['image', 'sticker'], true) && preg_match('#^(inbox_media/[a-z0-9_-]+|inbox_uploads)/[A-Za-z0-9_.-]+$#', $att) && is_file($root . $att) && ($sz = filesize($root . $att)) <= $budget) {
+                if ($att !== '' && in_array($kind, ['image', 'sticker'], true) && preg_match('#^(inbox_media/[a-z0-9_-]+/(?:[0-9-]{3,40}/)?|inbox_uploads/)[A-Za-z0-9_.-]+$#', $att) && is_file($root . $att) && ($sz = filesize($root . $att)) <= $budget) {
                     $budget -= $sz;
                     $media = '<img src="data:' . (new finfo(FILEINFO_MIME_TYPE))->file($root . $att) . ';base64,' . base64_encode((string) file_get_contents($root . $att)) . '" alt="">';
                 } elseif ($kind !== 'text') {
