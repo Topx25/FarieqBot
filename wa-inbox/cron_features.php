@@ -188,7 +188,7 @@ if (date('i') === '17' && function_exists('wf_gw_rules_seed')) { try { wf_gw_rul
 if (function_exists('wf_hist_scan')) { try { wf_hist_scan(); } catch (Throwable $e) {} }
 // a number with more than 3 bot errors in 10 minutes: one alert an hour to the watch group
 if (function_exists('wf_err_alert')) { try { wf_err_alert(); } catch (Throwable $e) {} }
-if (wi_sys('addon_facebook')) { try { wf_fb_sync_all(); } catch (Throwable $e) {} } // Facebook pages: new Messenger messages read from the page (works before the app is published, catches missed webhooks) // visitors lists: farewell for those who leave unanswered, a note when someone comes back
+if (wi_sys('addon_facebook') && function_exists('wf_fb_sync_all')) { try { wf_fb_sync_all(); } catch (Throwable $e) {} } // Facebook pages: new Messenger messages read from the page (works before the app is published, catches missed webhooks) // visitors lists: farewell for those who leave unanswered, a note when someone comes back
 try { wi_media_usage_refresh(); } catch (Throwable $e) {} // media kept per number (every 10 minutes): plan allowance shown in the panel and given to each gateway
 try { wi_outbox_flush(); } catch (Throwable $e) {} // replies written while a number was offline // reception groups: reminder, last notice, removal
 try { wf_cases_number_backfill(); } catch (Throwable $e) {} // older cases get their ID // cases from a group whose writer did not answer in time

@@ -124,7 +124,7 @@ function wf_api_fbfeed(string $api): void {
         if ($f['size'] > (int) wi_sys('max_send_mb') * 1048576) wi_json(['ok' => false, 'error' => 'The file is larger than the allowed size (' . (int) wi_sys('max_send_mb') . ' MB).'], 422);
         $types = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif', 'video/mp4' => 'mp4']; $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
         if (!isset($types[$mime])) wi_json(['ok' => false, 'error' => 'Only photos (JPG, PNG, WEBP, GIF) and MP4 videos.'], 422);
-        $name = 'fbpost_' . date('Ymd_His') . '_' . bin2hex(random_bytes(5)) . '.' . $types[$mime]; $dir = dirname(__DIR__, 2) . '/storage/inbox_uploads/'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $name = 'fbpost_' . date('Ymd_His') . '_' . bin2hex(random_bytes(5)) . '.' . $types[$mime]; $dir = dirname(__DIR__, 3) . '/storage/inbox_uploads/'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
         move_uploaded_file($f['tmp_name'], $dir . $name); @chmod($dir . $name, 0644); wi_json(['ok' => true, 'attachment' => 'inbox_uploads/' . $name]);
     }
     if ($api === 'fb_posts') {
@@ -137,7 +137,7 @@ function wf_api_fbfeed(string $api): void {
     }
     if ($api === 'fb_post_act') { $in = wf_post(); $act = (string) ($in['act'] ?? ''); $id = preg_replace('/[^0-9A-Za-z_]/', '', (string) ($in['id'] ?? '')); $text = trim((string) ($in['text'] ?? ''));
         if ($act === 'story') { // a story of the page (photo or video), visible for 24 hours
-            $att = (string) ($in['attachment'] ?? ''); $abs = dirname(__DIR__, 2) . '/storage/' . $att;
+            $att = (string) ($in['attachment'] ?? ''); $abs = dirname(__DIR__, 3) . '/storage/' . $att;
             if ($att === '' || strpos($att, '..') !== false || !preg_match('#^inbox_uploads/fbpost_[A-Za-z0-9_.]+$#', $att) || !is_file($abs)) wi_json(['ok' => false, 'error' => 'A story needs a photo or a video.']);
             $r = wf_fb_story($aid, $abs); if (empty($r['ok'])) wi_json(['ok' => false, 'error' => (string) ($r['error'] ?? 'Facebook refused the request.')]); wi_log('fb_story', ['account' => $aid]); wi_json(['ok' => true, 'id' => (string) ($r['post_id'] ?? '')]); }
         if ($act === 'create') { $att = (string) ($in['attachment'] ?? ''); $link = trim((string) ($in['link'] ?? '')); $at = (int) ($in['at'] ?? 0);
@@ -145,7 +145,7 @@ function wf_api_fbfeed(string $api): void {
             if ($link !== '' && !preg_match('#^https?://#i', $link)) wi_json(['ok' => false, 'error' => 'The link must start with http:// or https://.']);
             $sched = $at > time() + 600 ? ['published' => false, 'scheduled_publish_time' => $at] : [];
             if ($at > 0 && !$sched) wi_json(['ok' => false, 'error' => 'A scheduled time must be at least 10 minutes from now.']);
-            if ($att !== '') { $abs = dirname(__DIR__, 2) . '/storage/' . $att; if (strpos($att, '..') !== false || !preg_match('#^inbox_uploads/fbpost_[A-Za-z0-9_.]+$#', $att) || !is_file($abs)) wi_json(['ok' => false, 'error' => 'File not found.']);
+            if ($att !== '') { $abs = dirname(__DIR__, 3) . '/storage/' . $att; if (strpos($att, '..') !== false || !preg_match('#^inbox_uploads/fbpost_[A-Za-z0-9_.]+$#', $att) || !is_file($abs)) wi_json(['ok' => false, 'error' => 'File not found.']);
                 $mime = mime_content_type($abs) ?: ''; $vid = strpos($mime, 'video/') === 0;
                 $r = wf_fb_graph($aid, 'POST', $vid ? 'me/videos' : 'me/photos', ($vid ? ['description' => $text] : ['caption' => $text]) + $sched, ['path' => $abs, 'mime' => $mime, 'name' => basename($abs), 'field' => 'source']); }
             else $r = wf_fb_graph($aid, 'POST', 'me/feed', ['message' => $text] + ($link !== '' ? ['link' => $link] : []) + $sched);

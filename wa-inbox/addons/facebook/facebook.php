@@ -39,7 +39,7 @@ function wf_fb_graph(string $aid, string $method, string $path, array $params = 
 }
 
 /* ---------- archive (same rows as the number gateway) ---------- */
-function wf_fb_dir(string $aid): string { $d = dirname(__DIR__, 2) . '/storage/fb/' . preg_replace('/[^A-Za-z0-9_-]/', '', $aid); if (!is_dir($d)) @mkdir($d, 0700, true); return $d; }
+function wf_fb_dir(string $aid): string { $d = dirname(__DIR__, 3) . '/storage/fb/' . preg_replace('/[^A-Za-z0-9_-]/', '', $aid); if (!is_dir($d)) @mkdir($d, 0700, true); return $d; }
 function wf_fb_append(string $aid, array $row): void {
     $row = ['time' => gmdate('c')] + $row; if (isset($row['ts'])) { $row['time'] = gmdate('c', (int) $row['ts']); unset($row['ts']); }
     $row['time'] = preg_replace('/\+00:00$/', '.000Z', $row['time']);
@@ -84,7 +84,7 @@ function wf_fb_save_media(string $aid, string $url, string $mid, string $kind): 
     $data = curl_exec($ch); $mime = strtolower(trim(explode(';', (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE))[0])); curl_close($ch);
     if (!is_string($data) || $data === '' || strlen($data) > 64 * 1024 * 1024) return '';
     $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp', 'video/mp4' => 'mp4', 'audio/mpeg' => 'mp3', 'audio/mp4' => 'm4a', 'audio/aac' => 'aac', 'audio/ogg' => 'ogg', 'application/pdf' => 'pdf'][$mime] ?? ($kind === 'image' ? 'jpg' : ($kind === 'video' ? 'mp4' : ($kind === 'audio' ? 'm4a' : 'bin')));
-    $dir = dirname(__DIR__, 2) . '/storage/inbox_media/' . $aid; if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $dir = dirname(__DIR__, 3) . '/storage/inbox_media/' . $aid; if (!is_dir($dir)) @mkdir($dir, 0755, true);
     $name = 'fb_' . substr(preg_replace('/[^A-Za-z0-9]/', '', $mid), -24) . '.' . $ext; if (@file_put_contents($dir . '/' . $name, $data) === false) return '';
     return 'inbox_media/' . $aid . '/' . $name;
 }
@@ -194,7 +194,7 @@ function wf_fb_send(string $aid, array $p): array {
     $text = trim((string) ($p['text'] ?? '')); $bot = ($p['by'] ?? '') === 'bot' || ($p['via'] ?? '') === 'bot'; $lastIn = wf_fb_last_in($aid, $jid); $att = (string) ($p['attachment'] ?? '');
     $sent = []; $id = '';
     if ($att !== '') {
-        $abs = dirname(__DIR__, 2) . '/storage/' . $att; if (strpos($att, '..') !== false || !is_file($abs)) return ['ok' => false, 'error' => 'File not found.'];
+        $abs = dirname(__DIR__, 3) . '/storage/' . $att; if (strpos($att, '..') !== false || !is_file($abs)) return ['ok' => false, 'error' => 'File not found.'];
         $mime = mime_content_type($abs) ?: 'application/octet-stream'; $type = strpos($mime, 'image/') === 0 ? 'image' : (strpos($mime, 'video/') === 0 ? 'video' : (strpos($mime, 'audio/') === 0 ? 'audio' : 'file'));
         $age = time() - $lastIn; $params = ['recipient' => ['id' => $psid], 'message' => ['attachment' => ['type' => $type, 'payload' => ['is_reusable' => false]]]];
         if ($lastIn > 0 && $age <= 86400) $params['messaging_type'] = 'RESPONSE'; elseif ($lastIn > 0 && $age <= 7 * 86400 && !$bot) { $params['messaging_type'] = 'MESSAGE_TAG'; $params['tag'] = 'HUMAN_AGENT'; } else return ['ok' => false, 'error' => 'Facebook only lets a page answer within 24 hours of the person\'s last message (7 days for a person replying, not the bot).'];

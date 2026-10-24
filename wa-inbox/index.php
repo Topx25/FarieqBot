@@ -4,7 +4,7 @@ require __DIR__ . '/lib.php';
 if (!is_file(WI_DIR . '/installed.json') && !wi_users()) { header('Location: install.php'); exit; } // fresh copy: run the installer first
 // Facebook's sign-in comes back from another site, so the browser leaves out the (strict) session cookie: this return is handled
 // before any session starts — otherwise an empty session would replace the person's and sign them out.
-if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; wf_fb_oauth_callback(); }
+if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; if (function_exists('wf_fb_oauth_callback')) wf_fb_oauth_callback(); }
 wi_boot();
 if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy(); header('Location: ./'); exit; } // another client's address
 // The website (PHP-FPM) and the background jobs run as the account user: the data stays private to it (0700 / 0600).
@@ -16,9 +16,9 @@ if (isset($_GET['intro_video'])) { header('X-Frame-Options: SAMEORIGIN'); header
 if (isset($_GET['help_doc']) && wi_logged_in()) { header('X-Frame-Options: SAMEORIGIN'); header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex'); readfile(__DIR__ . '/help.html'); exit; } // the user guide (Help page)
 if (isset($_GET['m']) && !isset($_GET['api'])) { require __DIR__ . '/features.php'; wf_meet_page(preg_replace('/[^a-z0-9-]/', '', strtolower((string) $_GET['m']))); } // public meeting gateway (no login)
 if (isset($_GET['gw_hook'])) { require __DIR__ . '/features.php'; wf_gw_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['gw_hook']))); exit; } // messages of a number on OpenWA or the Cloud API
-if (isset($_GET['fb_hook'])) { require __DIR__ . '/features.php'; wf_fb_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['fb_hook']))); exit; } // Facebook calls this (verified by the app secret)
+if (isset($_GET['fb_hook'])) { require __DIR__ . '/features.php'; if (!function_exists('wf_fb_hook')) { http_response_code(404); exit; } wf_fb_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['fb_hook']))); exit; } // Facebook calls this (verified by the app secret)
 if (isset($_GET['privacy']) || isset($_GET['terms'])) { require __DIR__ . '/features.php'; wf_legal_page(isset($_GET['terms']) ? 'terms' : 'privacy'); } // public privacy policy / terms (asked for by Facebook and Google)
-if (isset($_GET['fb_deauth']) || isset($_GET['fb_delete'])) { require __DIR__ . '/features.php'; wf_fb_user_callback(isset($_GET['fb_deauth']) ? 'deauth' : 'delete'); } // Facebook's "app removed" / "delete my data" calls (signed)
+if ((isset($_GET['fb_deauth']) || isset($_GET['fb_delete'])) && (require __DIR__ . '/features.php') && function_exists('wf_fb_user_callback')) { wf_fb_user_callback(isset($_GET['fb_deauth']) ? 'deauth' : 'delete'); } // Facebook's "app removed" / "delete my data" calls (signed)
 if (isset($_GET['fb_deleted'])) { header('Content-Type: text/plain; charset=utf-8'); exit('Your data deletion request was received. Reference: ' . preg_replace('/[^a-f0-9]/', '', (string) $_GET['fb_deleted'])); }
 if (isset($_GET['bot_hook'])) {
     // Instant bot trigger from the WhatsApp gateway (server-to-server, checked by the bridge token).
@@ -85,7 +85,7 @@ if (isset($_GET['bot_hook'])) {
     exit;
 }
 if (isset($_GET['drive_cb'])) { require __DIR__ . '/features.php'; wf_drive_callback(); }
-if (isset($_GET['fb_connect'])) { require __DIR__ . '/features.php'; wf_fb_oauth_start(); }
+if (isset($_GET['fb_connect'])) { require __DIR__ . '/features.php'; if (function_exists('wf_fb_oauth_start')) wf_fb_oauth_start(); }
 require __DIR__ . '/app/api.php';     // JSON API (?api=…)
 
 require __DIR__ . '/app/actions.php'; // form actions (POST)

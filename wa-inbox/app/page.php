@@ -56,7 +56,7 @@
     </form>
     <?php $waPages = ['accounts', 'link', 'gateway']; $chatPages = ['inbox', 'search']; ?>
     <nav id="side-nav">
-      <?php $hasFb = (bool) array_filter($mine, fn($fa) => ($fa['channel'] ?? '') === 'fb'); foreach (wi_menu() as $sec): $vis = array_values(array_filter($sec['items'], fn($it) => !$it['hidden'] && ($sec['id'] !== 'facebook' || $hasFb || $it['key'] === 'fb_connect') && (wi_menu_can($it['who'], (bool) $manager) || ($it['key'] === 'broadcast' && wi_is_team()))
+      <?php $hasFb = (bool) array_filter($mine, fn($fa) => ($fa['channel'] ?? '') === 'fb'); foreach (wi_menu() as $sec): $vis = array_values(array_filter($sec['items'], fn($it) => !$it['hidden'] && ($sec['id'] !== 'facebook' || (function_exists('wf_fb_is') && ($hasFb || $it['key'] === 'fb_connect'))) && (wi_menu_can($it['who'], (bool) $manager) || ($it['key'] === 'broadcast' && wi_is_team()))
         && ($it['key'] === 'dashboard' || !in_array($it['who'], ['all', 'manager'], true) || array_filter($it['pages'], fn($pg) => wi_page_perm($pg) !== '')))); if (!$vis) continue; // only what this user may open
       ?>
       <div class="nav-h"><?= wi_e($sec['title']) ?></div>
@@ -555,7 +555,7 @@
           <button class="btn primary">🔁 Move the chats</button></form></details>
       <?php endif; ?>
       <section class="acc-grid" id="acc-grid">
-        <?php foreach ($accs as $a): if (!wf_fb_is($a)) continue; $fc = wf_fb_cfg((string) $a['id']); ?>
+        <?php foreach ($accs as $a): if (!function_exists('wf_fb_is') || !wf_fb_is($a)) continue; $fc = wf_fb_cfg((string) $a['id']); ?>
         <form method="post" class="card acc fb-card" autocomplete="off">
           <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="fb_connect"><input type="hidden" name="acc" value="<?= wi_e($a['id']) ?>">
           <div class="card-h"><h2>💬 <?= wi_e((string) $a['name']) ?> — Facebook <?= $fc['error'] === '' && $fc['ok_at'] !== '' ? '✅' : '⚠️' ?></h2></div>
@@ -596,7 +596,7 @@
             <div class="row wrap">
               <button class="btn primary sm">Save</button>
               <button class="btn ghost sm" type="submit" form="sw-<?= wi_e($a['id']) ?>">Open</button>
-              <?php if (!wf_fb_is($a) && (($fbA = wf_fb_app(wf_fb_scope_for((string) $_SESSION['email'])))['app_id'] !== '')): ?><a class="btn fb-btn sm" href="?fb_connect=1&amp;acc=<?= wi_e(rawurlencode((string) $a['id'])) ?>" title="Connect a Facebook page to this number: it answers with this number's knowledge"><span>f</span> <span>Facebook</span></a><?php endif; ?>
+              <?php if (function_exists('wf_fb_is') && !wf_fb_is($a) && (($fbA = wf_fb_app(wf_fb_scope_for((string) $_SESSION['email'])))['app_id'] !== '')): ?><a class="btn fb-btn sm" href="?fb_connect=1&amp;acc=<?= wi_e(rawurlencode((string) $a['id'])) ?>" title="Connect a Facebook page to this number: it answers with this number's knowledge"><span>f</span> <span>Facebook</span></a><?php endif; ?>
               <?php if (empty($a['main']) && (wi_is_super() || strtolower((string) ($a['owner'] ?? '')) !== strtolower((string) $_SESSION['email']))): // a user's own number is re-linked, not deleted ?><button class="btn danger sm" type="submit" form="del-<?= wi_e($a['id']) ?>" onclick="return confirm('Remove this account? Its gateway stops; its archive stays on the server.')">Remove</button><?php endif; ?>
             </div>
           </div>
@@ -632,7 +632,7 @@
         </form>
         <?php endif; ?>
         <?php if (wi_is_admin() || (wi_can_link_own() && !$owns)): ?>
-        <?php if (wi_is_admin() || wi_can_link_own()):
+        <?php if ((wi_is_admin() || wi_can_link_own()) && function_exists('wf_fb_is')): // the Facebook add-on's pages hub
           $fbScope = wi_is_super() ? '' : strtolower((string) $_SESSION['email']); $fbOwn = wf_fb_app($fbScope); $fbSys = $fbScope !== '' ? wf_fb_app('') : $fbOwn; $fbReady = ($fbOwn['app_id'] !== '' && $fbOwn['secret'] !== '') || ($fbScope !== '' && $fbSys['app_id'] !== '');
           $fbPk = (string) ($_GET['fb_pick'] ?? ''); if ($fbPk === '' || !wf_fb_pending($fbPk)) $fbPk = wf_fb_pending_mine(); $fbPend = $fbPk !== '' ? wf_fb_pending($fbPk) : null;
           $fbCopy = function (string $label, string $val) { return '<div class="fb-copy"><span class="fb-copy-l">' . wi_e($label) . '</span><div class="fb-copy-r"><input readonly dir="ltr" value="' . wi_e($val) . '" onclick="this.select()"><button type="button" class="btn ghost sm" onclick="var i=this.previousElementSibling;i.select();(navigator.clipboard?navigator.clipboard.writeText(i.value):Promise.reject()).catch(function(){document.execCommand(\'copy\')});this.textContent=\'✓\'">Copy</button></div></div>'; }; ?>

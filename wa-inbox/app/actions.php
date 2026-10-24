@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         catch (Throwable $e) { wi_flash($e->getMessage(), 'bad'); }
         header('Location: ?p=accounts'); exit;
     }
-    if ($do === 'fb_app_save' || $do === 'fb_pick_add') { require_once dirname(__DIR__) . '/features.php'; // the Facebook functions live in the modules // the Facebook app, and the pages picked after "Connect with Facebook"
+    if (($do === 'fb_app_save' || $do === 'fb_pick_add') && (require_once dirname(__DIR__) . '/features.php') && function_exists('wf_fb_is')) { // the Facebook functions live in the modules // the Facebook app, and the pages picked after "Connect with Facebook"
         $may = (wi_is_admin() && empty(wi_me()['own_number'])) || wi_can_link_own();
         if (!$may) { wi_flash('Not allowed for this number.', 'bad'); header('Location: ?p=accounts'); exit; }
         if ($do === 'fb_app_save') { $r = wf_fb_app_save(wi_is_super() ? '' : strtolower((string) $_SESSION['email']), (string) ($_POST['fb_appid'] ?? ''), (string) ($_POST['fb_appsecret'] ?? ''), (string) ($_POST['fb_config'] ?? '')); wi_flash(!empty($r['ok']) ? 'Facebook app saved. Now connect your pages.' : (string) $r['error'], !empty($r['ok']) ? 'ok' : 'bad'); }
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             wi_flash(!empty($r['ok']) ? 'Connected: ' . implode(', ', $r['done']) . ($r['errors'] ? ' — ' . implode(' · ', $r['errors']) : '') : (string) $r['error'], !empty($r['ok']) && !$r['errors'] ? 'ok' : 'bad'); }
         header('Location: ?p=accounts'); exit;
     }
-    if ($do === 'add_fb' || $do === 'fb_connect') { require_once dirname(__DIR__) . '/features.php'; // the Facebook functions live in the modules // Facebook page (Messenger): same permission as adding a number
+    if (($do === 'add_fb' || $do === 'fb_connect') && (require_once dirname(__DIR__) . '/features.php') && function_exists('wf_fb_is')) { // the Facebook functions live in the modules // Facebook page (Messenger): same permission as adding a number
         $accs = wi_accounts(); $owned = array_filter($accs, fn($a) => !empty($a['owner']) && strtolower($a['owner']) === strtolower((string) $_SESSION['email']));
         if ($do === 'add_fb') {
             if (!((wi_is_admin() && empty(wi_me()['own_number'])) || (wi_can_link_own() && count($owned) < ((wi_me()['role'] ?? '') === 'client' ? wi_client_max_numbers(wi_me()) : 1)))) { wi_flash('You reached the numbers of your plan. Upgrade your plan or ask us for more.', 'bad'); header('Location: ?p=accounts'); exit; }
