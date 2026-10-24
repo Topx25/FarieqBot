@@ -298,6 +298,16 @@ function wi_can_reply(): bool { $u = wi_me(); if (wi_is_team($u)) return wi_page
 /** Super admin: sees and manages everything (all numbers, all users, system settings).
  *  Admin: full control of their own number(s) and of the users on them. Manager: like admin, without users. */
 function wi_is_super(): bool { $u = wi_me(); return $u && ($u['role'] ?? '') === 'super'; }
+/** Who may open whose panel ("view as"; no password asked, none changed). '' = allowed, otherwise the reason.
+ *  Only a super admin, never from inside a borrowed view. A client panel always opens (owner's rule, 2026-10-23);
+ *  anyone else only when none of their numbers is private to them. */
+function wi_may_impersonate(?array $me, ?array $t, bool $inside, array $accounts): string {
+    if (!$me || ($me['role'] ?? '') !== 'super' || $inside) return 'Super admins only.';
+    if (!$t || ($t['role'] ?? '') === 'super' || strtolower((string) $t['email']) === strtolower((string) $me['email'])) return 'This user cannot be opened.';
+    if (($t['role'] ?? '') === 'client') return '';
+    foreach ($accounts as $pa) if (wi_may_see_account($pa, $t) && !wi_may_see_account($pa, $me)) return 'This user works on a private number — only its owner may see it.';
+    return '';
+}
 function wi_is_admin(): bool { $u = wi_me(); return $u && in_array($u['role'] ?? '', ['super', 'admin', 'manager'], true); }
 function wi_is_owner(): bool { return wi_is_super(); }
 /** Works on the cases of a number without seeing the number itself (its chats, selector, stats). */
@@ -712,6 +722,8 @@ function wi_gateway(string $path, ?array $post = null, $acc = null): array {
     if (is_string($acc)) { $all = wi_accounts(); $acc = $all[$acc] ?? null; }
     if ($acc === null) $acc = wi_current();
     if (!$acc) return ['ok' => false, 'error' => 'No WhatsApp account available for this user.'];
+    // an archived number (removed, or the old number of an account): its history is read from its files, nothing is sent
+    if (!empty($acc['archived']) && function_exists('wf_hist_gateway')) return wf_hist_gateway($path, $post, $acc);
     if (($acc['channel'] ?? '') === 'fb' && function_exists('wf_fb_gateway')) return wf_fb_gateway($path, $post, $acc); // a Facebook page: answered by the Messenger channel, no phone gateway
     if ($path === '/chat/send' && is_array($post) && !empty($post['mentions']) && str_ends_with((string) ($post['jid'] ?? ''), '@g.us')) $post = wi_mentions_present($post, $acc); // nobody is tagged who is not in the group now
     $token = (string) ($acc['token'] ?? '');

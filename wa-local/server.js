@@ -713,6 +713,14 @@ function archiveFile(fp) {
 }
 // After a read over whole months the memory is given back at once (the host stops a gateway whose memory jumps).
 let gcTimer = null; function gcSoon() { if (typeof global.gc === 'function' && !gcTimer) gcTimer = setTimeout(() => { gcTimer = null; try { global.gc(); } catch { /* ignore */ } }, 200); }
+/** "Keep separate" after a new number was linked (history.json, written by the dashboard): only messages from that time on belong to this number. */
+let histCache = { at: 0, mtime: -1, from: '' };
+function historyFrom() {
+  if (Date.now() - histCache.at < 5000) return histCache.from;
+  histCache.at = Date.now();
+  try { const f = path.join(dataDir, 'history.json'), m = fs.statSync(f).mtimeMs; if (m !== histCache.mtime) { histCache.mtime = m; histCache.from = String(JSON.parse(fs.readFileSync(f, 'utf8')).from || ''); } } catch { histCache.from = ''; histCache.mtime = -1; }
+  return histCache.from;
+}
 function readArchive(opts = {}) { const out = readArchiveRows(opts); if (!opts.jid) gcSoon(); return out; }
 function readArchiveRows({ phone = '', q = '', limit = 300, months = 3, jid = '', events = false } = {}) {
   const jidNeedle = jid ? `"jid":${JSON.stringify(String(jid))}` : ''; // every row and marker of a chat carries its jid exactly like this
@@ -747,7 +755,8 @@ function readArchiveRows({ phone = '', q = '', limit = 300, months = 3, jid = ''
     }
   }
   const needle = String(q).toLowerCase();
-  const out = rows.filter((r) => !(r.id && hidden.has(r.id)) && !(r.jid && cleared.has(r.jid) && String(r.got || r.time) <= cleared.get(r.jid))) // a message that arrived after the chat was deleted shows
+  const from = historyFrom();
+  const out = rows.filter((r) => !from || String(r.time) >= from).filter((r) => !(r.id && hidden.has(r.id)) && !(r.jid && cleared.has(r.jid) && String(r.got || r.time) <= cleared.get(r.jid))) // a message that arrived after the chat was deleted shows
     .filter((r) => (!jid || r.jid === jid) && (!phone || String(r.phone || '').includes(phone)) && (!needle || JSON.stringify(r).toLowerCase().includes(needle)))
     .map((r) => (r.id && patches.has(r.id) ? { ...r, kind: (!r.kind || r.kind === 'text') ? (patches.get(r.id).kind || r.kind) : r.kind, mref: r.mref || patches.get(r.id).mref, file_name: r.file_name || patches.get(r.id).file_name, from: r.from || patches.get(r.id).from, quote: r.quote || patches.get(r.id).quote, quote_from: r.quote_from || patches.get(r.id).quote_from, mentions: r.mentions || patches.get(r.id).mentions } : r))
     .map((r) => ({ ...r, ...(r.id && fetched.has(r.id) ? { attachment: fetched.get(r.id) } : {}), deleted: r.id ? deleted.has(r.id) : false, reaction: r.id && reactions.get(r.id) ? reactions.get(r.id) : undefined, revoked_at: r.id && revoked.has(r.id) ? revoked.get(r.id) : undefined, edits: r.id && edits.has(r.id) ? edits.get(r.id) : undefined }));

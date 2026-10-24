@@ -91,7 +91,8 @@ require __DIR__ . '/app/actions.php'; // form actions (POST)
 
 $flash = wi_flash();
 ob_start('wi_translate_html');
-$page = (string) ($_GET['p'] ?? 'dashboard');
+// the super admin's home is the clients dashboard (every client panel, with «Open the panel»)
+$page = (string) ($_GET['p'] ?? (wi_is_super() && empty($_SESSION['imp_from']) ? 'clients' : 'dashboard'));
 // A user who is to link their own number and has none yet starts on the "link a number" page.
 if (!wi_my_accounts() && wi_can_link_own() && !wi_is_super() && !in_array($page, ['accounts', 'link', 'changes', 'help', 'users', 'me'], true)) {
     if (empty($_SESSION['own_hint'])) { $_SESSION['own_hint'] = 1; wi_flash('Welcome! Link your WhatsApp number to start: add it here, then scan the QR code with WhatsApp on your phone.', 'ok'); }

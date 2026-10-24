@@ -83,12 +83,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($do === 'impersonate') {
         // Super admin only: see the dashboard exactly as another user sees it. Logged in the audit trail.
         $t = wi_find_user((string) ($_POST['email'] ?? ''));
-        if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admins only.'); }
-        if (!$t || ($t['role'] ?? '') === 'super' || strtolower($t['email']) === strtolower((string) $_SESSION['email'])) { wi_flash('This user cannot be opened.', 'bad'); header('Location: ?p=users'); exit; }
-        // private numbers stay private: never open the panel of someone whose number you may not see
-        foreach (wi_accounts() as $pa) if (wi_may_see_account($pa, $t) && !wi_may_see_account($pa)) { wi_flash('This user works on a private number — only its owner may see it.', 'bad'); header('Location: ?p=users'); exit; }
+        $why = wi_may_impersonate(wi_me(), $t, !empty($_SESSION['imp_from']), wi_accounts());
+        if ($why === 'Super admins only.') { http_response_code(403); exit($why); }
+        if ($why !== '') { wi_flash($why, 'bad'); header('Location: ?p=users'); exit; }
         wi_log('impersonate', ['target' => $t['email']]);
         session_regenerate_id(true); $_SESSION['imp_from'] = (string) $_SESSION['email']; $_SESSION['email'] = $t['email']; unset($_SESSION['acc']); $_SESSION['seen'] = time();
+        header('Location: ./'); exit;
+    }
+    if ($do === 'history_choice' && function_exists('wf_hist_choose')) {
+        $ha = wi_accounts()[(string) ($_POST['acc'] ?? '')] ?? null;
+        if (!$ha || !wi_can_manage($ha)) { http_response_code(403); exit; }
+        $err = wf_hist_choose((string) $ha['id'], (string) ($_POST['mode'] ?? ''));
+        wi_flash($err !== '' ? $err : (($_POST['mode'] ?? '') === 'merge' ? 'The old chats are merged with the new number.' : 'The old number\'s chats are kept as a separate read-only history.'), $err !== '' ? 'bad' : 'ok');
         header('Location: ./'); exit;
     }
     if ($do === 'switch_account') {
@@ -167,7 +173,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             elseif ($do === 'delete_account') {
                 if (!empty($accounts[$id]['main'])) wi_flash('The main account cannot be deleted.', 'bad');
                 elseif (!wi_is_super() && strtolower((string) ($accounts[$id]['owner'] ?? '')) === strtolower((string) $_SESSION['email'])) wi_flash('Your own number cannot be deleted — use Re-link to connect it again.', 'bad');
-                else { unset($accounts[$id]); wi_save_accounts($accounts); wi_log('account_delete', ['account' => $id]); wi_flash('Account removed. Its gateway stops within a minute; its archive is kept on the server.', 'ok'); }
+                // nothing of a number is deleted: it becomes an archived account (read only, no gateway) with all its chats, media, cases and library
+                else { $accounts[$id] = ['enabled' => false, 'archived' => true, 'archived_at' => date('c')] + $accounts[$id]; wi_save_accounts($accounts); wi_log('account_delete', ['account' => $id, 'archived' => true]); wi_flash('Number removed. Its gateway stops within a minute; all its history stays readable under 🗄️ in the numbers list.', 'ok'); }
             } else {
                 if (($n = trim((string) ($_POST['name'] ?? ''))) !== '') {
                     if (!empty($accounts[$id]['main'])) { $c = wi_config(); $c['main_name'] = mb_substr($n, 0, 60); wi_write('config.json', $c); }
@@ -210,6 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $u['max_team'] = max(0, min(500, (int) ($_POST['max_team'] ?? 0)));
                 foreach (['can_bot', 'can_meetings', 'can_cases', 'can_backup'] as $fk) $u[$fk] = !empty($_POST[$fk]);
                 $u['client_note'] = mb_substr(trim((string) ($_POST['client_note'] ?? '')), 0, 500);
+                $u['panel_name'] = mb_substr(trim((string) ($_POST['panel_name'] ?? '')), 0, 60);
                 $u['allow_ruqyah'] = !empty($_POST['allow_ruqyah']); // the spiritual type is given by hand only
                 $u['active'] = !empty($_POST['active']);
             } elseif ($do === 'client_extend') {

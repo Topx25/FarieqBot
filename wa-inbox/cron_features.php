@@ -182,6 +182,8 @@ try { wf_intake_due($accounts); } catch (Throwable $e) {}
 try { wf_gate_due($accounts); } catch (Throwable $e) {}
 try { wf_vis_due($accounts); } catch (Throwable $e) {}
 if (wi_sys('addon_instagram') && function_exists('wf_ig_sync_all')) { try { wf_ig_sync_all(); } catch (Throwable $e) {} } // Farieq add-on: Instagram direct messages, every minute
+// the number each account is signed in with: a different number asks the user to merge or keep the old chats apart
+if (function_exists('wf_hist_scan')) { try { wf_hist_scan(); } catch (Throwable $e) {} }
 if (wi_sys('addon_facebook')) { try { wf_fb_sync_all(); } catch (Throwable $e) {} } // Facebook pages: new Messenger messages read from the page (works before the app is published, catches missed webhooks) // visitors lists: farewell for those who leave unanswered, a note when someone comes back
 try { wi_outbox_flush(); } catch (Throwable $e) {} // replies written while a number was offline // reception groups: reminder, last notice, removal
 try { wf_cases_number_backfill(); } catch (Throwable $e) {} // older cases get their ID // cases from a group whose writer did not answer in time

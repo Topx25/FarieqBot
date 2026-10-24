@@ -146,7 +146,7 @@ function wf_bot_welcome(array $acc, string $gjid, array $members): array {
     $log = ['jid' => $gjid, 'name' => $gname . ' · ' . T_W('welcome'), 'q' => '➕ ' . implode(' ', $tags), 'reply' => $text, 'confidence' => 1, 'model' => 'welcome', 'at' => date('c'), 'group' => true];
     if ($c['mode'] === 'auto') {
         $r = wi_gateway('/chat/send', ['jid' => $gjid, 'text' => wf_bot_style($text, $aid), 'mentions' => $jids, 'by' => 'bot', 'via' => 'bot'], $acc);
-        $log['result'] = !empty($r['ok']) ? 'sent' : 'send_failed'; if (empty($r['ok'])) $log['error'] = $r['error'] ?? ''; else $markWelcomed();
+        $log['result'] = !empty($r['ok']) ? 'sent' : 'send_failed'; if (empty($r['ok'])) $log['error'] = (string) ($r['error'] ?? '') ?: 'no answer from the gateway'; else $markWelcomed();
     } else { $markWelcomed(); $log['result'] = 'draft'; $log['why'] = 'suggest-only mode'; wi_update('bot_drafts.json', function ($d) use ($aid, $gjid, $log) { $d[$aid][$gjid] = $log; return $d; }); }
     wi_bot_log_add($aid, $log);
     return $log;
@@ -285,8 +285,8 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 // every group reply tags the person it answers, so replies to different people never get mixed up
                 $tagNum = $who; if (strlen($who) >= 14 && function_exists('wf_group_member_phone') && ($pn = wf_group_member_phone($acc, (string) $x['jid'], $who)['phone']) !== '') $tagNum = $pn; // the tag shows the mobile number, not the long WhatsApp ID
                 $askJ = $tagNum . (strlen($tagNum) >= 14 ? '@lid' : '@s.whatsapp.net'); $gtext = '@' . $tagNum . ' ' . wf_bot_style($log['reply'], $aid, (string) $x['jid'], true);
-                $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => $gtext, 'by' => 'bot', 'via' => 'bot', 'quote_id' => $m['id'] ?? null, 'mentions' => array_values(array_unique(array_merge([$askJ], $mentions)))], $acc); wf_bot_intro_done(!empty($s['ok']));
-                $log['result'] = !empty($s['ok']) ? (!empty($r['handoff']) ? 'handoff' : 'sent') : 'send_failed'; if (!empty($s['ok'])) { $st['sent'][] = time(); $st['gwho'][$x['jid']][$who][] = time(); if ($gid !== '') { $st['gids'][$gid] = time(); $st['gids'] = array_filter($st['gids'], fn($t) => $t > time() - 86400); } } else $log['error'] = $s['error'] ?? '';
+                $sendP = ['jid' => $x['jid'], 'text' => $gtext, 'by' => 'bot', 'via' => 'bot', 'quote_id' => $m['id'] ?? null, 'mentions' => array_values(array_unique(array_merge([$askJ], $mentions)))]; $s = wi_gateway('/chat/send', $sendP, $acc); wf_bot_intro_done(!empty($s['ok']));
+                $log['result'] = !empty($s['ok']) ? (!empty($r['handoff']) ? 'handoff' : 'sent') : 'send_failed'; if (!empty($s['ok'])) { $st['sent'][] = time(); $st['gwho'][$x['jid']][$who][] = time(); if ($gid !== '') { $st['gids'][$gid] = time(); $st['gids'] = array_filter($st['gids'], fn($t) => $t > time() - 86400); } } else { $log['error'] = (string) ($s['error'] ?? '') ?: 'no answer from the gateway'; wf_bot_resend_keep($aid, $st, $sendP, $log); }
                 if (!empty($s['ok']) && function_exists('wf_role_note')) wf_role_note($aid, $who, (string) ($log['role'] ?? 'bot'), $text, (string) $log['reply'], (string) ($x['name'] ?? ''));
             } else {
                 $log['result'] = 'draft'; $log['why'] = $c['mode'] !== 'auto' ? 'suggest-only mode' : (!$ok ? 'low confidence' : (!$inH ? 'outside working hours' : 'hourly limit'));
@@ -334,6 +334,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
     };
     $ch = wi_gateway('/archive/chats?months=' . (int) wi_sys('months_recent') , null, $acc);
     $did = []; $n = 0;
+    if (empty($c['held']) && $c['mode'] === 'auto') $did = wf_bot_resend($acc, $st); // replies whose send failed on the last ticks: sent once now the gateway is back
     if (empty($c['held']) && in_array($c['scope'], ['both', 'groups'], true)) { try { $did = array_merge($did, wf_bot_groups($acc, $c, $st, $team, $ch['chats'] ?? [])); } catch (Throwable $e) {} }
     // The number's chat with itself is the owner's test chat: what the owner types there is answered like a customer's message.
     $selfIds = []; $sAcc = (array) (wi_gateway('/status', null, $acc)['account'] ?? []); foreach (['id', 'lid'] as $k) { $d = preg_replace('/\D/', '', explode(':', explode('@', (string) ($sAcc[$k] ?? ''))[0])[0]); if ($d !== '') $selfIds[$d] = 1; }
@@ -461,9 +462,9 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
             $vNote = !empty($c['voice_tts']) && function_exists('wf_voice_speak') && array_filter($q, fn($m) => in_array($m['kind'] ?? '', ['voice', 'audio'], true)) ? wf_voice_speak($aid, wf_bot_style($r['reply'], $aid), wf_person_gender($aid, (string) $x['jid'], (string) ($x['name'] ?? ''), $text)) : '';
             if ($vNote !== '') { $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => '', 'attachment' => $vNote, 'by' => 'bot', 'via' => 'bot'], $acc); $log['voice'] = true; if (empty($s['ok'])) $vNote = ''; }
             if ($vNote === '')
-            $s = wi_gateway('/chat/send', ['jid' => $x['jid'], 'text' => wf_bot_style($r['reply'], $aid, $isTest ? '' : (string) $x['jid']), 'by' => 'bot', 'via' => 'bot', 'typing_ms' => (int) round(1000 * min(max(1, (float) $c['typing_max']), max((float) $c['typing_min'], mb_strlen($r['reply']) / 25) * (0.85 + mt_rand(0, 30) / 100)))], $acc); wf_bot_intro_done(!empty($s['ok']));
+            { $sendP = ['jid' => $x['jid'], 'text' => wf_bot_style($r['reply'], $aid, $isTest ? '' : (string) $x['jid']), 'by' => 'bot', 'via' => 'bot', 'typing_ms' => (int) round(1000 * min(max(1, (float) $c['typing_max']), max((float) $c['typing_min'], mb_strlen($r['reply']) / 25) * (0.85 + mt_rand(0, 30) / 100)))]; $s = wi_gateway('/chat/send', $sendP, $acc); wf_bot_intro_done(!empty($s['ok'])); }
             if (!empty($s['ok']) && empty($r['handoff']) && (string) ($r['product'] ?? '') !== '' && function_exists('wf_catalog_send')) { sleep(2); wf_catalog_send($acc, (string) $x['jid'], (string) $r['product'], 'bot'); $log['product'] = $r['product']; } // the product asked about, with its photo
-            $log['result'] = !empty($s['ok']) ? ($r['handoff'] ? 'handoff' : 'sent') : 'send_failed'; if (!empty($s['ok'])) { $st['sent'][] = time(); $st['last_sent'] = date('c'); } else $log['error'] = $s['error'] ?? '';
+            $log['result'] = !empty($s['ok']) ? ($r['handoff'] ? 'handoff' : 'sent') : 'send_failed'; if (!empty($s['ok'])) { $st['sent'][] = time(); $st['last_sent'] = date('c'); } else { $log['error'] = (string) ($s['error'] ?? '') ?: 'no answer from the gateway'; if ($vNote === '' && !$isTest) wf_bot_resend_keep($aid, $st, $sendP, $log + ['name' => (string) ($x['name'] ?? '')]); }
             if (!empty($s['ok']) && !$isTest && function_exists('wf_role_note')) wf_role_note($aid, explode('@', (string) $x['jid'])[0], $role, $text, (string) $r['reply'], '');
             if (!empty($s['ok']) && !$isTest && in_array($role, ['healer', 'dreams', 'support'], true) && function_exists('wf_role_fill_case')) { try { // what they told about themselves goes into their case file
                 $mineIn = []; foreach (array_slice($rows, -30) as $hm) if (($hm['dir'] ?? '') === 'in') $mineIn[] = (string) ($hm['text'] ?? ''); wf_role_fill_case($aid, (string) ($x['phone'] ?? explode('@', (string) $x['jid'])[0]), $mineIn); } catch (Throwable $e) {} }
@@ -595,4 +596,29 @@ function wf_handoff_notify(array $acc, array $c, string $jid, string $name, stri
     if ($ok) $st['hn'][$jid] = time();
     foreach ((array) ($st['hn'] ?? []) as $k => $t) if ($t < time() - 7 * 86400) unset($st['hn'][$k]);
     wi_log('handoff_notify', ['account' => (string) $acc['id'], 'jid' => $jid, 'to' => $to, 'ok' => $ok]);
+}
+/** A reply whose send failed: kept as a draft (the team can still send it) and queued to be sent once by the next tick. */
+function wf_bot_resend_keep(string $aid, array &$st, array $send, array $log): void {
+    $jid = (string) ($send['jid'] ?? ''); if ($jid === '') return;
+    unset($send['typing_ms']);
+    $st['resend'][$jid] = ['send' => $send, 'at' => time(), 'name' => (string) ($log['name'] ?? ''), 'reply' => (string) ($log['reply'] ?? ''), 'q' => (string) ($log['q'] ?? '')];
+    wi_update('bot_drafts.json', function ($d) use ($aid, $jid, $log) { $d[$aid][$jid] = ['jid' => $jid, 'name' => (string) ($log['name'] ?? ''), 'q' => (string) ($log['q'] ?? ''), 'reply' => (string) ($log['reply'] ?? ''), 'at' => date('c'), 'why' => 'send failed — kept to resend']; return $d; });
+}
+/** Sends the queued replies once when the gateway is connected again; one older than 15 minutes, or in a chat a person answered meanwhile, is dropped (its draft stays). */
+function wf_bot_resend(array $acc, array &$st): array {
+    $q = (array) ($st['resend'] ?? []); if (!$q) return [];
+    $aid = (string) $acc['id']; $did = [];
+    if (!empty(array_filter($q, fn($it) => (int) ($it['at'] ?? 0) >= time() - 900)) && empty(wi_gateway('/status', null, $acc)['connected'])) { $st['resend'] = array_filter($q, fn($it) => (int) ($it['at'] ?? 0) >= time() - 900); return []; } // still offline: waits for the next tick
+    unset($st['resend']);
+    foreach ($q as $jid => $it) {
+        $jid = (string) $jid; $at = (int) ($it['at'] ?? 0); $row = ['jid' => $jid, 'name' => (string) ($it['name'] ?? ''), 'q' => (string) ($it['q'] ?? ''), 'reply' => (string) ($it['reply'] ?? ''), 'at' => date('c'), 'role' => 'resend'];
+        if ($at < time() - 900) { wi_bot_log_add($aid, $row + ['result' => 'skipped', 'why' => 'resend dropped: older than 15 minutes']); continue; }
+        $answered = false; foreach ((array) (wi_gateway('/archive/thread?limit=20&jid=' . rawurlencode($jid), null, $acc)['rows'] ?? []) as $m) if (($m['dir'] ?? '') === 'out' && ($m['via'] ?? '') !== 'bot' && (int) strtotime((string) ($m['time'] ?? '')) > $at) $answered = true;
+        if ($answered) { wi_bot_log_add($aid, $row + ['result' => 'skipped', 'why' => 'resend dropped: a person answered meanwhile']); continue; }
+        $s = wi_gateway('/chat/send', (array) $it['send'], $acc);
+        if (!empty($s['ok'])) { $st['sent'][] = time(); $st['last_sent'] = date('c'); wi_update('bot_drafts.json', function ($d) use ($aid, $jid) { if (($d[$aid][$jid]['why'] ?? '') === 'send failed — kept to resend') unset($d[$aid][$jid]); return $d; }); }
+        wi_bot_log_add($aid, $row + ['result' => !empty($s['ok']) ? 'sent' : 'send_failed', 'why' => 'resent after a failed send'] + (!empty($s['ok']) ? [] : ['error' => (string) ($s['error'] ?? '') ?: 'no answer from the gateway']));
+        $did[] = ['jid' => $jid, 'result' => !empty($s['ok']) ? 'sent' : 'send_failed', 'why' => 'resend'];
+    }
+    return $did;
 }

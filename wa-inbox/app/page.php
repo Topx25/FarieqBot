@@ -44,19 +44,20 @@
 <?php else: ?>
 <div class="app shell-v3" data-sec="<?= wi_e((string) ($_GET['sec'] ?? '')) ?>" data-page="<?= wi_e($page) ?>" data-csrf="<?= wi_e(wi_csrf()) ?>" data-acc="<?= wi_e($cur['id'] ?? '') ?>" data-canusers="<?= wi_can_users() ? '1' : '' ?>">
   <aside class="side">
-    <div class="brand side-handle" title="Drag to move the menu"><span class="logo"><?= htmlspecialchars((string) wi_brand('brand_logo')) ?></span><div><b><?= htmlspecialchars((string) wi_brand('brand_name')) ?></b><small id="gw-state">…</small></div>
+    <div class="brand side-handle" title="Drag to move the menu"><span class="logo"><?= htmlspecialchars((string) wi_brand('brand_logo')) ?></span><div><b><?= htmlspecialchars((string) wi_brand('brand_name')) ?></b><?php if (($pn = (string) (wi_tenant()['panel_name'] ?? '')) !== ''): ?><small class="panel-name" dir="auto"><?= wi_e($pn) ?></small><?php endif; ?><small id="gw-state">…</small></div>
       <button type="button" class="lock-btn" id="menu-lock" title="Lock / unlock the menu">🔓</button></div>
     <form method="post" class="acc-switch">
       <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="switch_account"><input type="hidden" name="back" value="?p=<?= wi_e($page) ?>">
       <label>WhatsApp account<select name="acc" onchange="this.form.submit()">
-        <?php foreach ($mine as $a): ?><option value="<?= wi_e($a['id']) ?>" <?= $cur && $cur['id'] === $a['id'] ? 'selected' : '' ?>><?= wi_e($a['name']) ?></option><?php endforeach; ?>
+        <?php foreach ($mine as $a): ?><option value="<?= wi_e($a['id']) ?>" <?= $cur && $cur['id'] === $a['id'] ? 'selected' : '' ?>><?= !empty($a['archived']) ? '🗄️ ' : '' ?><?= wi_e($a['name']) ?></option><?php endforeach; ?>
         <?php if (!$mine): ?><option>No account assigned</option><?php endif; ?>
       </select></label>
     </form>
     <?php $waPages = ['accounts', 'link', 'gateway']; $chatPages = ['inbox', 'search']; ?>
     <nav id="side-nav">
       <?php $hasFb = (bool) array_filter($mine, fn($fa) => ($fa['channel'] ?? '') === 'fb'); foreach (wi_menu() as $sec): $vis = array_values(array_filter($sec['items'], fn($it) => !$it['hidden'] && ($sec['id'] !== 'facebook' || $hasFb || $it['key'] === 'fb_connect') && (wi_menu_can($it['who'], (bool) $manager) || ($it['key'] === 'broadcast' && wi_is_team()))
-        && ($it['key'] === 'dashboard' || !in_array($it['who'], ['all', 'manager'], true) || array_filter($it['pages'], fn($pg) => wi_page_perm($pg) !== '')))); // only what this user may open if (!$vis) continue; ?>
+        && ($it['key'] === 'dashboard' || !in_array($it['who'], ['all', 'manager'], true) || array_filter($it['pages'], fn($pg) => wi_page_perm($pg) !== '')))); if (!$vis) continue; // only what this user may open
+      ?>
       <div class="nav-h"><?= wi_e($sec['title']) ?></div>
       <?php foreach ($vis as $it): ?><a href="<?= wi_e($it['href'] ?? '?p=' . $it['key']) ?>" class="<?= in_array($page, $it['pages'], true) && !array_filter((array) ($it['q'] ?? []), fn($v, $k) => (string) ($_GET[$k] ?? '') !== $v, ARRAY_FILTER_USE_BOTH) ? 'on' : '' ?>"><i><?= wi_e($it['icon']) ?></i><?= wi_e($it['label']) ?></a>
       <?php endforeach; endforeach; ?>
@@ -72,6 +73,7 @@
   </aside>
   <main class="main<?= in_array($page, ['inbox'], true) ? ' is-inbox' : '' ?>">
     <?php foreach ((array) ($me['invites'] ?? []) as $ipg => $inv): ?><div class="inv-bar" data-inv="<?= wi_e($ipg) ?>">📨 <span><b><?= wi_e($inv['by_name'] ?? $inv['by'] ?? '') ?></b> <?= wi_e(wi_t('shared with you')) ?> «<?= wi_e(wi_t(wi_page_names()[$ipg] ?? $ipg)) ?>» — <?= wi_e(wi_t(($inv['level'] ?? 'view') === 'edit' ? 'view & edit' : 'view only')) ?></span><button class="btn sm primary" data-inv-a="1">✔ <?= wi_e(wi_t('Accept')) ?></button><button class="btn sm ghost" data-inv-a="0">✖ <?= wi_e(wi_t('Decline')) ?></button></div><?php endforeach; ?>
+    <?php if (function_exists('wf_hist_banner')) echo wf_hist_banner($cur ?? null); ?>
     <?php if (!empty($_SESSION['imp_from'])): ?><div class="imp-bar">👁 <span>You are viewing as <b><?= wi_e(($me['name'] ?? '') ?: $me['email']) ?></b> (<?= wi_e($me['email']) ?>) — everything you do is recorded under your own account.</span><form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="impersonate_end"><button class="btn sm primary">↩ Back to my account</button></form></div><?php endif; ?>
     <header class="topbar">
       <div class="tb-title"><span class="tb-ic" id="tb-ic">💬</span><b id="tb-name"></b></div>
@@ -80,7 +82,7 @@
         <?php if (!wi_cases_only()): ?><form method="post" class="tb-acc">
           <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="switch_account"><input type="hidden" name="back" value="?p=<?= wi_e($page) ?>">
           <span class="tb-dot" id="tb-dot"></span><select name="acc" onchange="this.form.submit()" title="WhatsApp account">
-            <?php foreach ($mine as $a): ?><option value="<?= wi_e($a['id']) ?>" <?= $cur && $cur['id'] === $a['id'] ? 'selected' : '' ?>>📱 <?= wi_e($a['name']) ?></option><?php endforeach; ?>
+            <?php foreach ($mine as $a): ?><option value="<?= wi_e($a['id']) ?>" <?= $cur && $cur['id'] === $a['id'] ? 'selected' : '' ?>><?= !empty($a['archived']) ? '🗄️' : '📱' ?> <?= wi_e($a['name']) ?></option><?php endforeach; ?>
           </select>
         </form><?php endif; ?>
         <a class="tb-btn" href="?p=<?= wi_e($page) ?>&amp;lang=<?= wi_lang() === 'ar' ? 'en' : 'ar' ?>" title="Language"><?= wi_lang() === 'ar' ? 'EN' : 'ع' ?></a>
@@ -247,7 +249,7 @@
       <?php foreach ($show as $c): $s = $stOf[$c['email']]; $si = $stInfo[$s['state']]; $nums = wi_owned_accounts((string) $c['email']); $team = wi_team_of((string) $c['email']); $us = wf_client_usage((string) $c['email']); $la = $lastAct($c); ?>
         <article class="card cl-card st-<?= $si[0] ?>" data-q="<?= wi_e(mb_strtolower(($c['name'] ?? '') . ' ' . $c['email'] . ' ' . ($c['phone'] ?? '') . ' ' . implode(' ', array_column($nums, 'name')))) ?>">
           <div class="cl-top"><span class="avatar"><?= wi_e(mb_strtoupper(mb_substr(($c['name'] ?? '') ?: $c['email'], 0, 1))) ?></span>
-            <div class="cl-who"><b dir="auto"><?= wi_e(($c['name'] ?? '') ?: $c['email']) ?></b><small dir="ltr"><?= wi_e($c['email']) ?> · +<?= wi_e((string) ($c['phone'] ?? '')) ?></small></div>
+            <div class="cl-who"><b dir="auto"><?= wi_e(($c['panel_name'] ?? '') ?: (($c['name'] ?? '') ?: $c['email'])) ?></b><small dir="ltr"><?= wi_e($c['email']) ?> · +<?= wi_e((string) ($c['phone'] ?? '')) ?></small></div>
             <span class="cl-st <?= $si[0] ?>"><?= $si[1] ?> <?= wi_e(wi_t($si[2])) ?></span></div>
           <div class="cl-grid">
             <div><small>Plan</small><b dir="auto"><?= wi_e((string) (($c['plan'] ?? '') ?: '—')) ?></b></div>
@@ -262,11 +264,11 @@
           <div class="ux-tags"><?php foreach ($fx as $k => $f): ?><span class="<?= !empty($c[$k]) ? 'on' : '' ?>"><?= $f[0] ?> <?= wi_e(wi_t($f[1])) ?></span><?php endforeach; ?></div>
           <?php if (!empty($c['client_note'])): ?><p class="cl-note" dir="auto">📝 <?= wi_e((string) $c['client_note']) ?></p><?php endif; ?>
           <div class="cl-act">
-            <button type="button" class="btn ghost sm" data-cl-edit="<?= wi_e(json_encode(['email' => $c['email'], 'name' => ($c['name'] ?? '') ?: $c['email'], 'plan' => $c['plan'] ?? '', 'plan_id' => (string) ($c['plan_id'] ?? ''), 'slug' => (string) ($c['slug'] ?? ''), 'domains' => implode(', ', (array) ($c['domains'] ?? [])), 'brand_name' => (string) ($c['brand_name'] ?? ''), 'brand_logo' => (string) ($c['brand_logo'] ?? ''), 'max_numbers' => wi_client_max_numbers($c), 'ai_calls' => (int) ($c['ai_calls'] ?? 0), 'expires' => $c['expires'] ?? '', 'max_team' => (int) ($c['max_team'] ?? 0), 'note' => $c['client_note'] ?? '', 'active' => !empty($c['active']), 'can_bot' => !empty($c['can_bot']), 'can_meetings' => !empty($c['can_meetings']), 'can_cases' => !empty($c['can_cases']), 'can_backup' => !empty($c['can_backup']), 'allow_ruqyah' => !empty($c['allow_ruqyah'])], JSON_UNESCAPED_UNICODE)) ?>">✏️ Edit plan</button>
+            <button type="button" class="btn ghost sm" data-cl-edit="<?= wi_e(json_encode(['email' => $c['email'], 'name' => ($c['name'] ?? '') ?: $c['email'], 'plan' => $c['plan'] ?? '', 'plan_id' => (string) ($c['plan_id'] ?? ''), 'slug' => (string) ($c['slug'] ?? ''), 'domains' => implode(', ', (array) ($c['domains'] ?? [])), 'brand_name' => (string) ($c['brand_name'] ?? ''), 'brand_logo' => (string) ($c['brand_logo'] ?? ''), 'max_numbers' => wi_client_max_numbers($c), 'ai_calls' => (int) ($c['ai_calls'] ?? 0), 'expires' => $c['expires'] ?? '', 'max_team' => (int) ($c['max_team'] ?? 0), 'note' => $c['client_note'] ?? '', 'panel' => (string) ($c['panel_name'] ?? ''), 'active' => !empty($c['active']), 'can_bot' => !empty($c['can_bot']), 'can_meetings' => !empty($c['can_meetings']), 'can_cases' => !empty($c['can_cases']), 'can_backup' => !empty($c['can_backup']), 'allow_ruqyah' => !empty($c['allow_ruqyah'])], JSON_UNESCAPED_UNICODE)) ?>">✏️ Edit plan</button>
             <form method="post" class="inline cl-ext"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="client_extend"><input type="hidden" name="f" value="<?= wi_e($cf) ?>"><input type="hidden" name="email" value="<?= wi_e($c['email']) ?>">
               <span class="muted small">Renew:</span><button class="chip-btn sm" name="days" value="30">+30</button><button class="chip-btn sm" name="days" value="90">+90</button><button class="chip-btn sm" name="days" value="365">+1 year</button></form>
             <form method="post" class="inline"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="client_toggle"><input type="hidden" name="f" value="<?= wi_e($cf) ?>"><input type="hidden" name="email" value="<?= wi_e($c['email']) ?>"><button class="btn ghost sm" onclick="return confirm('<?= !empty($c['active']) ? 'Pause this panel? The client and their team cannot sign in and the bot stops; nothing is deleted.' : 'Resume this panel?' ?>')"><?= !empty($c['active']) ? '⏸ Pause' : '▶️ Resume' ?></button></form>
-            <form method="post" class="inline"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="impersonate"><input type="hidden" name="email" value="<?= wi_e($c['email']) ?>"><button class="btn ghost sm" title="See the panel as this client">👁 Sign in as</button></form>
+            <form method="post" class="inline"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="impersonate"><input type="hidden" name="email" value="<?= wi_e($c['email']) ?>"><button class="btn ghost sm" title="See the panel as this client">👁 Open the panel</button></form>
           </div>
         </article>
       <?php endforeach; ?>
@@ -303,13 +305,14 @@
           <label class="check" style="align-self:end"><input type="checkbox" name="active" value="1" id="cl-act"> Panel active</label></div>
         <div class="ux-feats"><?php foreach ($fx as $k => $f): ?><label class="ux-ft"><input type="checkbox" name="<?= $k ?>" value="1" data-cf="<?= $k ?>"><span class="ux-ri"><?= $f[0] ?></span><b><?= wi_e(wi_t($f[1])) ?></b></label><?php endforeach; ?></div>
         <label class="check"><input type="checkbox" name="allow_ruqyah" value="1" id="cl-ruq"> 🤲 Allow the spiritual (ruqyah) type of business <small class="muted">— never offered to clients unless you allow it here</small></label>
+        <label>Panel name<input name="panel_name" id="cl-panel" maxlength="60" dir="auto"></label>
         <label>Internal note (only you see it)<textarea name="client_note" id="cl-note" rows="2" maxlength="500" dir="auto"></textarea></label>
         <div class="row"><button class="btn primary">💾 Save</button><button type="button" class="btn ghost" data-close>Cancel</button></div>
       </form></dialog>
       <script>document.addEventListener('DOMContentLoaded', function () { var d = document.getElementById('cl-dlg'), q = function (id) { return document.getElementById(id); };
         function syncFt() { [].forEach.call(d.querySelectorAll('.ux-ft'), function (l) { l.classList.toggle('on', l.querySelector('input').checked); }); }
         document.addEventListener('click', function (e) { var b = e.target.closest('[data-cl-edit]'); if (b) { var c = JSON.parse(b.getAttribute('data-cl-edit'));
-            q('cl-email').value = c.email; q('cl-title').textContent = c.name; q('cl-plan').value = c.plan; q('cl-pid').value = c.plan_id || ''; q('cl-slug').value = c.slug || ''; q('cl-doms').value = c.domains || ''; q('cl-bn').value = c.brand_name || ''; q('cl-bl').value = c.brand_logo || ''; q('cl-nums').value = c.max_numbers; q('cl-ai').value = c.ai_calls; q('cl-exp').value = c.expires; q('cl-team').value = c.max_team; q('cl-note').value = c.note; q('cl-act').checked = c.active; q('cl-ruq').checked = !!c.allow_ruqyah;
+            q('cl-email').value = c.email; q('cl-title').textContent = c.name; q('cl-plan').value = c.plan; q('cl-pid').value = c.plan_id || ''; q('cl-slug').value = c.slug || ''; q('cl-doms').value = c.domains || ''; q('cl-bn').value = c.brand_name || ''; q('cl-bl').value = c.brand_logo || ''; q('cl-nums').value = c.max_numbers; q('cl-ai').value = c.ai_calls; q('cl-exp').value = c.expires; q('cl-team').value = c.max_team; q('cl-note').value = c.note; q('cl-panel').value = c.panel || ''; q('cl-act').checked = c.active; q('cl-ruq').checked = !!c.allow_ruqyah;
             [].forEach.call(d.querySelectorAll('[data-cf]'), function (i) { i.checked = !!c[i.dataset.cf]; }); syncFt(); d.showModal(); }
           if (e.target.closest('#cl-dlg [data-close]')) d.close(); });
         d.addEventListener('change', syncFt);
