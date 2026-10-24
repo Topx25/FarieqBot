@@ -1328,12 +1328,41 @@ class WiAiProviders
         return $plain === false ? '' : trim((string) $plain);
     }
 
+    /**
+     * The public addresses a host name resolves to; empty when it resolves to nothing or to any private, loopback,
+     * link-local or reserved address (a custom provider address must never reach the server's own network).
+     */
+    public static function public_ips($host)
+    {
+        $host = strtolower(trim((string) $host, '[] '));
+        if( $host === '' ) return array();
+        $ips = filter_var($host, FILTER_VALIDATE_IP) ? array($host) : array();
+        if( !$ips ) {
+            foreach( (array) @dns_get_record($host, DNS_A | DNS_AAAA) as $r ) {
+                if( !empty($r['ip']) ) $ips[] = $r['ip'];
+                if( !empty($r['ipv6']) ) $ips[] = $r['ipv6'];
+            }
+            if( !$ips ) $ips = (array) @gethostbynamel($host);
+        }
+        if( !$ips ) return array();
+        foreach( $ips as $ip ) if( !filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) ) return array();
+        $ips = array_values(array_unique($ips));
+        usort($ips, function($a, $b) { return (int) (strpos($a, ':') !== false) - (int) (strpos($b, ':') !== false); });
+        return $ips;
+    }
+
     protected function http($method, $url, $headers, $body, $timeout)
     {
         $collected = array();
+        $parts = parse_url((string) $url);
+        $ips = isset($parts['host']) && strtolower((string) ($parts['scheme'] ?? '')) === 'https' ? self::public_ips($parts['host']) : array();
+        if( !$ips ) return array('ok' => false, 'status' => 0, 'body' => '', 'error' => 'The provider address is not a public https address.');
         $ch = curl_init($url);
         $options = array(
             CURLOPT_HTTPHEADER => $headers, CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 8, CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_FOLLOWLOCATION => false,
+            // the connection goes to the address that was checked, so a second DNS answer cannot point it inside
+            CURLOPT_RESOLVE => array($parts['host'] . ':' . (int) ($parts['port'] ?? 443) . ':' . (strpos($ips[0], ':') !== false ? '[' . $ips[0] . ']' : $ips[0])),
             CURLOPT_HEADERFUNCTION => function($ch, $line) use (&$collected) {
                 $parts = explode(':', $line, 2);
                 if( count($parts) == 2 ) $collected[strtolower(trim($parts[0]))] = trim($parts[1]);

@@ -4,6 +4,8 @@
 if (isset($_GET['api'])) {
     if (!wi_logged_in()) wi_json(['ok' => false, 'error' => 'Sign in required.'], 401);
     $api = (string) $_GET['api'];
+    // Every change made through the API carries the page's CSRF token (header X-CSRF, or _csrf in a form upload); the public addresses (webhooks, sign-up, landing) are not API calls and never reach here
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array($api, WI_API_NO_CSRF, true)) wi_check_csrf();
     // API calls only read the session: release its lock so a slow WhatsApp gateway never freezes other pages.
     if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
     if ($api === 'jslog') { // browser errors, for debugging the layout
@@ -31,7 +33,8 @@ if (isset($_GET['api'])) {
         wi_json(['ok' => true, 'items' => $out, 'ai' => !empty($ai['ok'])]);
     }
     // A chat or group hidden from this user: refused by its address too (opening it from a link, its media, notes, export…).
-    if (($H = wi_hidden_jids()) && isset($H[(string) ($_GET['jid'] ?? ($_GET['g'] ?? ''))])) wi_json(['ok' => false, 'error' => 'This conversation is hidden from you.'], 403);
+    if ($H = wi_hidden_jids()) { $hb = $_SERVER['REQUEST_METHOD'] === 'POST' && !$_FILES ? (json_decode(wi_input(), true) ?: []) : []; // sending, reacting, notes… name the chat in the body
+        foreach ([$_GET['jid'] ?? '', $_GET['g'] ?? '', $_POST['jid'] ?? '', is_array($hb) ? ($hb['jid'] ?? '') : '', is_array($hb) ? ($hb['g'] ?? '') : ''] as $hj) if (is_string($hj) && $hj !== '' && isset($H[$hj])) wi_json(['ok' => false, 'error' => 'This conversation is hidden from you.'], 403); }
     // Who sees a chat (its header → 🔒): the client or admin hides it from chosen team members.
     if ($api === 'hide_for') {
         $jid = (string) ($_GET['jid'] ?? ''); if ($jid === '' || !wi_can_users()) wi_json(['ok' => false, 'error' => 'Not allowed.'], 403);
@@ -47,12 +50,12 @@ if (isset($_GET['api'])) {
     }
     // Page permissions: no access → refused; view only → no changes (POST).
     wi_ctx_set('api_page', $apiPage = wi_api_page($api));
-    if ($apiPage !== '') { $pp = wi_page_perm($apiPage);
+    // A call that belongs to no page is refused (only the super admin passes), so a new call can never skip the permission check by being forgotten in the map
+    if ($apiPage === '' && !wi_is_super()) { $uk = preg_replace('/[^a-z0-9_]/', '', mb_substr($api, 0, 40)); if (!isset(wi_read('api_unmapped.json', [])[$uk])) { wi_update('api_unmapped.json', function ($U) use ($uk) { $U[$uk] = date('c'); return array_slice($U, -200, null, true); }); wi_log('api_unmapped', ['api' => $uk]); } wi_json(['ok' => false, 'error' => 'You do not have access to this page.'], 403); }
+    if ($apiPage !== '' && $apiPage !== '*') { $pp = wi_page_perm($apiPage);
         if ($pp === '') wi_json(['ok' => false, 'error' => 'You do not have access to this page.'], 403);
         if ($pp === 'view' && $_SERVER['REQUEST_METHOD'] === 'POST') wi_json(['ok' => false, 'error' => 'View only — you cannot change this page.'], 403); }
-    // Cases are one shared database: every request of the Cases page (and the group lists of the case form) runs on the cases number,
-    // so a user with the Cases permission works on the same cases without being linked to that number.
-    if (($apiPage === 'cases' || ($api === 'meeting_targets' && ($_GET['ctx'] ?? '') === 'cases')) && wi_page_perm('cases') !== '' && !wi_current_is_own() && !wi_tenant() && ($ca = wi_cases_account()) && wi_may_see_account($ca)) wi_ctx_set('acc', $ca); // a client's panel always works on its own numbers // an owner works on their own number's cases
+    // Cases belong to their own number: the Cases page works on the open number like every other page (no shared cases number).
     // Inside a conversation: what this user may do there (chat permissions), and which conversations an employee may open.
     $chatNeed = ['send' => 'reply', 'react' => 'reply', 'suggest_reply' => 'reply', 'reply_fill' => 'reply', 'send_media' => 'media', 'export' => 'export',
         'send_invoice' => 'invoices', 'chat_invoices' => 'invoices', 'inv_reminder' => 'invoices', 'delete_msg' => 'delete_msg', 'delete_chat' => 'delete_chat', 'media_send' => 'media', 'forward_text' => 'reply', 'group_add' => 'groups', 'group_invite_send' => 'groups', 'group_admin_list' => 'groups', 'group_removed' => 'groups'];

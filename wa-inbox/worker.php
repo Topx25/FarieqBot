@@ -30,7 +30,7 @@ while (time() - $t0 < 3300 && ($j = wi_job_take())) {
                 $res = wf_clean_run((string) $j['payload']['base'], (array) ($j['payload']['ids'] ?? []), max(300, 3300 - (time() - $t0))); $ok = !empty($res['ok']);
                 // Continue next run only when this run made progress (no endless re-queue).
                 if (!empty($res['partial']) && (($res['kept'] ?? 0) + ($res['dropped'] ?? 0)) > 0) wi_job_add('learn_clean', (string) $j['payload']['base'] . '-' . time(), $j['payload']); break;
-            case 'doc_verify': // uploaded files checked against the healers' answers in the groups
+            case 'doc_verify': // uploaded files checked against the team's answers in the groups
                 $vb = (string) ($j['payload']['base'] ?? $j['jkey']); wi_ctx_set('ai_acc', wi_accounts()[$vb] ?? null);
                 $res = wf_doc_verify_run($vb, max(300, 3000 - (time() - $t0))); wi_ctx_set('ai_acc', null); $ok = !empty($res['ok']);
                 if ($ok && !empty($res['left']) && !empty($res['checked'])) wi_job_add('doc_verify', $vb . '-' . time(), ['base' => $vb]); break;

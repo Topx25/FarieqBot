@@ -21,7 +21,10 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
     return '<datalist id="' + id + '">' + o.map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>'; }
   // "10/10/2026" (older records) → "2026-10-10" for a date picker
   function isoDate(v) { var m = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/.exec(String(v || '').trim()); return m ? m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : String(v || '').trim(); }
-  function genderOf(v) { v = String(v || ''); return /ث|female|woman|f$/i.test(v) ? 'f' : (/ذكر|male|man|^m$/i.test(v) ? 'm' : ''); }
+  // the words that say female / male come from the profile (window.WI_WORDS, seed_gender_f / seed_gender_m)
+  var GW = window.WI_WORDS || {}, gRx = function (list, tail) { var w = (list || []).map(function (x) { return String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).filter(Boolean); return new RegExp((w.length ? w.join('|') + '|' : '') + tail, 'i'); };
+  var G_F = gRx(GW.gender_f, 'f$'), G_M = gRx(GW.gender_m, '^m$');
+  function genderOf(v) { v = String(v || ''); return G_F.test(v) ? 'f' : (G_M.test(v) ? 'm' : ''); }
   function T(s) { return Object.prototype.hasOwnProperty.call(L, s) ? L[s] : s; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]; }); }
   // Every request answers {ok:false, error} instead of failing silently (no connection, a server error page, a non-JSON reply),
@@ -110,7 +113,7 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
     if (nm && on) { nm.textContent = label(on); var i = on.querySelector('i'); if (i && ic) ic.textContent = i.textContent; }
     var h1 = document.querySelector('.hero h1, header.head h1'); if (nm && !on && h1) nm.textContent = h1.textContent;
     var dot = document.getElementById('tb-dot'), gw = document.getElementById('gw-state');
-    function sync() { if (!dot || !gw) return; var t = gw.textContent || ''; dot.className = 'tb-dot ' + (/connect|متصل/i.test(t) && !/not|غير|dis/i.test(t) ? 'on' : (t.trim() && t.trim() !== '…' ? 'off' : '')); dot.title = t; }
+    function sync() { if (!dot || !gw) return; var t = gw.textContent || ''; dot.className = 'tb-dot ' + (t.indexOf(T('🟢 Connected')) === 0 ? 'on' : (t.trim() && t.trim() !== '…' ? 'off' : '')); dot.title = t; }
     if (gw) new MutationObserver(sync).observe(gw, { childList: true, characterData: true, subtree: true }); sync();
   })();
 

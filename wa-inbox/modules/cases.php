@@ -30,7 +30,7 @@ function wf_team(array $acc, array $groups = []): array {
     @file_put_contents($cf, json_encode($t)); @chmod($cf, 0600);
     return $t;
 }
-/** A number that writes cases in a group is a healer: it joins the team, so the bot never treats it as a case (it can be removed from the team list). */
+/** A number that writes cases in a group is a team member: it joins the team, so the bot never treats it as a case (it can be removed from the team list). */
 function wf_team_learn(string $aid, string $phone, string $why): void {
     $phone = wf_phone($phone); if ($phone === '' || strlen($phone) < 8) return;
     $T = (array) (wi_read('team.json', [])[$aid] ?? []); if (isset($T[$phone])) return;
@@ -274,11 +274,11 @@ function wf_api_cases(string $api): void {
         header('Content-Disposition: attachment; filename="case_' . $ph . '_' . date('Ymd') . '.html"');
         $e = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
         echo '<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>Case ' . $e($ph) . '</title><style>body{font-family:Tahoma,Arial;max-width:900px;margin:20px auto;line-height:1.8}h1{font-size:20px}.m{border-bottom:1px solid #eee;padding:6px 0}.t{color:#666;font-size:12px}.o{background:#f0fdf4}pre{white-space:pre-wrap;font-family:inherit}</style>';
-        echo '<h1>سجل الحالة: ' . $e($c['name'] ?? '') . ' (+' . $e($ph) . ')</h1><p>الحالة: ' . $e(wf_case_statuses(wf_aid())[$c['status'] ?? 'new'] ?? '') . ' · أول ظهور: ' . $e(substr((string) ($c['first'] ?? ''), 0, 10)) . ' · آخر: ' . $e(substr((string) ($c['last'] ?? ''), 0, 10)) . '</p>';
+        echo '<h1>' . $e(wi_t('Case record:')) . ' ' . $e($c['name'] ?? '') . ' (+' . $e($ph) . ')</h1><p>' . $e(wi_t('Stage:')) . ' ' . $e(wf_case_statuses(wf_aid())[$c['status'] ?? 'new'] ?? '') . ' · ' . $e(wi_t('First seen:')) . ' ' . $e(substr((string) ($c['first'] ?? ''), 0, 10)) . ' · ' . $e(wi_t('Last:')) . ' ' . $e(substr((string) ($c['last'] ?? ''), 0, 10)) . '</p>';
         foreach ($c['data'] ?? [] as $k => $v) if ($v !== '') echo '<p><b>' . $e($k) . ':</b> ' . $e($v) . '</p>';
-        if (!empty($c['ai'])) echo '<h2>تحليل الذكاء الاصطناعي</h2><pre>' . $e(json_encode($c['ai'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)) . '</pre>';
+        if (!empty($c['ai'])) echo '<h2>' . $e(wi_t('AI analysis')) . '</h2><pre>' . $e(json_encode($c['ai'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)) . '</pre>';
         foreach ($c['notes'] ?? [] as $n) echo '<p>📝 ' . $e($n['text']) . ' <span class="t">' . $e($n['by'] . ' ' . substr($n['at'], 0, 16)) . '</span></p>';
-        echo '<h2>المحادثات (' . count($msgs) . ')</h2>';
+        echo '<h2>' . $e(wi_t('Conversations')) . ' (' . count($msgs) . ')</h2>';
         foreach ($msgs as $m) echo '<div class="m' . ($m['dir'] === 'out' ? ' o' : '') . '"><span class="t">' . $e(date('d/m/Y H:i', strtotime((string) $m['time']))) . ' · ' . $e($m['chat']) . '</span><pre>' . $e(trim((string) ($m['text'] ?? '')) !== '' ? $m['text'] : '[' . ($m['kind'] ?? '') . ']') . '</pre></div>';
         exit;
     }

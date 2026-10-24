@@ -4,6 +4,7 @@ declare(strict_types=1);
 // The main gateway's token and port live in the dashboard settings (wa-inbox/.data/config.json), never in the code.
 $waConf = json_decode((string) @file_get_contents(dirname(__DIR__) . '/wa-inbox/.data/config.json'), true) ?: [];
 $token = (string) ($waConf['gateway_token'] ?? '');
+if (($waConf['main_gateway'] ?? '') === 'hub') exit; // the main number runs in the hub (hub_watchdog.php keeps it)
 $nodePort = (int) ($waConf['main_port'] ?? 3188);
 $gatewayDir = __DIR__;
 $logFile = $gatewayDir . '/gateway.log';

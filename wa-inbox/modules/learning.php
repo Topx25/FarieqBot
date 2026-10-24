@@ -46,7 +46,8 @@ function wf_guide_prompt(array $concepts): string {
 }
 /** Personal questions are never answered from the cache. */
 function wf_cache_personal(string $text): bool {
-    return (bool) preg_match('/\d{6,}|موعد|ميعاد|تشخيص|حالتي|حالتى|اسمي|اسمى|رقمي|رقمى|فلوس|دفعت|تحويل|ايصال|إيصال|صوره|صورة|فويس|ريكورد/u', $text);
+    static $w = null; $w ??= wf_seed_alt('personal_words');
+    return (bool) preg_match('/\d{6,}|' . $w . '/u', $text);
 }
 /** A saved answer for (nearly) the same general question, or null. */
 function wf_cache_find(string $base, string $text): ?array {
@@ -68,7 +69,8 @@ function wf_cache_put(string $base, string $question, string $answer, string $so
     // An answer that quotes the Quran is never reused automatically: the AI can mistype a verse, so it waits (off) until someone checks it.
     $status = wf_has_quran($answer, $base) ? 'off' : 'active'; if ($status === 'off') $source = 'quran-check';
     $st = $m->prepare("INSERT INTO wi_answer_cache (base, qnorm, question, answer, source, status, created_at, expires_at) VALUES (?,?,?,?,?,?,NOW(),NOW() + INTERVAL $days DAY)");
-    $st->bind_param('ssssss', $base, $q, $qq, $answer, $source, $status); $st->execute();
+    // a cache that cannot be written (database busy or read only) never breaks the reply itself
+    if (!$st) return; $st->bind_param('ssssss', $base, $q, $qq, $answer, $source, $status); $st->execute();
 }
 /** Typical tokens one AI reply costs for this bot (median of recent bot calls) — what a cache hit saves. */
 function wf_tokens_per_answer(string $base): int {
@@ -156,7 +158,8 @@ function wf_api_learning(string $api): void {
 /** True when the text quotes the Quran (4 consecutive words found in the Uthmani text), or uses verse markers. */
 function wf_has_quran(string $text, string $aid = ''): bool {
     if ($aid !== '' && function_exists('wf_pack') && empty(wf_pack($aid)['quran_check'])) return false; // only for business profiles that use the Quran check
-    if (preg_match('/[﴿﴾]|قال تعالى|قوله تعالى|بسم الله الرحمن الرحيم/u', $text)) return true;
+    static $qm = null; $qm ??= wf_seed_alt('quran_markers');
+    if (preg_match('/[﴿﴾]' . ($qm !== '' ? '|' . $qm : '') . '/u', $text)) return true;
     static $grams = null;
     if ($grams === null) {
         $grams = []; $f = dirname(__DIR__, 2) . '/wa-local/data/quran-uthmani.txt';
@@ -353,8 +356,9 @@ function wf_api_learning_docs(string $api): void {
 function wf_cache_standalone(string $text): bool {
     $n = wf_norm($text); $w = count(array_filter(explode(' ', $n), fn($x) => mb_strlen($x) > 1));
     if ($w < 3 || $w > 60) return false;
-    if (preg_match('/^(ده|دي|دا|كده|طب|طيب|ايوه|ايوا|لا|تمام|ماشي|اه|نعم)\b/u', $n)) return false;          // replies that lean on the previous message
-    return (bool) preg_match('/[؟?]|(^|\s)(ايه|ازاي|ازاى|ليه|امتي|امتى|فين|كام|هل|ما هي|ما هو|ماهي|ماهو|كيف|لماذا|متي|متى|اين|عايز اعرف|ممكن اعرف)(\s|$)/u', $n . ' ' . $text);
+    static $fw = null, $qw = null; $fw ??= wf_seed_alt('filler_words'); $qw ??= wf_seed_alt('question_words_cache');
+    if (preg_match('/^(' . $fw . ')\b/u', $n)) return false;          // replies that lean on the previous message
+    return (bool) preg_match('/[؟?]|(^|\s)(' . $qw . ')(\s|$)/u', $n . ' ' . $text);
 }
 /** Approved knowledge-base answers go into the cache automatically (answers with Quran wait for a check, as usual). */
 function wf_cache_seed_kb(string $base): int {

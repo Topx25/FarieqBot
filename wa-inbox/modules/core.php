@@ -27,7 +27,7 @@ function wf_norm(string $t): string {
 }
 function wf_words(string $t): array {
     static $stop = null;
-    $stop ??= array_flip(['في', 'من', 'على', 'الى', 'عن', 'ما', 'لا', 'يا', 'هو', 'هي', 'انا', 'انت', 'ده', 'دي', 'اللي', 'و', 'او', 'ثم', 'ان', 'كان', 'مع', 'هل', 'كده', 'بس', 'عشان', 'لو', 'كل', 'the', 'and']);
+    $stop ??= array_flip(wf_seed_list('text_stop_words')); // the words too common to count (Business settings → seed_text_stop_words)
     $w = array_filter(explode(' ', wf_norm($t)), fn($x) => mb_strlen($x) > 2 && !isset($stop[$x]));
     return array_values(array_unique($w));
 }

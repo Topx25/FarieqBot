@@ -182,9 +182,14 @@ try { wf_intake_due($accounts); } catch (Throwable $e) {}
 try { wf_gate_due($accounts); } catch (Throwable $e) {}
 try { wf_vis_due($accounts); } catch (Throwable $e) {}
 if (wi_sys('addon_instagram') && function_exists('wf_ig_sync_all')) { try { wf_ig_sync_all(); } catch (Throwable $e) {} } // Farieq add-on: Instagram direct messages, every minute
+// once an hour: the gateway's word lists are in every rules file (a file written before they moved out of the gateway gets them)
+if (date('i') === '17' && function_exists('wf_gw_rules_seed')) { try { wf_gw_rules_seed(true); } catch (Throwable $e) {} }
 // the number each account is signed in with: a different number asks the user to merge or keep the old chats apart
 if (function_exists('wf_hist_scan')) { try { wf_hist_scan(); } catch (Throwable $e) {} }
+// a number with more than 3 bot errors in 10 minutes: one alert an hour to the watch group
+if (function_exists('wf_err_alert')) { try { wf_err_alert(); } catch (Throwable $e) {} }
 if (wi_sys('addon_facebook')) { try { wf_fb_sync_all(); } catch (Throwable $e) {} } // Facebook pages: new Messenger messages read from the page (works before the app is published, catches missed webhooks) // visitors lists: farewell for those who leave unanswered, a note when someone comes back
+try { wi_media_usage_refresh(); } catch (Throwable $e) {} // media kept per number (every 10 minutes): plan allowance shown in the panel and given to each gateway
 try { wi_outbox_flush(); } catch (Throwable $e) {} // replies written while a number was offline // reception groups: reminder, last notice, removal
 try { wf_cases_number_backfill(); } catch (Throwable $e) {} // older cases get their ID // cases from a group whose writer did not answer in time
 try { if ((int) date('i') === 7 || !wi_read('usage.json', [])) wf_usage_refresh(); if ((int) date('i') === 30) wf_client_reminders($tellAdmins); } catch (Throwable $e) {}
@@ -215,7 +220,7 @@ if ((int) date('i') % 5 === 0 && function_exists('wf_idle_numbers')) { try { wf_
 // The weekly bot quality report (people's ratings + a test against the team's answers), on the set day and hour.
 if ((int) date('i') === 37 && function_exists('wf_bot_quality_week')) foreach ($accounts as $acc) { try { $qc = wf_bot_run_cfg((string) $acc['id']); if ($qc['mode'] === 'off' || empty($acc['enabled']) || (int) date('w') !== (int) ($qc['quality_day'] ?? 5) || (int) date('G') !== (int) ($qc['quality_hour'] ?? 10)) continue; wf_bot_quality_week($acc, $tellFrom($acc)); } catch (Throwable $e) {} }
 
-// The weekly team report (healers' activity and neglected cases), an hour after the quality report.
+// The weekly team report (team members' activity and neglected cases), an hour after the quality report.
 // market analysis: once a week (Saturday 04:23) for numbers whose bot runs and that filled in their market or catalog
 if ((int) date('w') === 6 && (int) date('G') === 4 && (int) date('i') === 23 && function_exists('wf_market_analyze')) foreach ($accounts as $acc) { try { $ma = (string) $acc['id']; if (wf_bot_run_cfg($ma)['mode'] === 'off' || (!wf_catalog($ma) && !wf_market($ma)['rivals'] && trim(wf_market($ma)['edge']) === '')) continue; wf_market_analyze($acc); } catch (Throwable $e) {} }
 if ((int) date('i') === 41 && function_exists('wf_team_report')) foreach ($accounts as $acc) { try { $tc = wf_bot_run_cfg((string) $acc['id']); if (empty($tc['team_report']) || empty($acc['enabled']) || (int) date('w') !== (int) ($tc['quality_day'] ?? 5) || (int) date('G') !== ((int) ($tc['quality_hour'] ?? 10) + 1) % 24 || !wf_deep_axes((string) $acc['id'])) continue; wf_team_report($acc, (function ($acc) use ($tellFrom) { $to = (string) (wf_bot_run_cfg((string) $acc['id'])['watch_to'] ?? ''); return preg_match('/^[0-9-]{6,40}@g\.us$/', $to) ? function (string $m) use ($acc, $to) { wi_gateway('/chat/send', ['jid' => $to, 'text' => $m, 'via' => 'bot'], $acc); } : $tellFrom($acc); })($acc)); } catch (Throwable $e) {} }

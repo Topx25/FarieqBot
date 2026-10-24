@@ -78,7 +78,7 @@ function wf_api_learn_clean(string $api): void {
 }
 
 /* ---------- Uploaded files checked against our groups ----------
- * Each passage of an uploaded file is compared with the closest real answers of the healers (the collected exchanges, groups first).
+ * Each passage of an uploaded file is compared with the closest real answers of the team (the collected exchanges, groups first).
  * agree = the team says the same (used, ranked first) · conflict = the team does it differently (never used) · unrelated = nothing to compare (used as before). */
 function wf_doc_verify_run(string $base, int $budget = 600): array {
     $m = wi_db(); if (!$m) return ['ok' => false, 'error' => 'Database not available.']; wf_clean_install(); $t0 = time(); $done = 0; $calls = 0;

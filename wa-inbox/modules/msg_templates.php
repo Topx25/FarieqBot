@@ -7,11 +7,13 @@
 function wf_is_system_text(string $text): bool {
     static $rx = null; $text = trim($text); if ($text === '') return false;
     if ($rx === null) { $rx = []; $own = (array) wi_read('msg_templates.json', []);
-        foreach (wf_msg_registry() as $k => $m) foreach (array_filter([(string) ($own[$k]['ar'] ?? ''), (string) ($own[$k]['en'] ?? ''), (string) ($m[2] ?? ''), (string) ($m[3] ?? '')]) as $tpl) {
+        foreach (wf_msg_all() as $k => $m) foreach (array_filter([(string) ($own[$k]['ar'] ?? ''), (string) ($own[$k]['en'] ?? ''), (string) ($m[2] ?? ''), (string) ($m[3] ?? '')]) as $tpl) {
             $head = trim(mb_substr(preg_split('/\{\w+\}/u', $tpl)[0], 0, 40)); if (mb_strlen($head) >= 8) $rx[] = '/^' . preg_quote($head, '/') . '/u'; } } // the fixed start of each template
     foreach ($rx as $r) if (preg_match($r, $text)) return true;
     return false;
 }
+/** Every message template: the core's and the ones an add-on brings. */
+function wf_msg_all(): array { static $all = null; return $all ??= wi_filter('msg_templates', wf_msg_registry()); }
 function wf_msg_registry(): array {
     return [
         'otp' => ['Login code', ['brand', 'code', 'minutes'], "🔐 كود الدخول لـ {brand}: {code}\nصالح لمدة {minutes} دقايق. لو ما طلبتهوش تجاهل الرسالة.", "🔐 {brand} verification code: {code}\nValid for {minutes} minutes. If you did not request it, ignore this message."],
@@ -40,7 +42,7 @@ function wf_msg_registry(): array {
         'gate_ask_f' => ['Reception group: a woman is asked for her recording (quoting her)', ['name'], "سجلي سورة الفاتحة أو آية الكرسي بصوتك ليتم نقلك لجروب النساء 🎙️", "Record Al-Fatiha or Ayat Al-Kursi in your own voice to be moved to the women's group 🎙️"],
         'gate_ask_m' => ['Reception group: a man is asked for his recording (quoting him)', ['name'], "سجل سورة الفاتحة أو آية الكرسي بصوتك ليتم نقلك لجروب الرجال 🎙️", "Record Al-Fatiha or Ayat Al-Kursi in your own voice to be moved to the men's group 🎙️"],
         'gate_voice' => ['Reception group: a recording arrived — the reviewers are tagged (quoting it)', ['reviewers', 'name'], "{reviewers}\n🎙️ وصل تسجيل صوتي من {name} للمراجعة والنقل للجروب.", "{reviewers}\n🎙️ A recording from {name} arrived for review and moving to the group."],
-        'gate_moved' => ['Reception group: a member was moved — the healer is asked to open the case (in the cases group)', ['healer', 'name', 'phone', 'group'], "{healer}\n📂 تم نقل {name} لجروب {group}.\nافتح ملف الحالة: #حالة {phone}", "{healer}\n📂 {name} was moved to {group}.\nOpen the case file: #case {phone}"],
+        'gate_moved' => ['Reception group: a member was moved — the team member who follows them is asked to open the case (in the cases group)', ['follower', 'name', 'phone', 'group'], "{follower}\n📂 تم نقل {name} لجروب {group}.\nافتح ملف الحالة: #حالة {phone}", "{follower}\n📂 {name} was moved to {group}.\nOpen the case file: #case {phone}"],
         'gate_remind' => ['Reception group: reminder to a new member who has not answered', ['mention'], "{mention} 🌿 لسه مستنيين ردك: اكتب «رجل» أو «امرأة» علشان نكمل إجراءات نقلك لجروب العلاج.", "{mention} 🌿 We are still waiting for your answer: write «man» or «woman» so we can move you to the treatment group."],
         'gate_final' => ['Reception group: last warning before removal', ['mention', 'minutes'], "{mention} ⚠️ تنبيه أخير: لو مفيش رد خلال {minutes} دقيقة هيتم حذفك من الجروب تلقائياً، وتقدر تنضم تاني في أي وقت.", "{mention} ⚠️ Last notice: without an answer within {minutes} minutes you will be removed from the group automatically; you can join again any time."],
         'case_diag_note' => ['Diagnosis group: a stage change, as a note on the case (quoting its report)', ['no', 'name', 'status', 'reason', 'by'], "🆔 ID {no} · {name}\n{status}\nالسبب: {reason}\n(بواسطة {by})", "🆔 ID {no} · {name}\n{status}\nReason: {reason}\n(by {by})"],
@@ -57,7 +59,6 @@ function wf_msg_registry(): array {
         'bot_status_draft' => ['Bot status word: suggest only', [], "مسودات بس 📝", "suggest only 📝"],
         'bot_status_off' => ['Bot status word: off', [], "مقفول ⚪", "off ⚪"],
         'bot_status_held' => ['Bot status word: stopped from a test number', [], "واقف مؤقتاً ⏸️", "stopped for now ⏸️"],
-        'case_deep_msg' => ['Case analysis report (#تحليل) — the shared reference for the team', ['name', 'no', 'date', 'places', 'followers', 'course', 'entry', 'sessions', 'summary', 'axes', 'stage', 'progress', 'bar', 'trend', 'stages', 'recs', 'flags'], "🩺 *تقرير تشخيص ومتابعة الحالة*\n━━━━━━━━━━━━━━\n🆔 رقم الحالة: {no}\n👤 الاسم: {name}\n📅 تاريخ التقرير: {date}\n📍 أماكن المتابعة: {places}\n🧑‍⚕️ المتابعون بالترتيب: {followers}\n🗓️ فترة العلاج: {course}\n🔁 تكرار الدخول: {entry}\n📜 الجلسات (الرقيات المكتوبة): {sessions}\n━━━━━━━━━━━━━━\n\n📋 *ملخص الحالة*\n{summary}\n\n📊 *التقييم حسب الجوانب*\n{axes}\n\n🧭 *مسار العلاج*\nالمرحلة الحالية: {stage}\nنسبة التقدّم: {progress}% {bar}\nالاتجاه: {trend}\n{stages}\n\n🎯 *التوصيات*\n{recs}{flags}\n━━━━━━━━━━━━━━\n_تقرير مساعد للمعالج، ولا يغني عن التقييم المباشر._", "🩺 *Case diagnosis & follow-up report*\n━━━━━━━━━━━━━━\n🆔 Case: {no}\n👤 Name: {name}\n📅 Date: {date}\n📍 Followed in: {places}\n🧑‍⚕️ Followed by, in order: {followers}\n🗓️ Treatment course: {course}\n🔁 Entries: {entry}\n📜 Written sessions: {sessions}\n━━━━━━━━━━━━━━\n\n📋 *Summary*\n{summary}\n\n📊 *Assessment by angle*\n{axes}\n\n🧭 *Treatment course*\nCurrent stage: {stage}\nProgress: {progress}% {bar}\nTrend: {trend}\n{stages}\n\n🎯 *Recommendations*\n{recs}{flags}\n━━━━━━━━━━━━━━\n_An aid for the healer; it does not replace a direct assessment._"],
         'trail_private' => ['Follow-up trail: the private chat', [], "الخاص", "private chat"],
         'handoff_notify' => ['Someone asks to talk with a person of the team (to the chosen team phone)', ['name', 'phone', 'about', 'reason', 'link'], "🙋 {name} ({phone}) طالب يتكلم معاك\nبخصوص: {about}\n{reason}\n💬 {link}", "🙋 {name} ({phone}) asks to talk with you\nAbout: {about}\n{reason}\n💬 {link}"],
         'voice_case_note' => ['Case file: a voice note written out, with a short reading for the team', ['sec', 'text', 'reading', 'urgent'], "🎙️ فويس ({sec} ث) {urgent}\n«{text}»\n\n🧭 {reading}", "🎙️ Voice note ({sec} s) {urgent}\n«{text}»\n\n🧭 {reading}"],
@@ -69,21 +70,15 @@ function wf_msg_registry(): array {
         'trail_open' => ['Case report: course still going', [], "مستمرة", "ongoing"],
         'trail_entry' => ['Case report: group entries line', ['adds', 'back', 'left'], "{adds} مرة دخول للجروبات · رجع {back} مرة · خرج {left} مرة", "{adds} group entries · came back {back} times · left {left} times"],
         'trail_sessions' => ['Case report: written sessions line', ['n', 'top'], "{n} جلسة مكتوبة · الأكثر: {top}", "{n} written sessions · most: {top}"],
-        'case_deep_levels' => ['Case report: level words from low to high scores, separated by |', [], "حرج | ضعيف | متوسط | جيد | ممتاز", "critical | weak | moderate | good | excellent"],
-        'case_deep_trends' => ['Case report: trend words (better | same | worse | unknown)', [], "تحسّن | ثابت | تراجع | غير محدد", "improving | stable | declining | unknown"],
-        'case_deep_evidence' => ['Case report: the word before the evidence', [], "الدليل:", "Evidence:"],
-        'case_deep_flags' => ['Case report: title of the urgent part', [], "⚠️ *تنبيهات تستدعي المتابعة العاجلة*", "⚠️ *Needs urgent attention*"],
-        'case_deep_wait' => ['Case analysis: the case was found, the analysis is running', ['name', 'no'], "⏳ جاري فحص وتحليل حالة {name} (ID {no})، وسوف يتم الرد في أقرب وقت.", "⏳ Checking and analysing the case of {name} (ID {no}); the answer follows shortly."],
-        'case_deep_private' => ['Case analysis asked in a group about a private-chat case', [], "🔒 الحالة دي متابَعة في الخاص بس، وتحليلها مش بيتعرض في الجروبات. اطلبه من رقم الحساب في الخاص.", "🔒 This case is followed in the private chat only; its analysis is not shown in groups. Ask for it privately from the account's number."],
-        'case_recs_wait' => ['Case recommendations: the case was found, working', ['name', 'no'], "⏳ جاري تجهيز توصيات حالة {name} (ID {no})…", "⏳ Preparing the recommendations for {name} (ID {no})…"],
-        'case_recs_msg' => ['Case recommendations (#توصيات)', ['name', 'no', 'stage', 'progress', 'recs', 'items', 'flags'], "🎯 *توصيات الحالة*\n━━━━━━━━━━━━━━\n🆔 {no} · 👤 {name}\n📍 المرحلة: {stage} · التقدّم: {progress}%\n━━━━━━━━━━━━━━\n\n🧭 *الخطوات المقترحة للمعالج*\n{recs}\n\n📜 *الرقيات والبرامج المناسبة*\n{items}{flags}\n━━━━━━━━━━━━━━\n_توصيات مساعدة للمعالج، والقرار له._", "🎯 *Case recommendations*\n━━━━━━━━━━━━━━\n🆔 {no} · 👤 {name}\n📍 Stage: {stage} · Progress: {progress}%\n━━━━━━━━━━━━━━\n\n🧭 *Suggested steps for the healer*\n{recs}\n\n📜 *Fitting texts and programs*\n{items}{flags}\n━━━━━━━━━━━━━━\n_Suggestions to help the healer; the decision is theirs._"],
         'rec_reasons' => ['Suggestions: why an item fits (matches the words | the team used it | often sent)', [], "مطابق لكلام الحالة | الفريق استخدمه لحالات شبهها | بيتبعت كتير", "matches the person's words | the team used it for alike cases | often sent"],
-        'case_deep_none' => ['Case analysis: no single case found', ['cmd'], "⚠️ اكتب {cmd} وبعده رقم الحالة (ID) أو الاسم أو منشن للشخص.", "⚠️ Write {cmd} then the case ID, the name or a tag of the person."],
+        'bot_intro' => ['Bot: the line it starts a first conversation with (Bot → Style, when no own text is set)', [], "أنا المساعد الرقمي بالذكاء الاصطناعي، وسأبدأ معك الحوار.", "I am the AI digital assistant, and I will start the conversation with you."],
+        'invoice_reminder' => ['Invoices: the reminder sent to a customer (when no own text is written)', ['name', 'invoice', 'due', 'methods'], "مرحباً {name} 👋\nنذكّرك بالفاتورة {invoice} المستحقة بمبلغ {due}.\nللدفع: {methods}\nشكراً لك 🌟", "Hello {name} 👋\nA reminder of invoice {invoice}, due: {due}.\nTo pay: {methods}\nThank you 🌟"],
+        'bot_errors_alert' => ['Alert: a number had more than 3 bot errors in 10 minutes (at most once an hour)', ['number', 'count', 'why'], "⚠️ البوت على {number} وقع في {count} أخطاء في آخر 10 دقايق، والرسايل دي هيتعاد عليها تلقائي.\nآخر سبب: {why}\nتفاصيل أكتر في صفحة سجل الأخطاء.", "⚠️ The bot on {number} hit {count} errors in the last 10 minutes; those messages are retried automatically.\nLast reason: {why}\nMore in the Error log page."],
         'bot_hedge' => ['Bot: line added to a reply sent in the quiet hours with middle confidence', [], "وهأتأكدلك من الفريق وأرجعلك لو فيه أي إضافة 🤍", "I will confirm it with the team and come back if there is anything to add 🤍"],
         'rec_offer' => ['Bot: a fitting written text / program offered at the end of a reply', ['title', 'code'], "📜 مناسب لحالتك: «{title}» — لو تحب أبعتهولك اكتب {code}", "📜 This fits you: «{title}» — to get it, write {code}"],
         'bot_quality_report' => ['Weekly bot quality report (to the admins)', ['name', 'pct', 'trend', 'rated', 'good', 'bad', 'weak'], "📊 تقرير جودة البوت الأسبوعي — {name}\n\n🧪 درجة الاختبار: {pct}% ({trend} عن الأسبوع اللي فات)\n👥 تقييم الناس: {rated} رد اتقيّم · {good}% راضيين · {bad} مش راضيين\n\n⚠️ مواضيع محتاجة معرفة أكتر:\n{weak}", "📊 Weekly bot quality — {name}\n\n🧪 Test score: {pct}% ({trend} vs last week)\n👥 People's rating: {rated} replies rated · {good}% satisfied · {bad} not satisfied\n\n⚠️ Topics that need more knowledge:\n{weak}"],
-        'team_line' => ['Team report: one healer line', ['cases', 'touches', 'speed', 'last'], "{cases} حالة · {touches} رد · سرعة الرد {speed} دقيقة · آخر نشاط {last}", "{cases} cases · {touches} answers · answers in {speed} min · last active {last}"],
-        'team_report' => ['Weekly team report (to the admins)', ['name', 'healers', 'neglected', 'count', 'days'], "👥 تقرير متابعة الفريق الأسبوعي — {name}\n\n👥 الفريق والأدمنز:\n{healers}\n\n⚠️ حالات ما اتكلمش معاها حد من {days} أيام أو أكتر ({count}):\n{neglected}", "👥 Weekly team follow-up — {name}\n\n🩺 Healers and admins:\n{healers}\n\n⚠️ Cases nobody talked to for {days}+ days ({count}):\n{neglected}"],
+        'team_line' => ['Team report: one team member line', ['cases', 'touches', 'speed', 'last'], "{cases} حالة · {touches} رد · سرعة الرد {speed} دقيقة · آخر نشاط {last}", "{cases} cases · {touches} answers · answers in {speed} min · last active {last}"],
+        'team_report' => ['Weekly team report (to the admins)', ['name', 'team', 'neglected', 'count', 'days'], "👥 تقرير متابعة الفريق الأسبوعي — {name}\n\n👥 الفريق والأدمنز:\n{team}\n\n⚠️ حالات ما اتكلمش معاها حد من {days} أيام أو أكتر ({count}):\n{neglected}", "👥 Weekly team follow-up — {name}\n\n👥 Team and admins:\n{team}\n\n⚠️ Cases nobody talked to for {days}+ days ({count}):\n{neglected}"],
         'group_watch_head' => ['Group watch: title of the alert (to the admins)', ['name'], "🔔 تنبيه متابعة — {name}", "🔔 Follow-up alert — {name}"],
         'group_watch_alert' => ['Group watch: a question nobody answered', ['group', 'who', 'mins', 'text'], "❓ في «{group}»: {who} سأل من {mins} دقيقة ومحدش رد:\n«{text}»", "❓ In «{group}»: {who} asked {mins} minutes ago and nobody answered:\n«{text}»"],
         'case_untaken_alert' => ['Group watch: a new case nobody took', ['name', 'no', 'hours'], "🗂️ حالة جديدة {name} (ID {no}) من {hours} ساعة ومحدش من الفريق استلمها.", "🗂️ New case {name} (ID {no}) for {hours} hours and nobody of the team took it."],
@@ -118,6 +113,7 @@ function wf_msg_registry(): array {
         'backup_failed' => ['Backup failed', ['error'], "⚠️ النسخ الاحتياطي على Google Drive فشل: {error}", "⚠️ Google Drive backup failed: {error}"],
         'package_failed' => ['Backup package failed', ['error'], "⚠️ نسخة الحزمة فشلت: {error}", "⚠️ Backup package failed: {error}"],
         'followup_reminder' => ['Follow-up reminder (to a team member)', ['name', 'number', 'note', 'link'], "⏰ تذكير متابعة\n{name}{number}{note}\n{link}", "⏰ Follow-up reminder\n{name}{number}{note}\n{link}"],
+        'meeting_invite' => ['Meeting link sent to the people concerned (groups, chats and hosts)', ['title', 'link', 'desc', 'when'], "🎥 {title}\n{desc}\n🗓️ {when}\nرابط الاجتماع:\n{link}", "🎥 {title}\n{desc}\n🗓️ {when}\nMeeting link:\n{link}"],
         'meeting_host' => ['Meeting host link', ['title', 'link'], "🎙️ إنت مضيف اجتماع: {title}\nمن الرابط ده تفتح الاجتماع للناس وتدخل Google Meet:\n{link}\n(الرابط خاص بيك — ما تبعتهوش لحد)", "🎙️ You host the meeting: {title}\nOpen it for people and join Google Meet from this link:\n{link}\n(This link is yours only — do not share it)"],
         'case_report' => ['Case report posted to the group (a line whose values are all empty is left out)', ['join', 'name', 'phone', 'age', 'marital', 'kids', 'country', 'follower', 'story', 'symptoms', 'extra', 'diag_by', 'diagnosis', 'placement'],
             "تاريخ الانضمام: {join}\n\nالاسم: {name}\nالرقم: +{phone}\nالسن: {age}\nالحالة الاجتماعية: {marital}\nعدد الأولاد: {kids}\nالبلد: {country}\n\nمتابعة: {follower}\n\n{story}\n\n{symptoms}\n\n{extra}\n\n{diagnosis}\n{placement}",
@@ -137,12 +133,13 @@ function wf_msg_registry(): array {
         'report_invoices' => ['Daily report: overdue invoices', ['count', 'due'], "\n🧾 فواتير متأخرة: {count} · إجمالي المستحق: {due}", "\n🧾 Overdue invoices: {count} · total due: {due}"],
     ];
 }
-function wf_msg_default(string $key): string { $r = wf_msg_registry()[$key] ?? null; if (!$r) return ''; return (string) (wi_sys('msg_lang') === 'en' ? $r[3] : $r[2]); }
+function wf_msg_default(string $key): string { $r = wf_msg_all()[$key] ?? null; if (!$r) return ''; return (string) (wi_sys('msg_lang') === 'en' ? $r[3] : $r[2]); }
 /** The text to send: the installation's own version or the starting text, with {placeholders} filled. */
 function wf_msg(string $key, array $vars = []): string {
     $own = (array) (wi_read('config.json', [])['messages'] ?? []);
     $t = array_key_exists($key, $own) ? (string) $own[$key] : wf_msg_default($key);
     $vars += ['brand' => (string) wi_sys('brand_name'), 'link' => (string) wi_sys('base_url'), 'date' => date('d/m/Y')];
+    $vars = wi_filter('msg_vars', $vars, $key); // an add-on may fill older placeholder names of its own wording
     // A line whose {placeholders} are all empty is left out (optional fields).
     $t = implode("\n", array_filter(explode("\n", $t), function ($line) use ($vars) { if (!preg_match_all('/\{(\w+)\}/', $line, $m)) return true; foreach ($m[1] as $k) if (!array_key_exists($k, $vars) || trim((string) $vars[$k]) !== '') return true; return false; }));
     return strtr($t, array_combine(array_map(fn($k) => '{' . $k . '}', array_keys($vars)), array_map('strval', array_values($vars))));
@@ -152,9 +149,9 @@ function wf_api_msg_templates(string $api): void {
     if (!wi_is_super()) wi_json(['ok' => false, 'error' => 'Super admin only.'], 403); // shared by every number, including the login code message
     $c = wi_read('config.json', []); $own = (array) ($c['messages'] ?? []);
     if ($_SERVER['REQUEST_METHOD'] === 'POST') { $in = wf_post(); $k = (string) ($in['key'] ?? '');
-        if (!isset(wf_msg_registry()[$k])) wi_json(['ok' => false, 'error' => 'Unknown template.']);
+        if (!isset(wf_msg_all()[$k])) wi_json(['ok' => false, 'error' => 'Unknown template.']);
         if (!empty($in['reset'])) unset($own[$k]); else $own[$k] = mb_substr((string) ($in['text'] ?? ''), 0, 4000);
         $c['messages'] = $own; wi_write('config.json', $c); wi_log('msg_template_save', ['key' => $k]); wi_json(['ok' => true]); }
-    $list = []; foreach (wf_msg_registry() as $k => $r) $list[] = ['key' => $k, 'title' => $r[0], 'vars' => array_merge($r[1], ['brand', 'link', 'date']), 'default' => wf_msg_default($k), 'text' => array_key_exists($k, $own) ? (string) $own[$k] : wf_msg_default($k), 'edited' => array_key_exists($k, $own)];
+    $list = []; foreach (wf_msg_all() as $k => $r) $list[] = ['key' => $k, 'title' => $r[0], 'vars' => array_merge($r[1], ['brand', 'link', 'date']), 'default' => wf_msg_default($k), 'text' => array_key_exists($k, $own) ? (string) $own[$k] : wf_msg_default($k), 'edited' => array_key_exists($k, $own)];
     wi_json(['ok' => true, 'templates' => $list]);
 }

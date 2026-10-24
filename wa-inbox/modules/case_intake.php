@@ -13,7 +13,7 @@ function wf_intake_cfg(string $aid): array {
 }
 /** The diagnosis group: the one chosen, else the first group of the case registry. */
 function wf_intake_diag(string $aid): string { $c = wf_intake_cfg($aid); return $c['diag'] !== '' ? $c['diag'] : (string) array_key_first(wf_registry_groups($aid) ?: [] ) ; }
-/** Fields the AI fills: the switched-on fields of the case form (the date and the healer are filled by the system). */
+/** Fields the AI fills: the switched-on fields of the case form (the date and the follower are filled by the system). */
 function wf_intake_fields(string $aid): array {
     $F = wf_case_cfg($aid)['fields']; $out = [];
     foreach ($F as $k => $f) if ((!empty($f['on']) || in_array($k, ['name', 'phone'], true)) && !in_array($k, ['join', 'diag_by'], true)) $out[$k] = (string) $f['label'];
@@ -36,8 +36,8 @@ function wf_intake_extract(string $aid, string $text): array {
     foreach ($F as $k => $l) { $v = $d[$k] ?? ''; if (is_array($v)) $v = implode("\n", array_map('strval', $v)); $v = trim(mb_substr((string) $v, 0, $k === 'story' || $k === 'symptoms' ? 4000 : 300)); if ($v !== '') $out[$k] = $v; }
     return ['ok' => !empty($ai['ok']), 'fields' => $out, 'error' => (string) ($ai['error'] ?? '')];
 }
-/** Who follows the case: the healer named in the details ("المتابع: …"), else the healer who wrote it —
- *  never this number itself (when the team writes from the bot's own phone, the healer is asked for). */
+/** Who follows the case: the follower named in the details ("المتابع: …"), else the team member who wrote it —
+ *  never this number itself (when the team writes from the bot's own phone, the follower is asked for). */
 function wf_intake_follower(array $acc, array $pend, array $fields): string {
     $f = trim((string) ($fields['follower'] ?? '')); if ($f !== '') return mb_substr($f, 0, 60);
     $from = (string) ($pend['from'] ?? '');
@@ -47,7 +47,7 @@ function wf_intake_follower(array $acc, array $pend, array $fields): string {
 function wf_intake_missing(string $aid, array $fields, string $phone, array $voices = [], ?string $follower = null): array {
     $F = wf_intake_askable($aid); $miss = [];
     foreach ((array) wf_intake_cfg($aid)['ask'] as $k) { if (!isset($F[$k])) continue; if ($k === 'voice' ? !$voices : ($k === 'phone' ? $phone === '' : trim((string) ($fields[$k] ?? '')) === '')) $miss[$k] = $F[$k]; }
-    if ($follower === '' && isset($F['follower'])) $miss['follower'] = $F['follower']; // the healer is not known: ask who follows
+    if ($follower === '' && isset($F['follower'])) $miss['follower'] = $F['follower']; // the follower is not known: ask who follows
     return $miss;
 }
 /** The person's number: written in the details, else the first person tagged (not the writer, not this number). */
@@ -291,8 +291,8 @@ function wf_gate_hook(array $acc, array $in, callable $reply): bool {
     wi_log('reception_gate', ['account' => $aid, 'group' => $jid, 'step' => $act, 'sent' => !empty($r['ok'])]);
     return true;
 }
-/** A member who went through a reception gate joined another of our groups (a healer moved them):
- *  the healer who added them (else the reviewers) is tagged in the gate's cases group to open the case, with the member's number. */
+/** A member who went through a reception gate joined another of our groups (a team member moved them):
+ *  the team member who added them (else the reviewers) is tagged in the gate's cases group to open the case, with the member's number. */
 function wf_gate_moved(array $acc, string $gjid, array $members, string $by): void {
     $aid = (string) $acc['id']; $c = wf_bot_run_cfg($aid); if ($c['mode'] !== 'auto') return;
     $S = (array) (wi_read('gate_state.json', [])[$aid] ?? []); $names = null;
@@ -305,7 +305,7 @@ function wf_gate_moved(array $acc, string $gjid, array $members, string $by): vo
             $by = wf_phone($by); $who = $by !== '' ? [$by] : array_values(array_filter(array_map('wf_phone', explode(',', (string) $g['gate_review']))));
             $tags = implode(' ', array_map(fn($x) => '@' . $x, $who)); $jids = array_map(fn($x) => $x . (strlen($x) > 13 ? '@lid' : '@s.whatsapp.net'), $who);
             if ($names === null) { $names = []; foreach ((array) (wi_gateway('/groups', null, $acc)['groups'] ?? []) as $x) $names[(string) ($x['id'] ?? $x['jid'] ?? '')] = (string) ($x['subject'] ?? $x['name'] ?? ''); }
-            $txt = wf_msg('gate_moved', ['healer' => $tags, 'name' => (string) ($p['n'] ?? '') !== '' ? (string) $p['n'] : '+' . $num, 'phone' => '+' . $num, 'group' => $names[$gjid] ?? '']);
+            $txt = wf_msg('gate_moved', ['follower' => $tags, 'name' => (string) ($p['n'] ?? '') !== '' ? (string) $p['n'] : '+' . $num, 'phone' => '+' . $num, 'group' => $names[$gjid] ?? '']);
             $r = wi_gateway('/chat/send', ['jid' => $g['gate_notify'], 'text' => $txt, 'mentions' => $jids, 'via' => 'bot'], $acc);
             wi_log('reception_moved', ['account' => $aid, 'from_group' => $gate, 'to_group' => $gjid, 'sent' => !empty($r['ok'])]);
         }
@@ -360,7 +360,7 @@ function wf_intake_hook(array $acc, array $in): void {
         $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(120); wf_libcmd_hook($acc, $jid, $text, $id, $from); exit; }
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && function_exists('wf_media_code_find') && (wf_media_code_in($aid, $text) !== '' || wf_libtag_which($aid, $text) || wf_program_code_in($aid, $text) || wf_lib_text_code_in($aid, $text))) { // a file's shortcut (alone or after the send word): the file
         $reply(['ok' => false, 'done' => true]); wf_media_code_send($acc, $jid, $text, $id); exit; }
-    if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && preg_match('/^\s*#\S+\s*$/u', $text) && function_exists('wi_replies_for')) { // a quick reply's keyword ("#تحصين"): its text, in the group
+    if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && preg_match('/^\s*#\S+\s*$/u', $text) && function_exists('wi_replies_for')) { // a quick reply's keyword ("#keyword"): its text, in the group
         $typed = wf_norm(ltrim(trim($text), '#')); $hit = array_values(array_filter(wi_replies_for($acc), fn($r) => ($k = wf_norm(ltrim(trim((string) ($r['keyword'] ?? '')), '#/'))) !== '' && $k === $typed));
         if (count($hit) === 1) { $reply(['ok' => false, 'done' => true]); [$tagT, $tagM] = wf_group_tag($from);
             wi_gateway('/chat/send', ['jid' => $jid, 'text' => $tagT . wi_reply_fill((string) $hit[0]['text'], $jid, $acc), 'quote_id' => $id, 'mentions' => $tagM, 'via' => 'bot'], $acc); wi_log('reply_from_group', ['account' => $aid, 'group' => $jid, 'title' => $hit[0]['title'] ?? '']); exit; } }
@@ -384,7 +384,7 @@ function wf_intake_hook(array $acc, array $in): void {
     if (empty($c['on']) || wi_account_blocked($acc) || !str_ends_with($jid, '@g.us') || $from === '' || ($text === '' && empty($in['voices'])) || $jid === $diag || ($c['groups'] && !in_array($jid, (array) $c['groups'], true))) { $reply(['ok' => false, 'done' => true]); exit; }
     $pk = $jid . '|' . $from; $pend = (array) (wi_read('case_intake.json', [])[$aid][$pk] ?? []);
     $isNew = wf_intake_has_kw($aid, $text) && (empty($c['mention']) || !empty($in['tagged_me'])) && wf_intake_has_target($in, $text);
-    if ($isNew && empty($in['self'])) wf_team_learn($aid, $from, 'opened a case in a group'); // who writes cases is a healer
+    if ($isNew && empty($in['self'])) wf_team_learn($aid, $from, 'opened a case in a group'); // who writes cases is a team member
     if ($isNew && $pend) { // the writer sends the keyword again: the same person (or a waiting case with nothing in it) continues, another person starts a new one
         $newPhone = wf_intake_phone(['phone' => $text], array_map('strval', (array) ($in['mentions'] ?? [])), $from, $acc);
         $oldPhone = wf_intake_phone((array) ($pend['fields'] ?? []), (array) ($pend['mentions'] ?? []), $from, $acc);
@@ -466,7 +466,7 @@ function wf_intake_finish(array $acc, string $pk): array {
     $phone = wf_intake_phone($f, (array) ($pend['mentions'] ?? []), (string) $pend['from'], $acc);
     if ($phone === '' && trim((string) ($f['name'] ?? '')) === '') { wi_log('case_intake_dropped', ['account' => $aid, 'group' => $pend['jid'] ?? '']); return ['ok' => false, 'dropped' => true]; } // nobody to open it for: no empty files
     $key = $phone !== '' ? $phone : 'g' . substr(md5($pk . $pend['at']), 0, 10); // no number given: its own record, completed later from the Cases page
-    $by = wf_intake_follower($acc, $pend, $f); // the healer who follows (never this number)
+    $by = wf_intake_follower($acc, $pend, $f); // the team member who follows (never this number)
     $sym = array_values(array_filter(array_map(fn($x) => preg_replace('/^\s*(\d+\s*[\.\-\)]|[-•*])\s*/u', '', trim($x)), preg_split('/\R/u', (string) ($f['symptoms'] ?? '')))));
     $v = ['join' => date('d/m/Y'), 'name' => (string) ($f['name'] ?? ''), 'phone' => $phone, 'follower' => $by, 'diag_by' => $by] + $f; $v['symptoms'] = implode("\n", $sym);
     $report = wf_case_report($aid, $v);

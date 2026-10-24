@@ -14,7 +14,7 @@ function wi_inv_db(): ?mysqli {
     static $m = false; if ($m !== false) return $m;
     if (!wi_sys('addon_invoices') || !($c = wi_db_creds('invoices'))) return $m = null;
     mysqli_report(MYSQLI_REPORT_OFF); $x = @new mysqli($c['host'], $c['user'], $c['pass'], $c['name']); if ($x->connect_errno) return $m = null;
-    $x->set_charset('utf8mb4'); return $m = $x;
+    $x->set_charset('utf8mb4'); if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) $x->query('SET SESSION TRANSACTION READ ONLY'); return $m = $x;
 }
 function wi_db(bool $reset = false): ?mysqli {
     static $db = false, $used = 0;
@@ -29,6 +29,8 @@ function wi_db(bool $reset = false): ?mysqli {
     $m = @new mysqli($c['host'], $c['user'], $c['pass'], $c['name']);
     if ($m->connect_errno) return null;
     $m->set_charset('utf8mb4');
+    // tests with the in-memory store: the database can be read but never written (a write fails instead of reaching live data)
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) $m->query('SET SESSION TRANSACTION READ ONLY');
     return $db = $m;
 }
 /* ---------- Secrets (gateway tokens, bridge token, Google OAuth secret / refresh token): stored in MySQL, encrypted with
@@ -44,6 +46,7 @@ function wi_secrets_install(): void {
 }
 function wi_secret_set(string $name, string $value): bool {
     unset($GLOBALS['WI_SECRET_CACHE'][$name]); // the next read sees the new value (it was read once per request before)
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) { $GLOBALS['WI_SECRET_CACHE'][$name] = $value; return true; } // tests: kept in memory only
     $m = wi_db(); if (!$m) return false; wi_secrets_install();
     if ($value === '') { $st = $m->prepare("DELETE FROM wi_secrets WHERE name = ?"); $st->bind_param('s', $name); return $st->execute(); } // empty = removed
     $iv = random_bytes(12); $tag = ''; $ct = openssl_encrypt($value, 'aes-256-gcm', wi_secret_key(), OPENSSL_RAW_DATA, $iv, $tag); if ($ct === false) return false;
@@ -169,6 +172,12 @@ function wi_db_install_cases(): bool {
         id BIGINT AUTO_INCREMENT PRIMARY KEY, base VARCHAR(40) NOT NULL, phone VARCHAR(32) NOT NULL, at DATETIME NULL, by_user VARCHAR(190) NOT NULL DEFAULT '',
         kind VARCHAR(20) NOT NULL DEFAULT 'note', text TEXT NULL, KEY by_case (base, phone, at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"));
+}
+/** One line of a case's history (wi_case_events): who changed what (kind: follower, status…). Tests keep it in memory. */
+function wi_case_event_add(string $base, string $phone, string $by, string $kind, string $text): void {
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) { $GLOBALS['WI_MEM_STORE']['_case_events'][] = compact('base', 'phone', 'by', 'kind', 'text'); return; }
+    $m = wi_db(); if (!$m) return; $at = date('Y-m-d H:i:s');
+    $st = $m->prepare("INSERT INTO wi_case_events (base,phone,at,by_user,kind,text) VALUES (?,?,?,?,?,?)"); if ($st) { $st->bind_param('ssssss', $base, $phone, $at, $by, $kind, $text); $st->execute(); }
 }
 function wi_dt($v): ?string { $t = $v ? strtotime((string) $v) : false; return $t ? date('Y-m-d H:i:s', $t) : null; }
 /** cases.json shape: {base: {phone: case}} */

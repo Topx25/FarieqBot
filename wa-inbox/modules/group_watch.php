@@ -7,7 +7,7 @@ function wf_group_watch(array $acc, callable $tell): array {
     $mins = max(5, (int) ($c['watch_minutes'] ?? 30)); $now = time(); $S = (array) (wi_read('group_watch.json', [])[$aid] ?? []); $sent = (array) ($S['sent'] ?? []); $alerts = [];
     $since = $now - 3 * 3600; $me = preg_replace('/\D/', '', explode(':', (string) (wi_gateway('/status', null, $acc)['account']['id'] ?? ''))[0]);
     $skip = array_flip((array) ($c['watch_skip'] ?? []));
-    $fol = []; if (function_exists('wf_team_watch')) foreach ((array) (wf_team_watch($acc)['cases'] ?? []) as $cw) if (preg_match('/^\d{8,}$/', (string) ($cw['by'] ?? ''))) $fol[(string) $cw['phone']] = (string) $cw['by']; // the healer who follows each case
+    $fol = []; if (function_exists('wf_team_watch')) foreach ((array) (wf_team_watch($acc)['cases'] ?? []) as $cw) if (preg_match('/^\d{8,}$/', (string) ($cw['by'] ?? ''))) $fol[(string) $cw['phone']] = (string) $cw['by']; // the team member who follows each case
     $tags = [];
     foreach ((array) (wi_gateway('/archive/chats?months=1', null, $acc)['chats'] ?? []) as $ch) {
         if (empty($ch['group']) || isset($skip[(string) $ch['jid']]) || strtotime((string) ($ch['last']['time'] ?? '')) < $since) continue;
@@ -33,6 +33,6 @@ function wf_group_watch(array $acc, callable $tell): array {
     wi_update('group_watch.json', function ($G) use ($aid, $sent) { $G[$aid]['sent'] = $sent; $G[$aid]['at'] = date('c'); return $G; });
     if ($alerts) { $msg = wf_msg('group_watch_head', ['name' => (string) ($acc['name'] ?? $aid)]) . "\n\n" . implode("\n\n", array_slice($alerts, 0, 8));
         $to = (string) ($c['watch_to'] ?? ''); // a group chosen in Bot → Switch on / off gets the alert; else the admins privately
-        if (preg_match('/^[0-9-]{6,40}@g\.us$/', $to)) wi_gateway('/chat/send', ['jid' => $to, 'text' => $msg, 'via' => 'bot', 'mentions' => array_map(fn($p) => $p . (strlen($p) >= 14 ? '@lid' : '@s.whatsapp.net'), array_keys($tags))], $acc); else $tell($msg); } // the healer of each case is tagged in the group
+        if (preg_match('/^[0-9-]{6,40}@g\.us$/', $to)) wi_gateway('/chat/send', ['jid' => $to, 'text' => $msg, 'via' => 'bot', 'mentions' => array_map(fn($p) => $p . (strlen($p) >= 14 ? '@lid' : '@s.whatsapp.net'), array_keys($tags))], $acc); else $tell($msg); } // the follower of each case is tagged in the group
     return ['alerts' => count($alerts)];
 }

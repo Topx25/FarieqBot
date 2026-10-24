@@ -111,7 +111,7 @@
         document.getElementById('mq-st').innerHTML = (q.pending ? '⏳ ' + T('Downloading…') + ' ' + fmt(q.pending) + ' ' + T('left') + '<br>' : '') + '✓ ' + fmt(q.done) + ' · ' + T('expired on WhatsApp') + ' ' + fmt(q.expired) + ' · ' + T('failed') + ' ' + fmt(q.failed);
       });
     }
-    // ➕ a text written by hand (a written ruqyah, a price list…): add, edit, delete — with a cover, a tag, a title, a topic and keywords
+    // ➕ a text written by hand (a written text, a price list…): add, edit, delete — with a cover, a tag, a title, a topic and keywords
     function textDialog(g) {
       var t = g ? { id: g.manual ? g.mid : '', section: g.section, topic: g.topic, title: g.title, code: g.code || '', keywords: g.keywords || '', text: g.best.text, cover: g.cover || '' }
         : { id: '', section: L.section || (SEC[1] || [''])[0], topic: L.topic || '', title: '', code: '', keywords: '', text: '', cover: '' };

@@ -6,14 +6,15 @@
 function wf_business_types(): array {
     return ['crm' => ['icon' => '🤝', 'case' => 'crm', 'desc' => 'Customers, leads and deals: sales and customer service.'],
         'support' => ['icon' => '🛠️', 'case' => 'support', 'desc' => 'IT and technical support: tickets from new to solved.'],
-        'general' => ['icon' => '🗂️', 'case' => 'general', 'desc' => 'Any business: general follow-up of the people who write to you.'],
-        'ruqyah' => ['icon' => '🤲', 'case' => 'treatment', 'desc' => 'Healing follow-up: cases, symptoms and programs.']];
+        'general' => ['icon' => '🗂️', 'case' => 'general', 'desc' => 'Any business: general follow-up of the people who write to you.']] + wi_filter('business_types', []);
 }
-/** The spiritual (ruqyah) type is never offered to clients: only the super admin has it, and gives it to a client by hand (Clients → Edit plan). */
+/** A type kept for some panels only (restricted, e.g. brought by an add-on) is offered only on the numbers of a tenant it was given to. */
 function wf_type_allowed(string $type, string $aid): bool {
-    if ($type !== 'ruqyah') return true; if (wi_is_super()) return true;
-    $o = wi_private_owner(wi_accounts()[$aid] ?? []); $c = $o !== '' ? wi_client_of(wi_find_user($o) ?: []) : null; return $c && !empty($c['allow_ruqyah']);
+    if (empty(wf_pack_presets()[$type]['restricted'])) return true;
+    return (bool) wi_filter('pack_allowed', false, $type, $aid); // the same rule for everyone, the super admin too: only the tenants it was given to
 }
+/** Business types kept for some panels only (restricted): key => label. A client gets one by hand (Clients → Edit plan, saved as allow_<key>). */
+function wf_restricted_types(): array { $o = []; foreach (wf_pack_presets() as $k => $p) if (!empty($p['restricted'])) $o[$k] = (string) ($p['label'] ?? $k); return $o; }
 /** "Interface text => your word" lines ↔ rows. */
 function wf_terms_rows(string $s): array { $o = []; foreach (preg_split('/\R/u', $s) as $l) { $x = array_map('trim', explode('=>', $l, 2)); if (count($x) === 2 && $x[0] !== '' && $x[1] !== '') $o[] = $x; } return $o; }
 
@@ -21,8 +22,8 @@ function wf_api_business(string $api): void {
     if ($api !== 'business_cfg') return;
     $acc = wi_current(); if (!$acc) wi_json(['ok' => false, 'error' => 'No number.']); $aid = (string) $acc['id'];
     $base = (array) require dirname(__DIR__) . '/i18n.php'; // the plain dictionary (without this number's words)
-    // Another business never sees the healing wording of the plain dictionary: its words are shown as they read on its own panel.
-    $heal = (string) (wf_pack($aid)['preset'] ?? '') === 'ruqyah'; $mine = []; foreach (wf_terms_rows((string) (wf_pack($aid)['ui_terms'] ?? '')) as $r) $mine[$r[0]] = $r[1];
+    // A business kept apart (its own wording) sees the plain dictionary; another one sees its words as they read on its own panel.
+    $heal = !empty(wf_pack($aid)['apart']); $mine = []; foreach (wf_terms_rows((string) (wf_pack($aid)['ui_terms'] ?? '')) as $r) $mine[$r[0]] = $r[1];
     if (!$heal) foreach ($base as $en => $ar) if (isset($mine[$en])) $base[$en] = $mine[$en];
     if (isset($_GET['q'])) { // search the interface words to rename (Arabic or English)
         $q = mb_strtolower(trim((string) $_GET['q'])); $o = [];

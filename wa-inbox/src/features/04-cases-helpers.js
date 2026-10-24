@@ -146,7 +146,7 @@
     document.getElementById('rg-q').oninput = function () { RG.q = this.value; pgReset('registry'); draw(); };
     document.getElementById('rg-scan').onclick = function () { this.disabled = true; load(true); };
     document.getElementById('rg-follow').onclick = function () { if (confirm(T('Follow the selected cases? A case page is made for each number, with all their messages from every group and their private chat.'))) act({ follow: 1 }, T('Followed')); };
-    document.getElementById('rg-lbl').onclick = function () { askForm('🏷️ ' + T('Add a label to the selected cases'), [{ key: 'v', label: T('Label'), placeholder: 'عين، سحر، متابعة أسبوعية' }], T('Add')).then(function (f) { if (f && f.v.trim()) act({ add_label: f.v.trim() }); }); };
+    document.getElementById('rg-lbl').onclick = function () { askForm('🏷️ ' + T('Add a label to the selected cases'), [{ key: 'v', label: T('Label'), placeholder: T('e.g. urgent, follow up weekly') }], T('Add')).then(function (f) { if (f && f.v.trim()) act({ add_label: f.v.trim() }); }); };
     document.getElementById('rg-unlbl').onclick = function () { askForm('🏷️ ' + T('Remove a label from the selected cases'), [{ key: 'v', label: T('Label'), value: RG.label || '' }], T('Remove')).then(function (f) { if (f && f.v.trim()) act({ remove_label: f.v.trim() }); }); };
     function aiLoop(ids) {
       var st = document.getElementById('rg-ai-st'), btn = document.getElementById('rg-ai'); btn.disabled = true;

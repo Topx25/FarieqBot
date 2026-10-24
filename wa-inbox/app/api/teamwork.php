@@ -49,7 +49,7 @@
                 $rs = array_values(array_filter($rs, fn($r) => $r['id'] !== $id));
                 // words or phrases that make the dashboard suggest this reply while someone types
                 $trig = array_values(array_unique(array_filter(array_map(fn($x) => trim(mb_substr($x, 0, 80)), preg_split('/[\n,،]+/u', (string) ($in['triggers'] ?? ''))))));
-                // members' keyword ("#تحصين"): one reply per keyword on this number
+                // members' keyword ("#keyword"): one reply per keyword on this number
                 $kw = trim(mb_substr(preg_replace('/^[#\/\s]+/u', '', (string) ($in['keyword'] ?? '')), 0, 30));
                 if ($kw !== '') foreach ($rs as $o) if (wf_norm((string) ($o['keyword'] ?? '')) === wf_norm($kw)) wi_json(['ok' => false, 'error' => 'Another quick reply already uses this keyword.'], 422);
                 $rs[] = ['id' => $id, 'title' => $title, 'text' => $text, 'keyword' => $kw, 'triggers' => array_slice($trig, 0, 30), 'by' => $me, 'updated_at' => date('c')];

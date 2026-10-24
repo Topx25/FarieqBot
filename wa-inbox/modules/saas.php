@@ -12,16 +12,16 @@ function wi_plans(): array {
     $saved = wi_read('plans.json', []);
     if (is_array($saved) && $saved) return $saved;
     return [
-        'trial' => ['name' => 'Trial', 'price' => 0, 'days' => 14, 'numbers' => 1, 'team' => 2, 'bot' => true, 'meetings' => true, 'cases' => true, 'backup' => false, 'ai_calls' => 300, 'public' => true, 'trial' => true],
-        'starter' => ['name' => 'Starter', 'price' => 7, 'days' => 30, 'numbers' => 1, 'team' => 2, 'bot' => true, 'meetings' => false, 'cases' => true, 'backup' => false, 'ai_calls' => 500, 'public' => true, 'trial' => false],
-        'basic' => ['name' => 'Basic', 'price' => 15, 'days' => 30, 'numbers' => 1, 'team' => 5, 'bot' => true, 'meetings' => false, 'cases' => true, 'backup' => true, 'ai_calls' => 2000, 'public' => true, 'trial' => false],
-        'pro' => ['name' => 'Pro', 'price' => 35, 'days' => 30, 'numbers' => 3, 'team' => 15, 'bot' => true, 'meetings' => true, 'cases' => true, 'backup' => true, 'ai_calls' => 6000, 'public' => true, 'trial' => false],
+        'trial' => ['name' => 'Trial', 'price' => 0, 'days' => 14, 'numbers' => 1, 'team' => 2, 'bot' => true, 'meetings' => true, 'cases' => true, 'backup' => false, 'ai_calls' => 300, 'media_gb' => 0, 'public' => true, 'trial' => true],
+        'starter' => ['name' => 'Starter', 'price' => 7, 'days' => 30, 'numbers' => 1, 'team' => 2, 'bot' => true, 'meetings' => false, 'cases' => true, 'backup' => false, 'ai_calls' => 500, 'media_gb' => 0, 'public' => true, 'trial' => false],
+        'basic' => ['name' => 'Basic', 'price' => 15, 'days' => 30, 'numbers' => 1, 'team' => 5, 'bot' => true, 'meetings' => false, 'cases' => true, 'backup' => true, 'ai_calls' => 2000, 'media_gb' => 0, 'public' => true, 'trial' => false],
+        'pro' => ['name' => 'Pro', 'price' => 35, 'days' => 30, 'numbers' => 3, 'team' => 15, 'bot' => true, 'meetings' => true, 'cases' => true, 'backup' => true, 'ai_calls' => 6000, 'media_gb' => 0, 'public' => true, 'trial' => false],
     ];
 }
 /** One plan, cleaned. */
 function wi_plan_clean(array $p): array {
     return ['name' => mb_substr(trim((string) ($p['name'] ?? '')), 0, 40), 'price' => max(0, round((float) ($p['price'] ?? 0), 2)), 'days' => max(1, min(3650, (int) ($p['days'] ?? 30))),
-        'numbers' => max(0, min(100, (int) ($p['numbers'] ?? 1))), 'team' => max(0, min(500, (int) ($p['team'] ?? 0))), 'ai_calls' => max(0, min(1000000, (int) ($p['ai_calls'] ?? 0))),
+        'numbers' => max(0, min(100, (int) ($p['numbers'] ?? 1))), 'team' => max(0, min(500, (int) ($p['team'] ?? 0))), 'ai_calls' => max(0, min(1000000, (int) ($p['ai_calls'] ?? 0))), 'media_gb' => max(0, min(100000, (int) ($p['media_gb'] ?? 0))),
         'bot' => !empty($p['bot']), 'meetings' => !empty($p['meetings']), 'cases' => !empty($p['cases']), 'backup' => !empty($p['backup']), 'public' => !empty($p['public']), 'trial' => !empty($p['trial'])];
 }
 /** The plan a client is on (by its id), or null for a hand-made client. */
@@ -30,10 +30,76 @@ function wi_client_plan(array $client): ?array { $id = (string) ($client['plan_i
 function wi_plan_apply(array $client, string $planId, bool $setEnd): array {
     $p = wi_plans()[$planId] ?? null; if (!$p) return $client;
     $client['plan_id'] = $planId; $client['plan'] = (string) $p['name'];
-    $client['max_numbers'] = (int) $p['numbers']; $client['max_team'] = (int) $p['team']; $client['ai_calls'] = (int) $p['ai_calls'];
+    $client['max_numbers'] = (int) $p['numbers']; $client['max_team'] = (int) $p['team']; $client['ai_calls'] = (int) $p['ai_calls']; $client['media_gb'] = (int) ($p['media_gb'] ?? 0);
     $client['can_bot'] = !empty($p['bot']); $client['can_meetings'] = !empty($p['meetings']); $client['can_cases'] = !empty($p['cases']); $client['can_backup'] = !empty($p['backup']);
     if ($setEnd) $client['expires'] = date('Y-m-d', strtotime('+' . (int) $p['days'] . ' days'));
     return $client;
+}
+/* ---------- Media allowance (plan field media_gb, 0 = unlimited) and the plan usage section ---------- */
+/** A client's media allowance in MB; 0 = unlimited (no client, the operator's own panels, or media_gb 0). */
+function wi_media_allow_mb(?array $client): int {
+    if (!$client || ($client['role'] ?? '') !== 'client' || !empty($client['ai_system'])) return 0;
+    return max(0, (int) ($client['media_gb'] ?? 0)) * 1024;
+}
+/** The client who owns a number, or null (the operator's own number). */
+function wi_account_client(array $acc): ?array {
+    $o = strtolower((string) ($acc['owner'] ?? '')); if ($o === '') return null;
+    foreach (wi_users() as $u) if (strtolower((string) ($u['email'] ?? '')) === $o && ($u['role'] ?? '') === 'client') return $u;
+    return null;
+}
+/** MB kept per number, counted at most every 10 minutes (store media_usage.json); each number's gateway gets its owner's allowance and use (media_allow.json). */
+function wi_media_usage_refresh(bool $force = false): array {
+    $U = wi_read('media_usage.json', []); if (!$force && (int) ($U['at'] ?? 0) > time() - 600) return $U;
+    $root = dirname(__DIR__, 2); $mb = [];
+    foreach (wi_accounts() as $aid => $a) { $bytes = 0; $d = $root . '/storage/inbox_media/' . $aid;
+        if (is_dir($d)) foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($d, FilesystemIterator::SKIP_DOTS)) as $fi) $bytes += (int) $fi->getSize();
+        $mb[(string) $aid] = (int) round($bytes / 1048576); }
+    $U = ['at' => time(), 'acc' => $mb]; wi_write('media_usage.json', $U);
+    foreach (wi_accounts() as $aid => $a) { $c = wi_account_client($a); $cap = wi_media_allow_mb($c);
+        $used = $c ? array_sum(array_map(fn($x) => (int) ($mb[(string) $x] ?? 0), array_keys(wi_owned_accounts((string) $c['email'])))) : (int) ($mb[(string) $aid] ?? 0);
+        $f = $aid === 'main' ? $root . '/wa-local/media_allow.main.json' : $root . '/wa-local/accounts/' . preg_replace('/[^a-z0-9_-]/', '', (string) $aid) . '/media_allow.json';
+        if (is_dir(dirname($f))) @file_put_contents($f, json_encode(['cap_mb' => $cap, 'used_mb' => $used, 'at' => date('c')])); }
+    return $U;
+}
+/** True when a number's owner has used the whole media allowance of the plan (new files are not downloaded). */
+function wi_media_full(array $acc): bool {
+    $c = wi_account_client($acc); $cap = wi_media_allow_mb($c); if ($cap <= 0) return false;
+    $mb = (array) (wi_read('media_usage.json', [])['acc'] ?? []);
+    return array_sum(array_map(fn($x) => (int) ($mb[(string) $x] ?? 0), array_keys(wi_owned_accounts((string) $c['email'])))) >= $cap;
+}
+/** A client's plan: each allowance with its use (numbers, team, AI replies, media, messages) and the days left. */
+function wi_plan_usage(string $email): array {
+    $e = strtolower(trim($email)); $c = null; foreach (wi_users() as $u) if (strtolower((string) ($u['email'] ?? '')) === $e) { $c = $u; break; }
+    if (!$c) return ['ok' => false, 'rows' => []];
+    $row = function (string $key, string $label, $used, $max, string $unit = '') { $max = max(0, $max); $pct = $max > 0 ? (int) min(999, round($used * 100 / $max)) : 0;
+        return ['key' => $key, 'label' => $label, 'used' => $used, 'max' => $max, 'unit' => $unit, 'pct' => $pct, 'level' => $max <= 0 ? 'ok' : ($pct >= 100 ? 'full' : ($pct >= 80 ? 'warn' : 'ok'))]; };
+    $nums = array_keys(wi_owned_accounts($e)); $mb = (array) (wi_read('media_usage.json', [])['acc'] ?? []);
+    $mediaMb = array_sum(array_map(fn($x) => (int) ($mb[(string) $x] ?? 0), $nums));
+    $msgs = 0; $Us = wi_read('usage.json', []); foreach ($nums as $aid) { $x = (array) ($Us[$aid][date('Y-m')] ?? []); $msgs += (int) ($x['in'] ?? 0) + (int) ($x['out'] ?? 0); }
+    $rows = [$row('numbers', 'WhatsApp numbers', count($nums), wi_client_max_numbers($c)), $row('team', 'Team members', count(wi_team_of($e)), wi_team_seats($c)),
+        $row('ai', 'AI replies this month', (int) (wi_read('ai_allowance.json', [])[$e][date('Y-m')] ?? 0), (int) ($c['ai_calls'] ?? 0)),
+        $row('media', 'Media', round($mediaMb / 1024, 2), (int) ($c['media_gb'] ?? 0), 'GB')];
+    if ($msgs > 0) $rows[] = $row('messages', 'Messages this month', $msgs, 0);
+    $days = !empty($c['expires']) ? (int) floor((strtotime((string) $c['expires'] . ' 23:59:59') - time()) / 86400) : null;
+    return ['ok' => true, 'plan' => (string) ($c['plan'] ?? ''), 'days_left' => $days, 'rows' => $rows, 'unlimited_media' => wi_media_allow_mb($c) <= 0];
+}
+/** The plan usage section (client home and, compact, each client on the Clients page): a row per allowance with a bar, coloured at 80% and 100%. */
+function wi_plan_usage_html(array $pu, bool $compact = false): string {
+    if (empty($pu['ok'])) return '';
+    $fmt = fn($v) => is_float($v) ? number_format($v, 2) : number_format((int) $v);
+    $h = '<section class="card pu' . ($compact ? ' pu-c' : '') . '">' . ($compact ? '' : '<div class="card-h"><h2>📦 ' . wi_e(wi_t('Plan limits and usage')) . '</h2><a class="btn primary sm" href="pricing.php">' . wi_e(wi_t('Upgrade the plan')) . '</a></div>') . '<div class="pu-rows">';
+    foreach ($pu['rows'] as $r) { $lim = $r['max'] > 0 ? $fmt($r['max']) . ($r['unit'] !== '' ? ' ' . $r['unit'] : '') : wi_t('Unlimited');
+        $h .= '<div class="pu-r pu-' . wi_e($r['level']) . '"><div class="pu-t"><span>' . wi_e(wi_t($r['label'])) . '</span><b dir="ltr">' . $fmt($r['used']) . ($r['unit'] !== '' ? ' ' . wi_e($r['unit']) : '') . ' / ' . wi_e($lim) . '</b></div>'
+            . '<div class="pu-bar"><span style="width:' . ($r['max'] > 0 ? min(100, (int) $r['pct']) : 0) . '%"></span></div></div>'; }
+    if ($pu['days_left'] !== null) $h .= '<div class="pu-r pu-' . ($pu['days_left'] < 0 ? 'full' : ($pu['days_left'] <= 7 ? 'warn' : 'ok')) . '"><div class="pu-t"><span>' . wi_e(wi_t('Days left in the plan')) . '</span><b dir="ltr">' . (int) $pu['days_left'] . '</b></div></div>';
+    return $h . '</div></section>';
+}
+/** API plan_usage: the signed-in client's own plan (the super admin may ask for any client with ?email=). */
+function wf_api_plan_usage(string $api): void {
+    if ($api !== 'plan_usage') return;
+    $me = wi_me(); $email = wi_is_super() && !empty($_GET['email']) ? (string) $_GET['email'] : (string) (($me['role'] ?? '') === 'client' ? $me['email'] : (wi_tenant($me)['email'] ?? ''));
+    if ($email === '') wi_json(['ok' => false, 'error' => 'Not allowed.'], 403);
+    wi_json(wi_plan_usage($email));
 }
 /** How many numbers a client may link: their plan's, or 1 for a hand-made client. */
 function wi_client_max_numbers(array $client): int { return max(0, (int) ($client['max_numbers'] ?? 1)); }

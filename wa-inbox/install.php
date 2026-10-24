@@ -97,7 +97,7 @@ ul{margin:0;padding-left:18px}
 <label>Product name<input name="brand" value="<?= $h($f['brand']) ?>"></label><label>Dashboard address<input name="base_url" value="<?= $h($f['base_url']) ?>"></label>
 <label>Time zone<input name="timezone" list="tz" value="<?= $h($f['timezone']) ?>"></label><label>Country code (e.g. 20, 966, 1)<input name="country" value="<?= $h($f['country']) ?>"></label>
 <label>Language of system messages<select name="lang"><option value="ar"<?= $f['lang'] === 'ar' ? ' selected' : '' ?>>العربية</option><option value="en"<?= $f['lang'] === 'en' ? ' selected' : '' ?>>English</option></select></label>
-<label>Business profile<select name="preset"><option value="general">General business</option><option value="ruqyah"<?= $f['preset'] === 'ruqyah' ? ' selected' : '' ?>>Ruqyah / spiritual healing</option></select></label>
+<label>Business profile<select name="preset"><option value="general">General business</option><?php foreach (glob(__DIR__ . '/addons/*/addon.php') ?: [] as $ad): $ak = basename(dirname($ad)); /* an add-on's business type: its folder name is its key */ ?><option value="<?= $h($ak) ?>"<?= $f['preset'] === $ak ? ' selected' : '' ?>><?= $h(ucfirst($ak)) ?></option><?php endforeach; ?></select></label>
 </div><datalist id="tz"><?php foreach (timezone_identifiers_list() as $z) echo '<option value="' . $h($z) . '">'; ?></datalist></div>
 <div class="card"><h2>First admin</h2><div class="g">
 <label>Name<input name="name" value="<?= $h($f['name']) ?>"></label><label>Email<input type="email" name="email" value="<?= $h($f['email']) ?>" required></label>

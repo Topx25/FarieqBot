@@ -1,6 +1,6 @@
 <?php
 /* ---------- Bot roles: one bot on the number, several hats ----------
- * The regular bot answers by default. A message that fits a role (healer, emotional support, dream interpreter…)
+ * The regular bot answers by default. A message that fits a role (defined by the business type)
  * is answered with that role's instructions, and the chat keeps the role while the talk stays on it.
  * Safety first: words that show danger (self-harm, suicide, violence) stop the bot in that chat, send a fixed
  * support message and alert the team. Roles, their words, instructions and models come from the business profile

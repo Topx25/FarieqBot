@@ -1,12 +1,12 @@
 <?php
-// WhatsApp Inbox — team_watch: how the healers / admins follow the cases.
+// WhatsApp Inbox — team_watch: how the team members / admins follow the cases.
 // Every group is read once (not once per case): each case's last message, the team's last answer to it (a reply or a tag),
 // who answered and how fast. Cases nobody of the team answered for some days are listed as neglected.
 
-/** The board: healers (cases, answers, speed, last activity) and the cases with their last team contact. Kept 30 minutes. */
+/** The board: team members (cases, answers, speed, last activity) and the cases with their last team contact. Kept 30 minutes. */
 function wf_team_watch(array $acc, bool $fresh = false): array {
     $aid = (string) $acc['id']; $cf = WI_DIR . '/team_watch_' . preg_replace('/\W/', '', $aid) . '.json';
-    if (!$fresh && is_file($cf) && filemtime($cf) > time() - 1800) return (array) json_decode((string) file_get_contents($cf), true);
+    if (!$fresh && is_file($cf) && filemtime($cf) > time() - 1800 && isset(($kept = (array) json_decode((string) file_get_contents($cf), true))['members'])) return $kept; // a board kept before the members list had this name is made again
     $days = max(1, (int) (wf_bot_run_cfg($aid)['neglect_days'] ?? 3)); $now = time(); $since = $now - 30 * 86400;
     // the cases and every ID of each person
     $cases = []; $owner = [];
@@ -42,20 +42,20 @@ function wf_team_watch(array $acc, bool $fresh = false): array {
     $hl = []; foreach ($heal as $w => $h) { $r = (array) ($resp[$w] ?? []); sort($r); $hl[] = ['who' => $w, 'name' => $names[$w] ?? '', 'touches' => $h['n'], 'cases' => count($h['cases']), 'last' => $h['last'], 'median_min' => $r ? (int) round($r[(int) floor(count($r) / 2)] / 60) : null]; }
     usort($hl, fn($a, $b) => $b['touches'] <=> $a['touches']);
     $cl = array_values($cases); usort($cl, fn($a, $b) => ($b['neglected'] <=> $a['neglected']) ?: ($a['last_team'] <=> $b['last_team']));
-    $out = ['healers' => $hl, 'cases' => $cl, 'names' => $names, 'days' => $days, 'at' => date('c')];
+    $out = ['members' => $hl, 'cases' => $cl, 'names' => $names, 'days' => $days, 'at' => date('c')];
     @file_put_contents($cf, json_encode($out, JSON_UNESCAPED_UNICODE)); @chmod($cf, 0600);
     return $out;
 }
-/** The weekly team report to the admins: healers by activity, and the neglected cases. */
+/** The weekly team report to the admins: team members by activity, and the neglected cases. */
 function wf_team_report(array $acc, callable $tell): void {
     $w = wf_team_watch($acc, true); $me = preg_replace('/\D/', '', explode(':', (string) (wi_gateway('/status', null, $acc)['account']['id'] ?? ''))[0]);
     $ownerName = trim((string) ($acc['name'] ?? '')) . ($me !== '' ? ' (+' . $me . ')' : ''); if (trim($ownerName) === '') $ownerName = wf_msg('trail_owner');
     // the number itself shows by its name and phone
     $nm = fn($x) => $x === 'owner' ? wf_msg('trail_owner') : (($w['names'] ?? [])[$x] ?? '') ;
-    $hl = implode("\n", array_map(fn($h) => '• ' . ($h['who'] === 'owner' ? $ownerName : ($h['name'] !== '' ? $h['name'] : '+' . $h['who'])) . ' — ' . wf_msg('team_line', ['cases' => (string) $h['cases'], 'touches' => (string) $h['touches'], 'speed' => $h['median_min'] === null ? '—' : (string) $h['median_min'], 'last' => date('Y-m-d', (int) $h['last'])]), array_slice($w['healers'], 0, 12)));
+    $hl = implode("\n", array_map(fn($h) => '• ' . ($h['who'] === 'owner' ? $ownerName : ($h['name'] !== '' ? $h['name'] : '+' . $h['who'])) . ' — ' . wf_msg('team_line', ['cases' => (string) $h['cases'], 'touches' => (string) $h['touches'], 'speed' => $h['median_min'] === null ? '—' : (string) $h['median_min'], 'last' => date('Y-m-d', (int) $h['last'])]), array_slice($w['members'], 0, 12)));
     $ng = array_values(array_filter($w['cases'], fn($c) => !empty($c['neglected'])));
     $nl = implode("\n", array_map(fn($c) => '• ' . $c['name'] . ' (ID ' . $c['no'] . ') — ' . ($c['last_team'] ? date('Y-m-d', (int) $c['last_team']) : '—'), array_slice($ng, 0, 15)));
-    $tell(wf_msg('team_report', ['name' => (string) ($acc['name'] ?? $acc['id']), 'healers' => $hl ?: '—', 'neglected' => $nl ?: '—', 'count' => (string) count($ng), 'days' => (string) $w['days']]));
+    $tell(wf_msg('team_report', ['name' => (string) ($acc['name'] ?? $acc['id']), 'team' => $hl ?: '—', 'neglected' => $nl ?: '—', 'count' => (string) count($ng), 'days' => (string) $w['days']]));
 }
 function wf_api_team_watch(string $api): void {
     if ($api !== 'team_watch') return;

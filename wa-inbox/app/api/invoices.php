@@ -45,7 +45,7 @@
         $all[$acc['id']][$jid] = [
             'enabled' => !empty($in['enabled']), 'every_days' => max(1, min(30, (int) ($in['every_days'] ?? 3))), 'hour' => max(9, min(21, (int) ($in['hour'] ?? 11))),
             'with_image' => !empty($in['with_image']), 'max_times' => max(1, min(20, (int) ($in['max_times'] ?? 5))),
-            'message' => trim(mb_substr((string) ($in['message'] ?? ''), 0, 1000)) ?: "مرحباً {name} 👋\nنذكّرك بالفاتورة {invoice} المستحقة بمبلغ {due}.\nللدفع: {methods}\nشكراً لك 🌟",
+            'message' => trim(mb_substr((string) ($in['message'] ?? ''), 0, 1000)) ?: (function_exists('wf_msg_default') ? wf_msg_default('invoice_reminder') : ''),
             'phone' => $cc['phone'], 'biller_id' => $cc['customer']['id'] ?? null, 'name' => $cc['customer']['person'] ?? $cc['name'],
             'last_sent' => $prev['last_sent'] ?? null, 'sent_count' => (int) ($prev['sent_count'] ?? 0), 'by' => (string) $_SESSION['email'], 'updated_at' => date('c'),
         ];

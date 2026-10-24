@@ -51,7 +51,7 @@ function wf_retrieve(array $acc, string $text, int $n = 6): array {
     $want = array_flip(wf_words($text)); if (!$want) return [];
     $out = [];
     foreach (wf_kb((string) $acc['id']) as $k) {
-        if (($k['status'] ?? '') !== 'approved') continue; // only what was approved (by the team, or repeated by several healers) speaks for the team
+        if (($k['status'] ?? '') !== 'approved') continue; // only what was approved (by the team, or repeated by several team members) speaks for the team
         $hit = count(array_intersect_key(array_flip(wf_words($k['q'] . ' ' . ($k['topic'] ?? ''))), $want));
         if ($hit) $out[] = ['score' => $hit * (($k['status'] ?? '') === 'approved' ? 1.5 : 1) + min(3, ($k['sources'] ?? 1) / 5), 'kind' => 'knowledge', 'id' => $k['id'], 'title' => $k['q'], 'text' => $k['a'], 'topic' => $k['topic'] ?? '', 'status' => $k['status'] ?? 'pending'];
     }
@@ -73,7 +73,8 @@ function wf_profile(string $aid): string {
     $acc = wi_accounts()[$aid] ?? null;
     return $p !== '' ? $p : 'the business that owns the WhatsApp number "' . ($acc['name'] ?? $aid) . '" (its exact service is not described yet — stay general and hand over anything specific)';
 }
-function T_(string $s): string { return ['Audience' => 'الجمهور', 'Language' => 'اللغة', 'Tone' => 'الأسلوب', 'Common requests' => 'الطلبات الشائعة', 'Leave to a human' => 'يُترك لموظف'][$s] ?? $s; }
+/** A label of the detected profile, always in Arabic (it is saved as the number's description): from the dictionary. */
+function T_(string $s): string { static $d = null; $d ??= (array) require dirname(__DIR__) . '/i18n.php'; return (string) ($d[$s] ?? $s); }
 /** The owner's rules box as a numbered block that comes before every other instruction. */
 function wf_owner_rules(array $cfg): string {
     $lines = array_values(array_filter(array_map('trim', preg_split('/\R/u', (string) ($cfg['rules'] ?? '')))));
@@ -83,10 +84,10 @@ function wf_owner_rules(array $cfg): string {
     return $out . "\n";
 }
 function wf_bot_cfg(string $aid): array { return (wi_read('bot.json', [])[$aid] ?? []) + ['model' => '', 'tone' => 'warm', 'name' => '', 'about' => '', 'rules' => '', 'fast' => true, 'emoji' => 'few', 'lang' => 'auto', 'sk_catalog' => true, 'sk_market' => true]; }
-/** Language override of the bot (Bot → Settings → Bot personality); ruqyah numbers keep their preset's own rule. */
+/** Language override of the bot (Bot → Settings → Bot personality); a business type with its own fixed language rule (lang_fixed) keeps it. */
 function wf_bot_lang_rule(string $aid, string $lang): string {
     $L = ['auto' => 'Write in the same language as the customer\'s LAST message (English → English; Arabic → their own country\'s dialect), even if the examples or sources are in another language.', 'eg' => 'Always reply in Egyptian Arabic, whatever dialect the customer writes.', 'gulf' => 'Always reply in Gulf (Saudi) Arabic, whatever dialect the customer writes.', 'lev' => 'Always reply in Levantine Arabic, whatever dialect the customer writes.', 'msa' => 'Always reply in simple Modern Standard Arabic.', 'en' => 'Always reply in English, whatever language the customer writes.'];
-    if (!isset($L[$lang]) || (function_exists('wf_pack') && (wf_pack($aid)['preset'] ?? '') === 'ruqyah')) return '';
+    if (!isset($L[$lang]) || (function_exists('wf_pack') && !empty(wf_pack($aid)['lang_fixed']))) return '';
     return "\n\nLANGUAGE OF YOUR REPLY (this overrides any other language or dialect rule above): " . $L[$lang] . "\n";
 }
 /** Real past exchanges closest to the message — examples of how the team talks. */
@@ -95,7 +96,7 @@ function wf_style_examples(string $aid, string $text, int $n = 4, string $role =
     foreach (wf_pairs($aid) as $p) {
         if (mb_strlen($p['a']) < 25 || mb_strlen($p['a']) > 900) continue;
         $hit = count(array_intersect_key(array_flip(wf_words($p['q'])), $want));
-        if ($hit && $role !== '' && ($p['role'] ?? '') === $role) $hit += 2; // the healers' answers in this role teach its style first
+        if ($hit && $role !== '' && ($p['role'] ?? '') === $role) $hit += 2; // the team's answers in this role teach its style first
         if ($hit) $out[] = [$hit, $p];
     }
     usort($out, fn($a, $b) => $b[0] <=> $a[0]);
@@ -165,7 +166,7 @@ function wf_bot_answer(array $acc, string $text, array $history = [], string $pr
     $aid = (string) $acc['id']; $cfg = (array) ($opt['cfg'] ?? []) + wf_bot_cfg($aid); $avoid = array_values(array_filter((array) ($opt['avoid'] ?? [])));
     // 1) Answer cache: the same general question answered well before → reused, no AI call, no tokens.
     if (!$prefer && !$avoid && ($opt['role'] ?? 'bot') === 'bot' && mb_strlen(trim($text)) >= 12 && empty($opt['cfg']) && (count($history) <= 2 || wf_cache_standalone($text)) && ($hit = wf_cache_find($aid, $text))) {
-        return ['ok' => true, 'reply' => $hit['answer'], 'confidence' => 0.95, 'handoff' => false, 'clarify' => false, 'reason' => 'من الكاش (' . round($hit['similarity'] * 100) . '%)',
+        return ['ok' => true, 'reply' => $hit['answer'], 'confidence' => 0.95, 'handoff' => false, 'clarify' => false, 'reason' => 'from the answer cache (' . round($hit['similarity'] * 100) . '%)',
             'symptoms' => false, 'complaint' => '', 'sources' => [], 'used' => [], 'cached' => $hit['id'], 'task' => ['model' => 'cache', 'tokens_in' => 0, 'tokens_out' => 0]];
     }
     // 2) Guide: concepts whose words appear in the message go in as short cards — and fewer library chunks are needed.
@@ -185,10 +186,10 @@ function wf_bot_answer(array $acc, string $text, array $history = [], string $pr
     // the reply's length follows the message: a short message gets a short reply (Bot → Switch on / off: reply_short_max / reply_long_max characters)
     $rcfg = function_exists('wf_bot_run_cfg') ? wf_bot_run_cfg($aid) : []; $lenMax = mb_strlen(trim($text)) < 60 ? (int) ($rcfg['reply_short_max'] ?? 220) : (int) ($rcfg['reply_long_max'] ?? 700);
     if ($lenMax > 0) $edits .= '- LENGTH: at most about ' . $lenMax . " characters for this reply (the person wrote " . mb_strlen(trim($text)) . "). Say the most useful thing first; no long lists unless asked.\n"; // how the team corrected the bot's drafts on alike messages
-    $self = trim((string) ($acc['name'] ?? '')); $selfRule = $edits . (!empty($opt['team']) ? wf_prompt('bot_team_person', $aid) : '') . (!empty($opt['ask']) ? wf_prompt('bot_ask', $aid) : '') . (!empty($opt['fun']) ? wf_prompt('bot_fun', $aid) : '') . $groupsRule . ($self !== '' ? "- \"" . $self . "\" is the name of THIS WhatsApp number (you, the team's number), not a person: never call it a sheikh and never tell people to follow up with it; say \"the sheikh\" / \"the team\" without a name unless the sources give the healer's name.\n- Use the person's name only if they wrote it or the customer card gives it; never take a name from another person in the conversation.\n\n" : '');
+    $self = trim((string) ($acc['name'] ?? '')); $selfRule = $edits . (!empty($opt['team']) ? wf_prompt('bot_team_person', $aid) : '') . (!empty($opt['ask']) ? wf_prompt('bot_ask', $aid) : '') . (!empty($opt['fun']) ? wf_prompt('bot_fun', $aid) : '') . $groupsRule . ($self !== '' ? wf_prompt('bot_self_name', $aid, ['self' => $self]) : '');
     // Healing numbers with roles: one prompt where the model picks the mode itself (keyword routing sent questions to the wrong role)
     $rc = function_exists('wf_roles_cfg') ? wf_roles_cfg($aid) : ['on' => 0, 'roles' => []];
-    if (!empty($rc['on']) && $rc['roles'] && (!empty($cfg['brain']) || !empty($opt['brain'])) && empty($opt['classic'])) { // on once the bot test shows it is better
+    if (!empty($rc['on']) && $rc['roles'] && (!empty($cfg['brain']) || !empty($opt['brain'])) && empty($opt['classic']) && isset(wf_prompt_registry($aid)['bot_brain'])) { // on once the bot test shows it is better
         $modes = ''; foreach ($rc['roles'] as $k => $r) if (!empty($r['on'])) $modes .= '- ' . $k . ' (' . ($r['label'] ?? $k) . '): ' . str_replace("\n", ' ', trim((string) ($r['rules'] ?? ''))) . "\n";
         $modes .= "- bot (the team's assistant): greetings, questions about the team, groups, times, joining, anything else.\n" . trim((string) $rc['common']);
         $hint = ($opt['role'] ?? 'bot') !== 'bot' ? "(The customer's words suggest the mode: " . $opt['role'] . ")\n" : '';
@@ -258,20 +259,18 @@ function wf_sacred_unknown(string $aid, string $reply, string $known): array {
 
 /** Message style: editable per number in Learning → Rules ("Message style"). These are only the starting values. */
 function wf_style_defaults(): array {
-    return ['prefix_on' => true, 'prefix' => '🤖', 'intro_on' => true, 'intro_groups' => false, 'intro_text' => 'أنا المساعد الرقمي بالذكاء الاصطناعي، وسأبدأ معك الحوار.',
+    return ['prefix_on' => true, 'prefix' => '🤖', 'intro_on' => true, 'intro_groups' => false, 'intro_text' => wf_msg('bot_intro'),
         'end_mode' => 'fit', // fit = keep one ending emoji only when it suits the words · none = never · any = leave as written
-        'end_emojis' => [['e' => '🤲', 'words' => 'يشفي، شفا، اللهم، ربنا، بإذن الله، باذن الله، يعافي، دعاء، ادعو، أدعو'], ['e' => '🙏', 'words' => 'شكر، جزاك، بارك'], ['e' => '✅', 'words' => 'تم، خلاص، اتسجل، جاهز'], ['e' => '📖', 'words' => 'سورة، آية، اقرأ، اقرا، قراءة'], ['e' => '⏰', 'words' => 'الساعة، ميعاد، موعد'], ['e' => '📌', 'words' => 'ملاحظة، مهم']],
+        // the ending emojis and the words that call for each (seed_style_end_emojis: "emoji => words" per line)
+        'end_emojis' => array_values(array_filter(array_map(function ($l) { $x = array_map('trim', explode('=>', $l, 2)); return count($x) === 2 && $x[0] !== '' ? ['e' => $x[0], 'words' => $x[1]] : null; }, preg_split('/\R/u', wf_seed('style_end_emojis'))))),
         'strip_romantic' => true, 'strip_affection' => true,
-        'affection_words' => 'حبيبي، حبيبتي، حبايبي، يا قلبي، يا روحي، يا عمري، يا غالي، يا غالية، يا قمر، يا عسل، يا حلوة، يا جميلة، يا سكر، يا دلوعة، يا أميرة، يا اميرة، يا برنسيسة، يا ست البنات، يا ست الكل، منورة، منوره، نورتي، أحبك، بحبك، وحشتني، dear، honey، sweetheart، darling',
-        'prompt_rules' => ['Call the person only by the name shown under WHO YOU TALK TO (or the name they gave in this chat). Never guess, invent or reuse another name — if no name is known, use none.',
-            'Greetings and welcomes stay neutral and respectful: no compliments, flattery or emotional words (e.g. منورة، نورتي، يا قمر، يا أميرة), never pair a person\'s first name with praise, and be extra formal with women. A plain greeting and getting to the point is enough.',
-            'Never say that something happened or did not happen (a message was deleted, a payment arrived, a booking or file was sent, someone saw it) unless the conversation or the sources show it. If you are not sure, say you will check or that the team will confirm. Never swear (والله، أقسم) to make a claim.',
-            'Never deny being an automated assistant; if asked, say you are the digital assistant and a team member can join.', 'Never mention a symptom, illness, family member, place, treatment step or past event about the person unless it is written in WHO YOU TALK TO or in the recent messages. A greeting, thanks or a short comment gets a short, natural reply — do not bring up their health or an earlier complaint, and do not give a new instruction nobody asked for. If you are not sure what they mean, ask one short question.', 'Never repeat a sentence or a question you already sent in this conversation; if the customer did not answer it, take a different step or hand over to the team.', 'Keep it WhatsApp-sized: 1–5 short lines. Emojis only when they really help (e.g. ✅ for a step, ⏰ for a time) — usually none; end with an emoji only if it fits what you just said (e.g. 🤲 after a dua), at most one, never decorative; never hearts, flowers, kisses or anything romantic.', 'STRICTLY RESPECTFUL: never use words of love or endearment (حبيبي، حبيبتي، يا قلبي، يا روحي، يا عمري، يا غالي، يا غالية، يا قمر، يا عسل، أحبك، وحشتني، love, dear, honey…), never comment on looks or voice, no flirting or anything that could be read as flirting or harassment; emojis are fine EXCEPT hearts of any colour, flowers/roses, kisses, love faces or anything romantic — even if the team examples or the person do. Address people with neutral respect, by name when known, and vary the wording; do NOT open with «يا أخي الكريم» / «أخي الكريم» / «أختي الكريمة» — prefer the person\'s name or no address at all.']];
+        'affection_words' => wf_seed('style_affection_words'),
+        'prompt_rules' => array_values(array_filter(array_map('trim', preg_split('/\R/u', wf_seed('style_prompt_rules'))), fn($r) => $r !== ''))]; // one rule per line (seed_style_prompt_rules)
 }
 function wf_style_cfg(string $aid): array {
     $d = wf_style_defaults();
     // the starting ending-emoji words follow the type of business: the faith ones (🤲 / 📖) only for the spiritual type
-    if ($aid !== '' && function_exists('wf_pack') && (wf_pack($aid)['preset'] ?? '') !== 'ruqyah') $d['end_emojis'] = array_values(array_filter($d['end_emojis'], fn($x) => !in_array($x['e'], ['🤲', '📖'], true)));
+    if ($aid !== '' && function_exists('wf_pack') && empty(wf_pack($aid)['faith_emojis'])) $d['end_emojis'] = array_values(array_filter($d['end_emojis'], fn($x) => !in_array($x['e'], ['🤲', '📖'], true)));
     return (array) (wi_read('bot.json', [])[$aid]['style'] ?? []) + $d;
 }
 function wf_style_prompt(string $aid): string { $o = ''; foreach ((array) wf_style_cfg($aid)['prompt_rules'] as $l) if (trim((string) $l) !== '') $o .= '- ' . trim((string) $l) . "\n"; return $o; }
@@ -312,7 +311,7 @@ function wf_clean_affection(string $t, ?array $words = null, bool $romantic = tr
     return trim(preg_replace('/[ \t]{2,}/u', ' ', preg_replace('/^\s*[،,]\s*/mu', '', $t)));
 }
 
-/** Which bot role a question belongs to (healer, support, dreams…) from the role words; '' = general. */
+/** Which bot role a question belongs to (from the roles of the business type) from the role words; '' = general. */
 function wf_learn_role(string $aid, string $q): string {
     if (!function_exists('wf_roles_cfg')) return ''; static $R = [];
     $R[$aid] ??= array_filter(wf_roles_cfg($aid)['roles'], fn($r) => trim((string) ($r['words'] ?? '')) !== '');
@@ -326,7 +325,7 @@ function wf_learn_collect(array $acc, bool $fullAsked = false): array {
         // Incremental: only exchanges newer than the last collect are read; everything collected/learned is kept.
         $old = wf_pairs($aid); $meta = wi_read('learn_meta.json', [])[$aid] ?? [];
         // Groups to learn from: the bot's groups marked "learn", and — when "learn from all groups" is on (default) — every group of this number,
-        // so the healers' answers in the treatment groups teach the bot too.
+        // so the team's answers in those groups teach the bot too.
         $rc = wf_bot_run_cfg($aid); $lg = [];
         $lean = function_exists('wf_lean_cfg') && !empty(wf_lean_cfg($aid)['on']); // groups are learned the token-saving way (learn_lean): here only the private chats
         if (!$lean) foreach ((array) ($rc['groups'] ?? []) as $gj => $gc) if (!empty($gc['learn'])) $lg[$gj] = ['name' => $gc['name'] ?? ''];
@@ -334,7 +333,7 @@ function wf_learn_collect(array $acc, bool $fullAsked = false): array {
         $lgKey = md5(json_encode(array_keys($lg)));
         $full = $fullAsked || empty($meta['collected_to']) || ($meta['learn_groups'] ?? '') !== $lgKey;
         $since = $full ? '' : date('c', strtotime((string) $meta['collected_to']) - 6 * 3600); // overlap: a reply can come hours later
-        // The members' questions in those groups and the answers of the team / the group admins (the healers).
+        // The members' questions in those groups and the answers of the team / the group admins (the team).
         $teamNums = $lg ? implode(',', array_keys(array_filter(wf_team($acc, $lg), fn($w) => $w !== 'user' || true))) : '';
         $r = wi_gateway('/archive/pairs?months=' . (int) wi_sys('months_long')  . ($since !== '' ? '&since=' . rawurlencode(gmdate('Y-m-d\TH:i:s', strtotime($since))) : '')
             . ($lg ? '&groups=' . rawurlencode(implode(',', array_keys($lg))) . '&team=' . rawurlencode($teamNums) : ''), null, $acc);
@@ -538,7 +537,7 @@ function wf_api_bot_learning(string $api): void {
                 // protection against repeating and against WhatsApp blocks (each falls back to the saved value)
                 'gather_secs' => max(0, min(600, (int) ($in['gather_secs'] ?? ($old['gather_secs'] ?? 45)))), 'quiet_secs' => max(3, min(120, (int) ($in['quiet_secs'] ?? ($old['quiet_secs'] ?? 6)))), 'chat_per_hour' => max(0, min(1000, (int) ($in['chat_per_hour'] ?? ($old['chat_per_hour'] ?? 12)))), 'group_person_hour' => max(0, min(1000, (int) ($in['group_person_hour'] ?? ($old['group_person_hour'] ?? 0)))),
                 'repeat_sim' => max(0.4, min(1, (float) ($in['repeat_sim'] ?? ($old['repeat_sim'] ?? 0.7)))), 'repeat_retry' => array_key_exists('repeat_retry', $in) ? !empty($in['repeat_retry']) : ($old['repeat_retry'] ?? true),
-                'max_clarify' => max(1, min(5, (int) ($in['max_clarify'] ?? ($old['max_clarify'] ?? 1)))), 'group_gap' => max(0, min(3600, (int) ($in['group_gap'] ?? ($old['group_gap'] ?? 120)))), 'stop_words' => mb_substr((string) ($in['stop_words'] ?? ($old['stop_words'] ?? 'وقف، توقف، كفاية، بس كده، stop')), 0, 1000),
+                'max_clarify' => max(1, min(5, (int) ($in['max_clarify'] ?? ($old['max_clarify'] ?? 1)))), 'group_gap' => max(0, min(3600, (int) ($in['group_gap'] ?? ($old['group_gap'] ?? 120)))), 'stop_words' => mb_substr((string) ($in['stop_words'] ?? ($old['stop_words'] ?? wf_seed('stop_words', $aid))), 0, 1000),
                 'typing_min' => max(0.5, min(20, (float) ($in['typing_min'] ?? ($old['typing_min'] ?? 2)))), 'typing_max' => max(1, min(30, (float) ($in['typing_max'] ?? ($old['typing_max'] ?? 8)))),
                 'handoff_notify' => array_key_exists('handoff_notify', $in) ? !empty($in['handoff_notify']) : !empty($old['handoff_notify']), 'handoff_to' => array_key_exists('handoff_to', $in) ? implode(', ', array_slice(array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) $in['handoff_to'])))), 0, 5)) : (string) ($old['handoff_to'] ?? ''), 'voice_tts' => array_key_exists('voice_tts', $in) ? !empty($in['voice_tts']) : !empty($old['voice_tts']), 'checkin_on' => array_key_exists('checkin_on', $in) ? !empty($in['checkin_on']) : !empty($old['checkin_on']), 'checkin_days' => max(1, min(30, (int) ($in['checkin_days'] ?? ($old['checkin_days'] ?? 2)))), 'checkin_hour' => max(0, min(23, (int) ($in['checkin_hour'] ?? ($old['checkin_hour'] ?? 19)))), 'checkin_max' => max(1, min(100, (int) ($in['checkin_max'] ?? ($old['checkin_max'] ?? 15)))), 'watch_to' => array_key_exists('watch_to', $in) ? (preg_match('/^[0-9-]{6,40}@g\.us$/', (string) $in['watch_to']) ? (string) $in['watch_to'] : '') : ($old['watch_to'] ?? ''), 'watch_on' => array_key_exists('watch_on', $in) ? !empty($in['watch_on']) : ($old['watch_on'] ?? true), 'watch_minutes' => max(5, min(1440, (int) ($in['watch_minutes'] ?? ($old['watch_minutes'] ?? 30)))), 'watch_case_hours' => max(1, min(72, (int) ($in['watch_case_hours'] ?? ($old['watch_case_hours'] ?? 2)))), 'neglect_days' => max(1, min(60, (int) ($in['neglect_days'] ?? ($old['neglect_days'] ?? 3)))), 'team_report' => array_key_exists('team_report', $in) ? !empty($in['team_report']) : ($old['team_report'] ?? true), 'quality_day' => max(0, min(6, (int) ($in['quality_day'] ?? ($old['quality_day'] ?? 5)))), 'quality_hour' => max(0, min(23, (int) ($in['quality_hour'] ?? ($old['quality_hour'] ?? 10)))), 'quality_n' => max(3, min(30, (int) ($in['quality_n'] ?? ($old['quality_n'] ?? 10)))), 'voice_reply' => array_key_exists('voice_reply', $in) ? !empty($in['voice_reply']) : ($old['voice_reply'] ?? true), 'voice_max_sec' => max(0, min(900, (int) ($in['voice_max_sec'] ?? ($old['voice_max_sec'] ?? 120)))), 'reply_short_max' => max(0, min(2000, (int) ($in['reply_short_max'] ?? ($old['reply_short_max'] ?? 220)))), 'reply_long_max' => max(0, min(4000, (int) ($in['reply_long_max'] ?? ($old['reply_long_max'] ?? 700)))), 'rec_in_reply' => array_key_exists('rec_in_reply', $in) ? !empty($in['rec_in_reply']) : ($old['rec_in_reply'] ?? null), 'rec_min' => max(40, min(99, (int) ($in['rec_min'] ?? ($old['rec_min'] ?? 75)))), 'handoff_retry' => array_key_exists('handoff_retry', $in) ? !empty($in['handoff_retry']) : ($old['handoff_retry'] ?? true), 'quiet_from' => max(0, min(23, (int) ($in['quiet_from'] ?? ($old['quiet_from'] ?? 0)))), 'quiet_to' => max(0, min(24, (int) ($in['quiet_to'] ?? ($old['quiet_to'] ?? 0)))), 'quiet_min_conf' => max(0.3, min(0.95, (float) ($in['quiet_min_conf'] ?? ($old['quiet_min_conf'] ?? 0.5)))), 'trail_likely' => array_key_exists('trail_likely', $in) ? !empty($in['trail_likely']) : !empty($old['trail_likely']), 'private_24h' => array_key_exists('private_24h', $in) ? !empty($in['private_24h']) : !empty($old['private_24h']), 'heal_24h' => array_key_exists('heal_24h', $in) ? !empty($in['heal_24h']) : ($old['heal_24h'] ?? null), 'heal_24h_groups' => array_key_exists('heal_24h_groups', $in) ? !empty($in['heal_24h_groups']) : ($old['heal_24h_groups'] ?? null), 'crisis_pause_h' => max(0, min(168, (int) ($in['crisis_pause_h'] ?? ($old['crisis_pause_h'] ?? 12)))), 'warmup_until' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) ($in['warmup_until'] ?? '')) ? $in['warmup_until'] : (array_key_exists('warmup_until', $in) ? '' : ($old['warmup_until'] ?? '')), 'warmup_per_hour' => max(1, min(60, (int) ($in['warmup_per_hour'] ?? ($old['warmup_per_hour'] ?? 5)))),
                 'test' => array_values(array_filter(array_map('wf_phone', preg_split('/[\s,،]+/u', (string) ($in['test'] ?? ''))), fn($p) => strlen($p) >= 10)),

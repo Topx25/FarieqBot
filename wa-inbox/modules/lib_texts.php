@@ -1,6 +1,6 @@
 <?php
 /* ---------- Library texts written by hand (Topx1.Host) ----------
- * A written ruqyah, a price list, an answer: added, edited and deleted from the Library page, with a cover, a tag,
+ * A written text, a price list, an answer: added, edited and deleted from the Library page, with a cover, a tag,
  * a title, a topic and keywords. Writing its tag in a chat or group sends it (with the cover). Stored per number in lib_texts.json. */
 
 function wf_lib_texts(string $aid): array { return array_values((array) (wi_read('lib_texts.json', [])[$aid] ?? [])); }

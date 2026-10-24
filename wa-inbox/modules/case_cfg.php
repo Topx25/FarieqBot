@@ -16,14 +16,7 @@ function wf_case_presets(): array {
             'program' => ['إرسال برنامج', '{cmd} اسم البرنامج', '{cmd} اسم البرنامج'],
             'text' => ['إرسال نص مكتوب', '{cmd} اسم النص', '{cmd} اسم النص'],
         ]]; // group command words (Case from a group)
-    // spiritual healing only: its own wording and examples, never shown to other businesses
-    $wordsT = array_replace_recursive($words, ['voice' => 'التسجيل الصوتي للحالة', 'help' => ['new' => [2 => '{cmd} @الشخص السن والبلد والأعراض'], 'list' => [2 => '{cmd} #الحالة'],
-        'send' => [2 => '{cmd} رقية العين'], 'program' => [0 => 'إرسال برنامج علاج', 2 => '{cmd} العين والحسد'], 'text' => [0 => 'إرسال رقية مكتوبة', 1 => '{cmd} اسم الرقية', 2 => '{cmd} المس العاشق']]]);
     $L = [
-        'treatment' => ['label' => 'Patients / healing follow-up', 'one' => 'حالة', 'many' => 'الحالات', 'icon' => '🩺',
-            'statuses' => ['new' => '🆕 جديدة', 'follow' => '🩺 تحت المتابعة', 'improving' => '📈 في تحسن', 'closed' => '✅ اتقفلت', 'postponed' => '⏸️ اتأجلت', 'removed' => '🗑️ اتحذفت', 'archived' => '📦 مؤرشفة'],
-            'cmds' => ['improving' => '#اتحسنت', 'postponed' => '#اتأجلت', 'removed' => '#اتحذفت', 'closed' => '#اتقفلت', 'follow' => '#تحت_المتابعة', 'archived' => '#ارشف'],
-            'fields' => $f(['name' => 'الاسم', 'phone' => 'الرقم', 'join' => 'تاريخ الانضمام', 'age' => 'السن', 'marital' => 'الحالة الاجتماعية', 'kids' => 'عدد الأولاد', 'country' => 'البلد', 'follower' => 'متابعة', 'story' => 'القصة / التاريخ', 'symptoms' => 'الأعراض المؤكدة', 'extra' => 'أعراض إضافية', 'diagnosis' => 'تشخيص', 'diag_by' => 'شخّصها', 'placement' => 'ملاحظة المكان'])],
         'support' => ['label' => 'Customer support tickets', 'one' => 'تذكرة', 'many' => 'التذاكر', 'icon' => '🎫',
             'statuses' => ['new' => '🆕 جديدة', 'follow' => '🔧 جاري الحل', 'improving' => '⏳ مستنية رد العميل', 'closed' => '✅ اتحلت', 'postponed' => '⏸️ اتأجلت', 'removed' => '🗑️ اتحذفت', 'archived' => '📦 مؤرشفة'],
             'fields' => $f(['name' => 'اسم العميل', 'phone' => 'الرقم', 'join' => 'تاريخ الفتح', 'age' => 'السن', 'marital' => 'الحالة الاجتماعية', 'kids' => 'عدد الأولاد', 'country' => 'البلد', 'follower' => 'المسؤول', 'story' => 'وصف المشكلة', 'symptoms' => 'تفاصيل المشكلة', 'extra' => 'ملاحظات إضافية', 'diagnosis' => 'التصنيف / الحل', 'diag_by' => 'حلّها', 'placement' => 'ملاحظة'], ['age', 'marital', 'kids'])],
@@ -35,14 +28,15 @@ function wf_case_presets(): array {
             'statuses' => ['new' => '🆕 جديدة', 'follow' => '🔁 تحت المتابعة', 'improving' => '📈 بتتقدم', 'closed' => '✅ خلصت', 'postponed' => '⏸️ اتأجلت', 'removed' => '🗑️ اتحذفت', 'archived' => '📦 مؤرشفة'],
             'fields' => $f(['name' => 'الاسم', 'phone' => 'الرقم', 'join' => 'التاريخ', 'age' => 'السن', 'marital' => 'الحالة الاجتماعية', 'kids' => 'عدد الأولاد', 'country' => 'البلد', 'follower' => 'المسؤول', 'story' => 'التفاصيل', 'symptoms' => 'النقاط الأساسية', 'extra' => 'ملاحظات', 'diagnosis' => 'النتيجة', 'diag_by' => 'بواسطة', 'placement' => 'ملاحظة'], ['age', 'marital', 'kids'])],
     ];
-    foreach ($L as $k => $p) $L[$k] = $p + ['words' => $k === 'treatment' ? $wordsT : $words];
+    $L = wi_filter('case_presets', $L, $words, $f); // record types brought by add-ons (first in the list)
+    foreach ($L as $k => $p) $L[$k] = $p + ['words' => $words];
     return $L;
 }
 /** This number's case settings: its own choice, or (older numbers) the preset that fits its business profile. */
 function wf_case_cfg(string $aid): array {
     $own = (array) (wi_read('case_cfg.json', [])[$aid] ?? []); $P = wf_case_presets();
-    // without its own choice: follows the business type (healing → treatment, CRM → crm, else general)
-    $pp = function_exists('wf_pack') ? (string) (wf_pack($aid)['preset'] ?? '') : ''; $def = ['ruqyah' => 'treatment', 'crm' => 'crm', 'support' => 'support'][$pp] ?? 'general';
+    // without its own choice: follows the business type (its case_preset, CRM → crm, support → support, else general)
+    $pk = function_exists('wf_pack') ? wf_pack($aid) : []; $pp = (string) ($pk['preset'] ?? ''); $def = (string) ($pk['case_preset'] ?? '') ?: (['crm' => 'crm', 'support' => 'support'][$pp] ?? 'general');
     $base = $P[$own['preset'] ?? $def] ?? $P['general'];
     $c = $own + $base; $c['statuses'] = ((array) ($own['statuses'] ?? [])) + $base['statuses']; $c['fields'] = ((array) ($own['fields'] ?? [])) + $base['fields'];
     $c['preset'] = $own['preset'] ?? $def;

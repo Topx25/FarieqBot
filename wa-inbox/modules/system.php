@@ -39,21 +39,39 @@ function wf_acc_rules_path(string $aid): string { $wl = dirname(__DIR__, 2) . '/
 function wf_acc_rules_file(string $aid): string { $f = wf_acc_rules_path($aid); return $aid !== '' && is_file($f) ? $f : wf_gw_rules_file(); }
 /** Library sections for a type of business (sales, IT support). */
 function wf_library_rules(string $type): array {
-    $sec = fn($n, $p, $i) => ['name' => $n, 'pattern' => $p, 'body' => true, 'icon' => $i];
-    $S = $type === 'support'
-        ? [$sec('حلول المشاكل', 'حل|الحل|جرب|اعمل ريستارت|restart|إعادة تشغيل|اعاده تشغيل|fix', '🛠️'), $sec('شروحات', 'شرح|خطوات|طريقة|ازاي|إزاي|guide', '📘'),
-           $sec('الشبكات والإنترنت', 'نت|انترنت|إنترنت|راوتر|واي فاي|wifi|شبكة|router', '🌐'), $sec('سياسات وأسعار', 'سعر|اسعار|أسعار|اشتراك|عقد|ضمان|سياس', '📜'), $sec('أسئلة شائعة', 'سؤال|اسئلة|أسئلة|استفسار|FAQ', '❓')]
-        : [$sec('عروض', 'عرض|عروض|خصم|تخفيض|اوفر|offer', '🏷️'), $sec('أسعار', 'سعر|اسعار|أسعار|بكام|جنيه|ريال|درهم|price', '💰'), $sec('التوصيل والدفع', 'توصيل|شحن|الدفع|تحويل|كاش|فودافون|delivery', '🚚'),
-           $sec('سياسات وضمان', 'ضمان|استرجاع|استبدال|سياس', '📜'), $sec('أسئلة شائعة', 'سؤال|اسئلة|أسئلة|استفسار|FAQ', '❓')];
-    return ['topics' => [], 'default_topic' => 'عام', 'other_section' => 'أخرى', 'audio_section' => 'صوتيات', 'voice_title' => 'رسالة صوتية', 'audio_title' => 'ملف صوتي', 'audio_tag' => '', 'sections' => $S];
+    // the sections and their words are a starting profile setting (seed_library_support / seed_library_sales: "name | words | icon" per line)
+    $S = []; foreach (preg_split('/\R/u', wf_seed($type === 'support' ? 'library_support' : 'library_sales')) as $l) { $x = array_map('trim', explode(' | ', $l)); if (count($x) === 3 && $x[0] !== '') $S[] = ['name' => $x[0], 'pattern' => $x[1], 'body' => true, 'icon' => $x[2]]; }
+    $n = array_map('trim', explode(' | ', wf_seed('library_names'))) + ['', '', '', '', ''];
+    return ['topics' => [], 'default_topic' => $n[0], 'other_section' => $n[1], 'audio_section' => $n[2], 'voice_title' => $n[3], 'audio_title' => $n[4], 'audio_tag' => '', 'sections' => $S];
 }
-/** Writes a number's own rules for its type of business: the shared protections, no healing tags, that type's library. */
+/** The gateway's word lists (never stored login codes, payment commands, money words, words left out of the word counts): the starting values, from the profile seeds. */
+function wf_gw_word_defaults(): array {
+    return ['secret_patterns' => array_values(array_filter([wf_seed('secret_patterns')])), 'payment_commands' => wf_seed_list('pay_commands'), 'money_words' => wf_seed_list('money_words'),
+        'stat_stop_words' => array_values(array_filter(preg_split('/\s+/u', wf_seed('stat_stop_words')))), 'question_words' => wf_seed_list('gw_question_words'), 'ref_number_words' => wf_seed_list('ref_number_word'), 'ref_labels' => wf_seed_list('ref_labels')];
+}
+/** Writes a number's own rules for its type of business: the shared protections, the shared tags only for a type that uses them, that type's library. */
 function wf_acc_rules_write(string $aid, string $type): void {
     $g = json_decode((string) @file_get_contents(wf_gw_rules_file()), true) ?: []; $f = wf_acc_rules_path($aid); if (!is_dir(dirname($f))) return;
-    // healing: the shared healing sections and tags; what fits none of them is "written ruqyahs" (no offers or sales sections)
-    $lib = $type === 'ruqyah' ? ['other_section' => (string) ((wf_pack($aid)['library_other'] ?? '') ?: ($g['library']['other_section'] ?? ''))] + (array) ($g['library'] ?? []) : wf_library_rules($type);
-    @file_put_contents($f, json_encode(['secret_patterns' => $g['secret_patterns'] ?? [], 'strip_link_domains' => $g['strip_link_domains'] ?? [], 'tags' => $type === 'ruqyah' ? ($g['tags'] ?? []) : [], 'library' => $lib], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    // a type with the shared library (shared_library): the shared sections and tags; what fits none of them goes to its own "other" section
+    $shared = !empty(wf_pack_presets()[$type]['shared_library']);
+    $lib = $shared ? ['other_section' => (string) ((wf_pack($aid)['library_other'] ?? '') ?: ($g['library']['other_section'] ?? ''))] + (array) ($g['library'] ?? []) : wf_library_rules($type);
+    $D = wf_gw_word_defaults(); // the gateway's word lists always travel in the rules file (the gateway has none of its own)
+    @file_put_contents($f, json_encode(['secret_patterns' => $g['secret_patterns'] ?? $D['secret_patterns'], 'strip_link_domains' => $g['strip_link_domains'] ?? [], 'tags' => $shared ? ($g['tags'] ?? []) : [], 'library' => $lib,
+        'payment_commands' => $g['payment_commands'] ?? $D['payment_commands'], 'money_words' => $g['money_words'] ?? $D['money_words'], 'stat_stop_words' => $g['stat_stop_words'] ?? $D['stat_stop_words'],
+        'question_words' => $g['question_words'] ?? $D['question_words'], 'ref_number_words' => $g['ref_number_words'] ?? $D['ref_number_words'], 'ref_labels' => $g['ref_labels'] ?? $D['ref_labels']], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
     wi_log('acc_rules_written', ['account' => $aid, 'type' => $type]);
+}
+/** The gateway's word lists in every rules file (shared, main, each number): what a file lacks is added from the starting values,
+ *  nothing it has is changed. Returns file => keys added; writes only with $apply. */
+function wf_gw_rules_seed(bool $apply, ?array $files = null): array {
+    $D = wf_gw_word_defaults(); $out = [];
+    foreach ($files ?? array_merge([wf_gw_rules_file(), dirname(wf_gw_rules_file()) . '/rules.main.json'], glob(dirname(wf_gw_rules_file()) . '/accounts/*/rules.json') ?: []) as $f) {
+        if (!is_file($f)) continue; $r = json_decode((string) @file_get_contents($f), true); if (!is_array($r)) continue;
+        $add = array_diff_key($D, $r); if (!$add) continue; $out[$f] = array_keys($add);
+        if ($apply) @file_put_contents($f, json_encode($r + $add, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    }
+    if ($apply && $out) wi_log('gw_rules_seed', ['files' => count($out)]);
+    return $out;
 }
 /** A client's number gets its own rules once (never overwritten afterwards). */
 function wf_client_rules_ensure(array $acc): void {
@@ -91,10 +109,12 @@ function wf_api_gw_rules(string $api): void {
         foreach ($kinds as $k) $out['media']['max_mb'][$k] = max(1, min(500, (int) ($md['max_mb'][$k] ?? 0) ?: ['image' => 8, 'sticker' => 8, 'audio' => 64, 'video' => 64, 'document' => 32][$k]));
         if (in_array('audio', $out['media']['auto'], true)) $out['media']['auto'][] = 'voice';
         wi_write('gw_rules.json', $out); // in the database; the file below is the copy the gateway reads
+        $prev = json_decode((string) @file_get_contents($f), true) ?: []; foreach (['stat_stop_words', 'question_words', 'ref_number_words', 'ref_labels'] as $wk) $out[$wk] = $prev[$wk] ?? wf_gw_word_defaults()[$wk]; // not edited on this page: kept
         if (@file_put_contents($f, json_encode($out, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)) === false) wi_json(['ok' => false, 'error' => 'Could not write the rules file.']);
         wi_log('gw_rules_save', ['tags' => count($out['tags'])]); wi_json(['ok' => true]); }
     $r = wi_read('gw_rules.json', []) ?: (json_decode((string) @file_get_contents($f), true) ?: []);
-    wi_json(['ok' => true, 'rules' => ['secret_patterns' => $r['secret_patterns'] ?? [], 'strip_link_domains' => $r['strip_link_domains'] ?? [], 'tags' => $r['tags'] ?? [], 'library' => $r['library'] ?? new stdClass(), 'payment_commands' => $r['payment_commands'] ?? ['موافق', 'موافقة', 'اعتماد', 'approve', 'ok', 'رفض', 'reject'], 'money_words' => $r['money_words'] ?? ['EGP', 'LE', 'L.E', 'جنيه', 'ج.م', 'ج', 'ريال', 'SAR', '$', 'USD', 'دولار'],
+    $D = wf_gw_word_defaults();
+    wi_json(['ok' => true, 'rules' => ['secret_patterns' => $r['secret_patterns'] ?? [], 'strip_link_domains' => $r['strip_link_domains'] ?? [], 'tags' => $r['tags'] ?? [], 'library' => $r['library'] ?? new stdClass(), 'payment_commands' => $r['payment_commands'] ?? $D['payment_commands'], 'money_words' => $r['money_words'] ?? $D['money_words'], 'stat_stop_words' => $r['stat_stop_words'] ?? $D['stat_stop_words'],
         'media' => $r['media'] ?? ['auto' => ['image', 'sticker', 'audio', 'voice', 'video', 'document'], 'max_mb' => ['image' => 8, 'sticker' => 8, 'audio' => 64, 'video' => 64, 'document' => 32]]]]);
 }
 /* ---------- Settings → Menu: rename sections and pages, change icons, hide pages from the menu ---------- */

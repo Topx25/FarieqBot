@@ -126,7 +126,7 @@
             + '<label>' + T('Clarifying questions in a row before handing over') + '<input type="number" id="br-mc" min="1" max="5" value="' + (c.max_clarify || 1) + '"></label>'
             + '<label>' + T('Groups: seconds between two replies to the same person') + '<input type="number" id="br-gg" min="0" max="3600" value="' + (c.group_gap === undefined ? 120 : c.group_gap) + '"></label>'
             + '<label>' + T('Typing time (seconds) — from / to, by reply length') + '<span class="row"><input type="number" id="br-tmin" min="0.5" max="20" step="0.5" value="' + (c.typing_min || 2) + '" style="width:80px"><input type="number" id="br-tmax" min="1" max="30" value="' + (c.typing_max || 8) + '" style="width:80px"></span></label>'
-            + '<label class="gcf-wide">' + T('Words that stop the bot in a chat (the customer sends only this)') + '<input id="br-sw" dir="auto" value="' + esc(c.stop_words == null ? 'وقف، توقف، كفاية، بس كده، stop' : c.stop_words) + '"></label>'
+            + '<label class="gcf-wide">' + T('Words that stop the bot in a chat (the customer sends only this)') + '<input id="br-sw" dir="auto" value="' + esc(c.stop_words == null ? '' : c.stop_words) + '"></label>'
             + '<label>' + T('New number warm-up until (date)') + '<input type="date" id="br-wu" value="' + esc(c.warmup_until || '') + '"></label>'
             + '<label>' + T('Most replies per hour during warm-up') + '<input type="number" id="br-wph" min="1" max="60" value="' + (c.warmup_per_hour || 5) + '"></label>'
             + '<label>' + T('After a crisis message the bot stays quiet in that chat for (hours, 0 = until /start)') + '<input type="number" id="br-crh" min="0" max="168" value="' + (c.crisis_pause_h == null ? 12 : c.crisis_pause_h) + '"></label>'

@@ -15,6 +15,7 @@ if (isset($_GET['mockup']) && is_file($mk = __DIR__ . '/mockups/' . preg_replace
 if (isset($_GET['intro_video'])) { header('X-Frame-Options: SAMEORIGIN'); header('Content-Type: text/html; charset=utf-8'); readfile(__DIR__ . '/intro.html'); exit; } // the intro video (public: shown on the landing page and in Help)
 if (isset($_GET['help_doc']) && wi_logged_in()) { header('X-Frame-Options: SAMEORIGIN'); header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex'); readfile(__DIR__ . '/help.html'); exit; } // the user guide (Help page)
 if (isset($_GET['m']) && !isset($_GET['api'])) { require __DIR__ . '/features.php'; wf_meet_page(preg_replace('/[^a-z0-9-]/', '', strtolower((string) $_GET['m']))); } // public meeting gateway (no login)
+if (isset($_GET['gw_hook'])) { require __DIR__ . '/features.php'; wf_gw_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['gw_hook']))); exit; } // messages of a number on OpenWA or the Cloud API
 if (isset($_GET['fb_hook'])) { require __DIR__ . '/features.php'; wf_fb_hook(preg_replace('/[^a-z0-9_-]/', '', strtolower((string) $_GET['fb_hook']))); exit; } // Facebook calls this (verified by the app secret)
 if (isset($_GET['privacy']) || isset($_GET['terms'])) { require __DIR__ . '/features.php'; wf_legal_page(isset($_GET['terms']) ? 'terms' : 'privacy'); } // public privacy policy / terms (asked for by Facebook and Google)
 if (isset($_GET['fb_deauth']) || isset($_GET['fb_delete'])) { require __DIR__ . '/features.php'; wf_fb_user_callback(isset($_GET['fb_deauth']) ? 'deauth' : 'delete'); } // Facebook's "app removed" / "delete my data" calls (signed)
@@ -30,13 +31,13 @@ if (isset($_GET['bot_hook'])) {
         // Members who join close together get ONE welcome: each join waits; the last one (no newer join for 30 s) sends it for all.
         $gj = preg_replace('/[^0-9A-Za-z@.:_-]/', '', (string) ($in['jid'] ?? '')); $k = (string) $acc['id'] . '|' . $gj; $mine = uniqid("", true);
         if (function_exists('wf_gate_joined')) wf_gate_joined($acc, $gj, array_map('strval', (array) ($in['members'] ?? []))); // reception group: the follow-up starts
-        if (function_exists('wf_gate_moved')) wf_gate_moved($acc, $gj, array_map('strval', (array) ($in['members'] ?? [])), (string) ($in['by'] ?? '')); // moved from the reception group: the healer opens the case
+        if (function_exists('wf_gate_moved')) wf_gate_moved($acc, $gj, array_map('strval', (array) ($in['members'] ?? [])), (string) ($in['by'] ?? '')); // moved from the reception group: the team member opens the case
         wi_update('welcome_queue.json', function ($Q) use ($k, $in, $mine) { $Q[$k]['m'] = array_values(array_unique(array_merge((array) ($Q[$k]['m'] ?? []), array_map('strval', (array) ($in['members'] ?? []))))); $Q[$k]['t'] = $mine; return $Q; });
         sleep(30); $take = [];
         wi_update('welcome_queue.json', function ($Q) use ($k, $mine, &$take) { if ((string) ($Q[$k]['t'] ?? '') === $mine) { $take = (array) ($Q[$k]['m'] ?? []); unset($Q[$k]); } return $Q; });
         if ($take) wf_bot_welcome($acc, $gj, $take); exit; }
-    // A shortcut typed on the phone ("#تحصين-المكان"): the gateway edits that message into the full quick reply.
-    // A member wrote a keyword (#تحصين) in a group or a private chat: the quick reply with that keyword, within the limits that protect the number.
+    // A shortcut typed on the phone ("#keyword-name"): the gateway edits that message into the full quick reply.
+    // A member wrote a keyword (#keyword) in a group or a private chat: the quick reply with that keyword, within the limits that protect the number.
     // "#حالة" + details in a group (or the writer answering the bot's questions): a case is opened — see modules/case_intake.php
     if ($acc && ($in['cmd'] ?? '') === 'case_intake') { wf_intake_hook($acc, $in); exit; }
     if ($acc && ($in['cmd'] ?? '') === 'keyword') { header('Content-Type: application/json'); $out = ['ok' => false];
@@ -101,8 +102,8 @@ if (!wi_my_accounts() && wi_can_link_own() && !wi_is_super() && !in_array($page,
 if (wi_logged_in() && isset($_GET['acc']) && isset(wi_my_accounts()[(string) $_GET['acc']])) $_SESSION['acc'] = (string) $_GET['acc'];
 // Facebook menu: Messenger and the page's comments / posts / numbers open on a Facebook page (the first one) when a number is open
 if (wi_logged_in() && (($_GET['ch'] ?? '') === 'fb' || $page === 'facebook') && ((wi_current()['channel'] ?? '') !== 'fb')) foreach (wi_my_accounts() as $fbId => $fbA) if (($fbA['channel'] ?? '') === 'fb') { $_SESSION['acc'] = (string) $fbId; break; } // links that open a page for a given number
-if ($page === 'clients' && !wi_is_super()) $page = 'dashboard'; // subscriptions are the super admin's
-if (!in_array($page, ['business', 'clients', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'help', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook', 'catalog'], true)) $page = 'dashboard';
+if (in_array($page, ['clients', 'errors'], true) && !wi_is_super()) $page = 'dashboard'; // subscriptions are the super admin's
+if (!in_array($page, ['business', 'clients', 'errors', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'help', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook', 'catalog'], true)) $page = 'dashboard';
 $fxPages = ['business', 'learning', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'facebook', 'catalog'];
 $autoPages = ['schedule', 'programs', 'status'];
 $sysPages = ['health', 'report', 'backup'];

@@ -628,7 +628,7 @@ document.addEventListener('keydown', function (e) {
       }).catch(function () {});
     }
     function setTyping(txt) { var t = document.getElementById('typing-h'); if (t) { t.textContent = txt; t.hidden = !txt; } }
-    setInterval(function () { var now = Date.now(); if (now - lastLive >= (document.hidden ? 6000 : 2000)) { lastLive = now; live(); } }, 1000);
+    setInterval(function () { var now = Date.now(); if (now - lastLive >= (document.hidden ? 15000 : 4000)) { lastLive = now; live(); } }, 1000);
     setInterval(function () { var ch = false; for (var k in typing) if (typing[k] < Date.now()) { delete typing[k]; ch = true; if (k === open) setTyping(''); } if (ch) drawList(); }, 3000);
     updateTitle();
     setInterval(function () { if (open && !document.hidden && !uploading) loadThread(open, false); }, 30000);
@@ -736,7 +736,7 @@ document.addEventListener('keydown', function (e) {
         var q0 = qrQuery(); if (q0 === null) { qrPop.hidden = true; return; }
         var q = nrm(q0);
         // typed the whole name of exactly one shortcut → it turns into its text by itself
-        // the typed words ("#تحصين-المكان", "#المكان") point to exactly one reply — by whole words of its name or of a trigger → it is written by itself
+        // the typed words ("#keyword-name", "#name") point to exactly one reply — by whole words of its name or of a trigger → it is written by itself
         if (q.length >= 3) { var wq = ' ' + q + ' ', hit = function (r) { return [r.title].concat(r.triggers || []).some(function (w) { return (' ' + nrm(w) + ' ').indexOf(wq) !== -1; }); };
           var ex = meta.replies.filter(function (r) { return nrm(r.title) === q; }), whole = meta.replies.filter(hit);
           if (ex.length === 1 && whole.length === 1) { qrUse(ex[0]); return; }
@@ -763,7 +763,7 @@ document.addEventListener('keydown', function (e) {
         var t = ' ' + nrm(v) + ' ', hits = [], tail = nrm(v.slice(-30)).split(' ').slice(-3);
         meta.replies.forEach(function (r) { if (sugHidden[r.id] || v.indexOf(r.text.slice(0, 40)) !== -1) return; var best = 0;
           (r.triggers || []).concat([r.title]).forEach(function (w) { var n = nrm(w); if (n.length >= 3 && t.indexOf(' ' + n + ' ') !== -1 || (n.length >= 5 && t.indexOf(n) !== -1)) best = Math.max(best, n.length);
-            // still typing: the last words are the start of a trigger word ("تحص" → "التحصين اليومي")
+            // still typing: the last words are the start of a trigger word ("del" → "delivery times")
             for (var k = 0; k < tail.length; k++) { var p = tail.slice(k).join(' '); if (p.replace(/^ال/, '').length >= 3 && (n.indexOf(p) === 0 || n.indexOf(' ' + p) !== -1 || n.indexOf('ال' + p) === 0)) { best = Math.max(best, p.length - 1); break; } } });
           if (best) hits.push({ r: r, s: best }); });
         hits.sort(function (a, b) { return b.s - a.s; }); hits = hits.slice(0, 4);
@@ -1523,7 +1523,7 @@ document.addEventListener('keydown', function (e) {
         document.getElementById('mq-st').innerHTML = (q.pending ? '⏳ ' + T('Downloading…') + ' ' + fmt(q.pending) + ' ' + T('left') + '<br>' : '') + '✓ ' + fmt(q.done) + ' · ' + T('expired on WhatsApp') + ' ' + fmt(q.expired) + ' · ' + T('failed') + ' ' + fmt(q.failed);
       });
     }
-    // ➕ a text written by hand (a written ruqyah, a price list…): add, edit, delete — with a cover, a tag, a title, a topic and keywords
+    // ➕ a text written by hand (a written text, a price list…): add, edit, delete — with a cover, a tag, a title, a topic and keywords
     function textDialog(g) {
       var t = g ? { id: g.manual ? g.mid : '', section: g.section, topic: g.topic, title: g.title, code: g.code || '', keywords: g.keywords || '', text: g.best.text, cover: g.cover || '' }
         : { id: '', section: L.section || (SEC[1] || [''])[0], topic: L.topic || '', title: '', code: '', keywords: '', text: '', cover: '' };

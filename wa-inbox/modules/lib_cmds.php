@@ -1,6 +1,6 @@
 <?php
 /* ---------- Library commands in a group (spiritual-healing numbers only) ----------
- * "#ارسال <name>" sends a file of the media library, "#برنامج <name>" a program, "#رقية <name>" a written ruqyah
+ * "#ارسال <name>" sends a file of the media library, "#برنامج <name>" a program, "#<text command> <name>" a written text
  * (copied exactly, never retyped), "#الأوامر" the list of commands. The words come from the business profile
  * (Business settings → its preset "lib_cmds"); a profile without them has no library commands. */
 
@@ -48,7 +48,7 @@ function wf_libcmd_nf(string $aid, string $q): string {
     $t = wf_libtag_suggest($aid, $q);
     return wf_msg('lib_not_found', ['query' => mb_substr($q, 0, 40), 'hint' => $t ? wf_msg('lib_try_tags', ['tags' => implode('  ', $t)]) : '']);
 }
-/** "#رقية X مسموعة": the audio word (a setting) in the name means the recording, not the written text. Returns the name without it, or null. */
+/** "#<text command> X <audio word>": the audio word (a setting) in the name means the recording, not the written text. Returns the name without it, or null. */
 function wf_libcmd_audio_name(string $aid, string $q): ?string {
     $set = array_filter(array_map(fn($w) => trim(wf_intake_norm($w)), preg_split('/[|\n]/u', (string) (wf_pack($aid)['lib_audio_words'] ?? wf_pack_presets()['general']['lib_audio_words'] ?? ''))));
     $words = preg_split('/\s+/u', trim($q)); $keep = []; $found = false;
@@ -62,8 +62,8 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
     $W = wf_libcmd_words($aid);
     if ($cmd === 'menu' || $q === '') { $say(wf_msg('lib_menu', ['list' => implode("\n", array_map(fn($k, $w) => '• ' . $w . ' …', array_keys(array_diff_key($W, ['menu' => 1])), array_diff_key($W, ['menu' => 1])))])); return; }
     $many = function (array $labels) use ($say, $q) { $say(wf_msg('lib_many', ['query' => mb_substr($q, 0, 40), 'list' => implode("\n", array_map(fn($l) => '• ' . $l, array_slice($labels, 0, 8)))])); };
-    if (wf_media_code_in($aid, $text) !== '') { wf_media_code_send($acc, $jid, $text, $id); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => 'send']); return; } // "#ارسال #رقية عامة": the file with that code
-    if ($cmd === 'send' && preg_match_all('/#\S+/u', $text, $mm)) foreach ($mm[0] as $tok) if (wf_media_code_find($aid, $tok) !== '') { wf_media_code_send($acc, $jid, $tok, $id); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => 'send']); return; } // "#ارسال #رقية-عامة"
+    if (wf_media_code_in($aid, $text) !== '') { wf_media_code_send($acc, $jid, $text, $id); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => 'send']); return; } // "<send word> #code-name": the file with that code
+    if ($cmd === 'send' && preg_match_all('/#\S+/u', $text, $mm)) foreach ($mm[0] as $tok) if (wf_media_code_find($aid, $tok) !== '') { wf_media_code_send($acc, $jid, $tok, $id); wi_log('lib_cmd', ['account' => $aid, 'group' => $jid, 'cmd' => 'send']); return; } // "<send word> #code-name"
     if ($cmd === 'send') {
         $items = wf_libcmd_media($acc); $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['title'], $x['name'], $x['caption'], $x['tags']], $items));
         if (!$hit) { $say(wf_libcmd_nf($aid, $q)); return; }
@@ -90,7 +90,7 @@ function wf_libcmd_hook(array $acc, string $jid, string $text, string $id, strin
         $byText = false; if (!$hit) { $hit = wf_libcmd_match($q, array_map(fn($x) => [$x['text']], $T)); $byText = (bool) $hit; } // else every word is in its text — only a hint: it is never sent as the answer
         if ($byText) { $say(wf_msg('lib_close', ['query' => mb_substr($q, 0, 40), 'list' => implode("\n", array_map(fn($k) => '• ' . $T[$k]['title'], array_slice($hit, 0, 5))), 'hint' => ($t = wf_libtag_suggest($aid, $q)) ? wf_msg('lib_try_tags', ['tags' => implode('  ', $t)]) : ''])); return; }
         if (!$hit) { $say(wf_libcmd_nf($aid, $q)); return; }
-        $kind = trim(wf_intake_norm(ltrim((string) ($W['text'] ?? ''), '#'))); // "#رقية العقد": the word after the command is the name, and the text must be of the kind the command names
+        $kind = trim(wf_intake_norm(ltrim((string) ($W['text'] ?? ''), '#'))); // "#<text command> <name>": the word after the command is the name, and the text must be of the kind the command names
         if (count($hit) === 1 && $kind !== '' && mb_strpos(wf_intake_norm($T[$hit[0]]['title'] . ' ' . ($g[$hit[0]]['section'] ?? '') . ' ' . ($g[$hit[0]]['topic'] ?? '')), $kind) === false) { // one text, but not of that kind: shown as the closest, never sent
             $say(wf_msg('lib_close', ['query' => mb_substr($q, 0, 40), 'list' => implode("\n", array_map(fn($k) => '• ' . $T[$k]['title'], array_slice(array_values(array_unique(array_merge($hit, array_keys($T)))), 0, 5))), 'hint' => ($tg = wf_libtag_suggest($aid, $q)) ? wf_msg('lib_try_tags', ['tags' => implode('  ', $tg)]) : ''])); return; }
         if (count($hit) > 1) { $many(array_map(fn($k) => $T[$k]['title'], array_slice($hit, 0, 8))); return; }
@@ -125,7 +125,7 @@ function wf_media_code_find(string $aid, string $code): string {
     foreach ((array) (wi_read('media_meta.json', [])[$aid] ?? []) as $k => $m) { $c = (string) ($m['code'] ?? ''); if ($c !== '' && empty($m['hidden']) && empty($m['vault']) && str_replace(['-', ' '], '', wf_intake_norm($c)) === $want) return (string) $k; }
     return '';
 }
-/** The file a message names by its code: the code alone ("#رقية-عامة"), written with spaces ("#رقية عامة"), or after the send word ("#ارسال #رقية عامة"). */
+/** The file a message names by its code: the code alone ("#code-name"), written with spaces ("#code name"), or after the send word ("<send word> #code name"). */
 function wf_media_code_in(string $aid, string $text): string {
     $t = trim($text); if ($t === '' || mb_strpos($t, '#') === false || mb_strlen($t) > 80) return '';
     $send = (string) (wf_libcmd_words($aid)['send'] ?? '');

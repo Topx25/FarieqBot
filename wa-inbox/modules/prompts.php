@@ -17,48 +17,6 @@ function wf_pack_presets(): array {
             'case_ex_age' => '30', 'case_ex_kids' => '0', 'case_ex_country' => '', 'case_ex_points' => '', 'case_ex_assessment' => '', 'case_marital' => '', 'reception_pattern' => 'reception|استقبال', 'placement_m' => '', 'placement_f' => '', 'female_hint' => '',
             'lib_audio_words' => "مسموعة | مسموعه | صوت | صوتية | صوتيه | فويس | سماع", 'ack_words' => "تمام | حاضر | ماشي | اوك | ok | okay | الحمد لله | زي الفل | شكرا | شكراً | جزاك الله خيرا | بارك الله فيك | آمين | امين | يارب | ان شاء الله | إن شاء الله", 'lib_tags' => "#المكتبة | library | المكتبة\n#صوتيات | audio | الصوتيات\n#البرامج | programs | البرامج\n#نصوص | texts | النصوص المكتوبة", 'program_label' => 'Programs', 'audio_tag_category' => '', 'audio_categories' => "lesson | 🎓 | Lesson | #6366f1\nannouncement | 📣 | Announcement | #f59e0b\nother | 📁 | Other | #64748b", 'summary_labels' => '', 'ex_triggers' => 'التوصيل، امتى يوصل', 'ex_bot_name' => 'مساعد المتجر', 'ex_question' => 'كم مدة التوصيل؟', 'ex_message' => 'السلام عليكم، طلبت من يومين ولسه ما وصلش', 'ex_word' => 'التوصيل', 'ex_try' => 'الطلب اتأخر', 'ex_concept' => 'سياسة الاسترجاع', 'ex_search' => 'مواعيد العمل',
             'quran_check' => '', 'quick_reply_example' => 'for a delivery-times message: "التوصيل", "امتى يوصل"', 'summary_categories' => 'inquiry, complaint, payment, new_order, follow_up, support, social, other', 'kb_types' => 'faq|procedure|policy', 'case_labels' => 'متابعة، عاجل، جديد'],
-        'ruqyah' => ['label' => 'Ruqyah / spiritual healing', 'lib_tags' => "#المكتبة | library | المكتبة\n#صوتيات | audio | الصوتيات\n#البرامج | programs | البرامج\n#رقيات | texts | الرقيات المكتوبة", 'industry' => 'a Quran/ruqyah (spiritual healing) treatment team', 'language' => 'Arabic',
-            'dialect_rule' => 'Reply in the customer\'s own language and dialect (Egyptian Arabic if they write Egyptian, Moroccan if Moroccan, etc.).', 'output_language' => 'Arabic', 'staff' => 'Therapist', 'client' => 'Case',
-            'lib_cmds' => ['send' => '#ارسال', 'program' => '#برنامج', 'text' => '#رقية', 'menu' => '#الأوامر'], // library commands in groups (only this profile)
-            // Bot roles (Bot → Roles): words that call a role, its instructions (English for the model; it replies in the customer's dialect) and its first-reply note.
-            'roles' => [
-                'teacher' => ['label' => 'Healer and ruqyah teacher (groups)', 'icon' => '📖', 'on' => 1, 'strong' => 1, 'words' => '',
-                    'rules' => "- You answer everyone in the group as an experienced healer and teacher of the lawful ruqyah (ruqyah shar'iyyah) and spiritual healing.\n- Teach the correct way from the team's sources: which verses and adhkar, how and how often, purification of the home, protection programs; explain simply and with care.\n- Quote Quran verses, hadith and adhkar ONLY when they are in the SOURCES, copied exactly; otherwise name the surah/verse without writing it.\n- Personal cases (symptoms, a specific person): a short helpful step, then advise opening a case with the team and set handoff=true.\n- Reply briefly (2–6 lines) to the person asked, by name if known.",
-                    'intro' => ''],
-                'healer' => ['label' => 'Healer (ruqyah follow-up)', 'icon' => '🩺', 'on' => 1, 'strong' => 1,
-                    'words' => "أعراض, اعراض, عين, حسد, سحر, مس, رقية, رقيه, تعبان, صداع, كوابيس, ضيق, وسواس, برنامج علاج",
-                    'rules' => "- Ask calmly about the symptoms, since when, sleep and dreams, and what was tried before; one or two questions at a time.
-- Suggest only what the team's sources and programs say; never invent a treatment, never promise a cure, never give a final diagnosis.
-- Medical symptoms (pain, bleeding, fever, fainting, pregnancy issues): advise seeing a doctor as well.
-- When the case is clear enough, say a healer will follow up and set handoff=true.",
-                    'intro' => 'I am the team\'s assistant, a healer will follow up with you personally.'],
-                'support' => ['label' => 'Emotional support', 'icon' => '💚', 'on' => 1, 'strong' => 1,
-                    'words' => "مخنوق, مخنوقة, زعلان, زعلانة, حزين, حزينة, قلقان, قلق, خايف, خايفة, مكتئب, اكتئاب, وحيد, وحيدة, مضغوط, ضغط نفسي, مش قادر, تعبت نفسيا",
-                    'rules' => "- Listen first: reflect the feeling in one short line, then ask one gentle question. No lectures, no judging, no religious blame.
-- Offer simple calming steps (breathing, wudu and prayer, dhikr, a short walk, talking to someone they trust) and hope.
-- You are not a therapist and not a doctor: for long or heavy distress, gently advise a specialist and set handoff=true.
-- Never promise secrecy you cannot keep; never give medication advice.",
-                    'intro' => 'I am the team\'s assistant, here to listen; I am not a doctor or a psychotherapist.'],
-                'dreams' => ['label' => 'Dream interpretation', 'icon' => '🌙', 'on' => 1, 'strong' => 1,
-                    'words' => "حلمت, حلم, احلام, أحلام, منام, رؤيا, رؤية, شفت في المنام, فسر, تفسير",
-                    'rules' => "- Ask for the dream details that matter (who, colours, feelings, time) and the dreamer's situation if needed.
-- Interpret with the classical scholars' meanings (Ibn Sirin and the like) and the team's sources; say it is an interpretation and Allah knows best.
-- Never frighten, never predict death, illness or divorce, never accuse anyone; a bad dream: advise the Sunnah (seek refuge, do not tell it, pray).
-- If the dreams point to an affliction (repeated nightmares, snakes, falling, being chased), suggest the healer's follow-up.",
-                    'intro' => 'The interpretation is an effort, and Allah knows best.'],
-            ],
-            'roles_common' => "- FACTS ONLY FROM THE SOURCES: verses, hadith, adhkar, ruqyah names, programs, prices, times and people's names must come from the SOURCES, the team examples or the conversation. Never invent or complete them from memory. If the sources do not cover the question, ask one short question or say the team will answer and set handoff=true.\n- NEVER REPEAT: do not resend or rephrase an earlier reply of yours; if it was already answered, answer only what is new in one line or stay brief.\n- THE TEAM'S WAY FIRST: team answers show how this team works; an uploaded file is used only where it fits them (\"matches the team\" sources first). If a file and a team answer differ, follow the team.\n",
-            'group_role' => 'teacher',
-            'crisis' => ['on' => 1, 'words' => "انتحار, انتحر, اموت نفسي, أموت نفسي, اقتل نفسي, أقتل نفسي, اذي نفسي, أؤذي نفسي, مش عايز اعيش, مش عايزة اعيش, عايز اموت, عايزة اموت, اخلص من حياتي, هقتله, هقتلها"],
-            'sacred_rule' => 'Never change, shorten or retype Quran verses, adhkar or supplications from memory — copy them exactly or name the surah/verse.',
-            'outside_people' => 'healers/practitioners/raqis who are not in the allowed list, sheikhs and scholars', 'case_types' => 'عين|حسد|سحر|مس|نفسي/طبي يحتاج طبيب|غير واضح',
-            'case_scope' => 'Do NOT give medical diagnoses; describe what they report.', 'concept_example' => '«منقضات التحصين»', 'term_example' => '«أغاني» → is one of the things that break «منقضات التحصين»',
-            'choices_example' => '1️⃣ صداع 2️⃣ ضيق في الصدر 3️⃣ أحلام مزعجة…', 'newcomer_rule' => 'Never tell a new person to continue a program, read "the" adhkar, use ruqyah water or anything they were never given. If a dhikr/ruqyah/program is the answer, include its text (from the sources) or say you will send it.',
-            'library_kind' => 'Islamic ruqyah / treatment WhatsApp messages', 'library_other' => 'رقيات مكتوبة', 'library_sections' => 'آيات, رقيات, أدعية وأذكار, دروس, برامج علاجية, جلسات, تعليمات ونصائح, إعلانات وترحيب, أخرى', 'text_quality' => 'complete, correct, well formatted with tashkeel', 'text_errors' => 'a misquoted Quran verse',
-            'ui_terms' => '', 'case_ex_age' => '30 سنة', 'case_ex_kids' => 'لا يوجد', 'case_ex_country' => 'المغرب', 'case_ex_points' => "شتات ذهني وكثرة النسيان\nثقل في العبادات\n…", 'case_ex_assessment' => 'حسد · مس · سحر…',
-            'case_marital' => "أعزب / عزباء\nمتزوج / متزوجة\nمطلق / مطلقة\nأرمل / أرملة", 'reception_pattern' => 'استقبال', 'placement_m' => 'موجود في {group}', 'placement_f' => 'موجودة في {group}', 'female_hint' => 'ة',
-            'program_label' => 'Programs', 'audio_tag_category' => 'ruqyah', 'audio_categories' => "ruqyah | 🤲 | Ruqyah | #10b981\nquran | 📖 | Recitation | #14b8a6\nlesson | 🎓 | Lesson | #6366f1\ndua | 🙏 | Prayer | #f59e0b\nother | 📁 | Other | #64748b", 'summary_labels' => 'ruqyah_treatment | 🤲 Ruqyah', 'ex_triggers' => 'تحصين المكان، جهز نفسك لجلسة', 'ex_bot_name' => 'المساعد الرقمي', 'ex_question' => 'ما هي طريقة رقية المنزل؟', 'ex_message' => 'السلام عليكم عندي صداع وضيق بعد الرقية، أعمل إيه؟', 'ex_word' => 'أغاني', 'ex_try' => 'بسمع أغاني كتير', 'ex_concept' => 'منقضات التحصين', 'ex_search' => 'طريقة رقية المنزل',
-            'quran_check' => '1', 'quick_reply_example' => 'for a full place-protection ruqyah: "تحصين المكان", "جهز نفسك لجلسة"', 'summary_categories' => 'inquiry, complaint, payment, new_order, follow_up, support, ruqyah_treatment, social, other', 'kb_types' => 'faq|procedure|policy|ruqyah', 'case_labels' => 'عين، حسد، سحر، مس، أطفال، متابعة'],
     ];
     // CRM: sales and customer service — the starting profile of every client (SaaS) number. Everything here is editable in Business settings.
     $P['crm'] = ['label' => 'CRM — sales and customer service', 'industry' => 'شركة بتبيع منتجات أو خدمات وبتخدم عملاءها على واتساب',
@@ -121,27 +79,62 @@ function wf_pack_presets(): array {
     // Emoji-only messages (no words): the bot answers like a person — a reaction, and for some a short line. "emojis => reaction | reply" per line; editable in Business settings.
     $emoji = "❤️ 🤍 💙 💚 💛 💜 ♥️ 😍 🥰 😘 => 🤍\n😂 🤣 😅 😁 😆 😄 => 😄\n👍 👌 ✅ 💯 => 👍\n🤲 🙏 => 🤲 | آمين يارب 🤲\n🌹 🌸 💐 🌷 => 🌹\n😢 😭 💔 😔 😞 😓 => 🤍 | ربنا يطمّن قلبك 🤍 إحنا معاك، احكيلنا لو حابب.\n👋 => 👋 | أهلاً بيك 🤍\n* => 🤍";
     $units = 'مر|مره|مرات|مرة|يوم|ايام|أيام|ساع|اسبوع|أسبوع|شهر|دقيق|times|days|hours|weeks|months|minutes'; // words after a count (the bot's made-up-count check)
-    $sacred = '﴿|سورة|سوره|قال تعالى|قوله تعالى|اللهم|سبحان|أعوذ|اعوذ|بسم الله|لا إله|لا اله|حسبي الله|حسبنا الله|أستغفر|استغفر|لا حول|يا حي يا قيوم'; // words that start a verse, a surah name or a dhikr (the bot's made-up-text check)
-    $gate = ['f' => 'امرأة، امراة، مرأة، مراة، ست، بنت، انثى، أنثى', 'm' => 'رجل، راجل، ذكر، شاب']; // reception groups: the words a new member answers with
-    foreach ($P as $k => $v) $P[$k] += ['emoji_replies' => $emoji, 'count_units' => $units, 'sacred_markers' => $k === 'ruqyah' ? $sacred : '', 'gate_words' => $k === 'ruqyah' ? $gate : [], 'fun_cmd' => '#هزار', 'fun_off' => '#جد', 'restart_cmd' => '#ريستارت، ريستارت، #restart', 'ask_tag' => '#سؤال', 'continue_cmd' => '#كمل، #كمّل', 'rating_good_emojis' => '👍 ❤️ 🤍 💚 🙏 😍 🥰 💯 ✅ 🌹 👏', 'rating_bad_emojis' => '👎 😡 😠 🙄 💔 ❌ 😒', 'rating_good_words' => 'شكرا، شكراً، جزاك الله، جزاكم الله، تسلم، ربنا يكرمك، فادني، thanks', 'rating_bad_words' => 'غلط، مش ده، مش فاهم، مش مفهوم، مش صح، مش ده قصدي، wrong', 'analysis_axes' => $k === 'ruqyah' ? 'روحانياً | صحياً | نفسياً' : '', 'analyze_cmd' => $k === 'ruqyah' ? '#تحليل' : '', 'recs_cmd' => $k === 'ruqyah' ? '#توصيات' : '', 'learn_group_words' => $k === 'ruqyah' ? 'علاج، رقية، رقيه، استشفاء، حالات' : '', 'hold_cmd' => '#وقف_البوت، #ايقاف_البوت، وقف البوت', 'status_cmd' => '#حالة_البوت، /status، /حالة، حالة البوت', 'resume_cmd' => '#شغل_البوت، #تشغيل_البوت، شغل البوت', 'delete_cmd' => '#امسح', 'confirm_cmd' => '#تأكيد', 'fun_hours' => 2, 'nicknames' => 'يا صاحبي، يا صاحبى، يا صاحب، يا باشا، يا معلم، يا غالي'];
+    // The language and starting wording the code works with (lists, detection words, starting texts): a number may change any of them in its profile.
+    $seeds = [
+        'seed_text_stop_words' => 'في, من, على, الى, عن, ما, لا, يا, هو, هي, انا, انت, ده, دي, اللي, و, او, ثم, ان, كان, مع, هل, كده, بس, عشان, لو, كل, the, and',
+        'seed_stat_stop_words' => 'the and you for are with this that from have your was not but can will عن في من على الى إلى ان أن هذا هذه انا أنا انت إنت مع لو اللي الي ده دي كده يا و او أو ما لا ايه إيه هو هي تم بس كان عشان علشان ممكن',
+        'seed_style_end_emojis' => "🤲 => يشفي، شفا، اللهم، ربنا، بإذن الله، باذن الله، يعافي، دعاء، ادعو، أدعو\n🙏 => شكر، جزاك، بارك\n✅ => تم، خلاص، اتسجل، جاهز\n📖 => سورة، آية، اقرأ، اقرا، قراءة\n⏰ => الساعة، ميعاد، موعد\n📌 => ملاحظة، مهم",
+        'seed_style_affection_words' => 'حبيبي، حبيبتي، حبايبي، يا قلبي، يا روحي، يا عمري، يا غالي، يا غالية، يا قمر، يا عسل، يا حلوة، يا جميلة، يا سكر، يا دلوعة، يا أميرة، يا اميرة، يا برنسيسة، يا ست البنات، يا ست الكل، منورة، منوره، نورتي، أحبك، بحبك، وحشتني، dear، honey، sweetheart، darling',
+        'seed_style_prompt_rules' => "Call the person only by the name shown under WHO YOU TALK TO (or the name they gave in this chat). Never guess, invent or reuse another name — if no name is known, use none.\nGreetings and welcomes stay neutral and respectful: no compliments, flattery or emotional words (e.g. منورة، نورتي، يا قمر، يا أميرة), never pair a person's first name with praise, and be extra formal with women. A plain greeting and getting to the point is enough.\nNever say that something happened or did not happen (a message was deleted, a payment arrived, a booking or file was sent, someone saw it) unless the conversation or the sources show it. If you are not sure, say you will check or that the team will confirm. Never swear (والله، أقسم) to make a claim.\nNever deny being an automated assistant; if asked, say you are the digital assistant and a team member can join.\nNever mention a symptom, illness, family member, place, treatment step or past event about the person unless it is written in WHO YOU TALK TO or in the recent messages. A greeting, thanks or a short comment gets a short, natural reply — do not bring up their health or an earlier complaint, and do not give a new instruction nobody asked for. If you are not sure what they mean, ask one short question.\nNever repeat a sentence or a question you already sent in this conversation; if the customer did not answer it, take a different step or hand over to the team.\nKeep it WhatsApp-sized: 1–5 short lines. Emojis only when they really help (e.g. ✅ for a step, ⏰ for a time) — usually none; end with an emoji only if it fits what you just said (e.g. 🤲 after a dua), at most one, never decorative; never hearts, flowers, kisses or anything romantic.\nSTRICTLY RESPECTFUL: never use words of love or endearment (حبيبي، حبيبتي، يا قلبي، يا روحي، يا عمري، يا غالي، يا غالية، يا قمر، يا عسل، أحبك، وحشتني، love, dear, honey…), never comment on looks or voice, no flirting or anything that could be read as flirting or harassment; emojis are fine EXCEPT hearts of any colour, flowers/roses, kisses, love faces or anything romantic — even if the team examples or the person do. Address people with neutral respect, by name when known, and vary the wording; do NOT open with «يا أخي الكريم» / «أخي الكريم» / «أختي الكريمة» — prefer the person's name or no address at all.",
+        'seed_stop_words' => 'وقف، توقف، كفاية، بس كده، stop',
+        'seed_question_words' => 'ايه|إيه|ازاي|إزاي|ليه|امتى|إمتى|فين|هل|كيف|ماذا|متى|لماذا|أين|كام|مين|ممكن',
+        'seed_personal_words' => 'موعد|ميعاد|تشخيص|حالتي|حالتى|اسمي|اسمى|رقمي|رقمى|فلوس|دفعت|تحويل|ايصال|إيصال|صوره|صورة|فويس|ريكورد',
+        'seed_quran_markers' => 'قال تعالى|قوله تعالى|بسم الله الرحمن الرحيم',
+        'seed_filler_words' => 'ده|دي|دا|كده|طب|طيب|ايوه|ايوا|لا|تمام|ماشي|اه|نعم',
+        'seed_question_words_cache' => 'ايه|ازاي|ازاى|ليه|امتي|امتى|فين|كام|هل|ما هي|ما هو|ماهي|ماهو|كيف|لماذا|متي|متى|اين|عايز اعرف|ممكن اعرف',
+        'seed_case_name_labels' => 'الاسم|اسم الحالة|الأسم|name',
+        'seed_library_support' => "حلول المشاكل | حل|الحل|جرب|اعمل ريستارت|restart|إعادة تشغيل|اعاده تشغيل|fix | 🛠️\nشروحات | شرح|خطوات|طريقة|ازاي|إزاي|guide | 📘\nالشبكات والإنترنت | نت|انترنت|إنترنت|راوتر|واي فاي|wifi|شبكة|router | 🌐\nسياسات وأسعار | سعر|اسعار|أسعار|اشتراك|عقد|ضمان|سياس | 📜\nأسئلة شائعة | سؤال|اسئلة|أسئلة|استفسار|FAQ | ❓",
+        'seed_library_sales' => "عروض | عرض|عروض|خصم|تخفيض|اوفر|offer | 🏷️\nأسعار | سعر|اسعار|أسعار|بكام|جنيه|ريال|درهم|price | 💰\nالتوصيل والدفع | توصيل|شحن|الدفع|تحويل|كاش|فودافون|delivery | 🚚\nسياسات وضمان | ضمان|استرجاع|استبدال|سياس | 📜\nأسئلة شائعة | سؤال|اسئلة|أسئلة|استفسار|FAQ | ❓",
+        'seed_library_names' => 'عام | أخرى | صوتيات | رسالة صوتية | ملف صوتي',
+        'seed_secret_patterns' => 'رمز دخول|رمز التحقق|كود التحقق|one-time password|verification code|\\bOTP\\b|password|كلمة المرور|كلمة السر',
+        'seed_pay_commands' => 'موافق, موافقة, اعتماد, approve, ok, رفض, reject',
+        'seed_money_words' => 'EGP, LE, L.E, جنيه, ج.م, ج, ريال, SAR, $, USD, دولار',
+        'seed_gender_f' => 'ث, female, woman',
+        'seed_gw_question_words' => 'ازاي|إزاي|ايه|إيه|ليه|امتى|هل|كيف|ممكن|عايز|عايزة|محتاج',
+        'seed_ref_number_word' => 'رقم',
+        'seed_ref_labels' => 'العملية|المرجع|الطلب|الفاتورة',
+        'seed_gender_m' => 'ذكر, male, man',
+    ];
+    $P = wi_filter('pack_presets', $P); // business types brought by add-ons
+    foreach ($P as $k => $v) $P[$k] += $seeds;
+    foreach ($P as $k => $v) $P[$k] += ['emoji_replies' => $emoji, 'count_units' => $units, 'sacred_markers' => '', 'gate_words' => [], 'fun_cmd' => '#هزار', 'fun_off' => '#جد', 'restart_cmd' => '#ريستارت، ريستارت، #restart', 'ask_tag' => '#سؤال', 'continue_cmd' => '#كمل، #كمّل', 'rating_good_emojis' => '👍 ❤️ 🤍 💚 🙏 😍 🥰 💯 ✅ 🌹 👏', 'rating_bad_emojis' => '👎 😡 😠 🙄 💔 ❌ 😒', 'rating_good_words' => 'شكرا، شكراً، جزاك الله، جزاكم الله، تسلم، ربنا يكرمك، فادني، thanks', 'rating_bad_words' => 'غلط، مش ده، مش فاهم، مش مفهوم، مش صح، مش ده قصدي، wrong', 'analysis_axes' => '', 'analyze_cmd' => '', 'recs_cmd' => '', 'learn_group_words' => '', 'hold_cmd' => '#وقف_البوت، #ايقاف_البوت، وقف البوت', 'status_cmd' => '#حالة_البوت، /status، /حالة، حالة البوت', 'resume_cmd' => '#شغل_البوت، #تشغيل_البوت، شغل البوت', 'delete_cmd' => '#امسح', 'confirm_cmd' => '#تأكيد', 'fun_hours' => 2, 'nicknames' => 'يا صاحبي، يا صاحبى، يا صاحب، يا باشا، يا معلم، يا غالي'];
     return $P;
 }
+/** A starting word list or text of the business profile (seed_<key>), for this number or, without one, the starting profile. */
+function wf_seed(string $key, string $aid = ''): string { static $base = []; if ($aid === '') return $base[$key] ??= (string) (wf_pack('')['seed_' . $key] ?? ''); return (string) (wf_pack($aid)['seed_' . $key] ?? ''); }
+/** A seed list as words: split on commas (also the Arabic comma), "|" or new lines. */
+function wf_seed_list(string $key, string $aid = ''): array { return array_values(array_filter(array_map('trim', preg_split('/[,\x{060C}|\n]+/u', wf_seed($key, $aid))), fn($w) => $w !== '')); }
+/** A seed list as a regex alternation, each word quoted (the regex itself stays in the code). */
+function wf_seed_alt(string $key, string $aid = '', string $d = '/'): string { return implode('|', array_map(fn($w) => preg_quote($w, $d), wf_seed_list($key, $aid))); }
+/** A comma list setting of the business profile ("a, b, c") as a list. */
+function wf_pack_list(string $aid, string $key): array { return array_values(array_filter(array_map('trim', explode(',', (string) (wf_pack($aid)[$key] ?? ''))))); }
 /** The starting business type of a number: a client's (SaaS) number starts as CRM, the operator's as general. */
 function wf_pack_default(string $aid): string { $a = wi_accounts()[$aid] ?? null;
-    // a number whose cases are set up for healing follow-up is a spiritual-healing number, whoever owns it (it must never flip to CRM by itself)
-    if ((wi_read('case_cfg.json', [])[$aid]['preset'] ?? '') === 'treatment') return 'ruqyah'; // the saved case setting itself (wf_case_cfg would ask wf_pack again: endless loop)
     return $a && function_exists('wi_ws') && wi_ws($a) !== '' ? 'crm' : 'general'; }
 /** A number's own profile values without the ones that only repeat a ready value: what equals this type's ready value
- *  is not kept, and spiritual healing values on another type (or another type's values on spiritual healing) are dropped. */
+ *  is not kept, and the values of a type kept apart ('apart' => true) on another type (or another type's values on it) are dropped. */
 function wf_pack_own(string $pre, array $p): array {
     $P = wf_pack_presets(); $mine = $P[$pre] ?? $P['general'];
     foreach ($p as $k => $v) { if ($k === 'preset') continue;
         if (array_key_exists($k, $mine) && $mine[$k] == $v) { unset($p[$k]); continue; }
-        foreach ($P as $o => $op) if ($o !== $pre && ($o === 'ruqyah' || $pre === 'ruqyah') && array_key_exists($k, $op) && $op[$k] == $v && $op[$k] != ($mine[$k] ?? null)) { unset($p[$k]); break; } }
+        foreach ($P as $o => $op) if ($o !== $pre && (!empty($op['apart']) || !empty($mine['apart'])) && array_key_exists($k, $op) && $op[$k] == $v && $op[$k] != ($mine[$k] ?? null)) { unset($p[$k]); break; } }
     return $p;
 }
 function wf_pack(string $aid): array {
-    $p = (array) (wi_read('bot.json', [])[$aid]['pack'] ?? []); $P = wf_pack_presets(); $p['preset'] ??= wf_pack_default($aid); $p = wf_pack_own((string) $p['preset'], $p);
+    $p = (array) (wi_read('bot.json', [])[$aid]['pack'] ?? []); $P = wf_pack_presets(); $p['preset'] ??= wf_pack_default($aid);
+    // a type that is not there (its add-on removed) or not allowed on this number falls back to the starting type
+    if (!isset($P[$p['preset']]) || !wi_filter('pack_allowed', true, (string) $p['preset'], $aid)) $p = ['preset' => wf_pack_default($aid)];
+    $p = wf_pack_own((string) $p['preset'], $p);
     return $p + ($P[$p['preset']] ?? $P['general']) + ['lib_tags' => $P['general']['lib_tags'], 'lib_audio_words' => $P['general']['lib_audio_words']]; // every profile starts with the section tags
 }
 /** Audio categories of the current number's business profile: "key | icon | label | colour" per line. */
@@ -152,37 +145,20 @@ function wf_audio_cats(?string $aid = null): array {
     return $out;
 }
 /** Instruction templates: key => title, what it is for, placeholders it receives, starting text. */
-function wf_prompt_registry(): array {
-    return [
+/** $aid: the number the instructions are for (an add-on brings its own only to the numbers of its type); default the open number. */
+function wf_prompt_registry(?string $aid = null): array {
+    $aid ??= (string) (function_exists('wi_current') ? (wi_current()['id'] ?? '') : '');
+    return wi_filter('prompt_registry', [
         'bot_fun' => ['title' => 'Warm-up mode rule (added to the bot reply while it is on)', 'vars' => [],
             'text' => "- WARM-UP MODE (turned on by the owner): chat like a friendly, witty member of the group — light jokes, playful replies to ANY message, 1–2 short lines, no lessons or advice unless asked. Keep it clean and kind: no jokes about religion, the Quran, illness, a person's body or family. Confidence 0.8 for a fitting light reply.\n"],
         'bot_ask' => ['title' => 'Rule when a group member writes the ask tag (#سؤال), added to the bot reply', 'vars' => [],
             'text' => "- ASK TAG (the person wrote the ask tag to ask the bot directly): answer ANY question helpfully — general knowledge, a translation, an explanation, advice — even when it is not about the business. Short and clear, in the person's dialect; a translation is given in the language asked. Keep the rules about sacred texts. Confidence 0.85 for a clear answer.\n"],
-        'bot_team_person' => ['title' => 'Rule when the writer is a member of the team (a healer / admin), added to the bot reply', 'vars' => [],
-            'text' => "- THE WRITER IS A MEMBER OF THE TEAM (a healer or an admin), NOT a case and not a patient: never ask about their condition, never call them a case, never tell them to start or follow a treatment. Talk to them as a colleague, briefly, and only about what they said.\n"],
-        'bot_fix' => ['title' => 'Bot reply rewrite (a draft had made-up counts, verses or adhkar)', 'vars' => ['draft', 'why'],
-            'text' => "\n\nYOUR DRAFT: {{draft}}\nIt uses {{why}}that are in no team example and no source. Rewrite it without them: give only what the examples and sources say, or ask the healer's follow-up question. Same JSON."],
-        'bot_brain' => ['title' => 'Bot reply — one assistant, several modes (healing numbers)', 'vars' => ['owner_rules', 'name_line', 'business', 'tone', 'who', 'modes', 'avoid', 'examples', 'sources', 'conversation'],
-            'text' => "{{owner_rules}}You are {{name_line}}, answering on WhatsApp for {{business}}. You speak like a real member of the team typing on the phone.\n\n"
-                . "STEP 1 — Pick the MODE that fits the customer's LAST message (read the whole conversation):\n{{modes}}\n\n"
-                . "STEP 2 — Find the answer, in this order of trust:\n"
-                . "1. TEAM EXAMPLES: real answers our healers gave to similar questions. If one fits, give the SAME method, steps, surahs and counts — in your own short words. Do not add steps, counts, oils, foods or promises the healer did not give.\n"
-                . "2. SOURCES: approved knowledge and our library texts. Quran verses, adhkar and duas only exactly as written there (never from memory); otherwise name the surah.\n"
-                . "3. Nothing fits: ask ONE short question, or (prices, payment, a personal review, a complaint, an emergency) set handoff=true and say a healer will answer soon — in your own words.\n"
-                . "ANSWER FIRST: when the examples or sources cover the question, answer it fully; do not send people to the sheikh for what the team already answers.\n\n"
-                . "SOUND LIKE THE HEALER, NOT A CHATBOT: copy the closest team example's length, directness and mood — brief when they are brief, firm when they are firm (a refusal stays a refusal, a warning stays a warning); never soften it with extra comfort. "
-                . "Say only what answers the last message: no greeting unless they greeted, no thanks, no closing line, no 'إن شاء الله ربنا يشفيك' fillers, no repeating what they said, no second idea. Usually 1–3 lines; fewer words always win. "
-                . "ADVICE: useful advice is welcome only when a SOURCE (approved knowledge) or a TEAM EXAMPLE gives it — never from general knowledge. "
-                . "ADHKAR AND DUAS: only ones that appear in the TEAM EXAMPLES (what the team already told people); none from memory or general habit. "
-                . "QURAN: no tafsir or meaning of a verse unless a SOURCE explains it. "
-                . "DREAMS: give two short readings, each one line — «روحانياً:» (what it may point to in ruqyah terms: envy, magic, touch, or nothing) and «عامةً:» (the general meaning) — both following the examples and sources, never certain, then the one question a healer would ask. "
-                . "The customer's own dialect (Egyptian if they write Egyptian…), {{tone}}, no headings, no canned phrases, at most one question. "
-                . "A vague message (\"تعبان\", \"مش عارف\") gets 3–6 short numbered choices; numbers in their reply refer to your last choices.\n"
-                . "NAMES: in groups write no name at all (the tag already addresses the person); elsewhere only names the customer wrote or the card gives. No nicknames or pet names (my friend, boss, dear). The number's own name is the team's number, never a person or a sheikh. Never name another center or group.\n"
-                . "WHO YOU TALK TO: {{who}}\n\n{{avoid}}"
-                . "Reply JSON only: {\"mode\":\"healer|support|dreams|teacher|bot\",\"reply\":\"…\",\"confidence\":0.0,\"used\":[\"S1\"],\"from_example\":true,\"handoff\":false,\"clarify\":false,\"reason\":\"short Arabic reason\",\"symptoms\":false,\"complaint\":\"\"}\n"
-                . "confidence: 0.9+ when a team example or source answers it; 0.6–0.8 for an interpretation or comfort; below 0.5 when you are guessing.\n\n"
-                . "TEAM EXAMPLES (closest first):\n{{examples}}\nSOURCES:\n{{sources}}\nCONVERSATION:\n{{conversation}}"],
+        'bot_team_person' => ['title' => 'Rule when the writer is a member of the team (a staff member / admin), added to the bot reply', 'vars' => [],
+            'text' => "- THE WRITER IS A MEMBER OF THE TEAM (a staff member or an admin), NOT a customer: never ask about their situation, never call them a case, never treat them as someone being served. Talk to them as a colleague, briefly, and only about what they said.\n"],
+        'bot_self_name' => ['title' => 'Rule about the name of this WhatsApp number (it is the team\'s number, not a person), added to the bot reply', 'vars' => ['self'],
+            'text' => "- \"{{self}}\" is the name of THIS WhatsApp number (you, the team's number), not a person: never call it a person and never tell people to follow up with it; say \"the team\" without a name unless the sources give the name of the person in charge.\n- Use the person's name only if they wrote it or the customer card gives it; never take a name from another person in the conversation.\n\n"],
+        'bot_fix' => ['title' => 'Bot reply rewrite (a draft had made-up counts or quoted texts)', 'vars' => ['draft', 'why'],
+            'text' => "\n\nYOUR DRAFT: {{draft}}\nIt uses {{why}}that are in no team example and no source. Rewrite it without them: give only what the examples and sources say, or ask the team's follow-up question. Same JSON."],
         'bot_reply' => ['title' => 'Bot reply (private chats)', 'vars' => ['owner_rules', 'guide', 'name_line', 'business', 'tone', 'style_rules', 'who', 'owner_check', 'avoid', 'examples', 'sources', 'conversation'],
             'text' => "{{owner_rules}}{{guide}}You are {{name_line}} replying on WhatsApp for THIS number only: {{business}}.\nOnly talk about what this business does; never mention services of other numbers.\n"
                 . "HOW TO REPLY — behave like a real person from the team typing on their phone, not like a robot or a search engine:\n"
@@ -232,8 +208,6 @@ function wf_prompt_registry(): array {
             'text' => "Format this {{language}} WhatsApp text for clean reading. Do NOT change, add or remove any word, letter or diacritic. {{sacred_rule}} Only: fix spacing, put each item/step on its own line, keep numbering consistent, remove repeated empty lines and stray symbols, keep emojis that mark sections. Reply JSON only: {\"text\":\"…formatted text…\"}\n\nTEXT:\n{{text}}"],
         'rec_pick' => ['title' => 'Suggestions: which written text / program / recording fits this person', 'vars' => ['person', 'items'],
             'text' => "A person wrote this (their own words, and their case notes):\n{{person}}\n\nThese items can be sent to them (number) title — what it is for):\n{{items}}\nPick up to 3 that really fit what the person describes, best first. For each: n (the number), confidence 1-99 (how sure it fits), why (one short line in the person's language). Pick nothing that does not fit.\nReturn JSON only: {\"picks\":[{\"n\":0,\"confidence\":80,\"why\":\"...\"}]}"],
-        'case_deep' => ['title' => 'Case analysis by angle (#تحليل): a professional report for the healers', 'vars' => ['axes', 'stages', 'programs', 'previous', 'notes', 'messages'],
-            'text' => "You are a senior specialist writing a professional case report for the team of {{industry}}. It is the shared reference every healer works from, so write it formally and precisely in {{output_language}} (standard, respectful wording — no slang, no jokes, no names of other people). Base every statement on the messages; when something is not known write that it is not known. {{case_scope}}\nAssess the case from these angles: {{axes}}. For each angle: a score 0-10 (10 = sound, 0 = severe), the main findings in one or two clear sentences, and the evidence (what in the messages shows it).\nThen assess the treatment: the current stage, each stage done or left with a short note, the progress 0-100 and the trend against the previous report (better, same or worse).\nGive 2-4 concrete recommendations for the healer, ordered by priority, and anything that needs a doctor or urgent attention.\nCase stages so far:\n{{stages}}\nPrograms:\n{{programs}}\nPrevious report:\n{{previous}}\nCase notes:\n{{notes}}\n\nMESSAGES:\n{{messages}}\n\nReturn JSON only: {\"summary\":\"3-5 formal sentences: the complaint, its course and the present state\",\"axes\":[{\"name\":\"angle\",\"score\":5,\"state\":\"main findings\",\"evidence\":\"what shows it\"}],\"stage\":\"the current stage\",\"stages\":[{\"name\":\"...\",\"done\":true,\"note\":\"...\"}],\"progress\":40,\"trend\":\"better|same|worse\",\"recommendations\":[\"...\"],\"next_step\":\"the first recommendation\",\"red_flags\":\"needs a doctor or urgent attention, else empty\"}"],
         'voice_text' => ['title' => 'Voice note to text (the model hears the audio)', 'vars' => [], 'text' => "Write down exactly what is said in this voice note, in its own language and dialect, word for word (no translation, no summary, no comments). If nothing can be understood write an empty text. Return JSON only: {\"text\":\"...\"}"],
         'quality_judge' => ['title' => 'Weekly quality test: score the bot\'s reply against the team\'s', 'vars' => ['question', 'team', 'bot'], 'text' => "A person asked a WhatsApp business ({{industry}}):\n{{question}}\n\nThe team answered:\n{{team}}\n\nThe assistant bot answered:\n{{bot}}\n\nScore the bot's answer from 1 to 5 against the team's: 5 = as right and useful as the team's (wording may differ), 3 = partly right or too general, 1 = wrong, harmful or invented. Give the topic in a few words and one short reason, in {{output_language}}. Return JSON only: {\"score\":4,\"topic\":\"...\",\"why\":\"...\"}"],
         'checkin_msg' => ['title' => 'Follow-up check-in: the short message the bot sends to a person under follow-up', 'vars' => ['name', 'stage', 'complaint', 'talk'], 'text' => "Write ONE short WhatsApp message (1-2 lines) from {{industry}} to a person under follow-up, asking warmly how they are now and whether they kept up with what they were given. Use their name if it is a real name ({{name}}). It must read like a caring person, in their dialect ({{dialect_rule}}), not like a form; mention one thing from their case or the last talk so it is personal; no new advice, no religious text, no promises, no questions list. Stage: {{stage}}. Complaint: {{complaint}}.\nLast talk:\n{{talk}}\nReturn JSON only: {\"text\":\"...\"}"],
@@ -245,12 +219,13 @@ function wf_prompt_registry(): array {
             'text' => "Below are real WhatsApp messages of ONE business number named \"{{name}}\". Describe this business for an assistant bot that will answer its customers. Reply JSON only, values in {{output_language}}:\n{\"profile\":\"2-3 lines: what the business does and offers\",\"audience\":\"who writes to it\",\"language\":\"languages/dialects customers use\",\"tone\":\"how the team talks\",\"common\":[\"5 most common customer requests\"],\"handoff\":[\"things the bot must leave to a human\"]}\n\nMESSAGES:\n{{messages}}"],
         'registry_extract' => ['title' => 'Extract cases from group reports', 'vars' => ['reports'],
             'text' => "These are case reports posted in the WhatsApp group of {{industry}} ({{language}}). For EACH report extract the case details. Do not invent anything that is not written. Reply JSON only:\n{\"items\":[{\"id\":\"…\",\"name\":\"name or empty\",\"phone\":\"main phone\",\"gender\":\"male|female| (in {{output_language}})\",\"age\":\"\",\"country\":\"\",\"complaint\":\"main complaint\",\"symptoms\":[\"…\"],\"diagnosis\":\"the assessment written in the report\",\"summary\":\"one line\",\"labels\":[\"2-4 short {{output_language}} tags e.g. {{case_labels}}\"]}]}\n\nREPORTS:\n{{reports}}"],
-    ];
+    ], $aid);
 }
 /** The instruction text for a task on this number: its own edited version, or the starting text; then {{placeholders}} are filled. */
 function wf_prompt(string $key, string $aid, array $vars = []): string {
-    $R = wf_prompt_registry(); $own = (array) (wi_read('bot.json', [])[$aid]['prompts'] ?? []);
-    $tpl = trim((string) ($own[$key] ?? '')) !== '' ? (string) $own[$key] : (string) ($R[$key]['text'] ?? '');
+    $R = wf_prompt_registry($aid); $own = (array) (wi_read('bot.json', [])[$aid]['prompts'] ?? []);
+    // an add-on may bring its own starting text for a business type (the number's own edited version always wins)
+    $tpl = trim((string) ($own[$key] ?? '')) !== '' ? (string) $own[$key] : (string) wi_filter('prompt_text', (string) ($R[$key]['text'] ?? ''), $key, $aid);
     $vars += wf_pack($aid) + ['business' => wf_profile($aid), 'owner_rules' => function_exists('wf_owner_rules') ? wf_owner_rules(wf_bot_cfg($aid)) : ''];
     return preg_replace_callback('/\{\{(\w+)\}\}/', fn($m) => is_scalar($vars[$m[1]] ?? null) ? (string) $vars[$m[1]] : '', $tpl);
 }
@@ -265,12 +240,12 @@ function wf_api_prompts(string $api): void {
                 if (($why = wf_tag_taken($aid, $t, '', true)) !== '') wi_json(['ok' => false, 'error' => $t . ': ' . $why], 422); $seen[$n] = 1; } }
             $keep = array_intersect_key((array) ($all[$aid]['pack'] ?? []), array_flip(['lib_cmds'])); // set elsewhere (Bot → Commands)
             $all[$aid]['pack'] = wf_pack_own($pre, $x) + $keep; wi_write('bot.json', $all); wi_log('ai_pack_save', ['account' => $aid, 'preset' => $pre]); wi_json(['ok' => true]); }
-        if ($do === 'prompt') { $k = (string) ($in['key'] ?? ''); if (!isset(wf_prompt_registry()[$k])) wi_json(['ok' => false, 'error' => 'Unknown instruction.']);
+        if ($do === 'prompt') { $k = (string) ($in['key'] ?? ''); if (!isset(wf_prompt_registry($aid)[$k])) wi_json(['ok' => false, 'error' => 'Unknown instruction.']);
             $t = trim((string) ($in['text'] ?? '')); if ($t === '' || !empty($in['reset'])) unset($all[$aid]['prompts'][$k]); else $all[$aid]['prompts'][$k] = mb_substr($t, 0, 20000);
             wi_write('bot.json', $all); wi_log('ai_prompt_save', ['account' => $aid, 'key' => $k]); wi_json(['ok' => true]); }
         wi_json(['ok' => false, 'error' => 'Unknown action.']); }
     $own = (array) ($all[$aid]['prompts'] ?? []); $list = [];
-    foreach (wf_prompt_registry() as $k => $r) $list[] = ['key' => $k, 'title' => $r['title'], 'vars' => $r['vars'], 'default' => $r['text'], 'text' => (string) ($own[$k] ?? ''), 'edited' => isset($own[$k])];
+    foreach (wf_prompt_registry($aid) as $k => $r) $list[] = ['key' => $k, 'title' => $r['title'], 'vars' => $r['vars'], 'default' => $r['text'], 'text' => (string) ($own[$k] ?? ''), 'edited' => isset($own[$k])];
     $presets = []; foreach (wf_pack_presets() as $k => $p) $presets[$k] = $p;
-    wi_json(['ok' => true, 'pack' => wf_pack($aid), 'own_pack' => $all[$aid]['pack'] ?? null, 'presets' => $presets, 'prompts' => $list, 'common' => array_values(array_diff(array_keys(wf_pack_presets()['general']), ['label']))]);
+    wi_json(['ok' => true, 'pack' => wf_pack($aid), 'own_pack' => $all[$aid]['pack'] ?? null, 'presets' => $presets, 'prompts' => $list, 'common' => array_values(array_filter(array_diff(array_keys(wf_pack_presets()['general']), ['label']), fn($k) => !str_starts_with($k, 'seed_'))) /* the starting word lists are kept out of this editor */]);
 }

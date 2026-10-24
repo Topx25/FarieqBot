@@ -16,7 +16,8 @@
     // Every number of this user in one list: each chat carries its number (acc) for a mark and to open it on that number.
     // The number's state for the chats page: connected or offline, and how many replies wait in its outbox.
     if ($api === 'acc_state') { $a = wi_current(); $h = $a ? wi_gateway('/health', null, $a) : [];
-        wi_json(['ok' => true, 'connected' => !empty($h['connected']), 'waiting' => count((array) (wi_read('outbox.json', [])[(string) ($a['id'] ?? '')] ?? []))]); }
+        // no number at all (the super admin outside a panel): nothing is offline, the banner stays away
+        wi_json(['ok' => true, 'none' => !$a, 'connected' => !$a || !empty($h['connected']), 'waiting' => $a ? count((array) (wi_read('outbox.json', [])[(string) $a['id']] ?? [])) : 0]); }
     if ($api === 'chats_all') {
         $out = []; $c = wi_customers();
         foreach (wi_my_accounts() as $a) { $r = wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long'), null, $a); if (empty($r['ok'])) continue;

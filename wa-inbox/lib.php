@@ -9,6 +9,8 @@ declare(strict_types=1);
  */
 
 const WI_DIR = __DIR__ . '/.data';
+/** API calls posted without the page's CSRF token (none today: add a name only for a caller that cannot send it, such as a server-to-server hook). */
+const WI_API_NO_CSRF = [];
 /** System settings (Settings → System): everything that differs per installation. Values here are only the starting values. */
 function wi_sys_defaults(): array {
     $host = (string) ($_SERVER['HTTP_HOST'] ?? 'localhost'); $dir = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))), '/');
@@ -63,6 +65,11 @@ function wi_lang(): string {
     $c = (string) ($_COOKIE['wi_lang'] ?? '');
     return $lang = in_array($c, ['en', 'ar'], true) ? $c : 'en';
 }
+/* ---------- add-ons: optional folders in addons/ (each with its addon.php), loaded by features.php ----------
+ * The core calls wi_filter() where an add-on may add to or change a value; without add-ons every filter returns the value unchanged. */
+function wi_hook_add(string $name, callable $fn): void { $GLOBALS['WI_HOOKS'][$name][] = $fn; }
+function wi_filter(string $name, $value, ...$args) { foreach ((array) ($GLOBALS['WI_HOOKS'][$name] ?? []) as $fn) $value = $fn($value, ...$args); return $value; }
+function wi_addon_on(string $name): bool { return isset($GLOBALS['WI_ADDONS'][$name]); }
 function wi_dict(): array {
     static $base = null, $full = null;
     if ($full !== null) return $full;
@@ -71,7 +78,7 @@ function wi_dict(): array {
     // Wording of the business profile ("ui_terms": "Interface text => your word" per line) wins over the dictionary, in both languages.
     $over = []; $acc = wi_current();
     foreach (preg_split('/\R/u', (string) (wf_pack((string) ($acc['id'] ?? ''))['ui_terms'] ?? '')) as $l) { $x = array_map('trim', explode('=>', $l, 2)); if (count($x) === 2 && $x[0] !== '' && $x[1] !== '') $over[$x[0]] = $x[1]; }
-    return $full = $over + $base;
+    return $full = $over + wi_filter('i18n', $base, wi_lang());
 }
 function wi_t(string $s): string { $d = wi_dict(); return $d[$s] ?? $s; }
 /** Arabic pages: translate interface text on output (text nodes, placeholders, titles, confirm dialogs). */
@@ -96,6 +103,13 @@ function wi_ip(): string {
     $cf = (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '');
     if ($cf !== '' && filter_var($cf, FILTER_VALIDATE_IP) && wi_ip_in($remote, (string) wi_sys('trusted_proxies'))) return $cf;
     return filter_var($remote, FILTER_VALIDATE_IP) ? $remote : '';
+}
+/** The visitor's country (two letters, e.g. EG), from Cloudflare's header and only through a trusted proxy; '' when unknown. */
+function wi_ip_country(): string {
+    $cc = strtoupper((string) ($_SERVER['HTTP_CF_IPCOUNTRY'] ?? ''));
+    $remote = (string) ($_SERVER['REMOTE_ADDR'] ?? ''); // the web server may already have put the visitor's IP here from Cloudflare's header (remote IP module)
+    $via = wi_ip_in($remote, (string) wi_sys('trusted_proxies')) || ($remote !== '' && $remote === (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '') && !empty($_SERVER['HTTP_CF_RAY']));
+    return preg_match('/^[A-Z]{2}$/', $cc) && $cc !== 'XX' && $cc !== 'T1' && $via ? $cc : ''; // a label for the meeting log only, never used to allow anything
 }
 function wi_ip_in(string $ip, string $cidrs): bool {
     $bin = @inet_pton($ip); if ($bin === false) return false;
@@ -146,13 +160,26 @@ function wi_file_write(string $name, array $data): void {
     @chmod($t, 0600); rename($t, $f);
 }
 function wi_read(string $name, $default) {
-    if ($s = wi_db_store($name)) { $v = ($s[1])(); if ($v !== null) return $v ?: $default; }
+    // tests: an in-memory store, nothing is read from or written to the real data
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) return array_key_exists($name, $GLOBALS['WI_MEM_STORE']) ? $GLOBALS['WI_MEM_STORE'][$name] : $default;
+    // the same store read again within 2 seconds of this request comes from memory (a loop no longer re-reads it); wi_write / wi_update forget it, and wi_update always reads fresh
+    $c = $GLOBALS['WI_READ_CACHE'][$name] ?? null;
+    if ($c !== null && empty($GLOBALS['WI_READ_FRESH']) && $c[0] > microtime(true) - 2) return $c[1] ?? $default;
+    $v = wi_read_store($name);
+    $GLOBALS['WI_READ_CACHE'][$name] = [microtime(true), $v];
+    return $v ?? $default;
+}
+/** A store as saved (null when it has nothing), without the request's memory. */
+function wi_read_store(string $name): ?array {
+    if ($s = wi_db_store($name)) { $v = ($s[1])(); if ($v !== null) return $v ?: null; }
     if (wi_kv_on()) { $v = wi_kv_get($name); if ($v !== null) { $GLOBALS['WI_KV_BASE'][$name] = $v; return $v; } } // remembered: what this request saw
     $f = WI_DIR . '/' . $name;
     $v = is_file($f) ? json_decode((string) @file_get_contents($f), true) : null;
-    return is_array($v) ? $v : $default;
+    return is_array($v) ? $v : null;
 }
 function wi_write(string $name, array $data): void {
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) { $GLOBALS['WI_MEM_STORE'][$name] = $data; return; }
+    unset($GLOBALS['WI_READ_CACHE'][$name]);
     if ($name === 'cases.json') wi_case_numbers($data); // every case has its ID, whoever writes
     if ($s = wi_db_store($name)) ($s[2])($data);
     if (wi_kv_on() && wi_kv_put_merged($name, $data) && !in_array($name, WI_FILE_MIRROR, true)) return;
@@ -209,6 +236,11 @@ function wi_merge3($base, $ours, $theirs) {
 }
 /** Read-change-write in one database transaction (row lock): two runs changing the same data set at once no longer overwrite each other. */
 function wi_update(string $name, callable $fn, $default = []) {
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) return $GLOBALS['WI_MEM_STORE'][$name] = $fn($GLOBALS['WI_MEM_STORE'][$name] ?? $default);
+    $GLOBALS['WI_READ_FRESH'] = ($GLOBALS['WI_READ_FRESH'] ?? 0) + 1; unset($GLOBALS['WI_READ_CACHE'][$name]);
+    try { return wi_update_store($name, $fn, $default); } finally { $GLOBALS['WI_READ_FRESH']--; unset($GLOBALS['WI_READ_CACHE'][$name]); }
+}
+function wi_update_store(string $name, callable $fn, $default) {
     if (!wi_kv_on() || wi_db_store($name)) { // stores kept in their own tables (cases…): a named database lock keeps two writers apart
         $m = wi_db(); $lk = 'wi_upd_' . substr(md5($name), 0, 16);
         if ($m && (int) ($m->query("SELECT GET_LOCK('$lk', 30)")->fetch_row()[0] ?? 0) !== 1) throw new RuntimeException('Busy: ' . $name . ' is being changed, try again.'); // never write without the lock
@@ -231,6 +263,7 @@ function wi_json_then(array $x): void {
     if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
 }
 function wi_log(string $action, array $extra = []): void {
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) { $GLOBALS['WI_MEM_STORE']['_audit'][] = ['action' => $action] + $extra; return; }
     $row = ['time' => date('c'), 'action' => $action, 'user' => (string) ($_SESSION['imp_from'] ?? $_SESSION['email'] ?? ''), 'ip' => wi_ip()] + (!empty($_SESSION['imp_from']) ? ['acting_as' => (string) $_SESSION['email']] : []) + $extra;
     @file_put_contents(WI_DIR . '/audit.jsonl', json_encode($row, JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
     if (wi_read('config.json', [])['users_db'] ?? false) wi_db_audit($row);
@@ -286,8 +319,8 @@ function wi_me(): ?array { return wi_logged_in() ? wi_find_user((string) $_SESSI
 /** May link / restart / manage this account: admins all; a user only the numbers they own (linked themselves). */
 function wi_can_manage(?array $acc): bool {
     if (!$acc) return false;
+    if (wi_is_super()) return true; // the super admin runs the infrastructure of every number (gateway, provider, link); its chats stay with its owner (wi_may_see_account)
     if (!wi_may_see_account($acc)) return false; // a private number is managed by its owner only
-    if (wi_is_super()) return true;
     if (wi_is_admin() && isset(wi_my_accounts()[$acc['id'] ?? ''])) return true;
     $me = wi_me();
     return $me && !empty($acc['owner']) && strtolower((string) $acc['owner']) === strtolower((string) $me['email']);
@@ -322,7 +355,7 @@ function wi_user_in_scope(array $t): bool {
     $mine = array_keys(wi_my_accounts()); $theirs = (array) ($t['accounts'] ?? []);
     return ($theirs && !array_diff($theirs, $mine)) || strtolower((string) ($t['created_by'] ?? '')) === strtolower((string) ($_SESSION['email'] ?? ''));
 }
-const WI_SUPER_PAGES = ['ai', 'settings', 'backup', 'report', 'clients'];
+const WI_SUPER_PAGES = ['ai', 'settings', 'backup', 'report', 'clients', 'errors'];
 /* ---------- Client teams (SaaS): the client owns their panel; under them supervisors (lead) and employees (agent) ----------
  * A team user belongs to one client (tenant = the client's email), works only on that client's numbers, never sees more
  * than the client has, and has page permissions (the menu) plus chat permissions (what they may do inside a conversation). */
@@ -462,7 +495,7 @@ function wi_ws(?array $acc = null): string {
 }
 /** Quick replies of a given number (its client's list, or the operator's). */
 function wi_replies_for(array $acc): array { $w = wi_ws($acc); return $w === '' ? (array) wi_read('replies.json', []) : (array) (wi_read('replies_ws.json', [])[$w] ?? []); }
-/** The one quick reply a typed shortcut points to ("#تحصين-المكان", "/المكان"): the exact name, or whole words of exactly one name or trigger. null = none or several. */
+/** The one quick reply a typed shortcut points to ("#keyword-name", "/name"): the exact name, or whole words of exactly one name or trigger. null = none or several. */
 function wi_reply_match(array $replies, string $typed): ?array {
     $q = wf_norm($typed); if (mb_strlen($q) < 3) return null; $wq = ' ' . $q . ' ';
     $exact = array_values(array_filter($replies, fn($r) => wf_norm((string) $r['title']) === $q));
@@ -528,6 +561,7 @@ function wi_menu_registry(): array {
             ['key' => 'accounts', 'icon' => '📱', 'label' => 'WhatsApp', 'who' => 'manager', 'pages' => ['accounts', 'link', 'gateway']],
             ['key' => 'business', 'icon' => '🏢', 'label' => 'Business settings', 'who' => 'manager'],
             ['key' => 'clients', 'icon' => '🏪', 'label' => 'Clients', 'who' => 'super'],
+            ['key' => 'errors', 'icon' => '🧯', 'label' => 'Error log', 'who' => 'super'],
             ['key' => 'users', 'icon' => '🔐', 'label' => 'Users', 'who' => 'users'],
             ['key' => 'health', 'icon' => '☁️', 'label' => 'Health, report & backup', 'who' => 'admin', 'pages' => ['health', 'report', 'backup']],
             ['key' => 'ai', 'icon' => '✨', 'label' => 'AI providers', 'who' => 'ai'],
@@ -613,7 +647,12 @@ function wi_api_page(string $api): string {
             'numbers' => 'numbers', 'catalog' => 'catalog catalog_save catalog_del catalog_img market market_ai', 'facebook' => 'fb_comments fb_comment_act fb_cfg fb_posts fb_post_act fb_upload fb_insights', 'schedule' => 'schedule', 'programs' => 'programs program_save program_enroll', 'status' => 'status_upload status_post', 'health' => 'health',
             'report' => 'report_cfg', 'backup' => 'backup_cfg', 'business' => 'business_cfg', 'customer' => 'customer', 'settings' => 'settings_overview',
             'learning' => 'learn_guide learn_cache learn_suggest learn_docs learn_rules learn_drive learn_clean learn_grow ai_prompts', 'bot' => 'learn_state learn_build kb_table kb_bulk kb_set bot_test bot_eval bot_rate bot_profile bot_cfg', 'botrun' => 'bot_run bot_chats bot_pause bot_team bot_draft bot_health bot_retry bot_join_cfg bot_roles', 'botgroup' => 'bot_group bot_group_set'] as $pg => $list)
-            foreach (explode(' ', $list) as $a) $map[$a] = $pg; }
+            foreach (explode(' ', $list) as $a) $map[$a] = $pg;
+        // Calls that belong to a page but were missing (they skipped the page check), and calls any signed-in user may make ('*': the handler checks who may use it)
+        foreach (['inbox' => 'chats_all media acc_state recommend recommend_send suggest', 'audio' => 'audio_cats', 'accounts' => 'restore', 'cases' => 'case_files case_trail case_deep case_follow case_delete',
+            'botrun' => 'bot_quality bot_commands team_watch checkin_preview', 'botgroup' => 'visitors', 'learning' => 'learn_lean',
+            '*' => 'plan_usage home sysguide jslog hide_for qr_mine my_google perm_share perm_list perm_invite client_backup acc_invoices ui_colors ui_theme ai_tasks gw_rules menu_cfg sys_settings msg_templates ig_state'] as $pg => $list)
+            foreach (explode(' ', $list) as $a) $map[$a] ??= $pg; }
     if ($api === 'meeting_targets') return ($_GET['ctx'] ?? '') === 'cases' ? 'cases' : 'meetings'; // the case form uses the same group/member lists
     if (str_starts_with($api, 'meeting')) return 'meetings';
     return $map[$api] ?? '';
@@ -692,12 +731,13 @@ function wi_my_accounts(): array {
     foreach ($all as $id => $a) if (!empty($a['owner']) && strtolower((string) $a['owner']) === strtolower((string) ($me['email'] ?? ''))) $allowed[$id] = 1;
     return array_intersect_key($all, $allowed);
 }
-/** The number that holds the shared cases database (its groups: reception, diagnosis, treatment). */
-function wi_cases_account(): ?array {
-    $all = wi_accounts(); $id = (string) (wi_config()['cases_account'] ?? '');
-    if (!isset($all[$id])) foreach (wi_read('registry_groups.json', []) as $aid => $g) if ($g && isset($all[$aid]) && wi_ws($all[$aid]) === '') { $id = (string) $aid; break; } // never a client's number
-    $ca = $all[$id] ?? null; return $ca && wi_may_see_account($ca) ? $ca : null; // never someone else's private number
+/** The phone number a WhatsApp account is signed in with (digits only; empty while it is not linked), and its display label "name · +number". */
+function wi_account_phone(array $acc): string {
+    if (($acc['channel'] ?? '') === 'fb' || !empty($acc['archived'])) return '';
+    $id = (string) (wi_gateway('/status', null, $acc)['account']['id'] ?? '');
+    return preg_replace('/\D/', '', explode('@', explode(':', $id)[0])[0]);
 }
+function wi_account_label(array $acc): string { $ph = wi_account_phone($acc); return (string) ($acc['name'] ?? $acc['id']) . ($ph !== '' ? ' · +' . $ph : ''); }
 function wi_current(): ?array {
     if (wi_ctx('acc')) return wi_ctx('acc'); // shared cases: served from the cases number for anyone allowed on the Cases page
     $mine = wi_my_accounts();
@@ -724,6 +764,8 @@ function wi_gateway(string $path, ?array $post = null, $acc = null): array {
     if (!$acc) return ['ok' => false, 'error' => 'No WhatsApp account available for this user.'];
     // an archived number (removed, or the old number of an account): its history is read from its files, nothing is sent
     if (!empty($acc['archived']) && function_exists('wf_hist_gateway')) return wf_hist_gateway($path, $post, $acc);
+    // a number on another provider (OpenWA, the Cloud API of Meta): its calls go to that provider
+    if (in_array($acc['provider'] ?? '', ['openwa', 'cloud'], true)) { if (!function_exists('wf_gw_provider')) require_once __DIR__ . '/features.php'; return wf_gw_provider($path, $post, $acc); }
     if (($acc['channel'] ?? '') === 'fb' && function_exists('wf_fb_gateway')) return wf_fb_gateway($path, $post, $acc); // a Facebook page: answered by the Messenger channel, no phone gateway
     if ($path === '/chat/send' && is_array($post) && !empty($post['mentions']) && str_ends_with((string) ($post['jid'] ?? ''), '@g.us')) $post = wi_mentions_present($post, $acc); // nobody is tagged who is not in the group now
     $token = (string) ($acc['token'] ?? '');
@@ -870,7 +912,7 @@ function wi_ai_scope(): string {
     elseif (PHP_SAPI !== 'cli' && ($c = wi_current()) && !wi_is_super()) $email = (string) ($c['owner'] ?? '');
     if ($email === '') return '';
     foreach (wi_users() as $u) if (strtolower((string) $u['email']) === strtolower($email)) {
-        if (($u['role'] ?? '') !== 'client') return '';
+        if (($u['role'] ?? '') !== 'client' || !empty($u['ai_system'])) return ''; // ai_system: the operator's own panels run on the system keys
         // No AI keys of their own: the plan's monthly allowance runs on the operator's keys
         if (!wi_client_has_ai($email) && wi_ai_allowance_left($u) > 0) { $GLOBALS['WI_AI_PAYER'] = strtolower($email); return ''; }
         return 'u' . substr(md5(strtolower($email)), 0, 10);
@@ -878,6 +920,7 @@ function wi_ai_scope(): string {
     return '';
 }
 function wi_ai_call(array $body, int $timeout = 90): array {
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_FAKE_AI']) && is_callable($GLOBALS['WI_FAKE_AI'])) return ($GLOBALS['WI_FAKE_AI'])($body); // tests: a stand-in AI, no provider is called
     $GLOBALS['WI_AI_PAYER'] = ''; if (wi_ai_scope() === '' && $GLOBALS['WI_AI_PAYER'] !== '' && ($body['action'] ?? '') === 'ai_json') wi_ai_allowance_use($GLOBALS['WI_AI_PAYER']); // a client on the operator's keys: counted against their plan
     if (wi_sys('ai_engine') !== 'local' && wi_ai_scope() === '') return wi_bridge($body, $timeout);
     require_once __DIR__ . '/modules/lib/WiAiProviders.php';
@@ -900,6 +943,7 @@ function wi_ai_call(array $body, int $timeout = 90): array {
             'model' => $model === '' ? 'auto' : $model, 'plan' => in_array($body['plan'] ?? '', ['free', 'paid'], true) ? $body['plan'] : 'auto', 'daily_limit' => max(0, (int) ($body['daily_limit'] ?? 0))];
         if (!empty($cat[$id]['custom'])) { $url = rtrim(trim((string) ($body['base_url'] ?? ($old['base_url'] ?? ''))), '/');
             if ($url !== '' && !preg_match('#^https://[a-z0-9.-]+(:\d+)?(/[\w./-]*)?$#i', $url)) return ['ok' => false, 'error' => 'Base URL must start with https:// (e.g. https://api.example.com/v1).'];
+            if ($url !== '' && !WiAiProviders::public_ips((string) parse_url($url, PHP_URL_HOST))) return ['ok' => false, 'error' => 'The provider address is not a public https address.'];
             $config['providers'][$id]['base_url'] = $url; $config['providers'][$id]['name'] = mb_substr(trim((string) ($body['name'] ?? ($old['name'] ?? ''))), 0, 40); }
         if (!empty($cat[$id]['base_editable'])) { $url = trim((string) ($body['base_url'] ?? ($old['base_url'] ?? ''))); // Anthropic: the address, with ?workspace=wrkspc_… for an organisation's key
             if ($url !== '' && !preg_match('#^https://api\.anthropic\.com/?(\?workspace=[A-Za-z0-9_]+)?$#', $url)) return ['ok' => false, 'error' => 'The address must be https://api.anthropic.com or https://api.anthropic.com?workspace=wrkspc_…'];
@@ -983,6 +1027,7 @@ function wi_bot_log_db(): ?mysqli {
 }
 /** Adds one entry to a number's bot log (the newest 500 are kept). */
 function wi_bot_log_add(string $aid, array $row): void {
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) { $GLOBALS['WI_MEM_STORE']['_bot_log'][] = ['aid' => $aid] + $row; return; }
     $row += ['at' => date('c')]; $m = wi_bot_log_db();
     if (!$m) { wi_update('bot_log.json', function ($L) use ($aid, $row) { $L[$aid][] = $row; $L[$aid] = array_slice($L[$aid], -500); return $L; }); return; }
     $st = $m->prepare("INSERT INTO wi_bot_log (base, at, data) VALUES (?,?,?)"); $at = (string) $row['at']; $js = json_encode($row, JSON_UNESCAPED_UNICODE); $st->bind_param('sss', $aid, $at, $js); $st->execute();
@@ -990,6 +1035,7 @@ function wi_bot_log_add(string $aid, array $row): void {
 }
 /** A number's bot log, oldest first (at most the newest $limit). */
 function wi_bot_log(string $aid, int $limit = 500): array {
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) return array_slice(array_values(array_filter((array) ($GLOBALS['WI_MEM_STORE']['_bot_log'] ?? []), fn($r) => ($r['aid'] ?? '') === $aid)), -$limit);
     $m = wi_bot_log_db(); if (!$m) return array_slice((array) (wi_read('bot_log.json', [])[$aid] ?? []), -$limit);
     $st = $m->prepare("SELECT data FROM wi_bot_log WHERE base=? ORDER BY id DESC LIMIT ?"); $st->bind_param('si', $aid, $limit); $st->execute(); $r = $st->get_result(); $out = [];
     while ($x = $r->fetch_row()) $out[] = json_decode((string) $x[0], true) ?: [];
@@ -1011,6 +1057,7 @@ function wi_ai_tasks(): array {
 }
 /** Saves one AI call (new, or its result merged in by id). */
 function wi_ai_task_put(array $row): void {
+    if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) { $GLOBALS['WI_MEM_STORE']['_ai_tasks'][$row['id']] = $row + ($GLOBALS['WI_MEM_STORE']['_ai_tasks'][$row['id']] ?? []); return; }
     try { $m = wi_ai_db();
         if (!$m) { wi_update('ai_tasks.json', function ($d) use ($row) { $f = false; foreach ($d as &$x) if (($x['id'] ?? '') === $row['id']) { $x = $row + $x; $f = true; } unset($x); if (!$f) $d[] = $row; return array_slice($d, -400); }); return; }
         $cur = $m->prepare("SELECT data FROM wi_ai_tasks WHERE id=?"); $cur->bind_param('s', $row['id']); $cur->execute(); $old = $cur->get_result()->fetch_row();
@@ -1022,7 +1069,7 @@ function wi_ai_task_put(array $row): void {
 /** Runs one AI task through the invoice system's providers and records it. $meta: what it works on, batch progress. */
 function wi_ai(string $task, string $prompt, int $timeout = 180, array $meta = []): array {
     $id = bin2hex(random_bytes(6));
-    $row = ['id' => $id, 'task' => $task, 'state' => 'running', 'at' => date('c'), 'user' => (string) ($_SESSION['email'] ?? 'system'), 'account' => (string) ((function_exists('wi_current') && PHP_SAPI !== 'cli') ? (wi_current()['id'] ?? '') : ''),
+    $row = ['id' => $id, 'task' => $task, 'state' => 'running', 'at' => date('c'), 'user' => (string) ($_SESSION['email'] ?? 'system'), 'account' => (string) ((wi_ctx('ai_acc')['id'] ?? '') ?: ((function_exists('wi_current') && PHP_SAPI !== 'cli') ? (wi_current()['id'] ?? '') : '')), /* the bot's number (set by the tick) or the open number */
         'subject' => mb_substr((string) ($meta['subject'] ?? ''), 0, 120), 'progress' => $meta['progress'] ?? null, 'prompt_chars' => mb_strlen($prompt)];
     wi_ai_task_put($row);
     $t0 = microtime(true);

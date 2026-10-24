@@ -49,7 +49,8 @@ function wf_registry_scan(array $acc): array {
         $o = $old[$id] ?? [];
         $e['text'] = trim(implode("\n", array_filter(array_map(fn($i) => $i['text'], $e['items']))));
         $e['voice'] = count(array_filter($e['items'], fn($i) => in_array($i['kind'], ['voice', 'audio'], true)));
-        if (preg_match('/(?:الاسم|اسم الحالة|الأسم|name)\s*[:：\-]?\s*([^\n\d]{2,40})/u', $e['text'], $mm)) $e['name_guess'] = trim($mm[1]);
+        static $nl = null; $nl ??= wf_seed_alt('case_name_labels');
+        if (preg_match('/(?:' . $nl . ')\s*[:：\-]?\s*([^\n\d]{2,40})/u', $e['text'], $mm)) $e['name_guess'] = trim($mm[1]);
         foreach (['labels', 'ai', 'followed', 'case', 'note'] as $k) if (isset($o[$k])) $e[$k] = $o[$k];
         $e['labels'] = $e['labels'] ?? [];
     }

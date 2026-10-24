@@ -51,10 +51,10 @@ function wf_journal(string $aid, string $ph, int $limit = 400, string $kind = ''
 /** One line for the bot's prompt: who follows this person, the team's last step and the last file sent to them. */
 function wf_journal_brief(string $aid, string $ph, array $names = []): string {
     $J = wf_journal($aid, $ph, 120); if (!$J) return '';
-    if (!$names) { $tf = WI_DIR . '/team_watch_' . preg_replace('/\W/', '', $aid) . '.json'; if (is_file($tf)) $names = (array) (json_decode((string) file_get_contents($tf), true)['names'] ?? []); } $lastTeam = null; $lastFile = null; $who = []; // the healers' names come from the team page's last read
+    if (!$names) { $tf = WI_DIR . '/team_watch_' . preg_replace('/\W/', '', $aid) . '.json'; if (is_file($tf)) $names = (array) (json_decode((string) file_get_contents($tf), true)['names'] ?? []); } $lastTeam = null; $lastFile = null; $who = []; // the team members' names come from the team page's last read
     foreach ($J as $e) { if (in_array($e['who'], ['person', 'bot'], true)) continue; $lastTeam = $e; $who[$e['who']] = ($who[$e['who']] ?? 0) + 1; if ($e['kind'] === 'file') $lastFile = $e; }
     if (!$lastTeam) return ''; arsort($who); $fw = (string) array_key_first($who);
-    $nm = fn($w) => $w === 'owner' ? 'the number\'s owner' : ($names[$w] ?? ('a healer (+' . $w . ')'));
+    $nm = fn($w) => $w === 'owner' ? 'the number\'s owner' : ($names[$w] ?? ('a team member (+' . $w . ')'));
     return 'FOLLOW-UP RECORD: followed by ' . $nm($fw) . '; the team\'s last step ' . date('Y-m-d', (int) $lastTeam['t']) . ' by ' . $nm((string) $lastTeam['who']) . ': "' . mb_substr((string) $lastTeam['txt'], 0, 160) . '"'
         . ($lastFile ? '; last file sent to them ' . date('Y-m-d', (int) $lastFile['t']) . ': ' . mb_substr((string) $lastFile['txt'], 0, 80) : '') . '. Never contradict what the team told them; build on it.';
 }

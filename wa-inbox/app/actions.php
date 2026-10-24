@@ -140,6 +140,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header('Location: ?p=accounts'); exit;
     }
+    // a number's gateway: our own (its own process or the shared hub), OpenWA or the Cloud API; secrets are only ever written, never shown
+    if ($do === 'account_provider') {
+        if (!wi_is_super()) { http_response_code(403); exit; }
+        $accounts = wi_accounts(); $id = (string) ($_POST['acc'] ?? ''); $a = $accounts[$id] ?? null;
+        if (!$a) { wi_flash('Account not found.', 'bad'); header('Location: ?p=accounts'); exit; }
+        $pv = in_array($_POST['provider'] ?? '', ['openwa', 'cloud'], true) ? (string) $_POST['provider'] : 'local'; $hub = !empty($_POST['hub']) && $pv === 'local';
+        if (!empty($a['main'])) { $cfg = wi_read('config.json', []); if ($hub) $cfg['main_gateway'] = 'hub'; else unset($cfg['main_gateway']); wi_write('config.json', $cfg); }
+        else {
+            $accounts[$id] = ['provider' => $pv, 'openwa_url' => mb_substr(trim((string) ($_POST['openwa_url'] ?? '')), 0, 200), 'openwa_session' => preg_replace('/[^A-Za-z0-9_.:-]/', '', (string) ($_POST['openwa_session'] ?? '')),
+                'cloud_phone_id' => preg_replace('/\D/', '', (string) ($_POST['cloud_phone_id'] ?? '')), 'cloud_graph' => preg_match('/^v\d+\.\d+$/', (string) ($_POST['cloud_graph'] ?? '')) ? (string) $_POST['cloud_graph'] : 'v21.0'] + $accounts[$id];
+            if ($hub) $accounts[$id]['gateway'] = 'hub'; else unset($accounts[$id]['gateway']);
+            wi_save_accounts($accounts);
+            foreach (['openwa_key', 'openwa_hook_secret', 'cloud_token', 'cloud_app_secret', 'cloud_verify'] as $sk) { $sv = trim((string) ($_POST[$sk] ?? '')); if ($sv !== '') wi_secret_set($sk . ':' . $id, $sv); }
+        }
+        wi_log('account_provider', ['account' => $id, 'provider' => $pv, 'hub' => $hub]);
+        wi_flash('Gateway settings saved. A change of process takes effect within a minute.', 'ok'); header('Location: ?p=accounts'); exit;
+    }
     if (in_array($do, ['add_account', 'update_account', 'delete_account'], true)) {
         $accounts = wi_accounts();
         $target = $accounts[(string) ($_POST['acc'] ?? '')] ?? null;
@@ -215,10 +232,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $u['ai_calls'] = max(0, min(1000000, (int) ($_POST['ai_calls'] ?? ($u['ai_calls'] ?? 0))));
                 $ex = trim((string) ($_POST['expires'] ?? '')); $u['expires'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $ex) ? $ex : '';
                 $u['max_team'] = max(0, min(500, (int) ($_POST['max_team'] ?? 0)));
+                $u['media_gb'] = max(0, min(100000, (int) ($_POST['media_gb'] ?? ($u['media_gb'] ?? 0))));
                 foreach (['can_bot', 'can_meetings', 'can_cases', 'can_backup'] as $fk) $u[$fk] = !empty($_POST[$fk]);
                 $u['client_note'] = mb_substr(trim((string) ($_POST['client_note'] ?? '')), 0, 500);
                 $u['panel_name'] = mb_substr(trim((string) ($_POST['panel_name'] ?? '')), 0, 60);
-                $u['allow_ruqyah'] = !empty($_POST['allow_ruqyah']); // the spiritual type is given by hand only
+                // a restricted business type is given by hand only
+                require_once dirname(__DIR__) . '/features.php'; foreach (array_keys(wf_restricted_types()) as $rk) $u['allow_' . $rk] = !empty($_POST['allow_' . $rk]);
                 $u['active'] = !empty($_POST['active']);
             } elseif ($do === 'client_extend') {
                 $days = in_array((int) ($_POST['days'] ?? 0), [30, 90, 365], true) ? (int) $_POST['days'] : 30;
@@ -316,6 +335,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (wi_is_super() && isset($_POST['accounts_sent'])) { foreach (['can_bot', 'can_meetings', 'can_cases', 'can_backup'] as $fk) $u[$fk] = !empty($_POST[$fk]); if (isset($_POST['max_team'])) $u['max_team'] = max(0, min(500, (int) $_POST['max_team'])); }
                 if (in_array($_POST['role'] ?? '', ['super', 'admin', 'manager', 'viewer', 'client'], true) && (wi_is_super() || ($_POST['role'] ?? '') !== 'client')) {
                     if ($_POST['role'] !== 'super' && wi_is_super() && $email === strtolower((string) $_SESSION['email'])) { wi_flash('You cannot remove your own admin role.', 'bad'); header('Location: ?p=users'); exit; }
+                    if (($u['role'] ?? '') !== $_POST['role']) wi_log('role_change', ['target' => $email, 'from' => (string) ($u['role'] ?? ''), 'to' => (string) $_POST['role']]); // who turned a client into a super admin (or back) is in the audit
                     $u['role'] = $_POST['role'];
                 }
             }
