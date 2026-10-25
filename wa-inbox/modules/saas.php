@@ -190,7 +190,7 @@ function wi_landing(): void {
     $dz = (int) ($_GET['d'] ?? 0); $sw = ''; // ?d=1..3 previews a design with a switcher; otherwise the chosen one (General settings)
     if ($dz >= 1 && $dz <= 3) { foreach ([1 => $t('Bright'), 2 => $t('Night'), 3 => $t('Calm')] as $n => $nm) $sw .= '<a href="?d=' . $n . '"' . ($n === $dz ? ' class="on"' : '') . '>' . $e($nm) . '</a>'; $sw = '<nav class="dsw">' . $sw . '</nav>'; }
     else $dz = max(1, min(3, (int) wi_sys('landing_design')));
-    $vars = ['brand' => $e(wi_sys('brand_name')), 'plans' => $cards, 'cta_url' => $e(wi_sys('landing_cta_url') ?: './?login'), 'cta_label' => $e(wi_sys('landing_cta_label') ?: $t('Start now')), 'login_url' => './?login',
+    $vars = ['brand' => $e(wi_sys('brand_name')), 'plans' => $cards, 'cta_url' => $e(wi_sys('landing_cta_url') ?: (wi_sys('login_url') ?: './?login')), 'cta_label' => $e(wi_sys('landing_cta_label') ?: $t('Start now')), 'login_url' => $e(wi_sys('login_url') ?: './?login'),
         'video_url' => './?intro_video=1', 'design' => $dz, 'design_switch' => $sw, 'privacy_url' => 'privacy', 'terms_url' => 'terms', 'year' => date('Y')];
     $html = (string) @file_get_contents(dirname(__DIR__) . (($_GET['v'] ?? '') === '2' ? '/landing2.html' : (($_GET['v'] ?? '') === '3' ? '/landing3.html' : (($_GET['v'] ?? '') === '1' ? '/landing.html' : (($_GET['v'] ?? '') === '4' ? '/landing4.html' : (($_GET['v'] ?? '') === '6' ? '/landing6.html' : '/landing5.html'))))));
     for ($k = 0; $k < 2; $k++) $html = preg_replace_callback('/\{\{(\w+)\}\}/', fn($m) => $vars[$m[1]] ?? '', $html); // twice: the plan cards carry the button's link
