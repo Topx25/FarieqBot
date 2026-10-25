@@ -4,6 +4,7 @@
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     wi_check_csrf();
     $do = (string) ($_POST['do'] ?? '');
+    if (in_array($do, ['signup', 'signup_code', 'forgot', 'forgot_code'], true)) require_once dirname(__DIR__) . '/features.php'; // the message templates and the sign-up helpers
     if ($do === 'signup') {
         if (!wi_turnstile_ok()) { wi_flash('Confirm that you are not a robot, then try again.', 'bad'); header('Location: ./?signup'); exit; }
         $err = wi_signup($_POST, false);
