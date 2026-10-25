@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+// The gateway runs in its own container (WI_GATEWAY_EXTERNAL): Docker keeps it up, these watchdogs never start one.
+if (getenv('WI_GATEWAY_EXTERNAL')) return;
 
 // The main gateway's token and port live in the dashboard settings (wa-inbox/.data/config.json), never in the code.
 $waConf = json_decode((string) @file_get_contents(dirname(__DIR__) . '/wa-inbox/.data/config.json'), true) ?: [];

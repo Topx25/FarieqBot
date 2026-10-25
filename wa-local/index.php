@@ -36,6 +36,7 @@ function wa_find_node(): string
 
 function wa_try_start_gateway(string $gatewayDir, string $token, int $port, string $logFile): array
 {
+    if (getenv('WI_GATEWAY_EXTERNAL')) return ['ok' => false, 'error' => 'The gateway runs in its own container'];
     if (!function_exists('proc_open') || wa_disabled_function('proc_open')) {
         return ['ok' => false, 'error' => 'proc_open is disabled on this hosting account'];
     }

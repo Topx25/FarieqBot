@@ -140,10 +140,11 @@ const leave = async () => { for (const id of [...sessions.keys()]) await stopOne
 process.on('SIGTERM', leave); process.on('SIGINT', leave);
 
 let startSession = null;
-health.listen(HUB_PORT, '127.0.0.1', async () => {
+const LISTEN = process.env.LISTEN_HOST || '127.0.0.1';
+health.listen(HUB_PORT, LISTEN, async () => {
   fs.writeFileSync(PID_FILE, String(process.pid));
   if (!FAKE) ({ startSession } = await import('./gateway_session.js'));
-  console.log(`hub listening on 127.0.0.1:${HUB_PORT} (pid ${process.pid})`);
+  console.log(`hub listening on ${LISTEN}:${HUB_PORT} (pid ${process.pid})`);
   await reconcile(); setInterval(() => { reconcile().catch((e) => console.error('reconcile', e)); }, 15000);
 });
 
@@ -156,6 +157,6 @@ async function fakeSession(rt) {
   app.get('/archive/chats', (req, res) => { const big = Array.from({ length: 20000 }, (_, i) => ({ jid: `${i}@s.whatsapp.net`, text: 'x'.repeat(40) })); setTimeout(() => res.json({ ok: tokenOk(req), chats: big.length }), 150); });
   app.post('/chat/send', (req, res) => setTimeout(() => res.json({ ok: tokenOk(req), id: `f${Date.now()}` }), 80));
   if (rt.env.ACCOUNT_ID === 'zz_crash') setTimeout(() => { throw new Error('fake session crash'); }, 300);
-  const srv = await new Promise((res, rej) => { const s = app.listen(Number(rt.env.PORT), '127.0.0.1', () => res(s)); s.on('error', rej); });
+  const srv = await new Promise((res, rej) => { const s = app.listen(Number(rt.env.PORT), LISTEN, () => res(s)); s.on('error', rej); });
   return { state: () => ({ connected: true }), stop: () => new Promise((r) => srv.close(() => r())) };
 }

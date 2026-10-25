@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
+// The gateway runs in its own container (WI_GATEWAY_EXTERNAL): Docker keeps it up, these watchdogs never start one.
+if (getenv('WI_GATEWAY_EXTERNAL')) return;
 
 /*
  * Keeps the extra WhatsApp accounts running (cron, every minute, as the account user).

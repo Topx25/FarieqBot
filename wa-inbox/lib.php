@@ -27,6 +27,8 @@ define('WI_IDLE', max(5, (int) wi_sys('idle_min')) * 60);   // inactivity before
 define('WI_OTP_TTL', max(1, (int) wi_sys('otp_min')) * 60); // login code lifetime
 define('WI_MAX_FAILS', max(3, (int) wi_sys('max_fails')));  // failed attempts before a lock
 
+/** The host the gateway listens on: the WI_GATEWAY_HOST variable (a separate container), else this server. */
+function wi_gw_host(): string { $h = (string) getenv('WI_GATEWAY_HOST'); return preg_match('/^[A-Za-z0-9.-]+$/', $h) ? $h : '127.0.0.1'; }
 function wi_boot(): void {
     header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     header('X-Frame-Options: DENY');
@@ -261,6 +263,14 @@ function wi_json_then(array $x): void {
     while (ob_get_level() > 0) ob_end_clean();
     $b = json_encode($x, JSON_UNESCAPED_UNICODE); header('Content-Type: application/json'); header('Connection: close'); header('Content-Length: ' . strlen($b)); echo $b; flush();
     if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+}
+/** A scheduled job that failed: kept in job_errors.json (the Error log page reads it), at most once an hour per job and message, so a failure is never silent. */
+function wi_catch(Throwable $e, string $where): void {
+    try { $msg = mb_substr($e->getMessage(), 0, 300) . ' @ ' . basename($e->getFile()) . ':' . $e->getLine(); $k = md5($where . '|' . $msg);
+        wi_update('job_errors.json', function ($A) use ($where, $msg, $k) { $A = array_filter((array) $A, fn($r) => is_array($r) && ($r['at'] ?? 0) > time() - 7 * 86400);
+            if (($A[$k]['at'] ?? 0) > time() - 3600) { $A[$k]['count'] = (int) ($A[$k]['count'] ?? 1) + 1; return $A; }
+            $A[$k] = ['at' => time(), 'where' => $where, 'what' => $msg, 'count' => (int) ($A[$k]['count'] ?? 0) + 1]; return $A; });
+    } catch (Throwable $e2) { error_log('wi_catch ' . $where . ': ' . $e->getMessage()); }
 }
 function wi_log(string $action, array $extra = []): void {
     if (PHP_SAPI === 'cli' && isset($GLOBALS['WI_MEM_STORE'])) { $GLOBALS['WI_MEM_STORE']['_audit'][] = ['action' => $action] + $extra; return; }
@@ -770,7 +780,7 @@ function wi_gateway(string $path, ?array $post = null, $acc = null): array {
     if ($path === '/chat/send' && is_array($post) && !empty($post['mentions']) && str_ends_with((string) ($post['jid'] ?? ''), '@g.us')) $post = wi_mentions_present($post, $acc); // nobody is tagged who is not in the group now
     $token = (string) ($acc['token'] ?? '');
     if ($token === '') return ['ok' => false, 'error' => 'Gateway token missing.'];
-    $ch = curl_init('http://127.0.0.1:' . (int) $acc['port'] . $path); // the token travels in the Authorization header, never in the address
+    $ch = curl_init('http://' . wi_gw_host() . ':' . (int) $acc['port'] . $path); // the token travels in the Authorization header, never in the address
     $opt = [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => strpos($path, '/chat/send') === 0 ? 240 : (preg_match('#^/(status|qr\.json|events|media/queue)#', $path) ? 8 : 30), CURLOPT_CONNECTTIMEOUT => 3];
     $opt[CURLOPT_HTTPHEADER] = ['Authorization: Bearer ' . $token];
     if ($post !== null) { $opt[CURLOPT_POST] = true; $opt[CURLOPT_POSTFIELDS] = json_encode($post); $opt[CURLOPT_HTTPHEADER][] = 'Content-Type: application/json'; }

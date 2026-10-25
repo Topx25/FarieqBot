@@ -31,7 +31,7 @@
             if (trim((string) ($_SERVER['HTTP_IF_NONE_MATCH'] ?? '')) === $etag) { http_response_code(304); exit; }
             header('Content-Type: image/jpeg'); header('Content-Length: ' . filesize($pf)); readfile($pf); exit;
         }
-        $ch = curl_init('http://127.0.0.1:' . (int) $acc['port'] . '/contact/photo?jid=' . rawurlencode($jid));
+        $ch = curl_init('http://' . wi_gw_host() . ':' . (int) $acc['port'] . '/contact/photo?jid=' . rawurlencode($jid));
         curl_setopt_array($ch, [CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $acc['token']], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 6, CURLOPT_CONNECTTIMEOUT => 2]);
         $img = curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE); $type = (string) curl_getinfo($ch, CURLINFO_CONTENT_TYPE); curl_close($ch);
         if ($code !== 200 || !$img) { http_response_code(404); header('Cache-Control: private, max-age=' . (is_file(substr($pf, 0, -4) . '.none') ? 21600 : 20)); exit('No profile photo.'); }

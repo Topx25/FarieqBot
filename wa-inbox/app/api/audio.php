@@ -72,7 +72,7 @@
         @set_time_limit(300);
         $in = json_decode(wi_input(), true) ?: [];
         $acc = wi_current();
-        $ch = curl_init('http://127.0.0.1:' . (int) $acc['port'] . '/media/fetch'); $wiAuth = 'Authorization: Bearer ' . $acc['token'];
+        $ch = curl_init('http://' . wi_gw_host() . ':' . (int) $acc['port'] . '/media/fetch'); $wiAuth = 'Authorization: Bearer ' . $acc['token'];
         curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode(['id' => (string) ($in['id'] ?? '')]), CURLOPT_HTTPHEADER => ['Content-Type: application/json', $wiAuth], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 240]);
         $r = json_decode((string) curl_exec($ch), true); curl_close($ch);
         wi_json(is_array($r) ? $r : ['ok' => false, 'error' => 'Gateway did not respond.']);
