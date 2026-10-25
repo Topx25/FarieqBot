@@ -4,6 +4,11 @@
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     wi_check_csrf();
     $do = (string) ($_POST['do'] ?? '');
+    if ($do === 'signup') {
+        $err = wi_signup($_POST);
+        if ($err !== '') { wi_flash($err, 'bad'); header('Location: ./?signup'); exit; }
+        wi_flash('Your account is ready. Sign in to start your trial.'); header('Location: ./?login'); exit;
+    }
     if ($do === 'login') {
         $email = strtolower(trim((string) ($_POST['email'] ?? '')));
         $u = wi_find_user($email);

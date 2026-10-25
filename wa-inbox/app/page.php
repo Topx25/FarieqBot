@@ -13,7 +13,8 @@
 <link rel="stylesheet" href="app.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/app.css') ?>">
 <link rel="stylesheet" href="theme.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/theme.css') + (int) @filemtime(dirname(__DIR__) . '/features.js') ?>">
 <link rel="stylesheet" href="pro.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/pro.css') ?>">
-<?php $uiTheme = wi_config()['ui_theme'] ?? 'google'; if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora'], true)): ?><link rel="stylesheet" href="<?= $uiTheme ?>.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/' . $uiTheme . '.css') ?>"><?php endif; ?>
+<?php $uiTheme = wi_config()['ui_theme'] ?? 'google'; if (wi_is_super() && preg_match('/^[a-z-]{3,20}$/', (string) ($_GET['theme_preview'] ?? ''))) $uiTheme = (string) $_GET['theme_preview']; // the super admin tries a theme on their own screen before choosing it
+if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq-night', 'fq-ink', 'fq-dawn'], true)): ?><link rel="stylesheet" href="<?= $uiTheme ?>.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/' . $uiTheme . '.css') ?>"><?php endif; ?>
 <?php if ($uiTheme === 'studio'): $uc = wi_config()['ui_colors'] ?? []; $hx = fn($v, $d) => preg_match('/^#[0-9a-f]{6}$/i', (string) $v) ? $v : $d; ?><link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600&display=swap" rel="stylesheet"><style>:root{--acc:<?= $hx($uc['acc'] ?? '', '#2563eb') ?>;--acc2:<?= $hx($uc['acc2'] ?? '', '#d97706') ?>;--canvas:<?= $hx($uc['canvas'] ?? '', '#f7f8fb') ?>}</style><?php endif; ?>
 <?php if ($uiTheme === 'orchid'): ?><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet"><?php endif; ?>
 <?= function_exists('wi_filter') ? (string) wi_filter('page_head', '') : '' ?>
@@ -26,7 +27,15 @@
     <?php if ($flash): ?><div class="alert <?= wi_e($flash['t']) ?>"><?= wi_e($flash['m']) ?></div><?php endif; ?>
     <form method="post" class="stack">
       <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>">
-      <?php if (!empty($_SESSION['pending'])): ?>
+      <?php $signup = isset($_GET['signup']) && wi_sys('signup_on') && empty($_SESSION['pending']); if ($signup): ?>
+        <input type="hidden" name="do" value="signup">
+        <label>Name<input name="name" autocomplete="name" required autofocus maxlength="80"></label>
+        <label>Business name<input name="business" autocomplete="organization" maxlength="120"></label>
+        <label>Email<input type="email" name="email" autocomplete="email" required dir="ltr"></label>
+        <label>WhatsApp number<input type="tel" name="phone" autocomplete="tel" required dir="ltr" placeholder="+201001234567"></label>
+        <label>Password<input type="password" name="password" autocomplete="new-password" minlength="10" required dir="ltr"></label>
+        <button class="btn primary">Create an account</button>
+      <?php elseif (!empty($_SESSION['pending'])): ?>
         <input type="hidden" name="do" value="otp">
         <label>Code sent to your WhatsApp<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus class="otp" placeholder="••••••"></label>
         <button class="btn primary">Sign in</button>
@@ -38,8 +47,10 @@
       <?php endif; ?>
     </form>
     <?php if (!empty($_SESSION['pending'])): ?><form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="cancel"><button class="btn ghost block">Back</button></form><?php endif; ?>
-    <p class="muted center small">Sign in with your password, then a code sent to your WhatsApp.</p>
-    <p class="center small lang-switch"><a href="?lang=en">English</a> · <a href="?lang=ar">العربية</a></p>
+    <?php if ($signup): ?><p class="center small">Already have an account? <a href="?login">Sign in</a></p>
+    <?php else: ?><p class="muted center small">Sign in with your password, then a code sent to your WhatsApp.</p>
+    <?php if (wi_sys('signup_on') && empty($_SESSION['pending'])): ?><p class="center small"><a href="?signup">Create an account</a></p><?php endif; endif; ?>
+    <p class="center small lang-switch"><a href="?<?= $signup ? 'signup&amp;' : '' ?>lang=en">English</a> · <a href="?<?= $signup ? 'signup&amp;' : '' ?>lang=ar">العربية</a></p>
   </section>
 </main>
 <?php else: ?>
