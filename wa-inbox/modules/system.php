@@ -4,7 +4,7 @@ function wf_sys_fields(): array {
     return [
         'legal_owner' => ['Owner name on the privacy policy and terms pages (empty = product name)', 'text'], 'legal_email' => ['Contact e-mail on those pages', 'text'],
         'privacy_text' => ['Privacy policy page (index.php?privacy) — empty = the built-in text; "# " starts a heading', 'longtext'], 'terms_text' => ['Terms of service page (index.php?terms) — empty = the built-in text', 'longtext'],
-        'brand_name' => ['Product name', 'text'], 'brand_logo' => ['Logo (emoji or short text)', 'text'], 'device_name' => ['Device name shown on linked phones', 'text'],
+        'brand_name' => ['Product name', 'text'], 'brand_name_en' => ['Product name in English (the English product page; empty = the same name)', 'text'], 'brand_logo' => ['Logo (emoji or short text)', 'text'], 'device_name' => ['Device name shown on linked phones', 'text'],
         'base_url' => ['Dashboard address (used in links sent on WhatsApp, Google sign-in, meetings)', 'url'], 'cookie_path' => ['Sign-in cookie path', 'text'],
         'timezone' => ['Time zone', 'tz'], 'country_code' => ['Country code for local numbers (e.g. 20, 966)', 'digits'], 'trunk_prefix' => ['Local prefix to drop (usually 0)', 'digits'],
         'idle_min' => ['Sign out after inactivity (minutes)', 'int'], 'otp_min' => ['Login code valid for (minutes)', 'int'], 'max_fails' => ['Failed attempts before a lock', 'int'], 'lock_min' => ['Lock time (minutes)', 'int'],

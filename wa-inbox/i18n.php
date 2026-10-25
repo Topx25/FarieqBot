@@ -1483,6 +1483,7 @@ return [
     'In groups, reply when confidence is at least' => 'في الجروبات يرد لما الثقة تكون على الأقل',
     'Same as private chats' => 'زي الخاص',
     'Create an account' => 'إنشاء حساب',
+    'Product name in English (the English product page; empty = the same name)' => 'اسم المنتج بالإنجليزي (للصفحة التعريفية الإنجليزي؛ فاضي = نفس الاسم)',
     'Activate my account' => 'فعّل حسابي',
     'Confirm that you are not a robot, then try again.' => 'أكّد إنك مش روبوت وجرّب تاني.',
     'Could not send the code on WhatsApp. Check the number and try again.' => 'مقدرناش نبعت الكود على واتساب. اتأكد من الرقم وجرّب تاني.',
