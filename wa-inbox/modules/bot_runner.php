@@ -4,7 +4,7 @@
 /* ---------- Bot runner (cron): drafts or automatic replies, with safety limits ---------- */
 function wf_bot_run_cfg(string $aid): array {
     $r = (array) (wi_read('bot.json', [])[$aid]['run'] ?? []); $r['heal_24h'] ??= function_exists('wf_pack') && !empty(wf_pack($aid)['care_24h']); $r['rec_in_reply'] ??= $r['heal_24h'] && !empty(wf_pack($aid)['rec_in_reply']); // a business whose care roles answer day and night (its type says so) unless switched off
-    return ($r + ['mode' => 'off', 'min_conf' => 0.8, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'dream_wait' => 120, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
+    return ($r + ['mode' => 'off', 'min_conf' => 0.8, 'group_min_conf' => 0, 'from' => 9, 'to' => 23, 'per_hour' => 20, 'human_pause' => 6, 'human_wait' => 10, 'dream_wait' => 120, 'case_private' => true, 'case_private_new' => false, 'since' => null, 'test' => [],
         'gather_secs' => 45, 'quiet_secs' => 6, 'chat_per_hour' => 12, 'group_person_hour' => 0, 'repeat_sim' => 0.7, 'group_gap' => 120, 'fun_gap' => 45, 'repeat_retry' => true, 'max_clarify' => 1, 'stop_words' => wf_seed('stop_words', $aid), 'typing_min' => 2, 'typing_max' => 8, 'warmup_until' => '', 'warmup_per_hour' => 5, 'crisis_pause_h' => 12, 'quality_day' => 5, 'quality_hour' => 10, 'neglect_days' => 3, 'team_report' => true, 'watch_on' => true, 'watch_to' => '', 'watch_minutes' => 30, 'watch_case_hours' => 2, 'checkin_on' => false, 'checkin_days' => 2, 'checkin_hour' => 19, 'checkin_max' => 15, 'checkin_statuses' => 'follow,improving', 'quality_n' => 10, 'voice_reply' => true, 'voice_max_sec' => 120, 'reply_short_max' => 220, 'reply_long_max' => 700, 'rec_min' => 75, 'handoff_retry' => true, 'quiet_from' => 0, 'quiet_to' => 0, 'quiet_min_conf' => 0.5,
         'scope' => 'private', 'groups_mode' => 'selected', 'groups' => [], 'group_default' => ['mode' => 'ai', 'trigger' => 'mention', 'text' => '', 'cooldown' => 24]]);
 }
@@ -316,7 +316,8 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 // "the sheikh / the team will answer you" reply when a person is needed are all sent.
                 $clar = !empty($r['clarify']) || (mb_strlen($r['reply']) < 220 && preg_match('/[؟?]\s*$/u', trim($r['reply'])) && $r['confidence'] >= 0.3);
                 if (!empty($r['mode']) && $r['mode'] !== $role && isset(wf_roles_cfg($aid)['roles'][$r['mode']])) $role = (string) $r['mode']; // the model's own choice of mode
-                $gMin = in_array($role, wf_pack_list($aid, 'soft_roles'), true) ? min((float) $c['min_conf'], 0.65) : (float) $c['min_conf']; // the roles send from 0.65 in groups too, as in private chats
+                $gConf = (float) $c['group_min_conf'] > 0 ? (float) $c['group_min_conf'] : (float) $c['min_conf'];
+                $gMin = in_array($role, wf_pack_list($aid, 'soft_roles'), true) ? min($gConf, 0.65) : $gConf; // the roles send from 0.65 in groups too, as in private chats
                 $ok = $r['handoff'] || $clar || $r['confidence'] >= $gMin || ($asked && $r['confidence'] >= 0.5) || ($fun && trim((string) $r['reply']) !== '' && $r['confidence'] >= 0.3);
                 if ($r['handoff']) $log['why'] = 'handed over to a person';
             }
