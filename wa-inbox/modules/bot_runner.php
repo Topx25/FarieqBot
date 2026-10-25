@@ -259,7 +259,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 if ($body !== '') { $text = wf_prompt('bot_translate', $aid, ['text' => mb_substr($body, 0, 3000)]); $asked = true; $mentioned = true; } break; }
             // The team (admins, its members): only their commands in a group, unless the group lets the bot talk with them (admin_talk); a tag of the bot alone is not a command
             $adminAsks = isset($team[$who]) && ($asked || (!empty($g['admin_talk']) && $mentioned)); // STRICT: team members and admins talk among themselves — the bot answers them only when they tag it or reply to it
-            if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun && empty($g['guide'])) || $text === '' || !wf_words($text)) continue;
+            if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun && (empty($g['guide']) || !empty(wf_pack($aid)['team_commands_only']))) || $text === '' || !wf_words($text)) continue; // STRICT: a business type may keep the team to commands only, even in a guide group
             // STRICT: a team member who replies to the bot's message or tags another member is guiding that person, not asking the bot
             if (isset($team[$who]) && !$asked) { $qm = (array) ($byId[(string) ($m['quote'] ?? '')] ?? []); $qBot = $qm && (($qm['via'] ?? '') === 'bot' || !empty($qm['from_me']) || ($qm['dir'] ?? '') === 'out') || ($me !== '' && wf_phone((string) ($m['quote_from'] ?? '')) === $me);
                 $tagsOther = (bool) array_filter((array) ($m['mentions'] ?? []), fn($j) => ($p = wf_phone(explode('@', (string) $j)[0])) !== '' && $p !== $me && $p !== $who);
