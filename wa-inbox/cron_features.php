@@ -42,7 +42,7 @@ if ($changed) wi_write('scheduled.json', $S);
 /* ---- 1b) The model lists of the AI providers are reloaded once a day (providers add and withdraw models) ---- */
 if ((int) date('i') === 25) { $mt = (array) wi_read('ai_models_at.json', []); if (time() - (int) ($mt['at'] ?? 0) > 20 * 3600) { wi_write('ai_models_at.json', ['at' => time()]);
     try { require_once __DIR__ . '/modules/lib/WiAiProviders.php'; $aie = new WiAiProviders(wi_ai_scope()); $aic = $aie->stored_config();
-        foreach (array_keys($aie->providers()) as $pid) { @set_time_limit(60); $aie->refresh_models_only($pid); } } catch (Throwable $e) {} } } // every provider, enabled or not: the list is public for most
+        foreach (array_keys($aie->providers()) as $pid) { @set_time_limit(60); $aie->refresh_models_only($pid); } } catch (Throwable $e) { wi_catch($e, 'cron line45'); } } } // every provider, enabled or not: the list is public for most
 
 /* ---- 2) Treatment programs: today's step, inside its hour, one per account per minute ---- */
 $E = wi_read('enrollments.json', []); $P = wi_read('programs.json', []); $changedE = false;
@@ -90,15 +90,15 @@ if ((int) date('i') % 5 === 0) foreach ($accounts as $acc) {
 }
 
 /* ---- 2a2) Answer cache: filled automatically from approved knowledge, once an hour ---- */
-if ((int) date('i') === 17) foreach ($accounts as $acc) { try { if (wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off' && wf_learn_cfg((string) $acc['id'])['cache']) wf_cache_seed_kb((string) $acc['id']); } catch (Throwable $e) {} }
+if ((int) date('i') === 17) foreach ($accounts as $acc) { try { if (wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off' && wf_learn_cfg((string) $acc['id'])['cache']) wf_cache_seed_kb((string) $acc['id']); } catch (Throwable $e) { wi_catch($e, 'cron line93'); } }
 
 /* ---- 2a3) Learning: linked Google Drive folders are pulled once an hour (in the background worker) ---- */
 if ((int) date('i') === 41) foreach ($accounts as $acc) { try { $gb = (string) $acc['id']; $G = wf_grow_cfg($gb); $hasC = wi_db() && wi_db()->query("SELECT 1 FROM wi_concepts WHERE base = '" . wi_db()->real_escape_string($gb) . "' LIMIT 1")->fetch_row();
-    if ($hasC && $G['auto'] && (int) ($cz = new DateTime('now', new DateTimeZone(date_default_timezone_get())))->format('G') === (int) $G['hour'] && (($G['last']['at'] ?? '') === '' || (new DateTime($G['last']['at']))->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d') !== $cz->format('Y-m-d'))) wi_job_add('guide_grow', $gb, ['base' => $gb, 'by' => 'schedule'], 'schedule'); } catch (Throwable $e) {} }
+    if ($hasC && $G['auto'] && (int) ($cz = new DateTime('now', new DateTimeZone(date_default_timezone_get())))->format('G') === (int) $G['hour'] && (($G['last']['at'] ?? '') === '' || (new DateTime($G['last']['at']))->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d') !== $cz->format('Y-m-d'))) wi_job_add('guide_grow', $gb, ['base' => $gb, 'by' => 'schedule'], 'schedule'); } catch (Throwable $e) { wi_catch($e, 'cron line97'); } }
 if ((int) date('i') === 23) foreach (wi_read('learning.json', []) as $lb => $lc) if (!empty($lc['drive_folder']['id'])) wi_job_add('learn_sync', (string) $lb, ['base' => (string) $lb], 'schedule');
 
 /* ---- 2b) Bot: answers new private messages (drafts or automatic, per number) ---- */
-foreach ($accounts as $acc) { try { if (wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off') wf_bot_tick($acc); } catch (Throwable $e) {} }
+foreach ($accounts as $acc) { try { if (wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off') wf_bot_tick($acc); } catch (Throwable $e) { wi_catch($e, 'cron line101'); } }
 
 /* ---- 2c) Server resources: memory, processes and threads of this account (read from /proc), against the plan's limits ---- */
 try {
@@ -135,7 +135,7 @@ try {
     if ($forks > 0 && strtotime((string) ($prev['fork_alerted'] ?? '')) < time() - 3600) { $tellAdmins(wf_msg('alert_fork', ['count' => $forks, 'threads' => $res['threads'], 'mem' => $res['mem_mb']])); $res['fork_alerted'] = date('c'); }
     elseif (!empty($prev['fork_alerted'])) $res['fork_alerted'] = $prev['fork_alerted'];
     wi_write('resources.json', $res);
-} catch (Throwable $e) {}
+} catch (Throwable $e) { wi_catch($e, 'cron line138'); }
 
 /* ---- 3) Number health alerts (to admins' own WhatsApp, once per incident) ---- */
 $HA = wi_read('health_alerts.json', []); $changedH = false;
@@ -175,24 +175,24 @@ foreach (wi_users() as $cu) if (!empty($cu['active']) && wi_can_self_backup($cu)
 }
 
 /* ---- 4b2) Client numbers get their own gateway rules once (sales library, no healing tags) ---- */
-foreach (wi_accounts() as $ra) try { wf_client_rules_ensure($ra); } catch (Throwable $e) {}
+foreach (wi_accounts() as $ra) try { wf_client_rules_ensure($ra); } catch (Throwable $e) { wi_catch($e, 'cron wf_client_rules_ensure'); }
 
 /* ---- 4c) Clients: usage counters (hourly) and reminders before a subscription ends ---- */
-try { wf_intake_due($accounts); } catch (Throwable $e) {}
-try { wf_gate_due($accounts); } catch (Throwable $e) {}
-try { wf_vis_due($accounts); } catch (Throwable $e) {}
-if (wi_sys('addon_instagram') && function_exists('wf_ig_sync_all')) { try { wf_ig_sync_all(); } catch (Throwable $e) {} } // Farieq add-on: Instagram direct messages, every minute
+try { wf_intake_due($accounts); } catch (Throwable $e) { wi_catch($e, 'cron wf_intake_due'); }
+try { wf_gate_due($accounts); } catch (Throwable $e) { wi_catch($e, 'cron wf_gate_due'); }
+try { wf_vis_due($accounts); } catch (Throwable $e) { wi_catch($e, 'cron wf_vis_due'); }
+if (wi_sys('addon_instagram') && function_exists('wf_ig_sync_all')) { try { wf_ig_sync_all(); } catch (Throwable $e) { wi_catch($e, 'cron wf_ig_sync_all'); } } // Farieq add-on: Instagram direct messages, every minute
 // once an hour: the gateway's word lists are in every rules file (a file written before they moved out of the gateway gets them)
-if (date('i') === '17' && function_exists('wf_gw_rules_seed')) { try { wf_gw_rules_seed(true); } catch (Throwable $e) {} }
+if (date('i') === '17' && function_exists('wf_gw_rules_seed')) { try { wf_gw_rules_seed(true); } catch (Throwable $e) { wi_catch($e, 'cron wf_gw_rules_seed'); } }
 // the number each account is signed in with: a different number asks the user to merge or keep the old chats apart
-if (function_exists('wf_hist_scan')) { try { wf_hist_scan(); } catch (Throwable $e) {} }
+if (function_exists('wf_hist_scan')) { try { wf_hist_scan(); } catch (Throwable $e) { wi_catch($e, 'cron wf_hist_scan'); } }
 // a number with more than 3 bot errors in 10 minutes: one alert an hour to the watch group
-if (function_exists('wf_err_alert')) { try { wf_err_alert(); } catch (Throwable $e) {} }
-if (wi_sys('addon_facebook') && function_exists('wf_fb_sync_all')) { try { wf_fb_sync_all(); } catch (Throwable $e) {} } // Facebook pages: new Messenger messages read from the page (works before the app is published, catches missed webhooks) // visitors lists: farewell for those who leave unanswered, a note when someone comes back
-try { wi_media_usage_refresh(); } catch (Throwable $e) {} // media kept per number (every 10 minutes): plan allowance shown in the panel and given to each gateway
-try { wi_outbox_flush(); } catch (Throwable $e) {} // replies written while a number was offline // reception groups: reminder, last notice, removal
-try { wf_cases_number_backfill(); } catch (Throwable $e) {} // older cases get their ID // cases from a group whose writer did not answer in time
-try { if ((int) date('i') === 7 || !wi_read('usage.json', [])) wf_usage_refresh(); if ((int) date('i') === 30) wf_client_reminders($tellAdmins); } catch (Throwable $e) {}
+if (function_exists('wf_err_alert')) { try { wf_err_alert(); } catch (Throwable $e) { wi_catch($e, 'cron wf_err_alert'); } }
+if (wi_sys('addon_facebook') && function_exists('wf_fb_sync_all')) { try { wf_fb_sync_all(); } catch (Throwable $e) { wi_catch($e, 'cron wf_fb_sync_all'); } } // Facebook pages: new Messenger messages read from the page (works before the app is published, catches missed webhooks) // visitors lists: farewell for those who leave unanswered, a note when someone comes back
+try { wi_media_usage_refresh(); } catch (Throwable $e) { wi_catch($e, 'cron wi_media_usage_refresh'); } // media kept per number (every 10 minutes): plan allowance shown in the panel and given to each gateway
+try { wi_outbox_flush(); } catch (Throwable $e) { wi_catch($e, 'cron wi_outbox_flush'); } // replies written while a number was offline // reception groups: reminder, last notice, removal
+try { wf_cases_number_backfill(); } catch (Throwable $e) { wi_catch($e, 'cron wf_cases_number_backfill'); } // older cases get their ID // cases from a group whose writer did not answer in time
+try { if ((int) date('i') === 7 || !wi_read('usage.json', [])) wf_usage_refresh(); if ((int) date('i') === 30) wf_client_reminders($tellAdmins); } catch (Throwable $e) { wi_catch($e, 'cron line195'); }
 
 /* ---- 5) Daily report ---- */
 $R = wi_read('report.json', []);
@@ -211,25 +211,28 @@ if (!empty($D['refresh_token']) && !empty($D['enabled']) && (int) date('G') === 
     wi_job_add('backup', 'drive', ['types' => $D['types'] ?? ['data', 'messages']], 'schedule');
 }
 // Learning from the chosen groups, saving tokens (learn_lean): once an hour, within the daily cap of each number.
-if ((int) date('i') === 23 && function_exists('wf_lean_run')) foreach ($accounts as $acc) { try { if (!wi_account_blocked($acc) && !empty(wf_lean_cfg((string) $acc['id'])['on'])) wf_lean_run($acc); } catch (Throwable $e) {} }
+if ((int) date('i') === 23 && function_exists('wf_lean_run')) foreach ($accounts as $acc) { try { if (!wi_account_blocked($acc) && !empty(wf_lean_cfg((string) $acc['id'])['on'])) wf_lean_run($acc); } catch (Throwable $e) { wi_catch($e, 'cron line214'); } }
 
 // Numbers that are not linked (logged out, need the QR): their process is stopped (it starts again for a while when the QR page is opened),
 // the admins are warned every day from "idle_warn_days", and the number is switched off at "idle_stop_days".
-if ((int) date('i') % 5 === 0 && function_exists('wf_idle_numbers')) { try { wf_idle_numbers($tellAdmins, time()); } catch (Throwable $e) {} }
+if ((int) date('i') % 5 === 0 && function_exists('wf_idle_numbers')) { try { wf_idle_numbers($tellAdmins, time()); } catch (Throwable $e) { wi_catch($e, 'cron wf_idle_numbers'); } }
 
 // The weekly bot quality report (people's ratings + a test against the team's answers), on the set day and hour.
-if ((int) date('i') === 37 && function_exists('wf_bot_quality_week')) foreach ($accounts as $acc) { try { $qc = wf_bot_run_cfg((string) $acc['id']); if ($qc['mode'] === 'off' || empty($acc['enabled']) || (int) date('w') !== (int) ($qc['quality_day'] ?? 5) || (int) date('G') !== (int) ($qc['quality_hour'] ?? 10)) continue; wf_bot_quality_week($acc, $tellFrom($acc)); } catch (Throwable $e) {} }
+if ((int) date('i') === 37 && function_exists('wf_bot_quality_week')) foreach ($accounts as $acc) { try { $qc = wf_bot_run_cfg((string) $acc['id']); if ($qc['mode'] === 'off' || empty($acc['enabled']) || (int) date('w') !== (int) ($qc['quality_day'] ?? 5) || (int) date('G') !== (int) ($qc['quality_hour'] ?? 10)) continue; wf_bot_quality_week($acc, $tellFrom($acc)); } catch (Throwable $e) { wi_catch($e, 'cron wf_bot_run_cfg'); } }
 
 // The weekly team report (team members' activity and neglected cases), an hour after the quality report.
 // market analysis: once a week (Saturday 04:23) for numbers whose bot runs and that filled in their market or catalog
-if ((int) date('w') === 6 && (int) date('G') === 4 && (int) date('i') === 23 && function_exists('wf_market_analyze')) foreach ($accounts as $acc) { try { $ma = (string) $acc['id']; if (wf_bot_run_cfg($ma)['mode'] === 'off' || (!wf_catalog($ma) && !wf_market($ma)['rivals'] && trim(wf_market($ma)['edge']) === '')) continue; wf_market_analyze($acc); } catch (Throwable $e) {} }
-if ((int) date('i') === 41 && function_exists('wf_team_report')) foreach ($accounts as $acc) { try { $tc = wf_bot_run_cfg((string) $acc['id']); if (empty($tc['team_report']) || empty($acc['enabled']) || (int) date('w') !== (int) ($tc['quality_day'] ?? 5) || (int) date('G') !== ((int) ($tc['quality_hour'] ?? 10) + 1) % 24 || !wf_deep_axes((string) $acc['id'])) continue; wf_team_report($acc, (function ($acc) use ($tellFrom) { $to = (string) (wf_bot_run_cfg((string) $acc['id'])['watch_to'] ?? ''); return preg_match('/^[0-9-]{6,40}@g\.us$/', $to) ? function (string $m) use ($acc, $to) { wi_gateway('/chat/send', ['jid' => $to, 'text' => $m, 'via' => 'bot'], $acc); } : $tellFrom($acc); })($acc)); } catch (Throwable $e) {} }
+if ((int) date('w') === 6 && (int) date('G') === 4 && (int) date('i') === 23 && function_exists('wf_market_analyze')) foreach ($accounts as $acc) { try { $ma = (string) $acc['id']; if (wf_bot_run_cfg($ma)['mode'] === 'off' || (!wf_catalog($ma) && !wf_market($ma)['rivals'] && trim(wf_market($ma)['edge']) === '')) continue; wf_market_analyze($acc); } catch (Throwable $e) { wi_catch($e, 'cron line225'); } }
+if ((int) date('i') === 41 && function_exists('wf_team_report')) foreach ($accounts as $acc) { try { $tc = wf_bot_run_cfg((string) $acc['id']); if (empty($tc['team_report']) || empty($acc['enabled']) || (int) date('w') !== (int) ($tc['quality_day'] ?? 5) || (int) date('G') !== ((int) ($tc['quality_hour'] ?? 10) + 1) % 24 || !wf_deep_axes((string) $acc['id'])) continue; wf_team_report($acc, (function ($acc) use ($tellFrom) { $to = (string) (wf_bot_run_cfg((string) $acc['id'])['watch_to'] ?? ''); return preg_match('/^[0-9-]{6,40}@g\.us$/', $to) ? function (string $m) use ($acc, $to) { wi_gateway('/chat/send', ['jid' => $to, 'text' => $m, 'via' => 'bot'], $acc); } : $tellFrom($acc); })($acc)); } catch (Throwable $e) { wi_catch($e, 'cron wf_bot_run_cfg'); } }
 
 // Group watch: questions nobody answered and new cases nobody took — the admins are told (every 5 minutes).
-if ((int) date('i') % 5 === 2 && function_exists('wf_group_watch')) foreach ($accounts as $acc) { try { if (!empty($acc['enabled']) && empty($acc['parked']) && (string) ($acc['channel'] ?? '') === '' && wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off') wf_group_watch($acc, $tellAdmins); } catch (Throwable $e) {} }
+if ((int) date('i') % 5 === 2 && function_exists('wf_group_watch')) foreach ($accounts as $acc) { try { if (!empty($acc['enabled']) && empty($acc['parked']) && (string) ($acc['channel'] ?? '') === '' && wf_bot_run_cfg((string) $acc['id'])['mode'] !== 'off') wf_group_watch($acc, $tellAdmins); } catch (Throwable $e) { wi_catch($e, 'cron line229'); } }
 
 // Follow-up check-ins: at the set hour, the bot asks people under follow-up how they are (with a daily cap).
-if ((int) date('i') === 15 && function_exists('wf_checkin_run')) foreach ($accounts as $acc) { try { $cc = wf_bot_run_cfg((string) $acc['id']); if (!empty($cc['checkin_on']) && $cc['mode'] === 'auto' && empty($acc['parked']) && !empty($acc['enabled']) && (int) date('G') === (int) $cc['checkin_hour'] && empty($cc['held'])) wf_checkin_run($acc); } catch (Throwable $e) {} }
+if ((int) date('i') === 15 && function_exists('wf_checkin_run')) foreach ($accounts as $acc) { try { $cc = wf_bot_run_cfg((string) $acc['id']); if (!empty($cc['checkin_on']) && $cc['mode'] === 'auto' && empty($acc['parked']) && !empty($acc['enabled']) && (int) date('G') === (int) $cc['checkin_hour'] && empty($cc['held'])) wf_checkin_run($acc); } catch (Throwable $e) { wi_catch($e, 'cron wf_bot_run_cfg'); } }
 
 // The cases' lasting journal (who did what, where, and the files' links): the new messages every 10 minutes.
-if ((int) date('i') % 10 === 7 && function_exists('wf_journal_ingest')) foreach ($accounts as $acc) { try { if (!empty($acc['enabled']) && empty($acc['parked']) && (string) ($acc['channel'] ?? '') === '') wf_journal_ingest($acc); } catch (Throwable $e) {} }
+if ((int) date('i') % 10 === 7 && function_exists('wf_journal_ingest')) foreach ($accounts as $acc) { try { if (!empty($acc['enabled']) && empty($acc['parked']) && (string) ($acc['channel'] ?? '') === '') wf_journal_ingest($acc); } catch (Throwable $e) { wi_catch($e, 'cron line235'); } }
+
+// Add-ons that work every minute (for example the owner's coding bridge).
+try { wi_filter('cron_minute', null); } catch (Throwable $e) { wi_catch($e, 'cron_minute'); }
