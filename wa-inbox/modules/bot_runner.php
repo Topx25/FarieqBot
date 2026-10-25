@@ -42,6 +42,9 @@ function wf_clean_gcfg(array $g): array {
         'gate_follow' => !isset($g['gate_follow']) || ($g['gate_follow'] && $g['gate_follow'] !== '0'), 'gate_remind_h' => max(1, min(72, (int) ($g['gate_remind_h'] ?? 3))), 'gate_final_h' => max(1, min(72, (int) ($g['gate_final_h'] ?? 3))), 'gate_kick_m' => max(0, min(1440, (int) ($g['gate_kick_m'] ?? 30))),
         'gate_notify' => preg_match('/^[0-9-]{6,40}@g\.us$/', (string) ($g['gate_notify'] ?? '')) ? (string) $g['gate_notify'] : '', // where the team member is asked to open the case
         'antispam' => !empty($g['antispam']) && $g['antispam'] !== '0', // a link, invite or ad from someone outside the team: the message is deleted and the number removed
+        'media_read' => !empty($g['media_read']) && $g['media_read'] !== '0', // photos and stickers here are read and answered like messages
+        'admin_talk' => !empty($g['admin_talk']) && $g['admin_talk'] !== '0',
+        'open_topics' => !empty($g['open_topics']) && $g['open_topics'] !== '0', // any subject is answered here, not only the business // the bot also talks with the team here; off: the team gets only their commands (#سؤال, #ترجمة, the case commands), the conversation is with the members
         'gate_review' => implode(', ', array_slice(array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) ($g['gate_review'] ?? ''))))), 0, 10))];
 }
 /* ---------- Warm-up mode: the owner types the word (#هزار) in any private chat on the phone; the bot then chats and jokes
@@ -67,6 +70,31 @@ function wf_chat_continue(string $aid, string $jid, string $text): bool {
 }
 /** The owner's commands sent from a test number to the bot's number: the warm-up words, and the restart words (business profile → restart_cmd).
  *  Returns [note, restart?], or null when the text is not a command. */
+/** The owner teaches the bot from their own chat: a new command (fixed reply or AI instruction), a rule, or removing one. '' when the message is not such a request. */
+function wf_owner_teach(array $acc, string $text): string {
+    $aid = (string) $acc['id']; $t = wf_intake_norm($text); $hit = false;
+    foreach (wf_seed_list('owner_teach_words', $aid) as $w) { $w = wf_intake_norm($w); if ($w !== '' && mb_strpos($t, $w) !== false) { $hit = true; break; } }
+    if (!$hit) return '';
+    $cmds = wf_cmds_custom($aid); $rules = wf_rules_list($aid);
+    $list = fn() => implode("\n", array_map(fn($c) => $c['tag'] . ' — ' . mb_substr((string) ($c['title'] ?? $c['text'] ?? ''), 0, 60), wf_cmds_custom($aid)));
+    wi_ctx_set('ai_acc', $acc);
+    $j = wi_ai('Owner teaches the bot', wf_prompt('owner_teach', $aid, ['text' => mb_substr($text, 0, 1500), 'commands' => $list() ?: '-', 'rules' => implode("\n", array_map(fn($i, $r) => ($i + 1) . '. ' . $r['text'], array_keys($rules), $rules)) ?: '-']), 60, ['subject' => 'owner teach', 'prefer' => wf_fast_model(true)]);
+    $d = (array) ($j['data'] ?? []); $type = (string) ($d['type'] ?? 'none'); $confirm = trim((string) ($d['confirm'] ?? ''));
+    if (empty($j['ok']) || $type === 'none') return '';
+    if ($type === 'command') {
+        $tag = '#' . ltrim(trim((string) preg_split('/\s+/u', trim((string) ($d['tag'] ?? '')))[0]), '#'); $body = trim((string) ($d['text'] ?? ''));
+        if ($tag === '#' || $body === '') return wf_msg('owner_taught', ['confirm' => $confirm, 'list' => '']);
+        $cmds = array_values(array_filter($cmds, fn($c) => wf_intake_norm((string) $c['tag']) !== wf_intake_norm($tag)));
+        $cmds[] = ['tag' => $tag, 'kind' => ($d['kind'] ?? '') === 'ai' ? 'ai' : 'reply', 'text' => mb_substr($body, 0, 3000), 'where' => in_array($d['where'] ?? '', ['groups', 'private'], true) ? $d['where'] : 'all', 'title' => mb_substr(trim((string) ($d['title'] ?? $tag)), 0, 60), 'on' => true, 'by' => 'owner chat', 'at' => date('c')];
+        wi_update('bot.json', function ($B) use ($aid, $cmds) { $B[$aid]['commands'] = array_slice($cmds, -200); return $B; });
+    } elseif ($type === 'delete_command') {
+        $tag = wf_intake_norm('#' . ltrim(trim((string) ($d['tag'] ?? '')), '#'));
+        wi_update('bot.json', function ($B) use ($aid, $tag) { $B[$aid]['commands'] = array_values(array_filter((array) ($B[$aid]['commands'] ?? []), fn($c) => wf_intake_norm((string) ($c['tag'] ?? '')) !== $tag)); return $B; });
+    } elseif ($type === 'rule') { $r = trim((string) ($d['text'] ?? '')); if ($r !== '') { $rules[] = ['text' => $r, 'on' => true]; wf_rules_save($aid, $rules); } }
+    elseif ($type === 'delete_rule') { $i = (int) ($d['index'] ?? 0) - 1; if (isset($rules[$i])) { array_splice($rules, $i, 1); wf_rules_save($aid, $rules); } }
+    wi_log('owner_taught', ['account' => $aid, 'type' => $type, 'tag' => (string) ($d['tag'] ?? '')]);
+    return wf_msg('owner_taught', ['confirm' => $confirm, 'list' => in_array($type, ['command', 'delete_command'], true) ? $list() : '']);
+}
 function wf_owner_command(array $acc, string $text, string $jid = ''): ?array {
     $aid = (string) $acc['id']; if (($n = wf_fun_command($aid, $text)) !== '') return [$n, false];
     $P = wf_pack($aid); $t = wf_intake_norm(trim($text)); if ($t === '') return null;
@@ -74,6 +102,7 @@ function wf_owner_command(array $acc, string $text, string $jid = ''): ?array {
     $starts = function (string $k) use ($P, $t, $text) { $w = wf_intake_norm(trim((string) ($P[$k] ?? ''))); return $w !== '' && ($t === $w || str_starts_with($t, $w . ' ')) ? trim((string) (preg_split('/\s+/u', trim($text), 2)[1] ?? '')) : null; }; // the rest as written (the name is matched as typed)
     if (function_exists('wf_case_recs_command') && ($rm = wf_case_recs_command($acc, $text, [], '', $jid)) !== '') return [$rm, false]; // #توصيات + case
     if (function_exists('wf_case_deep_command') && ($dm = wf_case_deep_command($acc, $text, [], 'owner', '', $jid)) !== '') return [$dm, false]; // #تحليل + case
+    if (($tw = wf_owner_teach($acc, $text)) !== '') return [$tw, false]; // "add a command / a rule …" in the owner's own words
     if ($is('restart_cmd')) return [wf_msg('bot_restart'), true];
     if ($is('status_cmd')) { $c = wf_bot_run_cfg($aid); $g = wi_gateway('/status', null, $acc); $st = wi_read('bot_state.json', [])[$aid] ?? []; $day = date('Y-m-d'); $k = ['sent' => 0, 'handoff' => 0, 'draft' => 0, 'skipped' => 0];
         foreach (wi_bot_log($aid, 500) as $l) if (str_starts_with(date('Y-m-d', strtotime((string) ($l['at'] ?? ''))), $day) && isset($k[$l['result'] ?? ''])) $k[$l['result']]++;
@@ -218,13 +247,18 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             if ($postedOn !== '' && (string) ($m['id'] ?? '') === $postedOn) continue;
             if ((int) $c['group_person_hour'] > 0 && count($st['gwho'][$x['jid']][$pw] ?? []) >= (int) $c['group_person_hour']) continue; // the cap per person per hour in a group (0 = none): give others a turn
             $who = wf_phone($m['from'] ?? ''); $text = trim((string) ($m['text'] ?? ''));
+            // a photo or sticker in a group that lets the bot read them: what it shows becomes the message the bot answers
+            if ($text === '' && !empty($g['media_read']) && in_array($m['kind'] ?? '', ['image', 'sticker'], true) && function_exists('wf_image_text') && ($it = wf_image_text($acc, $m, (string) $x['jid'])) !== '') { $text = wf_msg('image_seen', ['kind' => ($m['kind'] ?? '') === 'sticker' ? wf_mt('sticker') : wf_mt('photo'), 'what' => $it]); $seenMedia = true; } else $seenMedia = false;
             $wTags = [$who]; if (strlen($who) >= 14 && function_exists('wf_group_member_phone') && ($pn0 = wf_group_member_phone($acc, (string) $x['jid'], $who)['phone']) !== '') $wTags[] = $pn0; // the bot's replies to this person start with their tag (mobile number or long ID)
             if ($who !== '' && !isset($team[$who]) && $text !== '' && !wf_words($text) && ($g['trigger'] ?? 'mention') === 'all' && $c['mode'] === 'auto') { wf_bot_emoji($acc, (string) $x['jid'], (string) ($m['id'] ?? ''), $text, false); continue; } // only emojis in a group: a reaction, no message
-            $mentioned = $isMen($m);
+            $mentioned = $isMen($m) || !empty($seenMedia); // a photo or sticker that was read is answered like a message to the bot
             $askT = function_exists('wf_ask_tag') ? wf_ask_tag($aid) : ''; // the ask tag (#سؤال by default): the question is for the bot, answered at once like a tag of the bot
             $asked = $askT !== '' && wf_intake_has($text, $askT); if ($asked) { $mentioned = true; $text = trim(str_ireplace($askT, '', $text)) ?: $text; }
-            // A group admin is answered when they ask a question or tag the bot — not while they answer someone else (a reply or a tag of another member).
-            $adminAsks = isset($team[$who]) && $mentioned; // STRICT: team members and admins talk among themselves — the bot answers them only when they tag it or reply to it
+            // The translate tag (#ترجمة): the text after it, or the message it replies to, translated
+            foreach (wf_seed_list('translate_tags', $aid) as $tt) if (wf_intake_has($text, $tt)) { $body = trim(str_ireplace($tt, '', $text)); if ($body === '' && !empty($m['quote']) && isset($byId[(string) $m['quote']])) $body = trim((string) ($byId[(string) $m['quote']]['text'] ?? ''));
+                if ($body !== '') { $text = wf_prompt('bot_translate', $aid, ['text' => mb_substr($body, 0, 3000)]); $asked = true; $mentioned = true; } break; }
+            // The team (admins, its members): only their commands in a group, unless the group lets the bot talk with them (admin_talk); a tag of the bot alone is not a command
+            $adminAsks = isset($team[$who]) && ($asked || (!empty($g['admin_talk']) && $mentioned)); // STRICT: team members and admins talk among themselves — the bot answers them only when they tag it or reply to it
             if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun && empty($g['guide'])) || $text === '' || !wf_words($text)) continue;
             if (!empty($g['guide']) && function_exists('wf_sysguide_known_cmd') ? wf_sysguide_known_cmd($acc, $text) : (function_exists('wf_intake_is_cmd') && wf_intake_is_cmd($aid, $text))) continue; // a command the system handles (a help group also skips the library tags and quick replies; a mistyped one is taught below) // a case command in a group that does not run commands: not a chat message, the bot stays quiet
             if (!$mentioned && wf_is_ack($aid, $text)) continue; // "تمام" / "الحمد لله": a talk ending, not a question
@@ -272,7 +306,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 }
                 if ($role === 'crisis') { wf_role_crisis($acc, (string) $x['jid'], $text, (string) ($m['from_name'] ?? ''), (string) ($m['id'] ?? ''), $who); $n++; continue; }
                 $mine = []; foreach (array_slice($rows, -60) as $bm) if (($bm['dir'] ?? '') === 'out' && ($bm['via'] ?? '') === 'bot' && trim((string) ($bm['text'] ?? '')) !== '') $mine[] = (string) $bm['text']; // never repeat what the bot already said here
-                try { $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => array_slice($mine, -4), 'role' => $role, 'jid' => $x['jid'] . '|' . $who] + ($fun ? ['fun' => true] : []) + ($asked ? ['ask' => true] : []) + (isset($team[$who]) ? ['team' => true] : [])); } catch (Throwable $e) { $r = ['ok' => false, 'error' => 'exception: ' . $e->getMessage()]; }
+                try { $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => array_slice($mine, -4), 'role' => $role, 'jid' => $x['jid'] . '|' . $who] + ($fun ? ['fun' => true] : []) + ($asked || !empty($g['open_topics']) ? ['ask' => true] : []) + (isset($team[$who]) ? ['team' => true] : [])); } catch (Throwable $e) { $r = ['ok' => false, 'error' => 'exception: ' . $e->getMessage()]; }
                 // no reply could be made: logged, and the question waits for the next run (3 tries), never dropped in silence
                 if (empty($r['ok']) || trim((string) ($r['reply'] ?? '')) === '') {
                     if (!wf_bot_fail($st, $aid, $x['jid'] . '|' . ($m['id'] ?? $m['time'] ?? ''), ['jid' => $x['jid'], 'name' => (string) ($m['from_name'] ?? ''), 'q' => mb_substr($text, 0, 300), 'model' => $r['task']['model'] ?? ''], wf_bot_fail_why($r))) $st['gq'][$x['jid']][$who] = $m;
@@ -295,7 +329,8 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 // Handing over in a group: tag the group's admins so they get a notification.
                 static $admCache = [];
                 if (!isset($admCache[$x['jid']])) { $mm = wi_gateway('/groups/members?jid=' . rawurlencode($x['jid']), null, $acc); $admCache[$x['jid']] = array_values(array_filter($mm['members'] ?? [], fn($p) => !empty($p['admin']) && empty($p['is_lid']) && wf_phone($p['phone']) !== $me)); }
-                foreach (array_slice($admCache[$x['jid']], 0, 8) as $p) { $mentions[] = wf_phone($p['phone']) . '@s.whatsapp.net'; }
+                $handAdm = wi_filter('group_handoff_admins', $admCache[$x['jid']], $acc, (string) $x['jid'], $who);
+                foreach (array_slice($handAdm, 0, 8) as $p) { $mentions[] = wf_phone($p['phone']) . '@s.whatsapp.net'; }
                 if ($mentions) $log['reply'] .= "\n" . implode(' ', array_map(fn($j) => '@' . explode('@', $j)[0], $mentions));
             }
             $hf = $g['from'] === '' ? (int) $c['from'] : (int) $g['from']; $ht = $g['to'] === '' ? (int) $c['to'] : (int) $g['to']; // this group's own hours, else the bot's
@@ -421,6 +456,8 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         if (!$q) { $skip($x, 'a message the system sent by itself (login code, alert, report…)'); continue; }
         // 8) a voice note is written as text (once) and answered like a message (Bot → Switch on / off: voice_reply, voice_max_sec)
         if (!empty($c['voice_reply']) && function_exists('wf_voice_text')) foreach ($q as &$qm) if (trim((string) ($qm['text'] ?? '')) === '' && in_array($qm['kind'] ?? '', ['voice', 'audio'], true) && ($vt = wf_voice_text($acc, $qm, (string) $x['jid'])) !== '') { $qm['text'] = $vt; $qm['voice'] = true; }
+        unset($qm); if (!empty($c['media_private']) && function_exists('wf_image_text')) foreach ($q as &$qi) if (trim((string) ($qi['text'] ?? '')) === '' && in_array($qi['kind'] ?? '', ['image', 'sticker'], true) && ($it = wf_image_text($acc, $qi, (string) $x['jid'])) !== '') $qi['text'] = wf_msg('image_seen', ['kind' => ($qi['kind'] ?? '') === 'sticker' ? wf_mt('sticker') : wf_mt('photo'), 'what' => $it]); // a photo or sticker in private, read and answered
+        unset($qi);
         unset($qm);
         $text = trim(implode("\n", array_filter(array_map(fn($m) => (string) ($m['text'] ?? ''), $q))));
         // The customer asked the bot to stop: it stays silent in this chat until someone turns it back on.
@@ -441,7 +478,8 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         $card = wf_customer_card($acc, $x['jid'], $rows);
         $role = function_exists('wf_role_pick') ? wf_role_pick($aid, (string) $x['jid'], $text) : 'bot'; // which hat answers (from the roles of the business type)
         if ($role === 'crisis') { $st['done'][$x['jid']] = $last['time']; if (!$isTest) wf_role_crisis($acc, (string) $x['jid'], $text, (string) ($x['name'] ?? '')); $did[] = ['jid' => $x['jid'], 'result' => 'crisis']; continue; }
-        try { $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => $mine, 'role' => $role, 'jid' => (string) $x['jid']]); } catch (Throwable $e) { $r = ['ok' => false, 'error' => 'exception: ' . $e->getMessage()]; }
+        try { $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => $mine, 'role' => $role, 'jid' => (string) $x['jid']] + ($isTest ? ['owner' => true] : []) + (!empty($c['open_private']) ? ['ask' => true] : [])); } catch (Throwable $e) { $r = ['ok' => false, 'error' => 'exception: ' . $e->getMessage()]; }
+        if ($isTest && is_array($r)) $r['handoff'] = false; // the owner's own chat is never handed over to the team
         if (!empty($r['mode']) && $r['mode'] !== $role && isset(wf_roles_cfg($aid)['roles'][$r['mode']])) $role = (string) $r['mode']; // the model's own choice of mode (notes, threshold, case file)
         $n++;
         // no reply could be made: never marked as handled in silence — logged, and tried again next run (3 tries)
