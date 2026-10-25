@@ -27,7 +27,16 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
     <?php if ($flash): ?><div class="alert <?= wi_e($flash['t']) ?>"><?= wi_e($flash['m']) ?></div><?php endif; ?>
     <form method="post" class="stack">
       <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>">
-      <?php $signup = isset($_GET['signup']) && wi_sys('signup_on') && empty($_SESSION['pending']); $sp = $signup && !empty($_SESSION['signup_pending']); if ($sp): ?>
+      <?php $signup = isset($_GET['signup']) && wi_sys('signup_on') && empty($_SESSION['pending']); $sp = $signup && !empty($_SESSION['signup_pending']); $fg = !$signup && isset($_GET['forgot']) && empty($_SESSION['pending']); $fp = $fg && !empty($_SESSION['reset_pending']); if ($fp): ?>
+        <input type="hidden" name="do" value="forgot_code">
+        <label>Code sent to your WhatsApp<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus class="otp" placeholder="••••••"></label>
+        <label>New password<input type="password" name="password" autocomplete="new-password" minlength="10" required dir="ltr"></label>
+        <button class="btn primary">Change password</button>
+      <?php elseif ($fg): ?>
+        <input type="hidden" name="do" value="forgot">
+        <label>Email<input type="email" name="email" autocomplete="username" required autofocus dir="ltr"></label>
+        <button class="btn primary">Send me a code</button>
+      <?php elseif ($sp): ?>
         <input type="hidden" name="do" value="signup_code">
         <label>Code sent to your WhatsApp<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus class="otp" placeholder="••••••"></label>
         <button class="btn primary">Activate my account</button>
@@ -51,11 +60,12 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         <button class="btn primary">Continue</button>
       <?php endif; ?>
     </form>
-    <?php if (!empty($_SESSION['pending']) || $sp): ?><form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="<?= $sp ? 'signup_cancel' : 'cancel' ?>"><button class="btn ghost block">Back</button></form><?php endif; ?>
+    <?php if (!empty($_SESSION['pending']) || $sp || $fg): ?><form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="<?= $sp ? 'signup_cancel' : ($fg ? 'forgot_cancel' : 'cancel') ?>"><button class="btn ghost block">Back</button></form><?php endif; ?>
     <?php if ($signup): ?><p class="center small">Already have an account? <a href="?login">Sign in</a></p>
-    <?php else: ?><p class="muted center small">Sign in with your password, then a code sent to your WhatsApp.</p>
+    <?php elseif (!$fg): ?><p class="muted center small">Sign in with your password, then a code sent to your WhatsApp.</p>
+    <?php if (empty($_SESSION['pending'])): ?><p class="center small"><a href="?forgot">Forgot password?</a></p><?php endif; ?>
     <?php if (wi_sys('signup_on') && empty($_SESSION['pending'])): ?><p class="center small"><a href="?signup">Create an account</a></p><?php endif; endif; ?>
-    <p class="center small lang-switch"><a href="?<?= $signup ? 'signup&amp;' : '' ?>lang=en">English</a> · <a href="?<?= $signup ? 'signup&amp;' : '' ?>lang=ar">العربية</a></p>
+    <p class="center small lang-switch"><a href="?<?= $signup ? 'signup&amp;' : ($fg ? 'forgot&amp;' : '') ?>lang=en">English</a> · <a href="?<?= $signup ? 'signup&amp;' : ($fg ? 'forgot&amp;' : '') ?>lang=ar">العربية</a></p>
   </section>
 </main>
 <?php else: ?>

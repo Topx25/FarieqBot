@@ -21,6 +21,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($err !== '') { wi_flash($err, 'bad'); header('Location: ./?signup'); exit; }
         wi_flash('Your account is ready. Sign in to start your trial.'); header('Location: ./?login'); exit;
     }
+    if ($do === 'forgot') {
+        $email = strtolower(trim((string) ($_POST['email'] ?? ''))); $u = wi_find_user($email); if ($u && !wi_host_allows($u)) $u = null;
+        $many = false; wi_update('forgot_ips.json', function ($S) use (&$many) { $ip = hash('sha256', wi_ip()); $S = array_filter((array) $S, fn($t) => max((array) $t) > time() - 3600); $t = array_values(array_filter((array) ($S[$ip] ?? []), fn($x) => $x > time() - 3600)); if (count($t) >= 5) $many = true; else $t[] = time(); $S[$ip] = $t; return $S; });
+        if ($many || wi_locked($email)) { wi_flash('Too many failed attempts. Try again in 15 minutes.', 'bad'); header('Location: ./?forgot'); exit; }
+        $code = (string) random_int(100000, 999999);
+        $_SESSION['reset_pending'] = ['email' => $u && !empty($u['active']) && !empty($u['phone']) ? $email : '', 'code' => password_hash($code, PASSWORD_DEFAULT), 'until' => time() + 600, 'tries' => 0];
+        if ($_SESSION['reset_pending']['email'] !== '') { wi_send_whatsapp((string) $u['phone'], wf_msg('reset_code', ['code' => $code, 'minutes' => 10])); wi_log('password_reset_code', ['target' => $email]); }
+        wi_flash('If this email has an account, a code was sent to its WhatsApp.'); header('Location: ./?forgot'); exit;
+    }
+    if ($do === 'forgot_code') {
+        $P = (array) ($_SESSION['reset_pending'] ?? []); $pw = (string) ($_POST['password'] ?? '');
+        if (!$P || time() > (int) $P['until'] || (int) $P['tries'] >= 5) { unset($_SESSION['reset_pending']); wi_flash('The code expired. Start again.', 'bad'); header('Location: ./?forgot'); exit; }
+        if (strlen($pw) < 10) { wi_flash('Password must be at least 10 characters.', 'bad'); header('Location: ./?forgot'); exit; }
+        if ($P['email'] === '' || !password_verify(trim((string) ($_POST['code'] ?? '')), (string) $P['code'])) { $_SESSION['reset_pending']['tries'] = (int) $P['tries'] + 1; wi_flash('Wrong code.', 'bad'); header('Location: ./?forgot'); exit; }
+        unset($_SESSION['reset_pending']);
+        $all = wi_users(); foreach ($all as &$x) if (strtolower((string) $x['email']) === $P['email']) $x['password_hash'] = password_hash($pw, PASSWORD_DEFAULT); unset($x); wi_save_users($all);
+        wi_log('password_reset', ['target' => $P['email']]); wi_flash('Password changed. Sign in with the new one.'); header('Location: ./?login'); exit;
+    }
+    if ($do === 'forgot_cancel') { unset($_SESSION['reset_pending']); header('Location: ./?login'); exit; }
     if ($do === 'signup_cancel') { unset($_SESSION['signup_pending']); header('Location: ./?signup'); exit; }
     if ($do === 'login') {
         $email = strtolower(trim((string) ($_POST['email'] ?? '')));
