@@ -194,6 +194,7 @@ function wi_landing(): void {
         'video_url' => './?intro_video=1', 'design' => $dz, 'design_switch' => $sw, 'privacy_url' => 'privacy', 'terms_url' => 'terms', 'year' => date('Y')];
     $html = (string) @file_get_contents(dirname(__DIR__) . (($_GET['v'] ?? '') === '2' ? '/landing2.html' : (($_GET['v'] ?? '') === '3' ? '/landing3.html' : (($_GET['v'] ?? '') === '1' ? '/landing.html' : (($_GET['v'] ?? '') === '4' ? '/landing4.html' : (($_GET['v'] ?? '') === '6' ? '/landing6.html' : '/landing5.html'))))));
     for ($k = 0; $k < 2; $k++) $html = preg_replace_callback('/\{\{(\w+)\}\}/', fn($m) => $vars[$m[1]] ?? '', $html); // twice: the plan cards carry the button's link
+    if (function_exists('wf_landing_chat_widget')) $html = str_replace('</body>', wf_landing_chat_widget(function_exists('wf_landing_lang') ? wf_landing_lang() : 'ar') . '</body>', $html);
     header('Content-Type: text/html; charset=utf-8'); echo $html; exit;
 }
 

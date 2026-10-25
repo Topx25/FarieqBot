@@ -4,6 +4,7 @@ require __DIR__ . '/lib.php';
 if (!is_file(WI_DIR . '/installed.json') && !wi_users()) { header('Location: install.php'); exit; } // fresh copy: run the installer first
 // Facebook's sign-in comes back from another site, so the browser leaves out the (strict) session cookie: this return is handled
 // before any session starts — otherwise an empty session would replace the person's and sign them out.
+if (isset($_GET['landing_chat'])) { require __DIR__ . '/features.php'; wf_landing_chat(); } // the product page chat (public, no session)
 if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; if (function_exists('wf_fb_oauth_callback')) wf_fb_oauth_callback(); }
 wi_boot();
 if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy(); header('Location: ./'); exit; } // another client's address
