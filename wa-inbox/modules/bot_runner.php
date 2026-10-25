@@ -311,6 +311,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 if ($role === 'crisis') { wf_role_crisis($acc, (string) $x['jid'], $text, (string) ($m['from_name'] ?? ''), (string) ($m['id'] ?? ''), $who); $n++; continue; }
                 $mine = []; foreach (array_slice($rows, -60) as $bm) if (($bm['dir'] ?? '') === 'out' && ($bm['via'] ?? '') === 'bot' && trim((string) ($bm['text'] ?? '')) !== '') $mine[] = (string) $bm['text']; // never repeat what the bot already said here
                 try { $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => array_slice($mine, -4), 'role' => $role, 'jid' => $x['jid'] . '|' . $who] + ($fun ? ['fun' => true] : []) + ($asked || !empty($g['open_topics']) ? ['ask' => true] : []) + (isset($team[$who]) ? ['team' => true] : [])); } catch (Throwable $e) { $r = ['ok' => false, 'error' => 'exception: ' . $e->getMessage()]; }
+                if (is_array($r) && !empty($r['ok'])) $r = wi_filter('bot_answer_check', $r, $acc, $text);
                 // no reply could be made: logged, and the question waits for the next run (3 tries), never dropped in silence
                 if (empty($r['ok']) || trim((string) ($r['reply'] ?? '')) === '') {
                     if (!wf_bot_fail($st, $aid, $x['jid'] . '|' . ($m['id'] ?? $m['time'] ?? ''), ['jid' => $x['jid'], 'name' => (string) ($m['from_name'] ?? ''), 'q' => mb_substr($text, 0, 300), 'model' => $r['task']['model'] ?? ''], wf_bot_fail_why($r))) $st['gq'][$x['jid']][$who] = $m;
@@ -484,6 +485,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
         $role = function_exists('wf_role_pick') ? wf_role_pick($aid, (string) $x['jid'], $text) : 'bot'; // which hat answers (from the roles of the business type)
         if ($role === 'crisis') { $st['done'][$x['jid']] = $last['time']; if (!$isTest) wf_role_crisis($acc, (string) $x['jid'], $text, (string) ($x['name'] ?? '')); $did[] = ['jid' => $x['jid'], 'result' => 'crisis']; continue; }
         try { $r = wf_bot_answer($acc, $text, $hist, '', $card, ['avoid' => $mine, 'role' => $role, 'jid' => (string) $x['jid']] + ($isTest ? ['owner' => true] : []) + (!empty($c['open_private']) ? ['ask' => true] : [])); } catch (Throwable $e) { $r = ['ok' => false, 'error' => 'exception: ' . $e->getMessage()]; }
+        if (is_array($r) && !empty($r['ok'])) $r = wi_filter('bot_answer_check', $r, $acc, $text);
         if ($isTest && is_array($r)) $r['handoff'] = false; // the owner's own chat is never handed over to the team
         if (!empty($r['mode']) && $r['mode'] !== $role && isset(wf_roles_cfg($aid)['roles'][$r['mode']])) $role = (string) $r['mode']; // the model's own choice of mode (notes, threshold, case file)
         $n++;
