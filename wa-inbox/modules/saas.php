@@ -180,7 +180,8 @@ function wi_client_addr(array $u, string $slug, string $domains): array {
 /* ---------- The public landing page (the product's marketing page) ---------- */
 /** Renders landing.html with the brand, the public plans and the links (Settings: landing_cta_url / landing_cta_label / plan_currency). */
 function wi_landing(): void {
-    $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); $t = fn($en) => function_exists('wf_mt') ? wf_mt($en) : $en;
+    $lang = function_exists('wf_landing_lang') ? wf_landing_lang() : 'ar'; if (isset($_GET['lang'])) wi_lang();
+    $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); $t = fn($en) => $lang === 'en' ? $en : (function_exists('wf_mt') ? wf_mt($en) : $en);
     $cur = (string) (wi_sys('plan_currency') ?: '$'); $cards = ''; $plans = array_filter(wi_plans(), fn($p) => !empty($p['public'])); $mid = (int) floor(count($plans) / 2); $i = 0;
     foreach ($plans as $p) { $p = wi_plan_clean($p); $hot = $i++ === $mid && count($plans) > 1;
         $li = '<li>' . $p['numbers'] . ' ' . $e($t('WhatsApp numbers')) . '</li><li>' . ($p['team'] ?: '∞') . ' ' . $e($t('team members')) . '</li>'
@@ -192,7 +193,7 @@ function wi_landing(): void {
     else $dz = max(1, min(3, (int) wi_sys('landing_design')));
     $vars = ['brand' => $e(wi_sys('brand_name')), 'plans' => $cards, 'cta_url' => $e(wi_sys('landing_cta_url') ?: (wi_sys('signup_on') ? preg_replace('/\?.*$/', '', (string) (wi_sys('login_url') ?: './')) . '?signup' : (wi_sys('login_url') ?: './?login'))), 'cta_label' => $e(wi_sys('landing_cta_label') ?: $t('Start now')), 'login_url' => $e(wi_sys('login_url') ?: './?login'),
         'video_url' => './?intro_video=1', 'design' => $dz, 'design_switch' => $sw, 'privacy_url' => 'privacy', 'terms_url' => 'terms', 'year' => date('Y')];
-    $html = (string) @file_get_contents(dirname(__DIR__) . (($_GET['v'] ?? '') === '2' ? '/landing2.html' : (($_GET['v'] ?? '') === '3' ? '/landing3.html' : (($_GET['v'] ?? '') === '1' ? '/landing.html' : (($_GET['v'] ?? '') === '4' ? '/landing4.html' : (($_GET['v'] ?? '') === '6' ? '/landing6.html' : '/landing5.html'))))));
+    $html = (string) @file_get_contents(dirname(__DIR__) . (($_GET['v'] ?? '') === '2' ? '/landing2.html' : (($_GET['v'] ?? '') === '3' ? '/landing3.html' : (($_GET['v'] ?? '') === '1' ? '/landing.html' : (($_GET['v'] ?? '') === '4' ? '/landing4.html' : (($_GET['v'] ?? '') === '6' ? '/landing6.html' : ($lang === 'en' && is_file(dirname(__DIR__) . '/landing5.en.html') ? '/landing5.en.html' : '/landing5.html')))))));
     for ($k = 0; $k < 2; $k++) $html = preg_replace_callback('/\{\{(\w+)\}\}/', fn($m) => $vars[$m[1]] ?? '', $html); // twice: the plan cards carry the button's link
     if (function_exists('wf_landing_chat_widget')) $html = str_replace('</body>', wf_landing_chat_widget(function_exists('wf_landing_lang') ? wf_landing_lang() : 'ar') . '</body>', $html);
     header('Content-Type: text/html; charset=utf-8'); echo $html; exit;

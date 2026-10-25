@@ -10,7 +10,7 @@ wi_boot();
 if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy(); header('Location: ./'); exit; } // another client's address
 // The website (PHP-FPM) and the background jobs run as the account user: the data stays private to it (0700 / 0600).
 
-if (!wi_logged_in() && $_SERVER['REQUEST_METHOD'] === 'GET' && !$_GET && wi_sys('landing_home')) { require __DIR__ . '/features.php'; wi_landing(); } // the product page is the front door; ?login opens the sign-in
+if (!wi_logged_in() && $_SERVER['REQUEST_METHOD'] === 'GET' && !array_diff_key($_GET, ['lang' => 1]) && wi_sys('landing_home')) { require __DIR__ . '/features.php'; wi_landing(); } // the product page is the front door; ?login opens the sign-in
 if (isset($_GET['landing'])) { require __DIR__ . '/features.php'; wi_landing(); } // the product's public page
 if (isset($_GET['mockup']) && is_file($mk = __DIR__ . '/mockups/' . preg_replace('/[^A-Za-z0-9-]/', '', (string) $_GET['mockup']) . '.html')) { header('Content-Type: text/html; charset=utf-8'); header('X-Robots-Tag: noindex'); readfile($mk); exit; } // design mockups of the home page, to compare
 if (isset($_GET['intro_video'])) { header('X-Frame-Options: SAMEORIGIN'); header('Content-Type: text/html; charset=utf-8'); readfile(__DIR__ . '/intro.html'); exit; } // the intro video (public: shown on the landing page and in Help)
