@@ -260,6 +260,10 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             // The team (admins, its members): only their commands in a group, unless the group lets the bot talk with them (admin_talk); a tag of the bot alone is not a command
             $adminAsks = isset($team[$who]) && ($asked || (!empty($g['admin_talk']) && $mentioned)); // STRICT: team members and admins talk among themselves — the bot answers them only when they tag it or reply to it
             if ($who === '' || (isset($team[$who]) && !$adminAsks && !$fun && empty($g['guide'])) || $text === '' || !wf_words($text)) continue;
+            // STRICT: a team member who replies to the bot's message or tags another member is guiding that person, not asking the bot
+            if (isset($team[$who]) && !$asked) { $qm = (array) ($byId[(string) ($m['quote'] ?? '')] ?? []); $qBot = $qm && (($qm['via'] ?? '') === 'bot' || !empty($qm['from_me']) || ($qm['dir'] ?? '') === 'out') || ($me !== '' && wf_phone((string) ($m['quote_from'] ?? '')) === $me);
+                $tagsOther = (bool) array_filter((array) ($m['mentions'] ?? []), fn($j) => ($p = wf_phone(explode('@', (string) $j)[0])) !== '' && $p !== $me && $p !== $who);
+                if ($qBot || $tagsOther) continue; }
             if (!empty($g['guide']) && function_exists('wf_sysguide_known_cmd') ? wf_sysguide_known_cmd($acc, $text) : (function_exists('wf_intake_is_cmd') && wf_intake_is_cmd($aid, $text))) continue; // a command the system handles (a help group also skips the library tags and quick replies; a mistyped one is taught below) // a case command in a group that does not run commands: not a chat message, the bot stays quiet
             if (!$mentioned && wf_is_ack($aid, $text)) continue; // "تمام" / "الحمد لله": a talk ending, not a question
             $toOther = (!empty($m['quote_from']) && (wf_phone((string) $m['quote_from']) !== $me || !$toBot($m))) || array_diff(array_map('wf_phone', (array) ($m['mentions'] ?? [])), [$me]);
