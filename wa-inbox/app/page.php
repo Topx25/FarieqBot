@@ -27,13 +27,18 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
     <?php if ($flash): ?><div class="alert <?= wi_e($flash['t']) ?>"><?= wi_e($flash['m']) ?></div><?php endif; ?>
     <form method="post" class="stack">
       <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>">
-      <?php $signup = isset($_GET['signup']) && wi_sys('signup_on') && empty($_SESSION['pending']); if ($signup): ?>
+      <?php $signup = isset($_GET['signup']) && wi_sys('signup_on') && empty($_SESSION['pending']); $sp = $signup && !empty($_SESSION['signup_pending']); if ($sp): ?>
+        <input type="hidden" name="do" value="signup_code">
+        <label>Code sent to your WhatsApp<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus class="otp" placeholder="••••••"></label>
+        <button class="btn primary">Activate my account</button>
+      <?php elseif ($signup): ?>
         <input type="hidden" name="do" value="signup">
         <label>Name<input name="name" autocomplete="name" required autofocus maxlength="80"></label>
         <label>Business name<input name="business" autocomplete="organization" maxlength="120"></label>
         <label>Email<input type="email" name="email" autocomplete="email" required dir="ltr"></label>
         <label>WhatsApp number<input type="tel" name="phone" autocomplete="tel" required dir="ltr" placeholder="+201001234567"></label>
         <label>Password<input type="password" name="password" autocomplete="new-password" minlength="10" required dir="ltr"></label>
+        <?php if (($tsk = trim((string) wi_sys('turnstile_site'))) !== ''): ?><div class="cf-turnstile" data-sitekey="<?= wi_e($tsk) ?>" data-language="<?= wi_lang() ?>"></div><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script><?php endif; ?>
         <button class="btn primary">Create an account</button>
       <?php elseif (!empty($_SESSION['pending'])): ?>
         <input type="hidden" name="do" value="otp">
@@ -46,7 +51,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         <button class="btn primary">Continue</button>
       <?php endif; ?>
     </form>
-    <?php if (!empty($_SESSION['pending'])): ?><form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="cancel"><button class="btn ghost block">Back</button></form><?php endif; ?>
+    <?php if (!empty($_SESSION['pending']) || $sp): ?><form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="<?= $sp ? 'signup_cancel' : 'cancel' ?>"><button class="btn ghost block">Back</button></form><?php endif; ?>
     <?php if ($signup): ?><p class="center small">Already have an account? <a href="?login">Sign in</a></p>
     <?php else: ?><p class="muted center small">Sign in with your password, then a code sent to your WhatsApp.</p>
     <?php if (wi_sys('signup_on') && empty($_SESSION['pending'])): ?><p class="center small"><a href="?signup">Create an account</a></p><?php endif; endif; ?>
@@ -291,6 +296,8 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
       <details class="card pad" style="margin:12px 0"><summary><b>📦 Plans and sign-up</b> <small class="muted">— the limits each plan gives, and whether visitors may open a trial themselves</small></summary>
         <form method="post" class="stack" style="margin-top:10px"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="plans_save">
           <label class="check"><input type="checkbox" name="signup_on" value="1" <?= wi_sys('signup_on') ? 'checked' : '' ?>> Visitors may sign up (a trial on the plan marked «trial») — page: <a href="pricing.php" target="_blank" rel="noopener">pricing.php</a></label>
+          <label>Cloudflare Turnstile site key <small class="muted">— the captcha on the sign-up page (empty = off)</small><input name="turnstile_site" value="<?= wi_e((string) wi_sys('turnstile_site')) ?>" dir="ltr" style="max-width:320px"></label>
+          <label>Cloudflare Turnstile secret key <small class="muted">— <?= wi_secret('turnstile_secret') !== '' ? 'saved; type a new one to replace it' : 'not set' ?></small><input type="password" name="turnstile_secret" autocomplete="off" dir="ltr" style="max-width:320px"></label>
           <label>SaaS domain <small class="muted">— each client may get name.this-domain (point *.this-domain to this server)</small><input name="saas_domain" value="<?= wi_e((string) wi_sys('saas_domain')) ?>" dir="ltr" placeholder="crm.example.com" style="max-width:320px"></label>
           <div style="overflow-x:auto"><table class="tbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Days</th><th>Numbers</th><th>Team</th><th>AI calls / month</th><th>Media GB (0 = unlimited)</th><th>Bot</th><th>Meetings</th><th>Cases</th><th>Backup</th><th>Shown</th><th>Trial</th><th>Delete</th></tr>
           <?php $prow = 0; foreach (wi_plans() + ['' => ['name' => '', 'price' => 0, 'days' => 30, 'numbers' => 1, 'team' => 0, 'ai_calls' => 0, 'media_gb' => 0]] as $pid => $pp): $n = 'plans[' . $prow++ . ']'; ?>

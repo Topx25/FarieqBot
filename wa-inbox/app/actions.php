@@ -5,10 +5,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     wi_check_csrf();
     $do = (string) ($_POST['do'] ?? '');
     if ($do === 'signup') {
-        $err = wi_signup($_POST);
+        if (!wi_turnstile_ok()) { wi_flash('Confirm that you are not a robot, then try again.', 'bad'); header('Location: ./?signup'); exit; }
+        $err = wi_signup($_POST, false);
+        if ($err !== '') { wi_flash($err, 'bad'); header('Location: ./?signup'); exit; }
+        $code = (string) random_int(100000, 999999); $in = array_intersect_key($_POST, array_flip(['name', 'business', 'email', 'phone']));
+        $_SESSION['signup_pending'] = ['in' => $in + ['password_hash' => password_hash((string) $_POST['password'], PASSWORD_DEFAULT)], 'code' => password_hash($code, PASSWORD_DEFAULT), 'until' => time() + 600, 'tries' => 0];
+        if (!wi_send_whatsapp(wi_norm_phone((string) $in['phone']), wf_msg('signup_code', ['code' => $code, 'minutes' => 10]))) { unset($_SESSION['signup_pending']); wi_flash('Could not send the code on WhatsApp. Check the number and try again.', 'bad'); header('Location: ./?signup'); exit; }
+        wi_log('signup_code', ['target' => strtolower((string) $in['email'])]); header('Location: ./?signup'); exit;
+    }
+    if ($do === 'signup_code') {
+        $P = (array) ($_SESSION['signup_pending'] ?? []);
+        if (!$P || time() > (int) $P['until'] || (int) $P['tries'] >= 5) { unset($_SESSION['signup_pending']); wi_flash('The code expired. Sign up again.', 'bad'); header('Location: ./?signup'); exit; }
+        if (!password_verify(trim((string) ($_POST['code'] ?? '')), (string) $P['code'])) { $_SESSION['signup_pending']['tries'] = (int) $P['tries'] + 1; wi_flash('Wrong code.', 'bad'); header('Location: ./?signup'); exit; }
+        unset($_SESSION['signup_pending']); $err = wi_signup((array) $P['in'], true);
         if ($err !== '') { wi_flash($err, 'bad'); header('Location: ./?signup'); exit; }
         wi_flash('Your account is ready. Sign in to start your trial.'); header('Location: ./?login'); exit;
     }
+    if ($do === 'signup_cancel') { unset($_SESSION['signup_pending']); header('Location: ./?signup'); exit; }
     if ($do === 'login') {
         $email = strtolower(trim((string) ($_POST['email'] ?? '')));
         $u = wi_find_user($email);
@@ -218,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admin only.'); }
         $out = []; foreach ((array) ($_POST['plans'] ?? []) as $id => $p) { $id = preg_replace('/[^a-z0-9_-]/', '', strtolower((string) ($p['id'] ?? $id))); if ($id === '' || trim((string) ($p['name'] ?? '')) === '' || !empty($p['del'])) continue; $out[$id] = wi_plan_clean((array) $p); }
         if ($out) wi_write('plans.json', $out);
-        $cfg = wi_config(); $cfg['system']['signup_on'] = !empty($_POST['signup_on']) ? 1 : 0; $sd = strtolower(trim((string) ($_POST['saas_domain'] ?? ''))); $cfg['system']['saas_domain'] = preg_match('/^([a-z0-9-]+\.)+[a-z]{2,}$/', $sd) ? $sd : ''; wi_write('config.json', $cfg);
+        $cfg = wi_config(); $cfg['system']['signup_on'] = !empty($_POST['signup_on']) ? 1 : 0; $ts = trim((string) ($_POST['turnstile_site'] ?? '')); $cfg['system']['turnstile_site'] = preg_match('/^[A-Za-z0-9_-]{10,100}$/', $ts) ? $ts : ''; if (trim((string) ($_POST['turnstile_secret'] ?? '')) !== '') wi_secret_set('turnstile_secret', trim((string) $_POST['turnstile_secret'])); $sd = strtolower(trim((string) ($_POST['saas_domain'] ?? ''))); $cfg['system']['saas_domain'] = preg_match('/^([a-z0-9-]+\.)+[a-z]{2,}$/', $sd) ? $sd : ''; wi_write('config.json', $cfg);
         wi_log('plans_save', ['plans' => array_keys($out)]); wi_flash('Saved.', 'ok'); header('Location: ?p=clients'); exit;
     }
     // Clients page (super admin): plan, end date, pause, seats and features of a client.

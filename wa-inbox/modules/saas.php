@@ -123,22 +123,33 @@ function wi_ai_allowance_use(string $email): void {
 }
 
 /* ---------- Self sign-up ---------- */
-/** Creates a client on the trial plan. Returns '' or the reason it was refused. */
-function wi_signup(array $in): string {
+/** Cloudflare Turnstile: true when the visitor passed it, or when no keys are set (General settings → Plans and sign-up). */
+function wi_turnstile_ok(): bool {
+    $sec = wi_secret('turnstile_secret'); if (trim((string) wi_sys('turnstile_site')) === '' || $sec === '') return true;
+    $tok = (string) ($_POST['cf-turnstile-response'] ?? ''); if ($tok === '') return false;
+    $ch = curl_init('https://challenges.cloudflare.com/turnstile/v0/siteverify');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query(['secret' => $sec, 'response' => $tok, 'remoteip' => wi_ip()])]);
+    $r = json_decode((string) curl_exec($ch), true); curl_close($ch);
+    return !empty($r['success']);
+}
+/** Checks a sign-up ($create false: counts the visitor and returns '' when it may go on) or creates the client on the trial plan
+ *  ($create true, after the WhatsApp code; 'password_hash' may replace 'password'). Returns '' or the reason it was refused. */
+function wi_signup(array $in, bool $create = true): string {
     if (!wi_sys('signup_on')) return 'Sign-up is closed. Contact us.';
     $name = trim(mb_substr((string) ($in['name'] ?? ''), 0, 80)); $biz = trim(mb_substr((string) ($in['business'] ?? ''), 0, 120));
     $email = strtolower(trim((string) ($in['email'] ?? ''))); $phone = wi_norm_phone((string) ($in['phone'] ?? ''));
     if ($name === '' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $phone === '') return 'Fill in your name, a valid email and your WhatsApp number.';
-    $pw = (string) ($in['password'] ?? ''); if (strlen($pw) < 10) return 'Password must be at least 10 characters.';
-    $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? ''); $limited = false;
-    wi_update('signup_ips.json', function ($S) use ($ip, &$limited) { $S = array_filter((array) $S, fn($t) => max((array) $t) > time() - 86400);
+    $hash = (string) ($in['password_hash'] ?? ''); $pw = (string) ($in['password'] ?? ''); if ($hash === '' && strlen($pw) < 10) return 'Password must be at least 10 characters.';
+    $ip = wi_ip(); $limited = false;
+    if (!$create) wi_update('signup_ips.json', function ($S) use ($ip, &$limited) { $S = array_filter((array) $S, fn($t) => max((array) $t) > time() - 86400);
         $S[$ip] = array_values(array_filter((array) ($S[$ip] ?? []), fn($t) => $t > time() - 86400)); if (count($S[$ip]) >= 3) $limited = true; else $S[$ip][] = time(); return $S; });
     if ($limited) return 'Too many sign-ups from this connection today. Try again tomorrow.';
     foreach (wi_users() as $u) { if (strtolower((string) $u['email']) === $email) return 'This email already has an account. Sign in instead.'; if ((string) ($u['phone'] ?? '') === $phone) return 'This WhatsApp number already has an account. Sign in instead.'; }
     $planId = ''; foreach (wi_plans() as $id => $p) if (!empty($p['trial'])) { $planId = (string) $id; break; }
     if ($planId === '') return 'Sign-up is closed. Contact us.';
+    if (!$create) return '';
     $u = ['email' => $email, 'name' => $name, 'business' => $biz, 'phone' => $phone, 'role' => 'client', 'accounts' => [], 'can_reply' => true, 'can_link' => true, 'own_number' => true,
-        'password_hash' => password_hash($pw, PASSWORD_DEFAULT), 'active' => true, 'created_at' => date('c'), 'signup' => true];
+        'password_hash' => $hash !== '' ? $hash : password_hash($pw, PASSWORD_DEFAULT), 'active' => true, 'created_at' => date('c'), 'signup' => true, 'phone_verified' => date('c')];
     $u = wi_plan_apply($u, $planId, true);
     $all = wi_users(); $all[] = $u; wi_save_users($all);
     wi_log('signup', ['target' => $email, 'plan' => $planId]);
