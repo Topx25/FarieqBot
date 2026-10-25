@@ -7,6 +7,8 @@ if (!is_file(WI_DIR . '/installed.json') && !wi_users()) { header('Location: ins
 if (isset($_GET['landing_chat'])) { require __DIR__ . '/features.php'; wf_landing_chat(); } // the product page chat (public, no session)
 if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; if (function_exists('wf_fb_oauth_callback')) wf_fb_oauth_callback(); }
 wi_boot();
+if (isset($_GET['google_login']) && !wi_logged_in()) { require __DIR__ . '/features.php'; wf_glogin_start(); } // sign in / sign up with Google
+if (isset($_GET['google_cb']) && !wi_logged_in()) { require __DIR__ . '/features.php'; wf_glogin_callback(); }
 if (wi_logged_in() && ($hu = wi_me()) && !wi_host_allows($hu)) { session_destroy(); header('Location: ./'); exit; } // another client's address
 // The website (PHP-FPM) and the background jobs run as the account user: the data stays private to it (0700 / 0600).
 

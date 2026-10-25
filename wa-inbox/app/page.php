@@ -41,12 +41,13 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         <label>Code sent to your WhatsApp<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus class="otp" placeholder="••••••"></label>
         <button class="btn primary">Activate my account</button>
       <?php elseif ($signup): ?>
-        <input type="hidden" name="do" value="signup">
-        <label>Name<input name="name" autocomplete="name" required autofocus maxlength="80"></label>
+        <input type="hidden" name="do" value="signup"><?php $gs = (array) ($_SESSION['gsignup'] ?? []); ?>
+        <?php if ($gs): ?><p class="small center">Google: <b dir="ltr"><?= wi_e($gs['email']) ?></b></p><?php endif; ?>
+        <label>Name<input name="name" autocomplete="name" required autofocus maxlength="80" value="<?= wi_e((string) ($gs['name'] ?? '')) ?>"></label>
         <label>Business name<input name="business" autocomplete="organization" maxlength="120"></label>
-        <label>Email<input type="email" name="email" autocomplete="email" required dir="ltr"></label>
+        <?php if (!$gs): ?><label>Email<input type="email" name="email" autocomplete="email" required dir="ltr"></label><?php endif; ?>
         <label>WhatsApp number<input type="tel" name="phone" autocomplete="tel" required dir="ltr" placeholder="+201001234567"></label>
-        <label>Password<input type="password" name="password" autocomplete="new-password" minlength="10" required dir="ltr"></label>
+        <?php if (!$gs): ?><label>Password<input type="password" name="password" autocomplete="new-password" minlength="10" required dir="ltr"></label><?php endif; ?>
         <?php if (($tsk = trim((string) wi_sys('turnstile_site'))) !== ''): ?><div class="cf-turnstile" data-sitekey="<?= wi_e($tsk) ?>" data-language="<?= wi_lang() ?>"></div><script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script><?php endif; ?>
         <button class="btn primary">Create an account</button>
       <?php elseif (!empty($_SESSION['pending'])): ?>
@@ -60,6 +61,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         <button class="btn primary">Continue</button>
       <?php endif; ?>
     </form>
+    <?php if (empty($_SESSION['pending']) && !$sp && !$fg && empty($_SESSION['gsignup']) && function_exists('wf_glogin_on') && wf_glogin_on()): ?><a class="btn ghost block" href="?google_login=1<?= $signup ? '&amp;signup=1' : '' ?>"><b>G</b> <span><?= $signup ? 'Sign up with Google' : 'Sign in with Google' ?></span></a><?php endif; ?>
     <?php if (!empty($_SESSION['pending']) || $sp || $fg): ?><form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="<?= $sp ? 'signup_cancel' : ($fg ? 'forgot_cancel' : 'cancel') ?>"><button class="btn ghost block">Back</button></form><?php endif; ?>
     <?php if ($signup): ?><p class="center small">Already have an account? <a href="?login">Sign in</a></p>
     <?php elseif (!$fg): ?><p class="muted center small">Sign in with your password, then a code sent to your WhatsApp.</p>
@@ -310,6 +312,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
       <details class="card pad" style="margin:12px 0"><summary><b>📦 Plans and sign-up</b> <small class="muted">— the limits each plan gives, and whether visitors may open a trial themselves</small></summary>
         <form method="post" class="stack" style="margin-top:10px"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="plans_save">
           <label class="check"><input type="checkbox" name="signup_on" value="1" <?= wi_sys('signup_on') ? 'checked' : '' ?>> Visitors may sign up (a trial on the plan marked «trial») — page: <a href="pricing.php" target="_blank" rel="noopener">pricing.php</a></label>
+          <label class="check"><input type="checkbox" name="google_login_on" value="1" <?= wi_sys('google_login_on') ? 'checked' : '' ?>> Sign in and sign up with Google <small class="muted">— uses the Google app of this installation; add <span dir="ltr"><?= wi_e(wi_sys('base_url')) ?>?google_cb=1</span> to its redirect URIs</small></label>
           <label>Cloudflare Turnstile site key <small class="muted">— the captcha on the sign-up page (empty = off)</small><input name="turnstile_site" value="<?= wi_e((string) wi_sys('turnstile_site')) ?>" dir="ltr" style="max-width:320px"></label>
           <label>Cloudflare Turnstile secret key <small class="muted">— <?= wi_secret('turnstile_secret') !== '' ? 'saved; type a new one to replace it' : 'not set' ?></small><input type="password" name="turnstile_secret" autocomplete="off" dir="ltr" style="max-width:320px"></label>
           <label>SaaS domain <small class="muted">— each client may get name.this-domain (point *.this-domain to this server)</small><input name="saas_domain" value="<?= wi_e((string) wi_sys('saas_domain')) ?>" dir="ltr" placeholder="crm.example.com" style="max-width:320px"></label>
