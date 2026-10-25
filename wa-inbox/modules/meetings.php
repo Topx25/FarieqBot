@@ -54,7 +54,7 @@ function wf_meet_ui(array $m, string $k, string $default): string { $v = trim((s
 function wf_meet_ui_keys(): array { return ['accent', 'accent2', 'bg1', 'bg2', 'logo', 'waiting_text', 'waiting_note', 'form_text', 'form_btn', 'name_label', 'phone_label', 'pass_label', 'pending_text', 'pending_note', 'approved_text', 'rejected_text', 'full_text', 'missing_text', 'host_text']; }
 /** A host has entered: guests who gave their details are accepted without waiting (setting "after a host has entered"). */
 function wf_meet_host_in(array &$all, string $id): void { foreach ($all as &$x) if ($x['id'] === $id) $x['host_in_at'] = date('c'); unset($x); }
-function wf_meet_auto_ok(array $m): bool { return !empty($m['auto_after_host']) && !empty($m['host_in_at']) && (string) $m['host_in_at'] >= (string) ($m['opened_at'] ?? ''); }
+function wf_meet_auto_ok(array $m): bool { return !empty($m['auto_after_host']) && ($m['status'] ?? '') === 'open' && !empty($m['opened_at']); } // only a host can open the meeting, so once it is open the guests are let in at once
 function wf_meet_pending_html(array $m, callable $e): string {
     $p = array_values(array_filter($m['joins'] ?? [], fn($j) => ($j['state'] ?? '') === 'pending' && $j['at'] >= ($m['opened_at'] ?? '')));
     if (!$p) return '<p class="m">' . wf_mt('Nobody is waiting for approval right now.') . '</p>';
@@ -280,6 +280,13 @@ function wf_meet_view(?array $m, string $state, string $err = '', bool $preview 
     return wf_meet_shell($mu, $title, ['top' => $i, 'mid' => $mid, 'bot' => $bot], ['state' => $state, 'poll' => in_array($state, ['waiting', 'closed', 'pending', 'full'], true), 'preview' => $preview]);
 }
 /** The meeting's log: who opened the link, who joined, who opened or closed it and when; an opening before the set time keeps how many minutes early. */
+/** Lets guests into Google Meet without knocking (Quick access on), for a space the connected Google account made; our page already checked who they are. Best effort: an error changes nothing. */
+function wf_meet_space_open(array $m): void {
+    $sp = (string) ($m['space'] ?? ''); if ($sp === '' || empty($m['auto_after_host']) || !function_exists('wf_drive_token')) return;
+    $own = strtolower((string) (wi_accounts()[(string) ($m['acc'] ?? '')]['owner'] ?? '')); if (function_exists('wf_google_use')) wf_google_use($own); // the Google account of the meeting's panel, also from a host's page without login
+    try { $t = wf_drive_token(); if (!empty($t['ok'])) wf_drive_req('PATCH', 'https://meet.googleapis.com/v2/' . $sp . '?updateMask=config.accessType', $t['token'], json_encode(['config' => ['accessType' => 'OPEN']]), ['Content-Type: application/json']); } catch (Throwable $e) { wi_catch($e, 'meet space open'); }
+    if (function_exists('wf_google_use')) wf_google_use(null);
+}
 function wf_meet_log(array &$x, string $kind, string $who, array $more = []): void {
     $row = ['at' => date('c'), 'k' => $kind, 'who' => mb_substr($who, 0, 60)] + $more + (($cc = wi_ip_country()) !== '' ? ['cc' => $cc] : []); // the visitor's country
     if ($kind === 'open' && ($w = wf_meet_when($x)) > time()) { $row['early'] = (int) ceil(($w - time()) / 60); $row['set'] = wf_meet_fmt($w); }
@@ -308,7 +315,7 @@ function wf_meet_page(string $slug): void {
             foreach ($all as &$x) if ($x['id'] === $m['id']) {
                 if (in_array($_POST['do'] ?? '', ['ok', 'no', 'okall'], true)) foreach ($x['joins'] as &$j) if (($j['state'] ?? '') === 'pending' && ($_POST['do'] === 'okall' || ($j['id'] ?? '') === ($_POST['j'] ?? ''))) $j['state'] = $_POST['do'] === 'no' ? 'rejected' : 'approved';
                 unset($j);
-                if (($_POST['do'] ?? '') === 'open' && !empty($x['url'])) { $x['status'] = 'open'; $x['opened_at'] = date('c'); $x['opened_by'] = ($host['name'] ?: '+' . $host['phone']) . ' (WhatsApp)'; wf_meet_log($x, 'open', $x['opened_by']); }
+                if (($_POST['do'] ?? '') === 'open' && !empty($x['url'])) { $x['status'] = 'open'; $x['opened_at'] = date('c'); $x['opened_by'] = ($host['name'] ?: '+' . $host['phone']) . ' (WhatsApp)'; wf_meet_log($x, 'open', $x['opened_by']); wf_meet_space_open($x); }
                 elseif (($_POST['do'] ?? '') === 'close') { $x['status'] = 'closed'; $x['closed_at'] = date('c'); wf_meet_log($x, 'close', ($host['name'] ?: '+' . $host['phone']) . ' (WhatsApp)'); }
                 $m = $x;
             }
@@ -400,7 +407,7 @@ function wf_api_meetings(string $api): void {
     case 'ui_theme': {
         // Super admin chooses the dashboard theme for everyone.
         $in = wf_post(); if (!wi_is_super()) wi_json(['ok' => false, 'error' => 'Only the super admin can change the theme.'], 403);
-        $t = in_array($in['theme'] ?? '', ['google', 'classic', 'orchid', 'studio', 'aurora'], true) ? $in['theme'] : 'google';
+        $t = in_array($in['theme'] ?? '', ['google', 'classic', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq-night', 'fq-ink', 'fq-dawn', 'fq-meta'], true) ? $in['theme'] : 'google';
         $c = wi_config(); $c['ui_theme'] = $t; wi_write('config.json', $c); wi_log('ui_theme', ['theme' => $t]);
         wi_json(['ok' => true]);
     }
@@ -499,6 +506,7 @@ function wf_api_meetings(string $api): void {
         if (($in['do'] ?? '') === 'open' && !empty($m['archived'])) wi_json(['ok' => false, 'error' => 'Take the meeting out of the archive first.']);
         if (($in['do'] ?? '') === 'open') { if (empty($m['url'])) wi_json(['ok' => false, 'error' => 'Add the Google Meet link first.']); $m['status'] = 'open'; $m['opened_at'] = date('c'); $m['opened_by'] = $_SESSION['email']; $m['host_in_at'] = date('c'); }
         else { $m['status'] = 'closed'; $m['closed_at'] = date('c'); }
+        if (($in['do'] ?? '') === 'open') wf_meet_space_open($m);
         if (in_array($in['do'] ?? '', ['open', 'close'], true)) { $me = wi_me(); wf_meet_log($m, (string) $in['do'], (string) ((($me['name'] ?? '') ?: ($_SESSION['email'] ?? '')))); }
         $all[$idx] = $m; wi_write('meetings.json', $all); wi_log('meeting_' . ($in['do'] ?? ''), ['id' => $m['id']] + (!empty(end($m['log'])['early']) ? ['early_min' => end($m['log'])['early']] : []));
         wi_json(['ok' => true, 'url' => ($in['do'] ?? '') === 'open' ? $m['url'] : '']);
@@ -511,7 +519,7 @@ function wf_api_meetings(string $api): void {
         if (!empty($c['scopes']) && strpos((string) $c['scopes'], 'calendar') === false) wi_json(['ok' => false, 'error' => 'Your Google connection has no calendar access yet — press “Disconnect” then “Connect Google Drive” again and allow the calendar.', 'need' => 'reconnect']);
         $t = wf_drive_token(); if (empty($t['ok'])) wi_json($t);
         if (strpos((string) ($c['scopes'] ?? ''), 'meetings.space') !== false) {
-            $r = wf_drive_req('POST', 'https://meet.googleapis.com/v2/spaces', $t['token'], json_encode(['config' => ['accessType' => 'TRUSTED']]), ['Content-Type: application/json']);
+            $r = wf_drive_req('POST', 'https://meet.googleapis.com/v2/spaces', $t['token'], json_encode(['config' => ['accessType' => 'OPEN']]), ['Content-Type: application/json']);
             if (!empty($r['body']['meetingUri'])) { wi_log('meeting_link_created', ['via' => 'meet']); wi_json(['ok' => true, 'url' => $r['body']['meetingUri'], 'space' => $r['body']['name'] ?? '']); }
         }
         $title = mb_substr(trim((string) ($in['title'] ?? 'Meeting')), 0, 120) ?: 'Meeting';

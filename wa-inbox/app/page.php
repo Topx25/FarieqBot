@@ -14,9 +14,9 @@
 <link rel="stylesheet" href="theme.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/theme.css') + (int) @filemtime(dirname(__DIR__) . '/features.js') ?>">
 <link rel="stylesheet" href="pro.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/pro.css') ?>">
 <?php $uiTheme = wi_config()['ui_theme'] ?? 'google'; if (wi_is_super() && preg_match('/^[a-z-]{3,20}$/', (string) ($_GET['theme_preview'] ?? ''))) $uiTheme = (string) $_GET['theme_preview']; // the super admin tries a theme on their own screen before choosing it
-if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq-night', 'fq-ink', 'fq-dawn'], true)): ?><link rel="stylesheet" href="<?= $uiTheme ?>.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/' . $uiTheme . '.css') ?>"><?php endif; ?>
+if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq-night', 'fq-ink', 'fq-dawn', 'fq-meta'], true)): ?><link rel="stylesheet" href="<?= $uiTheme ?>.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/' . $uiTheme . '.css') ?>"><?php endif; ?>
 <?php if ($uiTheme === 'studio'): $uc = wi_config()['ui_colors'] ?? []; $hx = fn($v, $d) => preg_match('/^#[0-9a-f]{6}$/i', (string) $v) ? $v : $d; ?><link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600&display=swap" rel="stylesheet"><style>:root{--acc:<?= $hx($uc['acc'] ?? '', '#2563eb') ?>;--acc2:<?= $hx($uc['acc2'] ?? '', '#d97706') ?>;--canvas:<?= $hx($uc['canvas'] ?? '', '#f7f8fb') ?>}</style><?php endif; ?>
-<?php if ($uiTheme === 'orchid'): ?><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet"><?php endif; ?>
+<?php if ($uiTheme === 'orchid' || $uiTheme === 'fq-meta'): ?><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet"><?php endif; ?>
 <?= function_exists('wi_filter') ? (string) wi_filter('page_head', '') : '' ?>
 </head>
 <body>
@@ -256,6 +256,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
       </div></dialog>
 
     <?php elseif ($page === 'errors'): echo function_exists('wf_err_page') ? wf_err_page() : ''; ?>
+    <?php elseif ($page === 'saas'): echo function_exists('wf_saas_page') ? wf_saas_page() : ''; ?>
     <?php elseif ($page === 'clients'):
         $cls = array_values(array_filter(wi_users(), fn($u) => ($u['role'] ?? '') === 'client')); $cf = in_array($_GET['f'] ?? '', ['active', 'expiring', 'ended'], true) ? $_GET['f'] : 'all';
         $stOf = []; $cnt = ['all' => count($cls), 'active' => 0, 'expiring' => 0, 'ended' => 0];

@@ -15,7 +15,7 @@ DirectoryIndex index.php
   RewriteRule ^welcome1/?$ index.php?landing=1&v=1 [L,QSA]
   RewriteRule ^data-deletion/?$ index.php?privacy=1 [L,QSA]
   RewriteCond %{REQUEST_FILENAME} -f
-  RewriteRule !(^|/)(index\.php|install\.php|pricing\.php|app\.css|app\.js|features\.js|theme\.css|pro\.css|google\.css|orchid\.css|studio\.css|aurora\.css)$ - [F,L]
+  RewriteRule !(^|/)(index\.php|install\.php|pricing\.php|app\.css|app\.js|features\.js|theme\.css|pro\.css|google\.css|orchid\.css|studio\.css|aurora\.css|fq-violet\.css|fq-night\.css|fq-ink\.css|fq-dawn\.css|fq-meta\.css)$ - [F,L]
 </IfModule>
 <FilesMatch "\.(json|jsonl|log|md|txt)$">
   Require all denied

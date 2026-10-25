@@ -365,7 +365,7 @@ function wi_user_in_scope(array $t): bool {
     $mine = array_keys(wi_my_accounts()); $theirs = (array) ($t['accounts'] ?? []);
     return ($theirs && !array_diff($theirs, $mine)) || strtolower((string) ($t['created_by'] ?? '')) === strtolower((string) ($_SESSION['email'] ?? ''));
 }
-const WI_SUPER_PAGES = ['ai', 'settings', 'backup', 'report', 'clients', 'errors'];
+const WI_SUPER_PAGES = ['ai', 'settings', 'backup', 'report', 'clients', 'errors', 'saas'];
 /* ---------- Client teams (SaaS): the client owns their panel; under them supervisors (lead) and employees (agent) ----------
  * A team user belongs to one client (tenant = the client's email), works only on that client's numbers, never sees more
  * than the client has, and has page permissions (the menu) plus chat permissions (what they may do inside a conversation). */
@@ -543,6 +543,11 @@ const WI_TECH_PAGES = ['ai', 'settings', 'backup', 'report', 'health', 'users'];
  *  who: all | manager (managers and above) | users (may manage users) | admin | super. 'pages' = pages that highlight this item. */
 function wi_menu_registry(): array {
     return [
+        ['id' => 'saas', 'title' => 'System', 'items' => [
+            ['key' => 'saas', 'icon' => '🏢', 'label' => 'System overview', 'who' => 'super'],
+            ['key' => 'clients', 'icon' => '🏪', 'label' => 'Clients & plans', 'who' => 'super'],
+            ['key' => 'errors', 'icon' => '🧯', 'label' => 'Error log', 'who' => 'super'],
+            ['key' => 'settings', 'icon' => '⚙️', 'label' => 'General settings', 'who' => 'super']]],
         ['id' => 'today', 'title' => 'Today', 'items' => [['key' => 'dashboard', 'href' => './', 'icon' => '🏠', 'label' => 'Dashboard', 'who' => 'all']]],
         ['id' => 'comm', 'title' => 'Communication', 'items' => [
             ['key' => 'inbox', 'icon' => '💬', 'label' => 'Conversations', 'who' => 'all', 'pages' => ['inbox', 'search'], 'q' => ['ch' => '']],
@@ -570,12 +575,9 @@ function wi_menu_registry(): array {
         ['id' => 'admin', 'title' => 'Administration', 'items' => [
             ['key' => 'accounts', 'icon' => '📱', 'label' => 'WhatsApp', 'who' => 'manager', 'pages' => ['accounts', 'link', 'gateway']],
             ['key' => 'business', 'icon' => '🏢', 'label' => 'Business settings', 'who' => 'manager'],
-            ['key' => 'clients', 'icon' => '🏪', 'label' => 'Clients', 'who' => 'super'],
-            ['key' => 'errors', 'icon' => '🧯', 'label' => 'Error log', 'who' => 'super'],
             ['key' => 'users', 'icon' => '🔐', 'label' => 'Users', 'who' => 'users'],
             ['key' => 'health', 'icon' => '☁️', 'label' => 'Health, report & backup', 'who' => 'admin', 'pages' => ['health', 'report', 'backup']],
-            ['key' => 'ai', 'icon' => '✨', 'label' => 'AI providers', 'who' => 'ai'],
-            ['key' => 'settings', 'icon' => '⚙️', 'label' => 'General settings', 'who' => 'super']]],
+            ['key' => 'ai', 'icon' => '✨', 'label' => 'AI providers', 'who' => 'ai']]],
     ];
 }
 /** The registry with this installation's changes applied (labels, icons, hidden items, section titles). */
