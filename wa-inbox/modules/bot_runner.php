@@ -329,7 +329,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
                 // Handing over in a group: tag the group's admins so they get a notification.
                 static $admCache = [];
                 if (!isset($admCache[$x['jid']])) { $mm = wi_gateway('/groups/members?jid=' . rawurlencode($x['jid']), null, $acc); $admCache[$x['jid']] = array_values(array_filter($mm['members'] ?? [], fn($p) => !empty($p['admin']) && empty($p['is_lid']) && wf_phone($p['phone']) !== $me)); }
-                $handAdm = wi_filter('group_handoff_admins', $admCache[$x['jid']], $acc, (string) $x['jid'], $who);
+                $handAdm = wi_filter('group_handoff_admins', $admCache[$x['jid']], $acc, (string) $x['jid'], $who, $rows);
                 foreach (array_slice($handAdm, 0, 8) as $p) { $mentions[] = wf_phone($p['phone']) . '@s.whatsapp.net'; }
                 if ($mentions) $log['reply'] .= "\n" . implode(' ', array_map(fn($j) => '@' . explode('@', $j)[0], $mentions));
             }
