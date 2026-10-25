@@ -32,8 +32,12 @@ function wi_plan_apply(array $client, string $planId, bool $setEnd): array {
     $client['plan_id'] = $planId; $client['plan'] = (string) $p['name'];
     $client['max_numbers'] = (int) $p['numbers']; $client['max_team'] = (int) $p['team']; $client['ai_calls'] = (int) $p['ai_calls']; $client['media_gb'] = (int) ($p['media_gb'] ?? 0);
     $client['can_bot'] = !empty($p['bot']); $client['can_meetings'] = !empty($p['meetings']); $client['can_cases'] = !empty($p['cases']); $client['can_backup'] = !empty($p['backup']);
-    if ($setEnd) $client['expires'] = date('Y-m-d', strtotime('+' . (int) $p['days'] . ' days'));
+    if ($setEnd) { $client['expires'] = date('Y-m-d', strtotime('+' . (int) $p['days'] . ' days')); $client['plan_start'] = date('Y-m-d'); }
     return $client;
+}
+/** How a client pays (the English text is shown through i18n). */
+function wi_pay_methods(): array {
+    return ['cash' => 'Cash', 'bank' => 'Bank transfer', 'card' => 'Card', 'vodafone_cash' => 'Vodafone Cash', 'instapay' => 'InstaPay', 'paypal' => 'PayPal', 'crypto' => 'Crypto', 'free' => 'Free / gift', 'other' => 'Other'];
 }
 /* ---------- Media allowance (plan field media_gb, 0 = unlimited) and the plan usage section ---------- */
 /** A client's media allowance in MB; 0 = unlimited (no client, the operator's own panels, or media_gb 0). */

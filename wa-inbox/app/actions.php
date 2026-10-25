@@ -269,6 +269,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $u['max_numbers'] = max(0, min(100, (int) ($_POST['max_numbers'] ?? ($u['max_numbers'] ?? 1))));
                 $u['ai_calls'] = max(0, min(1000000, (int) ($_POST['ai_calls'] ?? ($u['ai_calls'] ?? 0))));
                 $ex = trim((string) ($_POST['expires'] ?? '')); $u['expires'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $ex) ? $ex : '';
+                if (isset($_POST['pay_method'])) { $pm = (string) $_POST['pay_method']; $u['pay_method'] = isset(wi_pay_methods()[$pm]) ? $pm : ''; }
+                $ps = trim((string) ($_POST['plan_start'] ?? '')); if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $ps)) $u['plan_start'] = $ps;
                 $u['max_team'] = max(0, min(500, (int) ($_POST['max_team'] ?? 0)));
                 $u['media_gb'] = max(0, min(100000, (int) ($_POST['media_gb'] ?? ($u['media_gb'] ?? 0))));
                 foreach (['can_bot', 'can_meetings', 'can_cases', 'can_backup'] as $fk) $u[$fk] = !empty($_POST[$fk]);
@@ -280,7 +282,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } elseif ($do === 'client_extend') {
                 $days = in_array((int) ($_POST['days'] ?? 0), [30, 90, 365], true) ? (int) $_POST['days'] : 30;
                 $from = !empty($u['expires']) && strtotime((string) $u['expires']) > time() ? strtotime((string) $u['expires']) : time(); // renewing early adds to the current end
-                $u['expires'] = date('Y-m-d', strtotime('+' . $days . ' days', $from)); $u['active'] = true;
+                $u['expires'] = date('Y-m-d', strtotime('+' . $days . ' days', $from)); $u['active'] = true; if (empty($u['plan_start'])) $u['plan_start'] = date('Y-m-d', $from);
             } else $u['active'] = empty($u['active']);
             wi_log($do, ['target' => $email, 'expires' => $u['expires'] ?? '', 'active' => !empty($u['active'])]); }
         unset($u);
