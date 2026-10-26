@@ -265,6 +265,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cfg = wi_config(); $cfg['system']['signup_on'] = !empty($_POST['signup_on']) ? 1 : 0; $cfg['system']['google_login_on'] = !empty($_POST['google_login_on']) ? 1 : 0; $ts = trim((string) ($_POST['turnstile_site'] ?? '')); $cfg['system']['turnstile_site'] = preg_match('/^[A-Za-z0-9_-]{10,100}$/', $ts) ? $ts : ''; if (trim((string) ($_POST['turnstile_secret'] ?? '')) !== '') wi_secret_set('turnstile_secret', trim((string) $_POST['turnstile_secret'])); $sd = strtolower(trim((string) ($_POST['saas_domain'] ?? ''))); $cfg['system']['saas_domain'] = preg_match('/^([a-z0-9-]+\.)+[a-z]{2,}$/', $sd) ? $sd : ''; wi_write('config.json', $cfg);
         wi_log('plans_save', ['plans' => array_keys($out)]); wi_flash('Saved.', 'ok'); header('Location: ?p=plans'); exit;
     }
+    // Integrations: a new one (its API key is shown once), and its buttons.
+    if (in_array($do, ['int_save', 'int_act'], true)) {
+        if (!wi_is_super() && (wi_me()['role'] ?? '') !== 'client') { http_response_code(403); exit('Not allowed.'); }
+        if ($do === 'int_save') { $aid = (string) ($_POST['aid'] ?? ''); $url = trim((string) ($_POST['url'] ?? ''));
+            if (!isset(wf_int_numbers()[$aid]) || !preg_match('#^https://[^\s]+$#', $url)) { wi_flash('Choose a number and give an https webhook address.', 'bad'); header('Location: ?p=integrations'); exit; }
+            $id = 'int' . bin2hex(random_bytes(4)); $name = mb_substr(trim((string) ($_POST['name'] ?? '')), 0, 60) ?: $url;
+            wi_update('integrations.json', function ($A) use ($id, $aid, $url, $name) { $A[$id] = ['name' => $name, 'aid' => $aid, 'url' => $url, 'header' => preg_replace('/[^A-Za-z0-9-]/', '', (string) ($_POST['header'] ?? '')) ?: 'X-Webhook-Token', 'active' => true, 'by' => (string) $_SESSION['email'], 'at' => date('c')]; return $A; });
+            if (trim((string) ($_POST['token'] ?? '')) !== '') wi_secret_set('int_hook:' . $id, trim((string) $_POST['token']));
+            $_SESSION['int_new_key'] = ['name' => $name, 'key' => wf_int_new_key($id)]; wi_log('int_add', ['id' => $id, 'account' => $aid]); header('Location: ?p=integrations'); exit; }
+        $id = (string) ($_POST['id'] ?? ''); $x = wf_int_mine()[$id] ?? null; if (!$x) { wi_flash('Not found.', 'bad'); header('Location: ?p=integrations'); exit; }
+        $act = (string) ($_POST['act'] ?? '');
+        if ($act === 'key') { $_SESSION['int_new_key'] = ['name' => (string) $x['name'], 'key' => wf_int_new_key($id)]; wi_log('int_key', ['id' => $id]); }
+        if ($act === 'toggle') wi_update('integrations.json', function ($A) use ($id) { $A[$id]['active'] = empty($A[$id]['active']); return $A; });
+        if ($act === 'delete') { wi_update('integrations.json', function ($A) use ($id) { unset($A[$id]); return $A; }); wi_secret_set('int_key:' . $id, ''); wi_secret_set('int_hook:' . $id, ''); wi_log('int_delete', ['id' => $id]); }
+        if ($act === 'test') { $acc = wi_accounts()[(string) $x['aid']] ?? ['id' => (string) $x['aid']];
+            $r = wf_int_post($id, $x, wf_int_payload($x, $acc, ['id' => 'TEST' . time(), 'phone' => '201000000000', 'jid' => '201000000000@s.whatsapp.net', 'text' => 'Fariek test message', 'kind' => 'text', 'time' => gmdate('Y-m-d\TH:i:s.v\Z')]) + ['test' => true]);
+            wi_flash($r['ok'] ? '✓ HTTP ' . $r['code'] : '⚠ HTTP ' . $r['code'] . ' ' . $r['error'], $r['ok'] ? 'ok' : 'bad'); }
+        header('Location: ?p=integrations'); exit;
+    }
     // System overview (super admin): the price per million tokens of each AI model, for the cost estimate.
     if ($do === 'ai_prices') {
         if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admin only.'); }

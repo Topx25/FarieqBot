@@ -4,6 +4,7 @@ require __DIR__ . '/lib.php';
 if (!is_file(WI_DIR . '/installed.json') && !wi_users()) { header('Location: install.php'); exit; } // fresh copy: run the installer first
 // Facebook's sign-in comes back from another site, so the browser leaves out the (strict) session cookie: this return is handled
 // before any session starts — otherwise an empty session would replace the person's and sign them out.
+if (isset($_GET['int_api'])) { require __DIR__ . '/features.php'; wf_int_api(); } // Integrations: another system sends through a number with its API key
 if (isset($_GET['landing_chat'])) { require __DIR__ . '/features.php'; wf_landing_chat(); } // the product page chat (public, no session)
 if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; if (function_exists('wf_fb_oauth_callback')) wf_fb_oauth_callback(); }
 wi_boot();
@@ -108,7 +109,8 @@ if (wi_logged_in() && isset($_GET['acc']) && isset(wi_my_accounts()[(string) $_G
 if (wi_logged_in() && (($_GET['ch'] ?? '') === 'fb' || $page === 'facebook') && ((wi_current()['channel'] ?? '') !== 'fb')) foreach (wi_my_accounts() as $fbId => $fbA) if (($fbA['channel'] ?? '') === 'fb') { $_SESSION['acc'] = (string) $fbId; break; } // links that open a page for a given number
 if (isset($_GET['ai_report']) && wi_is_super()) { require_once __DIR__ . '/features.php'; wf_ai_report_send((string) $_GET['ai_report'], (string) ($_GET['fmt'] ?? 'pdf')); }
 if (in_array($page, ['saas', 'plans', 'clients', 'errors'], true) && !wi_is_super()) $page = 'dashboard'; // subscriptions are the super admin's
-if (!in_array($page, ['saas', 'plans', 'business', 'clients', 'errors', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'help', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook', 'catalog'], true)) $page = 'dashboard';
+if ($page === 'integrations' && !wi_is_super() && (wi_me()['role'] ?? '') !== 'client') $page = 'dashboard'; // the super admin and panel owners
+if (!in_array($page, ['saas', 'plans', 'integrations', 'business', 'clients', 'errors', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'help', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook', 'catalog'], true)) $page = 'dashboard';
 $fxPages = ['business', 'learning', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'facebook', 'catalog'];
 $autoPages = ['schedule', 'programs', 'status'];
 $sysPages = ['health', 'report', 'backup'];

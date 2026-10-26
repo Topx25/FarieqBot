@@ -580,7 +580,8 @@ function wi_menu_registry(): array {
             ['key' => 'business', 'icon' => '🏢', 'label' => 'Business settings', 'who' => 'manager'],
             ['key' => 'users', 'icon' => '🔐', 'label' => 'Users', 'who' => 'users'],
             ['key' => 'health', 'icon' => '☁️', 'label' => 'Health, report & backup', 'who' => 'admin', 'pages' => ['health', 'report', 'backup']],
-            ['key' => 'ai', 'icon' => '✨', 'label' => 'AI providers', 'who' => 'ai']]],
+            ['key' => 'ai', 'icon' => '✨', 'label' => 'AI providers', 'who' => 'ai'],
+            ['key' => 'integrations', 'icon' => '🔌', 'label' => 'Integrations', 'who' => 'admin']]],
     ];
 }
 /** The registry with this installation's changes applied (labels, icons, hidden items, section titles). */
