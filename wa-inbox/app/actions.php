@@ -98,6 +98,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         header('Location: ./'); exit;
     }
+    // a new code for the same sign-in (the first one did not arrive): 3 at most, 30 seconds apart
+    if ($do === 'otp_resend') { $p = $_SESSION['pending'] ?? null; $u = $p ? wi_find_user((string) $p['email']) : null;
+        if (!$p || !$u || time() - $p['at'] > WI_OTP_TTL * 3) { unset($_SESSION['pending']); wi_flash('The code expired. Please sign in again.', 'bad'); header('Location: ./'); exit; }
+        if ((int) ($p['resent'] ?? 0) >= 3 || time() - (int) ($p['sent_at'] ?? $p['at']) < 30) { wi_flash('Wait a little before asking for a new code.', 'bad'); header('Location: ./'); exit; }
+        require_once __DIR__ . '/../features.php'; $code = (string) random_int(100000, 999999);
+        if (!wi_send_whatsapp((string) $u['phone'], wf_msg('otp', ['code' => $code, 'minutes' => (int) wi_sys('otp_min')]))) { wi_flash('Could not send the code on WhatsApp. Check that the gateway is connected.', 'bad'); header('Location: ./'); exit; }
+        $_SESSION['pending'] = ['hash' => password_hash($code, PASSWORD_DEFAULT), 'at' => time(), 'sent_at' => time(), 'tries' => 0, 'resent' => (int) ($p['resent'] ?? 0) + 1] + $p;
+        wi_log('otp_resend', ['email' => (string) $p['email']]); wi_flash('A new code was sent to your WhatsApp.', 'ok'); header('Location: ./'); exit; }
     if ($do === 'cancel') { unset($_SESSION['pending']); header('Location: ./'); exit; }
     if ($do === 'logout' && !empty($_SESSION['imp_from'])) $do = 'impersonate_end'; // signing out of a borrowed view returns to your own account
     if ($do === 'impersonate_end' && !empty($_SESSION['imp_from'])) {
