@@ -218,7 +218,8 @@ function wf_cmd_menu(string $aid): string {
 /** Is this message asking for the commands list? "#menu" in any case (#Menu, #MENU), its other names (#منيو, #الاوامر, #help…),
  *  a small typo of them (#mnue, #منيوو), or the list word alone / with a word it does not know ("#قائمة", "#قائمة #مش_موجود"). */
 function wf_is_menu(string $aid, string $text): bool {
-    $t = trim(preg_replace('/^#\s+/u', '#', trim($text))); // "# الاوامر" (a space after #) is the same if ($t === '' || $t[0] !== '#' || mb_strlen($t) > 40) return false;
+    // "# الاوامر" (a space after #) is the same
+    $t = trim(preg_replace('/^#\s+/u', '#', trim($text))); if ($t === '' || $t[0] !== '#' || mb_strlen($t) > 40) return false;
     $w = (array) (wf_case_cfg($aid)['words'] ?? []);
     $names = array_filter(array_map(fn($x) => wf_intake_norm(trim($x)), array_merge([(string) ($w['menu'] ?? '#menu')], preg_split('/[,\x{060C}]+/u', (string) ($w['menu_alias'] ?? '')))));
     $tags = preg_split('/\s+/u', wf_intake_norm($t)); $first = (string) $tags[0];
