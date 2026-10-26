@@ -24,9 +24,10 @@ function wf_err_collect(int $hours = 48): array {
         $dir = dirname(__DIR__, 2) . '/wa-local' . ($aid === 'main' ? '' : '/accounts/' . $aid); $gl = $dir . '/gateway.log';
         if (is_file($gl) && ($fh = @fopen($gl, 'rb'))) { $sz = filesize($gl); fseek($fh, max(0, $sz - 262144)); $buf = (string) fread($fh, 262144); fclose($fh);
             foreach (preg_split('/\R/', $buf) as $ln) { if (!preg_match('/(error|fail|exception|disconnected|EADDRINUSE)/i', $ln)) continue; if (preg_match('/invoice webhook .*ok=true/', $ln)) continue;
-                $at = preg_match('/^(\d{4}-\d\d-\d\dT[\d:.]+Z?)/', $ln, $mt) ? $mt[1] : ''; if ($at !== '' && strtotime($at) < $sinceT) continue;
+                $at = preg_match('/^(\d{4}-\d\d-\d\dT[\d:.]+Z?)/', $ln, $mt) ? $mt[1] : ''; if ($at === '' || strtotime($at) < $sinceT) continue; // a line with no time cannot be dated: an old line is not counted again
                 wf_err_add($G, 'gateway', (string) $aid, preg_replace('/^\S+\s+/', '', $ln), $at); } }
     }
+    foreach ((array) wi_read('job_errors.json', []) as $r) if (is_array($r) && ($r['at'] ?? 0) >= $sinceT) for ($i = 0; $i < min(50, (int) ($r['count'] ?? 1)); $i++) wf_err_add($G, 'scheduled job', (string) ($r['where'] ?? ''), (string) ($r['what'] ?? ''), date('c', (int) $r['at']));
     foreach (wi_ai_tasks() as $t) { if (($t['state'] ?? '') !== 'failed' || strcmp((string) ($t['at'] ?? ''), $since) < 0) continue;
         wf_err_add($G, 'AI', (string) (($t['account'] ?? '') ?: 'system') . ' · ' . ((string) ($t['model'] ?? '') ?: 'no model'), (string) ($t['task'] ?? '') . ': ' . (string) ($t['error'] ?? ''), (string) $t['at']); }
     foreach (['wa-inbox' => dirname(__DIR__) . '/error_log', 'site' => dirname(__DIR__, 2) . '/error_log'] as $fw => $f) { if (!is_file($f) || !($fh = @fopen($f, 'rb'))) continue;
@@ -40,6 +41,23 @@ function wf_err_collect(int $hours = 48): array {
     usort($G, fn($a, $b) => [$rank[$a['type']] ?? 9, -$a['count']] <=> [$rank[$b['type']] ?? 9, -$b['count']]);
     return $G;
 }
+/** "5 min ago", "3 h ago", "2 days ago". */
+function wf_err_ago(int $ts): string { $d = max(0, time() - $ts); return $d < 3600 ? sprintf(wi_t('%d min ago'), max(1, intdiv($d, 60))) : ($d < 86400 ? sprintf(wi_t('%d h ago'), intdiv($d, 3600)) : sprintf(wi_t('%d days ago'), intdiv($d, 86400))); }
+/** What a known error means and what to do, in plain words (English keys, translated in i18n). */
+function wf_err_explain(string $what): array {
+    foreach ([
+        ['/QR refs attempts ended/i', 'The number waited for a QR scan and nobody scanned it.', 'Open Numbers and scan the QR again, or delete the number if it is not used.'],
+        ['/Connection Terminated|Connection Failure|Stream Errored|Connection Closed|connection lost/i', 'WhatsApp cut the connection for a moment.', 'Usually it reconnects by itself. If it keeps coming, check the phone has internet and WhatsApp is open.'],
+        ['/logged ?out|401|unauthori[sz]ed/i', 'The number was signed out of WhatsApp.', 'Open Numbers and link it again with a QR.'],
+        ['/EADDRINUSE/i', 'Two copies of the gateway tried to run for the same number.', 'Nothing to do if it is rare: one copy keeps running.'],
+        ['/webhook is not configured|webhook .*ok=false/i', 'A connected system did not accept a message sent to it.', 'Open Integrations and check that system\'s webhook settings.'],
+        ['/timed? ?out|timeout|cURL error 28/i', 'A service took too long to answer.', 'Usually passes by itself. If it keeps coming, check the service or the AI provider.'],
+        ['/quota|rate.?limit|429|insufficient|billing|credit/i', 'The AI provider refused: limit or credit ran out.', 'Open AI providers: add credit, or move another provider to the top.'],
+        ['/no reason given/i', 'The bot failed without saying why.', 'Open the bot log of this number to see the message.'],
+        ['/PHP|\.php/i', 'A code error on the site.', 'Send it to the developer with the time.'],
+    ] as [$re, $mean, $fix]) if (preg_match($re, $what)) return [$mean, $fix];
+    return ['', ''];
+}
 /** The super admin's page: counts per type, then every group (type, where, what, how many, last time). */
 function wf_err_page(): string {
     if (!wi_is_super()) return '';
@@ -49,9 +67,19 @@ function wf_err_page(): string {
     $o .= '<div class="row wrap">'; foreach ([6, 24, 48, 168] as $x) $o .= '<a class="chip-btn' . ($x === $h ? ' on' : '') . '" href="?p=errors&amp;h=' . $x . '">' . $x . ' h</a>'; $o .= '</div>';
     $o .= '<div class="cl-kpis">'; foreach ($tot as $t => $n) $o .= '<span class="cl-kpi"><b>' . (int) $n . '</b><small>' . wi_e(wi_t($t)) . '</small></span>'; $o .= '</div>';
     if (!$G) return $o . '<div class="card empty">' . wi_e(wi_t('No errors in this time.')) . '</div>';
-    $o .= '<div class="card" style="overflow-x:auto"><table class="tbl"><tr><th>' . wi_e(wi_t('Type')) . '</th><th>' . wi_e(wi_t('Where')) . '</th><th>' . wi_e(wi_t('Error')) . '</th><th>' . wi_e(wi_t('Times')) . '</th><th>' . wi_e(wi_t('Last')) . '</th></tr>';
-    foreach (array_slice($G, 0, 300) as $g) $o .= '<tr><td>' . wi_e(wi_t($g['type'])) . '</td><td dir="ltr">' . wi_e($g['where']) . '</td><td dir="auto" style="max-width:520px;word-break:break-word">' . wi_e($g['what']) . '</td><td><b>' . (int) $g['count'] . '</b></td><td dir="ltr" class="small">' . wi_e(substr($g['last'], 0, 16)) . '</td></tr>';
-    return $o . '</table></div>';
+    $accs = wi_accounts(); $ack = (array) wi_read('err_ack.json', []); $hidden = 0; $rows = '';
+    foreach (array_slice($G, 0, 300) as $g) { $k = substr(sha1($g['type'] . '|' . $g['where'] . '|' . $g['what']), 0, 16);
+        if (isset($ack[$k]) && strcmp((string) $g['last'], (string) $ack[$k]) <= 0) { $hidden++; continue; } // marked as seen and nothing new since
+        $wn = (string) ($accs[$g['where']]['name'] ?? ''); [$mean, $fix] = wf_err_explain($g['what']); $ts = $g['last'] !== '' ? strtotime($g['last']) : 0;
+        $sev = in_array($g['type'], ['PHP fatal', 'bot'], true) || $g['count'] >= 50 ? 'bad' : ($g['count'] >= 10 ? 'warn' : 'acc');
+        $rows .= '<div class="err-row"><div class="err-top"><span class="sa-chip ' . $sev . '">' . (int) $g['count'] . '×</span> <b>' . wi_e(wi_t($g['type'])) . '</b> · ' . ($wn !== '' ? wi_e($wn) . ' <span class="muted small" dir="ltr">' . wi_e($g['where']) . '</span>' : '<span dir="ltr">' . wi_e($g['where']) . '</span>')
+            . '<span class="muted small err-when">' . ($ts ? wi_e(wf_err_ago($ts)) : '') . '</span>'
+            . '<form method="post" class="err-ack"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="err_ack"><input type="hidden" name="k" value="' . $k . '"><input type="hidden" name="last" value="' . wi_e($g['last']) . '"><button class="btn ghost sm">✓ ' . wi_e(wi_t('Seen')) . '</button></form></div>'
+            . ($mean !== '' ? '<p class="err-mean">' . wi_e(wi_t($mean)) . '<br><span class="muted">👉 ' . wi_e(wi_t($fix)) . '</span></p>' : '')
+            . '<code class="err-raw" dir="ltr">' . wi_e($g['what']) . '</code></div>'; }
+    $o .= '<div class="card">' . ($rows ?: '<div class="empty">' . wi_e(wi_t('No errors in this time.')) . '</div>') . '</div>';
+    if ($hidden) $o .= '<p class="muted small">' . (int) $hidden . ' ' . wi_e(wi_t('marked as seen (they come back if they happen again)')) . '</p>';
+    return $o;
 }
 
 /** Every minute (cron): a number with more than 3 bot errors in 10 minutes → one alert to the owner's watch group, at most once an hour per number. */

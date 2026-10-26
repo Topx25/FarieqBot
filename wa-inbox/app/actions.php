@@ -274,6 +274,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         wi_log('plans_save', ['plans' => array_keys($out)]); wi_flash('Saved.', 'ok'); header('Location: ?p=plans'); exit;
     }
     // Integrations: a new one (its API key is shown once), and its buttons.
+    // Error log: a group marked as seen is hidden until it happens again
+    if ($do === 'err_ack' && wi_is_super()) { $k = preg_replace('/[^0-9a-f]/', '', (string) ($_POST['k'] ?? '')); $l = substr((string) ($_POST['last'] ?? ''), 0, 40);
+        if ($k !== '') wi_update('err_ack.json', function ($A) use ($k, $l) { $A = (array) $A; $A[$k] = $l !== '' ? $l : date('c'); return array_slice($A, -2000, null, true); });
+        header('Location: ' . ((string) ($_SERVER['HTTP_REFERER'] ?? '') ?: '?p=errors')); exit; }
     if (in_array($do, ['wc_save', 'wc_act'], true)) {
         if (!function_exists('wf_wc_action')) require_once dirname(__DIR__) . '/features.php';
         if (!wi_is_super() && (wi_me()['role'] ?? '') !== 'client') { http_response_code(403); exit('Not allowed.'); }
