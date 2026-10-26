@@ -64,7 +64,8 @@ function wf_int_post(string $id, array $x, array $payload): array {
 function wf_int_api(): void {
     header('X-Robots-Tag: noindex');
     $fail = function (int $c, string $e) { header('Content-Type: application/json; charset=utf-8'); http_response_code($c); echo json_encode(['ok' => false, 'error' => $e]); exit; };
-    $what = (string) ($_GET['int_api'] ?? ''); if (!in_array($what, ['send', 'media'], true) || ($what === 'send' && $_SERVER['REQUEST_METHOD'] !== 'POST')) $fail(404, 'Use POST ?int_api=send or GET ?int_api=media');
+    // send / media: Fariek's own API; sessions / session / send_text: the OpenWA (WAHA style) API, so a program made for that gateway works by changing its address and key
+    $what = (string) ($_GET['int_api'] ?? ''); if (!in_array($what, ['send', 'media', 'sessions', 'session', 'send_text'], true) || (in_array($what, ['send', 'send_text'], true) && $_SERVER['REQUEST_METHOD'] !== 'POST')) $fail(404, 'Use POST /v1/send, GET /v1/media, GET /api/sessions or POST /api/sessions/{id}/messages/send-text');
     $key = (string) ($_SERVER['HTTP_X_API_KEY'] ?? ''); if (strlen($key) < 20) $fail(401, 'Missing X-Api-Key');
     $hash = hash('sha256', $key); $id = null; foreach (wf_int_all() as $iid => $x) if (hash_equals((string) wi_secret('int_key:' . $iid), $hash)) { $id = (string) $iid; break; }
     if ($id === null) $fail(401, 'Unknown API key'); $x = wf_int_all()[$id];
@@ -75,10 +76,15 @@ function wf_int_api(): void {
         header('Content-Type: ' . (mime_content_type($p) ?: 'application/octet-stream')); header('Content-Length: ' . filesize($p)); header('Content-Disposition: inline; filename="' . basename($p) . '"');
         readfile($p); exit; }
     header('Content-Type: application/json; charset=utf-8');
+    if ($what === 'sessions' || $what === 'session') { $acc = wi_accounts()[(string) ($x['aid'] ?? '')] ?? null; $s = $acc && !empty($acc['enabled']) ? wi_gateway('/status', null, $acc) : [];
+        $one = ['id' => 'default', 'name' => (string) ($x['name'] ?? ''), 'status' => !empty($s['connected']) ? 'ready' : 'disconnected', 'phone' => preg_replace('/[:@].*$/', '', (string) ($s['account']['id'] ?? ''))];
+        echo json_encode($what === 'sessions' ? [$one] : $one); exit; }
     // at most 60 messages a minute per integration (protects the number)
     $rl = (array) wi_read('int_rate.json', []); $win = (int) floor(time() / 60); if ((int) ($rl[$id]['w'] ?? 0) !== $win) $rl[$id] = ['w' => $win, 'n' => 0];
     if (++$rl[$id]['n'] > 60) $fail(429, 'Too many messages this minute'); wi_write('int_rate.json', $rl);
     $in = json_decode((string) file_get_contents('php://input'), true) ?: $_POST;
+    // OpenWA: {"chatId": "2010…@c.us" or "…@lid", "text": "…"}; @c.us is a phone number
+    if ($what === 'send_text') { $cid = trim((string) ($in['chatId'] ?? '')); $in['to'] = str_ends_with($cid, '@c.us') ? strtok($cid, '@') : $cid; }
     $raw = trim((string) ($in['to'] ?? ($in['jid'] ?? ''))); $text = trim((string) ($in['text'] ?? ($in['message'] ?? '')));
     // a chat id (…@lid for a hidden number, …@s.whatsapp.net): the reply goes into that existing conversation
     $jid = preg_match('/^[0-9A-Za-z._:-]+@(s\.whatsapp\.net|lid)$/', $raw) ? $raw : ''; $to = $jid === '' ? preg_replace('/\D/', '', $raw) : '';

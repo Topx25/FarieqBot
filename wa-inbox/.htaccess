@@ -16,6 +16,10 @@ DirectoryIndex index.php
   RewriteRule ^data-deletion/?$ index.php?privacy=1 [L,QSA]
   # Integrations API with clean addresses (api host): /v1/send, /v1/media
   RewriteRule ^v1/(send|media)/?$ index.php?int_api=$1 [L,QSA]
+  # the OpenWA (WAHA style) addresses, for programs made for that gateway
+  RewriteRule ^api/sessions/?$ index.php?int_api=sessions [L,QSA]
+  RewriteRule ^api/sessions/[^/]+/?$ index.php?int_api=session [L,QSA]
+  RewriteRule ^api/sessions/[^/]+/messages/send-text/?$ index.php?int_api=send_text [L,QSA]
   RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule !(^|/)(index\.php|install\.php|pricing\.php|app\.css|app\.js|features\.js|theme\.css|pro\.css|google\.css|orchid\.css|studio\.css|aurora\.css|fq-violet\.css|fq-night\.css|fq-ink\.css|fq-dawn\.css|fq-meta\.css)$ - [F,L]
 </IfModule>
