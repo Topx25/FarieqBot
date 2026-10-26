@@ -107,6 +107,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($do === 'logout') { wi_log('logout'); $_SESSION = []; session_destroy(); header('Location: ./'); exit; }
     // My account: every user can change their own name, WhatsApp number and password (the current password is required).
+    // Any user: their own dashboard theme ('' = the system's).
+    if ($do === 'my_theme' && !empty($_SESSION['email'])) {
+        $th = (string) ($_POST['theme'] ?? ''); if ($th !== '' && !isset(WI_THEMES[$th])) $th = '';
+        $users = wi_users(); $email = strtolower((string) $_SESSION['email']);
+        foreach ($users as &$u) if (strtolower((string) $u['email']) === $email) { if ($th === '') unset($u['ui_theme']); else $u['ui_theme'] = $th; } unset($u);
+        wi_save_users($users); wi_log('my_theme', ['theme' => $th]); wi_flash('Saved.', 'ok'); header('Location: ?p=me'); exit;
+    }
     if ($do === 'my_account' && !empty($_SESSION['email']) && empty($_SESSION['imp_from'])) {
         $users = wi_users(); $email = strtolower((string) $_SESSION['email']); $ok = false;
         foreach ($users as &$u) { if (strtolower((string) $u['email']) !== $email) continue;

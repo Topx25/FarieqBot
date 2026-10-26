@@ -365,6 +365,8 @@ function wi_user_in_scope(array $t): bool {
     $mine = array_keys(wi_my_accounts()); $theirs = (array) ($t['accounts'] ?? []);
     return ($theirs && !array_diff($theirs, $mine)) || strtolower((string) ($t['created_by'] ?? '')) === strtolower((string) ($_SESSION['email'] ?? ''));
 }
+/** The dashboard themes (id => name). The super admin picks the default for everyone; each user may pick their own (My account). */
+const WI_THEMES = ['fq-meta' => 'Fariek theme', 'fq-violet' => 'Farieq violet', 'fq-night' => 'Farieq night and gold', 'fq-ink' => 'Farieq ink and green', 'fq-dawn' => 'Farieq dawn', 'aurora' => 'Aurora', 'google' => 'Google (Material)', 'classic' => 'Classic', 'orchid' => 'Orchid', 'studio' => 'Studio'];
 const WI_SUPER_PAGES = ['ai', 'settings', 'backup', 'report', 'clients', 'errors', 'saas'];
 /* ---------- Client teams (SaaS): the client owns their panel; under them supervisors (lead) and employees (agent) ----------
  * A team user belongs to one client (tenant = the client's email), works only on that client's numbers, never sees more

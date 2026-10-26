@@ -13,7 +13,8 @@
 <link rel="stylesheet" href="app.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/app.css') ?>">
 <link rel="stylesheet" href="theme.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/theme.css') + (int) @filemtime(dirname(__DIR__) . '/features.js') ?>">
 <link rel="stylesheet" href="pro.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/pro.css') ?>">
-<?php $uiTheme = wi_config()['ui_theme'] ?? 'google'; if (wi_is_super() && preg_match('/^[a-z-]{3,20}$/', (string) ($_GET['theme_preview'] ?? ''))) $uiTheme = (string) $_GET['theme_preview']; // the super admin tries a theme on their own screen before choosing it
+<?php $uiTheme = wi_config()['ui_theme'] ?? 'google'; $myTh = (string) ($me['ui_theme'] ?? ''); if (isset(WI_THEMES[$myTh])) $uiTheme = $myTh; // the user's own theme (My account) over the default
+if (wi_is_super() && preg_match('/^[a-z-]{3,20}$/', (string) ($_GET['theme_preview'] ?? ''))) $uiTheme = (string) $_GET['theme_preview']; // the super admin tries a theme on their own screen before choosing it
 if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq-night', 'fq-ink', 'fq-dawn', 'fq-meta'], true)): ?><link rel="stylesheet" href="<?= $uiTheme ?>.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/' . $uiTheme . '.css') ?>"><?php endif; ?>
 <?php if ($uiTheme === 'studio'): $uc = wi_config()['ui_colors'] ?? []; $hx = fn($v, $d) => preg_match('/^#[0-9a-f]{6}$/i', (string) $v) ? $v : $d; ?><link href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600&display=swap" rel="stylesheet"><style>:root{--acc:<?= $hx($uc['acc'] ?? '', '#2563eb') ?>;--acc2:<?= $hx($uc['acc2'] ?? '', '#d97706') ?>;--canvas:<?= $hx($uc['canvas'] ?? '', '#f7f8fb') ?>}</style><?php endif; ?>
 <?php if ($uiTheme === 'orchid' || $uiTheme === 'fq-meta'): ?><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet"><?php endif; ?>
@@ -372,6 +373,13 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         <label>Current password<input type="password" name="current" required autocomplete="current-password" dir="ltr"></label>
         <p class="muted small">Role: <b><?= wi_e(['super' => 'Super admin', 'admin' => 'Admin', 'manager' => 'Manager', 'client' => 'Client'][$me['role'] ?? ''] ?? 'Viewer') ?></b> · Numbers: <?= wi_e(implode(', ', array_map(fn($a) => $a['name'], wi_my_accounts())) ?: '—') ?></p>
         <div class="row"><button class="btn primary">Save</button></div>
+      </form></div>
+      <div class="card" style="max-width:560px"><form method="post" class="stack pad">
+        <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="my_theme">
+        <h2>🎨 <?= wi_e(wi_t('Dashboard theme')) ?></h2><p class="muted small"><?= wi_e(wi_t('Your own theme on your screens. Light or dark is switched from the top bar.')) ?></p>
+        <label><select name="theme"><option value=""><?= wi_e(wi_t('As the system')) ?> (<?= wi_e(wi_t(WI_THEMES[wi_config()['ui_theme'] ?? ''] ?? 'Classic')) ?>)</option>
+          <?php foreach (WI_THEMES as $thId => $thName): ?><option value="<?= wi_e($thId) ?>"<?= ($me['ui_theme'] ?? '') === $thId ? ' selected' : '' ?>><?= wi_e(wi_t($thName)) ?></option><?php endforeach; ?></select></label>
+        <div class="row"><button class="btn primary"><?= wi_e(wi_t('Save')) ?></button></div>
       </form></div>
       <?php if (($me['role'] ?? '') !== 'super' && wi_owned_accounts((string) $me['email']) && empty($_SESSION['imp_from'])): // owners of a private number: their own Google and backup ?>
       <?php if (!empty($_GET['drive'])): ?><div class="alert ok" style="max-width:560px"><?= wi_e((string) $_GET['drive']) ?></div><?php endif; ?>
