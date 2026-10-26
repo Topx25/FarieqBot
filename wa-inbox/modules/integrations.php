@@ -27,7 +27,7 @@ function wf_int_tick(): void {
         if (empty($x['active']) || empty($x['url'])) continue; $acc = wi_accounts()[(string) ($x['aid'] ?? '')] ?? null; if (!$acc || empty($acc['enabled'])) continue;
         $cur = (string) ($st[$id]['cursor'] ?? ''); if ($cur === '') { $st[$id]['cursor'] = gmdate('Y-m-d\TH:i:s.v\Z'); $changed = true; continue; } // starts with what comes from now on
         $r = wi_gateway('/archive?limit=300&months=1', null, $acc); if (empty($r['ok'])) continue;
-        $new = array_values(array_filter((array) ($r['rows'] ?? []), fn($m) => ($m['dir'] ?? '') === 'in' && strcmp((string) ($m['time'] ?? ''), $cur) > 0 && !str_ends_with((string) ($m['jid'] ?? ''), '@g.us') && !str_contains((string) ($m['jid'] ?? ''), 'status@')));
+        $new = array_values(array_filter((array) ($r['rows'] ?? []), fn($m) => ($m['dir'] ?? '') === 'in' && !in_array($m['kind'] ?? '', ['reaction', 'deleted', 'edit'], true) && strcmp((string) ($m['time'] ?? ''), $cur) > 0 && !str_ends_with((string) ($m['jid'] ?? ''), '@g.us') && !str_contains((string) ($m['jid'] ?? ''), 'status@')));
         usort($new, fn($a, $b) => strcmp((string) $a['time'], (string) $b['time']));
         foreach (array_slice($new, 0, 50) as $m) {
             $res = wf_int_post($id, $x, wf_int_payload($x, $acc, $m));
