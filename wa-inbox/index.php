@@ -7,6 +7,10 @@ if (!is_file(WI_DIR . '/installed.json') && !wi_users()) { header('Location: ins
 if (isset($_GET['int_api'])) { require __DIR__ . '/features.php'; wf_int_api(); } // Integrations: another system sends through a number with its API key
 if (isset($_GET['landing_chat'])) { require __DIR__ . '/features.php'; wf_landing_chat(); } // the product page chat (public, no session)
 if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; if (function_exists('wf_fb_oauth_callback')) wf_fb_oauth_callback(); }
+// Google sends the person back from its own site, so the (strict) session cookie is left out: one hop through a page of this site
+// sends the same address again from here, and the cookie comes with it (else the sign-in state is lost and the person lands on the sign-in page)
+if ((isset($_GET['google_cb']) || isset($_GET['drive_cb'])) && !isset($_GET['wi_hop'])) { $u = htmlspecialchars('./?' . $_SERVER['QUERY_STRING'] . '&wi_hop=1', ENT_QUOTES);
+    header('Content-Type: text/html; charset=utf-8'); header('Cache-Control: no-store'); echo '<!doctype html><meta http-equiv="refresh" content="0;url=' . $u . '"><script>location.replace(' . json_encode('./?' . $_SERVER['QUERY_STRING'] . '&wi_hop=1') . ')</script>'; exit; }
 wi_boot();
 if (isset($_GET['google_login']) && !wi_logged_in()) { require __DIR__ . '/features.php'; wf_glogin_start(); } // sign in / sign up with Google
 if (isset($_GET['google_cb']) && !wi_logged_in()) { require __DIR__ . '/features.php'; wf_glogin_callback(); }
