@@ -14,6 +14,8 @@ DirectoryIndex index.php
   RewriteRule ^welcome6/?$ index.php?landing=1&v=6 [L,QSA]
   RewriteRule ^welcome1/?$ index.php?landing=1&v=1 [L,QSA]
   RewriteRule ^data-deletion/?$ index.php?privacy=1 [L,QSA]
+  # Integrations API with clean addresses (api host): /v1/send, /v1/media
+  RewriteRule ^v1/(send|media)/?$ index.php?int_api=$1 [L,QSA]
   RewriteCond %{REQUEST_FILENAME} -f
   RewriteRule !(^|/)(index\.php|install\.php|pricing\.php|app\.css|app\.js|features\.js|theme\.css|pro\.css|google\.css|orchid\.css|studio\.css|aurora\.css|fq-violet\.css|fq-night\.css|fq-ink\.css|fq-dawn\.css|fq-meta\.css)$ - [F,L]
 </IfModule>

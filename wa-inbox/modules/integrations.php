@@ -47,7 +47,7 @@ function wf_int_payload(array $x, array $acc, array $m): array {
     return ['event' => 'message.received', 'integration' => (string) ($x['name'] ?? ''), 'number' => (string) ($acc['id'] ?? ''),
         'data' => ['id' => (string) ($m['id'] ?? ''), 'from' => $from, 'jid' => (string) ($m['jid'] ?? ''), 'name' => (string) ($m['name'] ?? ''), 'body' => (string) ($m['text'] ?? ''),
             'type' => (string) (($m['kind'] ?? '') ?: 'text'), 'has_media' => !empty($m['attachment']), 'time' => (string) ($m['time'] ?? '')]
-            + (!empty($m['attachment']) ? ['media_url' => rtrim((string) wi_sys('base_url'), '/') . '/?int_api=media&f=' . rawurlencode((string) $m['attachment'])] : [])];
+            + (!empty($m['attachment']) ? ['media_url' => wf_int_endpoint('media') . (str_contains(wf_int_endpoint('media'), '?') ? '&' : '?') . 'f=' . rawurlencode((string) $m['attachment'])] : [])];
 }
 /** One POST to the integration's webhook. */
 function wf_int_post(string $id, array $x, array $payload): array {
@@ -119,8 +119,8 @@ function wf_int_page(): string {
         . '<button class="btn primary">💾 ' . $t('Create and show the API key') . '</button></form></details>';
     $o .= '<div class="card pad"><h2 style="margin:0 0 8px">📘 ' . $t('For the developer of the other system') . '</h2>'
         . '<h3>1. ' . $t('Messages in (Fariek → your webhook)') . '</h3><p class="small muted">' . $t('Within a minute of each private message. Answer with HTTP 200; any other answer is tried again the next minute.') . '</p>'
-        . '<pre dir="ltr" style="overflow-x:auto;font-size:12.5px">POST https://your-site/wa/webhook\nX-Webhook-Token: &lt;your token&gt;\nContent-Type: application/json\n\n{"event":"message.received","integration":"iptvpro.org","number":"main",\n "data":{"id":"3EB0…","from":"2010xxxxxxxx","jid":"2010xxxxxxxx@s.whatsapp.net","name":"Ahmed",\n         "body":"Hello","type":"image","has_media":true,"time":"2026-10-26T14:05:00.000Z",\n         "media_url":"' . wi_e($base) . '?int_api=media&amp;f=inbox_media/…"}}\n\nmedia_url: GET with the same X-Api-Key header → the file (photo, voice, document).</pre>'
-        . '<h3>2. ' . $t('Send a message (your system → Fariek)') . '</h3><pre dir="ltr" style="overflow-x:auto;font-size:12.5px">POST ' . wi_e($base) . '?int_api=send\nX-Api-Key: &lt;the API key shown when the integration was made&gt;\nContent-Type: application/json\n\n{"to":"2010xxxxxxxx","text":"Your order is ready"}\nor reply in the same chat (needed for hidden numbers): {"to":"&lt;data.jid from the webhook&gt;","text":"…"}\n\n→ {"ok":true,"id":"3EB0…"}   errors: 401 key, 422 data, 429 more than 60 a minute, 502 WhatsApp</pre></div>';
+        . '<pre dir="ltr" style="overflow-x:auto;font-size:12.5px">POST https://your-site/wa/webhook\nX-Webhook-Token: &lt;your token&gt;\nContent-Type: application/json\n\n{"event":"message.received","integration":"iptvpro.org","number":"main",\n "data":{"id":"3EB0…","from":"2010xxxxxxxx","jid":"2010xxxxxxxx@s.whatsapp.net","name":"Ahmed",\n         "body":"Hello","type":"image","has_media":true,"time":"2026-10-26T14:05:00.000Z",\n         "media_url":"' . wi_e(wf_int_endpoint('media')) . (str_contains(wf_int_endpoint('media'), '?') ? '&amp;' : '?') . 'f=inbox_media/…"}}\n\nmedia_url: GET with the same X-Api-Key header → the file (photo, voice, document).</pre>'
+        . '<h3>2. ' . $t('Send a message (your system → Fariek)') . '</h3><pre dir="ltr" style="overflow-x:auto;font-size:12.5px">POST ' . wi_e(wf_int_endpoint('send')) . '\nX-Api-Key: &lt;the API key shown when the integration was made&gt;\nContent-Type: application/json\n\n{"to":"2010xxxxxxxx","text":"Your order is ready"}\nor reply in the same chat (needed for hidden numbers): {"to":"&lt;data.jid from the webhook&gt;","text":"…"}\n\n→ {"ok":true,"id":"3EB0…"}   errors: 401 key, 422 data, 429 more than 60 a minute, 502 WhatsApp</pre></div>';
     return $o;
 }
 
@@ -150,3 +150,10 @@ function wf_int_customer(array $acc, string $jid): string {
 
 /** The User-Agent Fariek sends to a system (some sites behind a firewall only let a known one through). */
 function wf_int_ua(array $x): string { $u = trim(preg_replace('/[^\x20-\x7E]/', '', (string) ($x['ua'] ?? ''))); return $u !== '' ? mb_substr($u, 0, 120) : 'Fariek-Integrations/1'; }
+
+/** The public address of the API (a host behind the firewall such as https://api.example.com, General settings → api_base),
+ *  else the dashboard's own address: send → …/v1/send or …/?int_api=send. */
+function wf_int_endpoint(string $what): string {
+    $api = rtrim(trim((string) wi_sys('api_base')), '/');
+    return $api !== '' ? $api . '/v1/' . $what : rtrim((string) wi_sys('base_url'), '/') . '/?int_api=' . $what;
+}
