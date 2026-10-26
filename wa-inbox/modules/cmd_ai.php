@@ -22,13 +22,13 @@ function wf_cmdai_read(array $acc, string $text): array {
     foreach (array_slice($cases, 0, 150, true) as $k => $c) $cl .= 'key ' . $k . ' | ID ' . ($c['no'] ?? '') . ' | ' . mb_substr((string) ($c['name'] ?? ''), 0, 40) . "\n";
     $ex = ''; foreach (array_slice((array) wf_cmdai_get($aid)['learned'], -15) as $l) $ex .= '«' . mb_substr((string) $l['wrong'], 0, 160) . '» → «' . mb_substr((string) $l['right'], 0, 160) . "»\n";
     $r = wi_ai('Read a group command', wf_prompt('cmd_understand', $aid, ['message' => mb_substr($text, 0, 1500), 'commands' => $list, 'cases' => $cl, 'examples' => $ex ?: '-']), 60, ['subject' => 'group command', 'prefer' => function_exists('wf_fast_model') ? wf_fast_model(true) : '']);
-    $d = (array) ($r['data'] ?? []); $cmd = (string) ($d['command'] ?? ''); $key = preg_replace('/\D/', '', (string) ($d['case_key'] ?? ''));
+    $d = (array) ($r['data'] ?? []); $cmd = (string) ($d['command'] ?? ''); $key = preg_replace('/[^0-9A-Za-z]/', '', (string) ($d['case_key'] ?? ''));
     if ($cmd !== $kw && !isset($cmds[$cmd])) return []; if ($key === '' || !isset($cases[$key])) return [];
     return ['cmd' => $cmd, 'key' => $key, 'reason' => trim((string) ($d['reason'] ?? '')), 'sure' => (float) ($d['confidence'] ?? 0) >= 0.85, 'case' => $cases[$key]];
 }
 
 /** The command in the plain form the code reads. */
-function wf_cmdai_form(array $x): string { return trim($x['cmd'] . ' +' . $x['key'] . ($x['reason'] !== '' ? "\n" . $x['reason'] : '')); }
+function wf_cmdai_form(array $x): string { return trim($x['cmd'] . ' ' . (ctype_digit($x['key']) ? '+' . $x['key'] : (string) ($x['case']['no'] ?? '')) . ($x['reason'] !== '' ? "\n" . $x['reason'] : '')); }
 
 /** Called when wf_intake_command could not use the message: true when the AI handled it (ran it, or asked). */
 function wf_cmdai_try(array $acc, array $in, string $jid, string $from, string $text, string $id): bool {
