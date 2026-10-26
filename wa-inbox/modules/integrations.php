@@ -143,7 +143,7 @@ function wf_int_page(): string {
         . '<h3>1. ' . $t('Messages in (Fariek → your webhook)') . '</h3><p class="small muted">' . $t('Within a minute of each private message. Answer with HTTP 200; any other answer is tried again the next minute.') . '</p>'
         . '<pre dir="ltr" style="overflow-x:auto;font-size:12.5px">POST https://your-site/wa/webhook\nX-Webhook-Token: &lt;your token&gt;\nContent-Type: application/json\n\n{"event":"message.received","integration":"iptvpro.org","number":"main",\n "data":{"id":"3EB0…","from":"2010xxxxxxxx","jid":"2010xxxxxxxx@s.whatsapp.net","name":"Ahmed",\n         "body":"Hello","type":"image","has_media":true,"time":"2026-10-26T14:05:00.000Z",\n         "media_url":"' . wi_e(wf_int_endpoint('media')) . (str_contains(wf_int_endpoint('media'), '?') ? '&amp;' : '?') . 'f=inbox_media/…"}}\n\nmedia_url: GET with the same X-Api-Key header → the file (photo, voice, document).</pre>'
         . '<h3>2. ' . $t('Send a message (your system → Fariek)') . '</h3><pre dir="ltr" style="overflow-x:auto;font-size:12.5px">POST ' . wi_e(wf_int_endpoint('send')) . '\nX-Api-Key: &lt;the API key shown when the integration was made&gt;\nContent-Type: application/json\n\n{"to":"2010xxxxxxxx","text":"Your order is ready"}\nor reply in the same chat (needed for hidden numbers): {"to":"&lt;data.jid from the webhook&gt;","text":"…"}\n\n→ {"ok":true,"id":"3EB0…"}   errors: 401 key, 422 data, 429 more than 60 a minute, 502 WhatsApp</pre></div>';
-    return $o;
+    return $o . (function_exists('wf_wc_section') ? wf_wc_section() : '');
 }
 
 /** Commands and files: what a system with the "commands" filter receives. */

@@ -274,6 +274,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         wi_log('plans_save', ['plans' => array_keys($out)]); wi_flash('Saved.', 'ok'); header('Location: ?p=plans'); exit;
     }
     // Integrations: a new one (its API key is shown once), and its buttons.
+    if (in_array($do, ['wc_save', 'wc_act'], true)) {
+        if (!function_exists('wf_wc_action')) require_once dirname(__DIR__) . '/features.php';
+        if (!wi_is_super() && (wi_me()['role'] ?? '') !== 'client') { http_response_code(403); exit('Not allowed.'); }
+        wf_wc_action($do); }
     if (in_array($do, ['int_save', 'int_act'], true)) {
         if (!function_exists('wf_int_mine')) require_once dirname(__DIR__) . '/features.php';
         if (!wi_is_super() && (wi_me()['role'] ?? '') !== 'client') { http_response_code(403); exit('Not allowed.'); }
