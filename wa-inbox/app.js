@@ -124,7 +124,7 @@ function WIR(ms) { var p = +((window.WI_SYS || {}).refresh_pct) || 100; return M
   // Gateway state in the sidebar.
   api('stats').then(function (s) {
     var el = document.getElementById('gw-state');
-    if (el) el.textContent = s && s.ok ? (s.connected ? T('🟢 Connected') + (s.account ? ' · ' + s.account : '') : T('🔴 Disconnected')) : T('⚠️ Gateway not responding');
+    if (el) el.textContent = s && s.ok ? (s.connected ? T('🟢 Connected') + (s.account ? ' · ' + s.account : '') : T('🔴 Disconnected')) : (s && [T('No WhatsApp account available for this user.'), 'No WhatsApp account available for this user.'].indexOf(s.error) >= 0 ? '⚪ ' + T('No WhatsApp number open') : T('⚠️ Gateway not responding'));
     if (page === 'dashboard') dashboard(s);
   });
 

@@ -1774,6 +1774,7 @@ return [
     'Farieq violet' => 'بنفسجي فريق',
     'Farieq night and gold' => 'ليل وذهب',
     'Fariek theme' => 'ثيم فريق',
+    'No WhatsApp number open' => 'مفيش رقم واتساب مفتوح',
     'Your own theme on your screens. Light or dark is switched from the top bar.' => 'الثيم بتاعك على شاشاتك. النهاري والليلي من الشريط اللي فوق.',
     'As the system' => 'زي السيستم',
     'AI usage report' => 'تقرير استهلاك الذكاء',
