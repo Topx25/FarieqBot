@@ -1774,6 +1774,7 @@ return [
     'Farieq violet' => 'بنفسجي فريق',
     'Farieq night and gold' => 'ليل وذهب',
     'Fariek theme' => 'ثيم فريق',
+    'Automatic: the %1$s report is built as a draft every day from %2$s to %3$s, and as the final report on %4$s.' => 'تلقائي: تقرير %1$s بيتعمل مسودة كل يوم من %2$s لـ %3$s، والتقرير النهائي يوم %4$s.',
     'No WhatsApp number open' => 'مفيش رقم واتساب مفتوح',
     'Your own theme on your screens. Light or dark is switched from the top bar.' => 'الثيم بتاعك على شاشاتك. النهاري والليلي من الشريط اللي فوق.',
     'As the system' => 'زي السيستم',

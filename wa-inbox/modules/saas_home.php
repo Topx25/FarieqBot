@@ -191,5 +191,8 @@ function wf_saas_reports_card(): string {
         foreach ($st as $p => $r) $o .= '<tr><td dir="ltr">' . wi_e((string) $p) . '</td><td><span class="sa-chip ' . (!empty($r['final']) ? 'ok">' . $t('Final') : 'warn">' . $t('Draft')) . '</span></td><td dir="ltr">' . wi_e(substr((string) ($r['at'] ?? ''), 0, 16)) . '</td><td>'
             . (!empty($r['pdf']) ? '<a class="btn ghost sm" href="?ai_report=' . wi_e((string) $p) . '&amp;fmt=pdf">PDF</a> ' : '') . (!empty($r['html']) ? '<a class="btn ghost sm" href="?ai_report=' . wi_e((string) $p) . '&amp;fmt=html">HTML</a>' : '') . '</td></tr>';
         $o .= '</table></div>'; }
-    return $o . '<form method="post"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="ai_report_now"><button class="btn ghost sm">' . $t('Build this half year\'s report now') . '</button></form></div>';
+    // when the next ones are built (all by the hourly job, nothing to press)
+    $cur = wf_ai_period(date('Y-m')); $end = wf_ai_period_months($cur)[5]; $last = date('Y-m-t', strtotime($end . '-01'));
+    $next = date('Y-m-d', strtotime($last . ' +1 day')); $draft = date('Y-m-d', strtotime($last . ' -2 days'));
+    return $o . '<p class="small">🕒 ' . wi_e(sprintf(wi_t('Automatic: the %1$s report is built as a draft every day from %2$s to %3$s, and as the final report on %4$s.'), $cur, $draft, $last, $next)) . '</p></div>';
 }
