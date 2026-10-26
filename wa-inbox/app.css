@@ -1355,3 +1355,4 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .sa-bar i b{display:block;height:100%;background:var(--accent,#0866ff);border-radius:99px}
 .sa-bar em{font-style:normal;color:var(--muted,#65676b);text-align:end;font-variant-numeric:tabular-nums}
 @media (max-width:900px){.sa-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sa-row{grid-template-columns:1fr}}
+.sa-ai input{padding:4px 6px}.tbl .sa-sum td{background:var(--card-in,#f5f6f7)}

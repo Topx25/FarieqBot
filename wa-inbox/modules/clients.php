@@ -19,6 +19,9 @@ function wf_usage_refresh(): void {
         if ($at === '' || $aid === '' || strcmp($at, $last) <= 0) continue; $mm = date('Y-m', (int) strtotime($at));
         $U[$aid][$mm]['ai_calls'] = (int) ($U[$aid][$mm]['ai_calls'] ?? 0) + 1;
         $U[$aid][$mm]['ai_tokens'] = (int) ($U[$aid][$mm]['ai_tokens'] ?? 0) + (int) ($t['tokens_in'] ?? 0) + (int) ($t['tokens_out'] ?? 0);
+        // per model too (the super admin's AI cost estimate)
+        $md = (string) (($t['model'] ?? '') ?: 'unknown'); $mr = (array) ($U['_models'][$mm][$md] ?? []);
+        $U['_models'][$mm][$md] = ['calls' => (int) ($mr['calls'] ?? 0) + 1, 'in' => (int) ($mr['in'] ?? 0) + (int) ($t['tokens_in'] ?? 0), 'out' => (int) ($mr['out'] ?? 0) + (int) ($t['tokens_out'] ?? 0)];
         if (strcmp($at, $newest) > 0) $newest = $at; }
     $U['_ai_last'] = $newest;
     foreach ($U as $k => $v) if ($k !== '_ai_last' && is_array($v)) { krsort($v); $U[$k] = array_slice($v, 0, 6, true); } // six months kept
