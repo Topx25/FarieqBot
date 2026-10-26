@@ -163,6 +163,8 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
     elseif ($hits && $mentions) $reason = trim(preg_replace('/@\d+/', '', $ref) . "\n" . $reason);
     // not found: a number anywhere in the message is tried, then close names are offered ("did you mean…") instead of a flat no
     if (!$hits && preg_match('/(?:\+|00)?\d[\d\s-]{7,16}\d/', $text, $pm) && ($h = wf_intake_find($aid, trim($pm[0]), [], $acc, true))) { if (count($h) === 1) { $hits = $h; $reason = trim($ref . "\n" . $reason); } else $hits = $h; }
+    // the code could not read it: the AI reads the intent (runs it when sure, asks "reply 1" when not)
+    if (!$hits && function_exists('wf_cmdai_try') && wf_cmdai_try($acc, $in, $jid, $from, $text, $id)) return true;
     if (!$hits && $ref !== '') { $sug = []; $words = array_filter(preg_split('/\s+/u', mb_strtolower(preg_replace('/@\d+/', '', $ref))), fn($w) => mb_strlen($w) >= 3);
         foreach (wf_cases($aid) as $k => $c) { if (!is_array($c) || wf_case_is_private($c)) continue; $nm = mb_strtolower(trim((string) ($c['name'] ?? ''))); if ($nm === '') continue; $best = 0;
             foreach ($words as $w) foreach (preg_split('/\s+/u', $nm) as $nw) { similar_text($w, $nw, $pc); $best = max($best, $pc); }
@@ -179,6 +181,7 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
         $reason = trim(implode(' ', array_filter(preg_split('/\s+/u', $ref), fn($w) => !preg_match('/^[+\d-]{6,}$/', $w) && $w !== (string) ($case['no'] ?? '') && ($nm === '' || mb_strpos($nm, mb_strtolower($w)) === false)))); }
     if ($status === null) { // lookup: the report and the stage
         $rep = trim((string) ($case['report'] ?? '')) ?: wf_case_report($aid, ['name' => $case['name'] ?? '', 'phone' => $key] + array_map(fn($v) => is_array($v) ? implode("\n", $v) : (string) $v, (array) ($case['data'] ?? [])));
+        if (function_exists('wf_cmdai_learn') && empty($in['cmdai'])) wf_cmdai_learn($aid, $jid, $from, $text);
         $say('ID ' . ($case['no'] ?? '') . ' · ' . ($st[$case['status'] ?? 'new'] ?? '') . "\n\n" . $rep); wi_log('case_lookup', ['account' => $aid, 'group' => $jid, 'case' => $key]); return true; }
     if ($reason === '' && $status !== 'archived') { $say(wf_msg('case_no_reason', ['status' => $cmd])); return true; } // archiving needs no reason
     $note = ['at' => date('c'), 'by' => $by, 'text' => ($st[$status] ?? $status) . ($reason !== '' ? ' — ' . mb_substr($reason, 0, 2000) : '')];
@@ -187,6 +190,7 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
         $c['status'] = $status; $c['updated'] = date('c'); $c['notes'][] = $note; return $c; });
     $say(wf_msg('case_status_done', ['name' => $by, 'case' => $one, 'person' => ($case['name'] ?? '') ?: '+' . $key, 'status' => $st[$status] ?? $status, 'reason' => mb_substr($reason, 0, 300)]));
     wf_case_diag_note($acc, $key, $jid, (string) ($st[$status] ?? $status), $reason, $by);
+    if (function_exists('wf_cmdai_learn') && empty($in['cmdai'])) wf_cmdai_learn($aid, $jid, $from, $text);
     wi_log('case_status_cmd', ['account' => $aid, 'group' => $jid, 'case' => $key, 'to' => $status]);
     return true;
 }
@@ -388,6 +392,10 @@ function wf_intake_hook(array $acc, array $in): void {
     if ($text !== '' && str_ends_with($jid, '@g.us') && !wi_account_blocked($acc) && wf_is_menu($aid, $text)) {
         $reply(['ok' => false, 'done' => true]); [$tagT, $tagM] = wf_group_tag($from);
         wi_gateway('/chat/send', ['jid' => $jid, 'text' => $tagT . wf_cmd_menu($aid), 'quote_id' => $id, 'mentions' => $tagM, 'via' => 'bot'], $acc); wi_log('cmd_menu', ['account' => $aid, 'group' => $jid]); exit; }
+    // "1" after the bot asked "did you mean …", or a "#…" close to a command word (a typo): the AI layer
+    if (!empty($c['on']) && !wi_account_blocked($acc) && str_ends_with($jid, '@g.us') && $from !== '' && $text !== '' && function_exists('wf_cmdai_confirm') && ($jid === $diag || !$c['groups'] || in_array($jid, (array) $c['groups'], true))) {
+        if (mb_strlen(trim($text)) <= 2 && !empty(wf_cmdai_get($aid)['pending'][$jid . '|' . $from])) { $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(120); if (wf_cmdai_confirm($acc, $in, $jid, $from, $text, $id)) exit; }
+        elseif (!wf_intake_is_cmd($aid, $text) && wf_cmdai_near($aid, $text)) { $reply(['ok' => false, 'done' => true]); ignore_user_abort(true); @set_time_limit(120); wf_cmdai_try($acc, $in, $jid, $from, $text, $id); exit; } }
     // a follow-up command (#الحالة, #اتحسنت …): also in the diagnosis group
     if (!empty($c['on']) && !wi_account_blocked($acc) && str_ends_with($jid, '@g.us') && $from !== '' && $text !== '' && wf_intake_is_cmd($aid, $text)
         && ($jid === $diag || !$c['groups'] || in_array($jid, (array) $c['groups'], true))) {
