@@ -267,6 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     // Integrations: a new one (its API key is shown once), and its buttons.
     if (in_array($do, ['int_save', 'int_act'], true)) {
+        if (!function_exists('wf_int_mine')) require_once dirname(__DIR__) . '/features.php';
         if (!wi_is_super() && (wi_me()['role'] ?? '') !== 'client') { http_response_code(403); exit('Not allowed.'); }
         if ($do === 'int_save') { $aid = (string) ($_POST['aid'] ?? ''); $url = trim((string) ($_POST['url'] ?? ''));
             if (!isset(wf_int_numbers()[$aid]) || !preg_match('#^https://[^\s]+$#', $url)) { wi_flash('Choose a number and give an https webhook address.', 'bad'); header('Location: ?p=integrations'); exit; }
