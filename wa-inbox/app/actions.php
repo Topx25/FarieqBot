@@ -275,8 +275,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     // Integrations: a new one (its API key is shown once), and its buttons.
     // Error log: a group marked as seen is hidden until it happens again
-    if ($do === 'err_ack' && wi_is_super()) { $k = preg_replace('/[^0-9a-f]/', '', (string) ($_POST['k'] ?? '')); $l = substr((string) ($_POST['last'] ?? ''), 0, 40);
-        if ($k !== '') wi_update('err_ack.json', function ($A) use ($k, $l) { $A = (array) $A; $A[$k] = $l !== '' ? $l : date('c'); return array_slice($A, -2000, null, true); });
+    // seen = hidden until it happens again; mute = hidden for good; unhide = shown again (one row's button, or the ticked rows)
+    if ($do === 'err_ack' && wi_is_super()) { $one = preg_replace('/[^0-9a-f]/', '', (string) ($_POST['one'] ?? '')); $act = $one !== '' ? 'seen' : (string) ($_POST['act'] ?? '');
+        $keys = array_values(array_filter(array_map(fn($x) => preg_replace('/[^0-9a-f]/', '', (string) $x), $one !== '' ? [$one] : (array) ($_POST['k'] ?? []))));
+        $last = (array) ($_POST['last'] ?? []);
+        if ($keys && in_array($act, ['seen', 'mute', 'unhide'], true)) wi_update('err_ack.json', function ($A) use ($keys, $act, $last) { $A = (array) $A;
+            foreach ($keys as $k) { if ($act === 'unhide') unset($A[$k]); else $A[$k] = $act === 'mute' ? '9999' : (substr((string) ($last[$k] ?? ''), 0, 40) ?: date('c')); }
+            return array_slice($A, -3000, null, true); });
+        if ($keys) wi_log('err_' . $act, ['count' => count($keys)]);
         header('Location: ' . ((string) ($_SERVER['HTTP_REFERER'] ?? '') ?: '?p=errors')); exit; }
     if (in_array($do, ['wc_save', 'wc_act'], true)) {
         if (!function_exists('wf_wc_action')) require_once dirname(__DIR__) . '/features.php';
