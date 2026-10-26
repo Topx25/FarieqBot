@@ -407,10 +407,11 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         var b = document.getElementById('gg-body'), a = document.getElementById('gg-act'), g = document.getElementById('gg-badge');
         function load() { WI.get('my_google').then(function (r) { if (!r.ok) { b.textContent = r.error || ''; return; }
           g.textContent = r.connected ? T('Connected') : T('Not connected'); g.className = 'badge ' + (r.connected ? 'ok' : '');
-          b.innerHTML = !r.ready ? T('Google sign-in is not set up on this installation yet. Ask the administrator.') : (r.connected ? '✅ ' + esc(r.email || '') + (r.missing && r.missing.length ? '<br>⚠️ ' + T('Some permissions were not given:') + ' ' + esc(r.missing.join(', ')) : '') : T('Not connected yet.'));
-          a.innerHTML = !r.ready ? '' : (r.connected ? '<button type="button" class="btn ghost sm" data-gg="disconnect">' + T('Disconnect') + '</button>' : '<button type="button" class="btn primary sm" data-gg="connect">🔗 ' + T('Connect my Google account') + '</button>'); }); }
+          if (r.connected && r.broken) { g.textContent = T('Stopped'); g.className = 'badge bad'; }
+          b.innerHTML = !r.ready ? T('Google sign-in is not set up on this installation yet. Ask the administrator.') : (r.connected ? (r.broken ? '⚠️ ' + T('Google stopped this connection. Connect again.') + '<br>' : '✅ ') + esc(r.email || '') + (r.missing && r.missing.length ? '<br>⚠️ ' + T('Some permissions were not given:') + ' ' + esc(r.missing.join(', ')) : '') : T('Not connected yet.'));
+          a.innerHTML = !r.ready ? '' : (r.connected ? (r.broken ? '<button type="button" class="btn primary sm" data-gg="connect">🔗 ' + T('Connect again') + '</button> ' : '') + (r.read ? '' : '<button type="button" class="btn ghost sm" data-gg="connect" data-read="1">📂 ' + T('Allow reading Drive folders (learning)') + '</button> ') + '<button type="button" class="btn ghost sm" data-gg="disconnect">' + T('Disconnect') + '</button>' : '<button type="button" class="btn primary sm" data-gg="connect">🔗 ' + T('Connect my Google account') + '</button>'); }); }
         a.addEventListener('click', function (e) { var x = e.target.closest('[data-gg]'); if (!x) return; if (x.dataset.gg === 'disconnect' && !confirm(T('Disconnect your Google account?'))) return;
-          WI.post('my_google', { do: x.dataset.gg }).then(function (r) { if (!r.ok) { alert(r.error || T('Failed')); return; } if (r.url) location.href = r.url; else load(); }); });
+          WI.post('my_google', { do: x.dataset.gg, read: x.dataset.read ? 1 : 0 }).then(function (r) { if (!r.ok) { alert(r.error || T('Failed')); return; } if (r.url) location.href = r.url; else load(); }); });
         load(); });</script>
       <?php endif; ?>
     <?php elseif ($page === 'help'): ?>

@@ -299,7 +299,7 @@ function wf_api_learning_docs(string $api): void {
         // The connected Google account is the operator's; a client's panel uploads files instead.
         $base = wf_aid(); wf_docs_install(); @set_time_limit(600);
         $c = wf_drive_cfg(); if (empty($c['refresh_token'])) wi_json(['ok' => false, 'need' => 'connect', 'error' => wf_google_ws() !== '' ? 'Connect your Google account first (My account → Google account).' : 'Connect Google first (General settings → Google account).']);
-        if (strpos((string) ($c['scopes'] ?? ''), 'drive.readonly') === false) wi_json(['ok' => false, 'need' => 'reconnect', 'error' => 'Google is connected without permission to read your Drive files. Disconnect and connect Google again, and allow “See your Google Drive files”.']);
+        if (strpos((string) ($c['scopes'] ?? ''), 'drive.readonly') === false) wi_json(['ok' => false, 'need' => 'read', 'via' => wf_google_ws() === '' ? 'backup_cfg' : 'my_google', 'error' => 'Reading your Drive folders is an extra Google permission. Allow it once and the bot can learn from your Drive.']);
         $t = wf_drive_token(); if (!$t['ok']) wi_json($t);
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $in = wf_post();

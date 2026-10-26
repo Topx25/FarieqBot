@@ -143,7 +143,8 @@
           if (e.target.closest('#lc-nms')) { post('learn_clean', { do: 'names', names: document.getElementById('lc-nm').value }).then(function (x) { toast(x.ok ? '✓ ' + T('Saved') : '⚠️ ' + x.error); }); return; } });
         function dvLoad(q) { var pnl = document.getElementById('ld-panel'), cur = DV.stack[DV.stack.length - 1]; pnl.innerHTML = '<div class="empty">' + T('Loading…') + '</div>';
           get('learn_drive', q ? { q: q } : { folder: cur.id }).then(function (x) {
-            if (!x.ok) { pnl.innerHTML = '<div class="pp-view">⚠️ ' + esc(T(x.error)) + (x.need ? ' <a href="?p=settings">' + T('Open the Google connection') + ' →</a>' : '') + '</div>'; return; }
+            if (!x.ok) { pnl.innerHTML = '<div class="pp-view">⚠️ ' + esc(T(x.error)) + (x.need === 'read' ? ' <button type="button" class="btn primary sm" id="ld-allow">📂 ' + T('Allow reading Drive folders (learning)') + '</button>' : (x.need ? ' <a href="?p=settings">' + T('Open the Google connection') + ' →</a>' : '')) + '</div>';
+              var al = document.getElementById('ld-allow'); if (al) al.onclick = function () { post(x.via || 'my_google', { do: 'connect', read: 1 }).then(function (r) { if (r.ok && r.url) location.href = r.url; else toast('⚠️ ' + (r.error || T('Failed'))); }); }; return; }
             DV.files = x.files;
             pnl.innerHTML = '<div class="ld-box"><div class="row wrap"><div class="ld-crumbs">' + DV.stack.map(function (c, i) { return '<a href="#" data-crumb="' + i + '">' + (i ? '📁 ' : '☁️ ') + esc(c.name) + '</a>'; }).join(' › ') + '</div>'
               + '<div class="search-xl" style="flex:1"><span>🔎</span><input type="search" id="ld-q" placeholder="' + T('Search Drive by file name…') + '" dir="auto" value="' + esc(q || '') + '"></div></div>'

@@ -12,8 +12,16 @@ function wf_google_ws(): string {
     return ($u['role'] ?? '') !== 'super' && wi_owned_accounts((string) $u['email']) ? strtolower((string) $u['email']) : ''; // an owner of a private number uses their own Google
 }
 function wf_google_use(?string $ws): void { if ($ws === null) unset($GLOBALS['WI_GOOGLE_WS']); else $GLOBALS['WI_GOOGLE_WS'] = $ws; }
-/** Drive, Calendar and Meet are asked together. YouTube is a separate sign-in (WF_YOUTUBE_SCOPE): Google refuses drive.file and youtube.upload in one request. */
-const WF_GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/meetings.space.created';
+/** One Google connection per account: backups (drive.file), Calendar and Meet, asked together. These are not restricted scopes, so the
+ *  Google app can be published and the connection does not end after 7 days. Reading Drive folders (learning) is an extra, restricted
+ *  permission asked only by who uses it (WF_DRIVE_READ_SCOPE), added to the same connection. YouTube is a separate sign-in (WF_YOUTUBE_SCOPE). */
+const WF_GOOGLE_SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/meetings.space.created';
+const WF_DRIVE_READ_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
+/** The Google sign-in link: offline access, and the permissions already given are kept (include_granted_scopes). */
+function wf_google_auth_url(string $clientId, string $state, bool $read): string {
+    return 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query(['client_id' => $clientId, 'redirect_uri' => wf_drive_redirect(), 'response_type' => 'code',
+        'scope' => WF_GOOGLE_SCOPES . ($read ? ' ' . WF_DRIVE_READ_SCOPE : ''), 'access_type' => 'offline', 'prompt' => 'consent', 'include_granted_scopes' => 'true', 'state' => $state]);
+}
 const WF_YOUTUBE_SCOPE = 'https://www.googleapis.com/auth/youtube.upload';
 function wf_drive_cfg(): array {
     $ws = wf_google_ws();
@@ -44,8 +52,14 @@ function wf_drive_token(): array {
     curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_POSTFIELDS => http_build_query([
         'client_id' => $c['client_id'], 'client_secret' => $c['client_secret'], 'refresh_token' => $c['refresh_token'], 'grant_type' => 'refresh_token'])]);
     $r = json_decode((string) curl_exec($ch), true); curl_close($ch);
-    if (empty($r['access_token'])) return ['ok' => false, 'error' => 'Google refused the saved connection: ' . ($r['error_description'] ?? $r['error'] ?? 'unknown') . '. Connect Google Drive again.'];
-    $c['access_token'] = $r['access_token']; $c['expires'] = time() + (int) ($r['expires_in'] ?? 3000);
+    if (empty($r['access_token'])) {
+        $err = 'Google refused the saved connection: ' . ($r['error_description'] ?? $r['error'] ?? 'unknown') . '. Connect Google Drive again.';
+        // the connection is marked as stopped (shown on the Google card with a reconnect button), unless Google could not be reached at all
+        if (!empty($r['error']) && empty($c['broken'])) { $c['broken'] = ['at' => date('c'), 'error' => (string) $r['error']]; wf_drive_save($c); }
+        return ['ok' => false, 'error' => $err];
+    }
+    $c['access_token'] = $r['access_token']; $c['expires'] = time() + (int) ($r['expires_in'] ?? 3000); unset($c['broken']);
+    if (!empty($r['refresh_token'])) $c['refresh_token'] = (string) $r['refresh_token'];
     wf_drive_save($c);
     return ['ok' => true, 'token' => $r['access_token']];
 }
@@ -100,11 +114,11 @@ function wf_api_drive(string $api): void {
                 if (empty($c['client_id']) || empty($c['client_secret'])) wi_json(['ok' => false, 'error' => 'Google sign-in is not set up on this installation yet. Ask the administrator.']);
                 $state = bin2hex(random_bytes(16)); $ws = wf_google_ws();
                 wi_update('google_states.json', function ($A) use ($state, $ws) { $A[$state] = ['ws' => $ws, 'at' => time()]; return $A; });
-                wi_json(['ok' => true, 'url' => 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query(['client_id' => $c['client_id'], 'redirect_uri' => wf_drive_redirect(), 'response_type' => 'code', 'scope' => WF_GOOGLE_SCOPES, 'access_type' => 'offline', 'prompt' => 'consent', 'state' => $state])]);
+                wi_json(['ok' => true, 'url' => wf_google_auth_url((string) $c['client_id'], $state, !empty($in['read']) || strpos((string) ($c['scopes'] ?? ''), 'drive.readonly') !== false)]);
             }
             if (($in['do'] ?? '') === 'disconnect') { $ws = wf_google_ws(); wi_secret_set('google_refresh_token:' . $ws, ''); wi_update('drive_ws.json', function ($A) use ($ws) { unset($A[$ws]); return $A; }); wi_log('google_disconnect', []); wi_json(['ok' => true]); }
         }
-        wi_json(['ok' => true, 'ready' => !empty($c['client_id']), 'connected' => !empty($c['refresh_token']), 'email' => (string) ($c['email'] ?? ''), 'missing' => $c['missing'] ?? [], 'at' => $c['connected_at'] ?? null]);
+        wi_json(['ok' => true, 'ready' => !empty($c['client_id']), 'connected' => !empty($c['refresh_token']), 'email' => (string) ($c['email'] ?? ''), 'missing' => $c['missing'] ?? [], 'at' => $c['connected_at'] ?? null, 'broken' => $c['broken'] ?? null, 'read' => strpos((string) ($c['scopes'] ?? ''), 'drive.readonly') !== false]);
     }
     /* ----- 13) Google Drive backup ----- */
     case 'backup_cfg': {
@@ -117,7 +131,7 @@ function wf_api_drive(string $api): void {
                 if ($id !== '') $c['client_id'] = $id; if ($sec !== '') { $c['client_secret'] = $sec; wi_secret_set('google_client_secret', $sec); }
                 if (empty($c['client_id']) || empty($c['client_secret'])) wi_json(['ok' => false, 'error' => 'Enter the OAuth Client ID and Client secret.']);
                 $c['state'] = bin2hex(random_bytes(16)); $c['state_at'] = time(); wi_write('drive.json', $c);
-                wi_json(['ok' => true, 'url' => 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query(['client_id' => $c['client_id'], 'redirect_uri' => wf_drive_redirect(), 'response_type' => 'code', 'scope' => 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/meetings.space.created', 'access_type' => 'offline', 'prompt' => 'consent', 'state' => $c['state']])]);
+                wi_json(['ok' => true, 'url' => wf_google_auth_url((string) $c['client_id'], (string) $c['state'], !empty($in['read']) || strpos((string) ($c['scopes'] ?? ''), 'drive.readonly') !== false)]);
             }
             if (($in['do'] ?? '') === 'disconnect') { unset($c['refresh_token'], $c['access_token'], $c['expires'], $c['folder_id'], $c['email']); wi_write('drive.json', $c); }
             if (($in['do'] ?? '') === 'types') { $c['types'] = array_values(array_intersect(array_keys(WF_BACKUP_TYPES), (array) ($in['types'] ?? []))) ?: ['data']; wi_write('drive.json', $c); }
@@ -195,8 +209,8 @@ function wf_drive_callback(): void {
             $c['email'] = (string) ($u['body']['user']['emailAddress'] ?? '');
             $c['scopes'] = (string) ($r['scope'] ?? '');
             // what was asked for but not granted (Google drops scopes that are not on the project's Data Access list, or that the person unticked)
-            $want = ['drive.readonly' => 'Read Drive files (learning)', 'meetings.space.created' => 'Meet recording', 'calendar.events' => 'Calendar (Meet links)', 'drive.file' => 'Google Drive'];
-            $c['missing'] = array_values(array_filter(array_keys($want), fn($k) => strpos($c['scopes'], $k) === false)); $c['connected_at'] = date('c');
+            $want = ['meetings.space.created' => 'Meet recording', 'calendar.events' => 'Calendar (Meet links)', 'drive.file' => 'Google Drive'];
+            $c['missing'] = array_values(array_filter(array_keys($want), fn($k) => strpos($c['scopes'], $k) === false)); $c['connected_at'] = date('c'); unset($c['broken']);
             $msg = 'Google Drive connected.';
         } else $msg = 'Google Drive: ' . ($r['error_description'] ?? $r['error'] ?? 'no refresh token returned');
     }
