@@ -145,6 +145,17 @@ function wf_wc_howto(): string {
         . '<p class="small"><b>' . $t('The bubble does not show?') . '</b></p>' . $li(['The domain here must be the website\'s domain (www and other sub-domains work).', 'The website chat must be switched on here.', 'Clear the website cache (a cache plugin or Cloudflare).'])
         . '</details>';
 }
+/** The sites of one number, for its bot page (with the line to paste). */
+function wf_wc_for(string $aid): array { $base = rtrim((string) wi_sys('base_url'), '/') . '/'; $out = [];
+    foreach (wf_wc_sites() as $k => $s) if ((string) ($s['aid'] ?? '') === $aid) $out[] = ['k' => $k, 'name' => (string) ($s['name'] ?? ''), 'domains' => array_values((array) ($s['domains'] ?? [])), 'on' => !empty($s['on']), 'mode' => ($s['mode'] ?? 'bot') === 'team' ? 'team' : 'bot', 'code' => '<script src="' . $base . '?wc=js&k=' . $k . '" async></script>'];
+    return $out; }
+/** ?api=webchat_set {k, mode}: who answers a site's visitors (from the bot page). */
+function wf_api_webchat(string $api): void {
+    if ($api !== 'webchat_set') return; $in = wf_post(); $k = (string) ($in['k'] ?? ''); $s = wf_wc_sites()[$k] ?? null;
+    if (!$s || !wi_can_manage(wi_accounts()[(string) $s['aid']] ?? null)) wi_json(['ok' => false, 'error' => 'Not allowed.'], 403);
+    $mv = ($in['mode'] ?? '') === 'team' ? 'team' : 'bot'; wi_update('webchat.json', function ($A) use ($k, $mv) { $A[$k]['mode'] = $mv; return $A; }); wi_log('webchat_mode', ['site' => $k, 'mode' => $mv]); wi_json(['ok' => true]);
+}
+wi_hook_add('api_handlers', fn(array $H) => array_merge($H, ['wf_api_webchat']));
 /** Saves from the Integrations page. */
 function wf_wc_action(string $do): void {
     if ($do === 'wc_save') { $aid = (string) ($_POST['aid'] ?? ''); $to = trim((string) ($_POST['to'] ?? ''));

@@ -563,7 +563,7 @@ function wf_api_bot_learning(string $api): void {
             $pl[] = ['jid' => $pj, 'name' => $w['name'], 'phone' => $w['phone'], 'group' => $w['group'], 'at' => $px['at'] ?? '', 'by' => $px['by'] ?? '', 'until' => $px['until'] ?? null];
         }
         foreach ($dl as &$d0) if (($d0['name'] ?? '') === '' && isset($who[$d0['jid']])) $d0['name'] = $who[$d0['jid']]['name']; unset($d0);
-        wi_json(['drafts_list' => $dl, 'paused_list' => $pl, 'ok' => true, 'run' => wf_bot_run_cfg($aid), 'healing' => (string) (wf_pack($aid)['case_preset'] ?? '') === 'treatment', 'log' => array_slice(array_reverse($L), 0, 500), 'drafts' => count(wf_bot_drafts($aid)), 'account' => wi_accounts()[$aid]['name'] ?? $aid]);
+        wi_json(['drafts_list' => $dl, 'paused_list' => $pl, 'ok' => true, 'run' => wf_bot_run_cfg($aid), 'healing' => (string) (wf_pack($aid)['case_preset'] ?? '') === 'treatment', 'web_sites' => function_exists('wf_wc_for') ? wf_wc_for($aid) : [], 'log' => array_slice(array_reverse($L), 0, 500), 'drafts' => count(wf_bot_drafts($aid)), 'account' => wi_accounts()[$aid]['name'] ?? $aid]);
     }
     case 'bot_chats': {
         // Every private chat (last 3 months) with the bot on/off for it.

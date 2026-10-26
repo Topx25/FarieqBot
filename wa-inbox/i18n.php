@@ -15,6 +15,8 @@ return [
     'Back' => 'رجوع',
     'Resend code' => 'ابعت الكود تاني',
     'Website chat' => 'شات للموقع',
+    'The bot answers the visitors of the websites of this number' => 'البوت يرد على زوار مواقع الرقم ده',
+    'No website yet.' => 'لسه مفيش موقع.',
     'Website chat: the bot answers visitors of your website (Integrations → Website chat)' => 'شات الموقع: البوت يرد على زوار موقعك (التكاملات ← شات للموقع)',
     'Who answers the visitors' => 'مين يرد على الزوار',
     'The bot first, then the team on WhatsApp' => 'البوت الأول، وبعدين الفريق على واتساب',
