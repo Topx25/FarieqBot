@@ -188,6 +188,8 @@ if (date('i') === '17' && function_exists('wf_gw_rules_seed')) { try { wf_gw_rul
 if (function_exists('wf_hist_scan')) { try { wf_hist_scan(); } catch (Throwable $e) { wi_catch($e, 'cron wf_hist_scan'); } }
 // a number with more than 3 bot errors in 10 minutes: one alert an hour to the watch group
 if (function_exists('wf_err_alert')) { try { wf_err_alert(); } catch (Throwable $e) { wi_catch($e, 'cron wf_err_alert'); } }
+// every day at 10:13: Google connections and the last backup (a WhatsApp alert when one stopped working)
+if ((int) date('G') === 10 && (int) date('i') === 13 && function_exists('wf_google_watch')) { try { wf_google_watch($tellAdmins); } catch (Throwable $e) { wi_catch($e, 'cron google watch'); } }
 if (wi_sys('addon_facebook') && function_exists('wf_fb_sync_all')) { try { wf_fb_sync_all(); } catch (Throwable $e) { wi_catch($e, 'cron wf_fb_sync_all'); } } // Facebook pages: new Messenger messages read from the page (works before the app is published, catches missed webhooks) // visitors lists: farewell for those who leave unanswered, a note when someone comes back
 try { wi_media_usage_refresh(); } catch (Throwable $e) { wi_catch($e, 'cron wi_media_usage_refresh'); } // media kept per number (every 10 minutes): plan allowance shown in the panel and given to each gateway
 try { wi_outbox_flush(); } catch (Throwable $e) { wi_catch($e, 'cron wi_outbox_flush'); } // replies written while a number was offline // reception groups: reminder, last notice, removal

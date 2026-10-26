@@ -250,3 +250,24 @@ function wf_youtube_job(array $p): array {
         wi_log('youtube_upload', ['account' => $aid, 'key' => $key, 'ok' => $r['ok']]); return $r;
     } finally { wf_google_use(null); }
 }
+
+/** Daily: every Google connection (the system's and each panel owner's) is tried, and the last backup is checked. What stopped
+ *  working is sent on WhatsApp to the admins (and to the panel owner for their own), once a day while it stays broken. */
+function wf_google_watch(callable $tellAdmins): array {
+    $st = (array) wi_read('google_watch.json', []); $today = date('Y-m-d'); $out = [];
+    $wss = ['' => true]; foreach ((array) wi_read('drive_ws.json', []) as $ws => $c) if (!empty($c['refresh_token'])) $wss[(string) $ws] = true;
+    foreach (array_keys($wss) as $ws) { $ws = (string) $ws;
+        wf_google_use($ws); $c = wf_drive_cfg(); if (empty($c['refresh_token'])) continue;
+        $t = wf_drive_token(); $key = 'g:' . ($ws === '' ? 'system' : $ws); $out[$key] = !empty($t['ok']);
+        if (!empty($t['ok'])) { unset($st[$key]); continue; }
+        if (($st[$key] ?? '') === $today) continue; $st[$key] = $today; $err = mb_substr((string) ($t['error'] ?? ''), 0, 160);
+        $tellAdmins(wf_msg('google_broken_admin', ['who' => $ws === '' ? wi_t('the system') : $ws, 'error' => $err]));
+        if ($ws !== '' && !empty(wi_sys('notify_clients')) && ($u = wi_find_user($ws)) && !empty($u['phone'])) wi_send_whatsapp((string) $u['phone'], wf_msg('google_broken_owner', ['error' => $err]));
+        wi_log('google_broken', ['ws' => $ws]); }
+    wf_google_use(null);
+    $last = (array) (wi_read('drive.json', [])['last'] ?? []);
+    if (isset($last['ok']) && !$last['ok'] && strtotime((string) ($last['at'] ?? '')) > time() - 30 * 3600 && ($st['backup'] ?? '') !== $today) {
+        $st['backup'] = $today; $tellAdmins(wf_msg('backup_failed_admin', ['date' => substr((string) $last['at'], 0, 10), 'error' => mb_substr((string) ($last['error'] ?? ''), 0, 160)])); $out['backup'] = false; }
+    wi_write('google_watch.json', $st);
+    return $out;
+}
