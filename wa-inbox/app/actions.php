@@ -232,6 +232,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $accounts[$id] = ['id' => $id, 'name' => $name, 'port' => $port, 'token' => bin2hex(random_bytes(24)), 'enabled' => true,
                     'payments' => wi_is_super() ? !empty($_POST['payments']) : false, 'autoreply' => false, 'created_at' => date('c'), 'created_by' => (string) $_SESSION['email'], // payments: the payment bot sends receipts to the owner's invoice system (owner only)
                     'owner' => wi_is_super() ? null : (string) $_SESSION['email']];
+                // where every number runs in the one hub process (the Docker server), a new number joins the hub too: nothing else would start its gateway
+                if ((string) (wi_config()['main_gateway'] ?? '') === 'hub') $accounts[$id]['gateway'] = 'hub';
                 wi_save_accounts($accounts); wi_log('account_add', ['account' => $id, 'name' => $name]);
                 if (!wi_is_super()) wi_client_folder($id, (string) $_SESSION['email']); // a client's files go to a folder of its own
                 if (!wi_is_super()) { // a user's own number is visible to that user
