@@ -6,17 +6,21 @@
         var h = '';
         if (!r.connected) {
           var L = function (u, t) { return '<a href="' + u + '" target="_blank" rel="noopener">' + t + ' ↗</a>'; };
-          h += '<h3>1️⃣ ' + T('Connect Google Drive') + '</h3><ol class="small gsteps">'
-            + '<li>' + T('Enable the APIs:') + ' ' + L('https://console.cloud.google.com/apis/library/drive.googleapis.com', 'Google Drive API') + ' · ' + L('https://console.cloud.google.com/apis/library/calendar-json.googleapis.com', 'Google Calendar API') + ' <span class="muted">(' + T('press “Enable” on each') + ')</span></li>'
-            + '<li>' + L('https://console.cloud.google.com/apis/credentials/consent', T('OAuth consent screen')) + ': ' + T('choose “External”, fill the app name and your email, then add your Gmail under “Test users”.') + '</li>'
-            + '<li>' + L('https://console.cloud.google.com/apis/credentials/oauthclient', T('Create an OAuth client ID')) + ' → ' + T('type “Web application”.') + '</li>'
+          var S = function (s) { return '<code dir="ltr">' + s + '</code>'; };
+          h += '<h3>1️⃣ ' + T('Connect Google') + '</h3><p class="muted small">' + T('One connection for everything: Drive backups, Calendar and Google Meet links. Done once, and it does not stop after 7 days.') + '</p><ol class="small gsteps">'
+            + '<li>' + T('Enable the APIs:') + ' ' + L('https://console.cloud.google.com/apis/library/drive.googleapis.com', 'Google Drive API') + ' · ' + L('https://console.cloud.google.com/apis/library/calendar-json.googleapis.com', 'Google Calendar API') + ' · ' + L('https://console.cloud.google.com/apis/library/meet.googleapis.com', 'Google Meet API') + ' <span class="muted">(' + T('press “Enable” on each') + ')</span></li>'
+            + '<li>' + L('https://console.cloud.google.com/auth/branding', T('Google Auth Platform → Branding')) + ': ' + T('the app name and your email (audience “External”).') + '</li>'
+            + '<li>' + L('https://console.cloud.google.com/auth/scopes', T('Data access')) + ' → ' + T('Add or remove scopes') + ': ' + S('drive.file') + ' · ' + S('calendar.events') + ' · ' + S('meetings.space.created') + '</li>'
+            + '<li>' + L('https://console.cloud.google.com/auth/audience', 'Audience') + ' → <b>Publish app</b>: ' + T('without it Google stops the connection after 7 days.') + '</li>'
+            + '<li>' + L('https://console.cloud.google.com/auth/clients/create', T('Clients → Create client')) + ' → ' + T('type “Web application”.') + '</li>'
             + '<li>' + T('Authorised redirect URI:') + ' <code dir="ltr">' + esc(r.redirect) + '</code> <button type="button" class="link-btn" data-copy-link="' + esc(r.redirect) + '">📋 ' + T('Copy') + '</button></li>'
             + '<li>' + T('Paste the Client ID and secret here, then Connect.') + ' ' + L('https://console.cloud.google.com/apis/credentials', T('Your credentials')) + '</li></ol>'
             + '<div class="row wrap"><input id="bk-id" placeholder="Client ID" value="' + esc(r.client_id) + '" dir="ltr" style="flex:2"><input id="bk-sec" type="password" placeholder="' + (r.has_secret ? '•••••• ' + T('saved') : 'Client secret') + '" dir="ltr" style="flex:1"><button class="btn primary" id="bk-con">🔗 ' + T('Connect Google Drive') + '</button></div>';
         } else {
           var mb = function (b) { b = Number(b || 0); return b > 1073741824 ? (b / 1073741824).toFixed(2) + ' GB' : (b / 1048576).toFixed(1) + ' MB'; };
           var P = r.progress || {}, run = r.busy || P.running;
-          h += '<div class="row"><span class="pill good">✅ ' + T('Connected') + (r.email ? ' · ' + esc(r.email) : '') + '</span><button class="link-btn" id="bk-dis">' + T('Disconnect') + '</button></div>';
+          if (r.broken) h += '<div class="pp-view small" style="margin-bottom:8px">⚠️ ' + T('Google stopped this connection. Connect again, and publish the Google app (Audience → Publish app) so it does not stop after 7 days.') + ' <button type="button" class="btn primary sm" id="bk-recon">🔗 ' + T('Connect again') + '</button></div>';
+          h += '<div class="row"><span class="pill ' + (r.broken ? 'bad">⛔ ' + T('Stopped') : 'good">✅ ' + T('Connected')) + (r.email ? ' · ' + esc(r.email) : '') + '</span><button class="link-btn" id="bk-dis">' + T('Disconnect') + '</button></div>';
           // progress
           if (run) { var pct = P.bytes_total ? Math.round(P.bytes_done / P.bytes_total * 100) : (P.total ? Math.round(P.done / P.total * 100) : 0);
             h += '<div class="bk-prog"><div class="row"><b>⏳ ' + (P.phase === 'package' ? '📦 ' + T('Building the package') + ' — ' + T(({ database: 'database dump', packing: 'packing files', upload: 'uploading to Drive' })[P.step] || P.step || '') + '…' : P.phase === 'archive' ? T('Archiving deleted files…') : (P.running ? T('Backing up…') : T('Waiting for the worker (within a minute)…'))) + '</b><span class="muted small">' + (P.total ? fmt(P.done) + ' / ' + fmt(P.total) + ' ' + T('files') + ' · ' + mb(P.bytes_done) + ' / ' + mb(P.bytes_total) : '') + '</span></div><div class="bk-bar"><i style="width:' + pct + '%"></i></div><div class="muted small" dir="ltr">' + esc(P.current || '') + '</div></div>'; }
@@ -51,6 +55,7 @@
         }
         document.getElementById('bk').innerHTML = h;
         var q = function (id) { return document.getElementById(id); };
+        if (q('bk-recon')) q('bk-recon').onclick = function () { post('backup_cfg', { do: 'connect' }).then(function (x) { if (x.ok) location.href = x.url; else toast('⚠️ ' + x.error); }); };
         if (q('bk-con')) q('bk-con').onclick = function () { post('backup_cfg', { do: 'connect', client_id: q('bk-id').value, client_secret: q('bk-sec').value }).then(function (x) { if (x.ok) location.href = x.url; else toast('⚠️ ' + x.error); }); };
         if (q('bk-dis')) q('bk-dis').onclick = function () { if (confirm(T('Disconnect Google Drive?'))) post('backup_cfg', { do: 'disconnect' }).then(loadB); };
         var types = function () { return [].map.call(document.querySelectorAll('.bk-type input:checked'), function (i) { return i.value; }); };
