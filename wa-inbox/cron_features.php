@@ -194,6 +194,8 @@ if (function_exists('wf_int_tick') && array_filter(wf_int_all(), fn($x) => !empt
     $ilp = function_exists('proc_open') && !in_array('proc_open', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true) ? @proc_open(['/bin/sh', '-c', 'nohup ' . escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/int_loop.php') . ' >/dev/null 2>&1 &'], [], $ilpipes) : false;
     if (is_resource($ilp)) proc_close($ilp); else wf_int_tick();
 } catch (Throwable $e) { wi_catch($e, 'cron integrations'); } }
+// every day at 04:41: the AI models' list prices (the cost estimate on the system overview)
+if ((int) date('G') === 4 && (int) date('i') === 41 && function_exists('wf_ai_prices_sync')) { try { wf_ai_prices_sync(); } catch (Throwable $e) { wi_catch($e, 'cron ai prices'); } }
 // every day at 10:13: Google connections and the last backup (a WhatsApp alert when one stopped working)
 if ((int) date('G') === 10 && (int) date('i') === 13 && function_exists('wf_google_watch')) { try { wf_google_watch($tellAdmins); } catch (Throwable $e) { wi_catch($e, 'cron google watch'); } }
 if (wi_sys('addon_facebook') && function_exists('wf_fb_sync_all')) { try { wf_fb_sync_all(); } catch (Throwable $e) { wi_catch($e, 'cron wf_fb_sync_all'); } } // Facebook pages: new Messenger messages read from the page (works before the app is published, catches missed webhooks) // visitors lists: farewell for those who leave unanswered, a note when someone comes back

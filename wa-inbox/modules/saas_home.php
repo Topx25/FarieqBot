@@ -69,45 +69,75 @@ function wf_saas_page(): string {
         . '</table></div></div></div>';
     return $o . wf_saas_ai_card() . wf_saas_reports_card();
 }
-/** Price in USD per million tokens of an AI model: the super admin's own price, else a starting estimate by model family. */
+/** Price in USD per million tokens of an AI model: the super admin's own price, else the providers' list price (refreshed daily), else an estimate by model family. */
 function wf_ai_price(string $model): array {
-    $own = (array) (wi_config()['ai_prices'] ?? []); if (isset($own[$model])) return ['in' => (float) $own[$model]['in'], 'out' => (float) $own[$model]['out'], 'own' => true];
+    $own = (array) (wi_config()['ai_prices'] ?? []); if (isset($own[$model])) return ['in' => (float) $own[$model]['in'], 'out' => (float) $own[$model]['out'], 'own' => true, 'src' => 'manual'];
+    return wf_ai_price_base($model);
+}
+/** The list price (read daily) or the estimate, without the super admin's own price. */
+function wf_ai_price_base(string $model): array {
+    $auto = (array) (wi_read('ai_prices_auto.json', [])['models'] ?? []); if (isset($auto[$model])) return ['in' => (float) $auto[$model]['in'], 'out' => (float) $auto[$model]['out'], 'own' => false, 'src' => 'list'];
     foreach (['flash-lite' => [0.10, 0.40], 'gemini' => [0.30, 2.50], 'opus' => [5, 25], 'sonnet' => [3, 15], 'haiku' => [1, 5], 'deepseek' => [0.27, 1.10], 'glm' => [0.20, 1.10], 'gpt' => [1.25, 10]] as $k => $p)
-        if (stripos($model, $k) !== false) return ['in' => (float) $p[0], 'out' => (float) $p[1], 'own' => false];
-    return ['in' => 0.0, 'out' => 0.0, 'own' => false];
+        if (stripos($model, $k) !== false) return ['in' => (float) $p[0], 'out' => (float) $p[1], 'own' => false, 'src' => 'estimate'];
+    return ['in' => 0.0, 'out' => 0.0, 'own' => false, 'src' => 'none'];
 }
 function wf_ai_cost(string $model, int $in, int $out): float { $p = wf_ai_price($model); return ($in * $p['in'] + $out * $p['out']) / 1000000; }
-/** The AI cost card: this month per provider and model (calls, tokens in and out, price, estimated cost), then the latest calls by task. */
+/** Daily: the list prices of the models in use, from the providers' price list published by OpenRouter (per token → per million). */
+function wf_ai_prices_sync(): array {
+    $ch = curl_init('https://openrouter.ai/api/v1/models'); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 25, CURLOPT_CONNECTTIMEOUT => 8]);
+    $j = json_decode((string) curl_exec($ch), true); $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    if ($code !== 200 || empty($j['data'])) return ['ok' => false, 'error' => 'The price list could not be read (HTTP ' . $code . ').'];
+    $norm = fn($s) => preg_replace('/[^a-z0-9]/', '', strtolower((string) $s)); $list = [];
+    foreach ($j['data'] as $m) { $id = (string) ($m['id'] ?? ''); $p = (array) ($m['pricing'] ?? []); if ($id === '' || !isset($p['prompt'])) continue;
+        $list[$norm(substr($id, (int) strpos($id, '/') + (str_contains($id, '/') ? 1 : 0)))] = ['in' => round((float) $p['prompt'] * 1000000, 4), 'out' => round((float) ($p['completion'] ?? 0) * 1000000, 4), 'id' => $id]; }
+    $used = []; foreach ((array) (wi_read('usage.json', [])['_models'] ?? []) as $mon) foreach (array_keys((array) $mon) as $md) $used[(string) $md] = 1;
+    $out = []; foreach (array_keys($used) as $md) { $pv = strtok($md, ' '); $k = $norm(trim(substr($md, strlen((string) $pv)))); if ($k !== '' && isset($list[$k])) $out[$md] = $list[$k] + ['at' => date('c')]; }
+    wi_write('ai_prices_auto.json', ['at' => date('c'), 'models' => $out]); wi_log('ai_prices_sync', ['found' => count($out), 'used' => count($used)]);
+    return ['ok' => true, 'found' => count($out), 'used' => count($used)];
+}
+/** The AI cost card: totals, then one group per provider (its models, tokens, prices and their source), then the latest calls by task, a page at a time. */
 function wf_saas_ai_card(): string {
     $t = fn($s) => wi_e(wi_t($s)); $n = fn($x) => wi_e(number_format((float) $x));
     $usd = fn($x) => '$' . wi_e(number_format((float) $x, $x < 1 ? 3 : 2));
     $mon = (array) (wi_read('usage.json', [])['_models'][date('Y-m')] ?? []); $by = [];
     foreach ($mon as $md => $r) { $pv = strtok((string) $md, ' ') ?: 'unknown'; $by[$pv][$md] = $r; }
-    ksort($by); $tot = ['calls' => 0, 'in' => 0, 'out' => 0, 'cost' => 0.0];
-    $o = '<div class="card" id="ai-cost"><div class="card-h"><h2>' . $t('AI tokens and estimated cost this month') . '</h2><a class="link" href="?p=ai">' . $t('AI providers') . ' →</a></div>'
-        . '<p class="muted small">' . $t('Prices are in USD per million tokens. Change any price to your provider\'s real price and save; the cost is an estimate.') . '</p>';
+    $auto = (array) wi_read('ai_prices_auto.json', []);
+    $o = '<div class="card" id="ai-cost"><div class="card-h"><h2>' . $t('AI tokens and estimated cost this month') . '</h2><div class="row" style="gap:8px">'
+        . '<form method="post" class="inline"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="ai_prices_sync"><button class="btn ghost sm">🔄 ' . $t('Refresh the prices') . '</button></form>'
+        . '<a class="link" href="?p=ai">' . $t('AI providers') . ' →</a></div></div>'
+        . '<p class="muted small">' . $t('Prices in USD per million tokens. List prices are read every day from the providers\' price list; a price you type wins over it.') . (!empty($auto['at']) ? ' · ' . $t('Last read') . ' <span dir="ltr">' . wi_e(substr((string) $auto['at'], 0, 16)) . '</span>' : '') . '</p>';
     if (!$by) return $o . '<div class="empty">' . $t('No AI use this month yet.') . '</div></div>';
-    $o .= '<form method="post"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="ai_prices"><div style="overflow-x:auto"><table class="tbl sa-ai">'
-        . '<tr><th>' . $t('Provider') . '</th><th>' . $t('Model') . '</th><th>' . $t('Calls') . '</th><th>' . $t('Tokens in') . '</th><th>' . $t('Tokens out') . '</th><th>' . $t('Price in') . '</th><th>' . $t('Price out') . '</th><th>' . $t('Estimated cost') . '</th></tr>';
-    foreach ($by as $pv => $ms) { $pc = 0.0; $pt = ['calls' => 0, 'in' => 0, 'out' => 0];
+    $grp = []; $tot = ['calls' => 0, 'in' => 0, 'out' => 0, 'cost' => 0.0];
+    foreach ($by as $pv => $ms) { $g = ['calls' => 0, 'in' => 0, 'out' => 0, 'cost' => 0.0, 'rows' => []];
         uasort($ms, fn($a, $b) => ($b['in'] + $b['out']) <=> ($a['in'] + $a['out']));
-        foreach ($ms as $md => $r) { $p = wf_ai_price((string) $md); $c = wf_ai_cost((string) $md, (int) $r['in'], (int) $r['out']); $pc += $c; foreach ($pt as $k => $v) $pt[$k] += (int) $r[$k];
-            $nm = wi_e('price[' . $md . ']');
-            $o .= '<tr><td>' . wi_e($pv) . '</td><td dir="ltr">' . wi_e(trim(substr((string) $md, strlen($pv)))) . '</td><td>' . $n($r['calls']) . '</td><td>' . $n($r['in']) . '</td><td>' . $n($r['out']) . '</td>'
-                . '<td><input type="number" step="0.01" min="0" name="' . $nm . '[in]" value="' . wi_e((string) $p['in']) . '" style="width:80px" dir="ltr"></td><td><input type="number" step="0.01" min="0" name="' . $nm . '[out]" value="' . wi_e((string) $p['out']) . '" style="width:80px" dir="ltr"></td><td><b>' . $usd($c) . '</b></td></tr>'; }
-        $o .= '<tr class="sa-sum"><td colspan="2"><b>' . wi_e($pv) . '</b></td><td>' . $n($pt['calls']) . '</td><td>' . $n($pt['in']) . '</td><td>' . $n($pt['out']) . '</td><td colspan="2"></td><td><b>' . $usd($pc) . '</b></td></tr>';
-        foreach ($pt as $k => $v) $tot[$k] += $v; $tot['cost'] += $pc; }
-    $o .= '<tr class="sa-sum"><td colspan="2"><b>' . $t('Total') . '</b></td><td>' . $n($tot['calls']) . '</td><td>' . $n($tot['in']) . '</td><td>' . $n($tot['out']) . '</td><td colspan="2"></td><td><b>' . $usd($tot['cost']) . '</b></td></tr></table></div>'
-        . '<button class="btn primary sm">' . $t('Save prices') . '</button></form>';
-    // the latest calls (the log keeps the last 400) by task, with their number, tokens and cost
+        foreach ($ms as $md => $r) { $c = wf_ai_cost((string) $md, (int) $r['in'], (int) $r['out']); $g['rows'][$md] = $r + ['cost' => $c]; foreach (['calls', 'in', 'out'] as $k) $g[$k] += (int) $r[$k]; $g['cost'] += $c; }
+        $grp[$pv] = $g; foreach (['calls', 'in', 'out', 'cost'] as $k) $tot[$k] += $g[$k]; }
+    uasort($grp, fn($a, $b) => $b['cost'] <=> $a['cost']);
+    $o .= '<div class="sa-kpis" style="margin:8px 0 12px"><div class="sa-kpi"><small>' . $t('Estimated cost') . '</small><b dir="ltr">' . $usd($tot['cost']) . '</b></div><div class="sa-kpi"><small>' . $t('Tokens in') . '</small><b dir="ltr">' . $n($tot['in']) . '</b></div>'
+        . '<div class="sa-kpi"><small>' . $t('Tokens out') . '</small><b dir="ltr">' . $n($tot['out']) . '</b></div><div class="sa-kpi"><small>' . $t('Calls') . '</small><b dir="ltr">' . $n($tot['calls']) . '</b><span class="sa-chip">' . count($grp) . ' ' . $t('providers') . '</span></div></div>';
+    $src = ['manual' => ['acc', 'Your price'], 'list' => ['ok', 'List price'], 'estimate' => ['warn', 'Estimate'], 'none' => ['bad', 'No price']];
+    $o .= '<form method="post"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="ai_prices">';
+    $first = true; foreach ($grp as $pv => $g) { $share = $tot['cost'] > 0 ? (int) round($g['cost'] * 100 / $tot['cost']) : 0;
+        $o .= '<details class="sa-grp"' . ($first ? ' open' : '') . '><summary><b>' . wi_e($pv) . '</b><span class="muted small">' . count($g['rows']) . ' ' . $t('models') . ' · ' . $n($g['calls']) . ' ' . $t('Calls') . ' · ' . $n($g['in'] + $g['out']) . ' ' . $t('Tokens') . '</span>'
+            . '<i class="sa-share"><b style="width:' . max(2, $share) . '%"></b></i><b dir="ltr">' . $usd($g['cost']) . '</b></summary><div style="overflow-x:auto"><table class="tbl sa-ai">'
+            . '<tr><th>' . $t('Model') . '</th><th>' . $t('Calls') . '</th><th>' . $t('Tokens in') . '</th><th>' . $t('Tokens out') . '</th><th>' . $t('Price in') . '</th><th>' . $t('Price out') . '</th><th>' . $t('Source') . '</th><th>' . $t('Estimated cost') . '</th></tr>';
+        foreach ($g['rows'] as $md => $r) { $p = wf_ai_price((string) $md); $nm = wi_e('price[' . $md . ']'); $s = $src[$p['src']] ?? $src['none'];
+            $o .= '<tr><td dir="ltr">' . wi_e(trim(substr((string) $md, strlen($pv)))) . '</td><td>' . $n($r['calls']) . '</td><td>' . $n($r['in']) . '</td><td>' . $n($r['out']) . '</td>'
+                . '<td><input type="number" step="0.0001" min="0" name="' . $nm . '[in]" value="' . wi_e((string) $p['in']) . '" style="width:84px" dir="ltr"></td><td><input type="number" step="0.0001" min="0" name="' . $nm . '[out]" value="' . wi_e((string) $p['out']) . '" style="width:84px" dir="ltr"></td>'
+                . '<td><span class="sa-chip ' . $s[0] . '">' . $t($s[1]) . '</span></td><td><b>' . $usd($r['cost']) . '</b></td></tr>'; }
+        $o .= '</table></div></details>'; $first = false; }
+    $o .= '<div class="row" style="margin-top:8px;gap:8px"><button class="btn primary sm">💾 ' . $t('Save prices') . '</button><span class="muted small">' . $t('Empty a price box and save to go back to the list price.') . '</span></div></form>';
+    // the latest calls (the log keeps the last 400) by task, ten a page
     $tk = []; $from = '';
     foreach (wi_ai_tasks() as $x) { if (($x['state'] ?? '') !== 'done') continue; $k = (string) (($x['task'] ?? '') ?: 'Other'); $i = (int) ($x['tokens_in'] ?? 0); $u = (int) ($x['tokens_out'] ?? 0);
         $from = $from === '' ? (string) ($x['at'] ?? '') : min($from, (string) ($x['at'] ?? $from));
         $tk[$k] = ['calls' => ($tk[$k]['calls'] ?? 0) + 1, 'tok' => ($tk[$k]['tok'] ?? 0) + $i + $u, 'cost' => ($tk[$k]['cost'] ?? 0) + wf_ai_cost((string) ($x['model'] ?? ''), $i, $u)]; }
     uasort($tk, fn($a, $b) => $b['cost'] <=> $a['cost']);
-    if ($tk) { $o .= '<h3 style="margin:16px 0 6px">' . $t('Latest calls by task') . ' <small class="muted" dir="ltr">' . wi_e(substr($from, 0, 16)) . ' →</small></h3><div style="overflow-x:auto"><table class="tbl"><tr><th>' . $t('Task') . '</th><th>' . $t('Calls') . '</th><th>' . $t('Tokens') . '</th><th>' . $t('Estimated cost') . '</th></tr>';
-        foreach (array_slice($tk, 0, 15, true) as $k => $r) $o .= '<tr><td dir="auto">' . $t($k) . '</td><td>' . $n($r['calls']) . '</td><td>' . $n($r['tok']) . '</td><td>' . $usd($r['cost']) . '</td></tr>';
-        $o .= '</table></div>'; }
+    if ($tk) { $per = 10; $pages = (int) ceil(count($tk) / $per); $pg = max(1, min($pages, (int) ($_GET['atp'] ?? 1)));
+        $o .= '<h3 style="margin:18px 0 6px">' . $t('Latest calls by task') . ' <small class="muted" dir="ltr">' . wi_e(substr($from, 0, 16)) . ' →</small></h3><div style="overflow-x:auto"><table class="tbl"><tr><th>' . $t('Task') . '</th><th>' . $t('Calls') . '</th><th>' . $t('Tokens') . '</th><th>' . $t('Estimated cost') . '</th></tr>';
+        foreach (array_slice($tk, ($pg - 1) * $per, $per, true) as $k => $r) $o .= '<tr><td dir="auto">' . $t($k) . '</td><td>' . $n($r['calls']) . '</td><td>' . $n($r['tok']) . '</td><td>' . $usd($r['cost']) . '</td></tr>';
+        $o .= '</table></div>';
+        if ($pages > 1) { $o .= '<div class="row wrap sa-pager">'; for ($i = 1; $i <= $pages; $i++) $o .= '<a class="chip-btn sm' . ($i === $pg ? ' on' : '') . '" href="?p=saas&amp;atp=' . $i . '#ai-cost">' . $i . '</a>'; $o .= '</div>'; } }
     return $o . '</div>';
 }
 /** This month's estimated AI cost, all models. */

@@ -280,6 +280,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $act = (string) ($_POST['act'] ?? '');
         if ($act === 'key') { $_SESSION['int_new_key'] = ['name' => (string) $x['name'], 'key' => wf_int_new_key($id)]; wi_log('int_key', ['id' => $id]); }
         if ($act === 'filter' && in_array($_POST['filter'] ?? '', ['all', 'commands'], true)) { $fv = (string) $_POST['filter']; wi_update('integrations.json', function ($A) use ($id, $fv) { $A[$id]['filter'] = $fv; return $A; }); wi_log('int_filter', ['id' => $id, 'filter' => $fv]); }
+        if ($act === 'extra' && in_array($_POST['filter'] ?? '', ['all', 'commands'], true)) { $fv = (string) $_POST['filter']; wi_update('integrations.json', function ($A) use ($id, $fv) { $A[$id]['filter'] = $fv; return $A; }); }
         if ($act === 'extra') { $lu = trim((string) ($_POST['lookup_url'] ?? '')); $lu = preg_match('#^https://\S+$#', $lu) ? $lu : ''; $ua = mb_substr(trim(preg_replace('/[^\x20-\x7E]/', '', (string) ($_POST['ua'] ?? ''))), 0, 120);
             wi_update('integrations.json', function ($A) use ($id, $lu, $ua) { $A[$id]['lookup_url'] = $lu; $A[$id]['ua'] = $ua; return $A; });
             if (trim((string) ($_POST['token'] ?? '')) !== '') wi_secret_set('int_hook:' . $id, trim((string) $_POST['token'])); wi_log('int_extra', ['id' => $id, 'token' => trim((string) ($_POST['token'] ?? '')) !== '']); }
@@ -291,9 +292,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ?p=integrations'); exit;
     }
     // System overview (super admin): the price per million tokens of each AI model, for the cost estimate.
-    if ($do === 'ai_prices') {
+    if ($do === 'ai_prices' || $do === 'ai_prices_sync') {
         if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admin only.'); }
-        $pr = []; foreach ((array) ($_POST['price'] ?? []) as $md => $x) { $md = mb_substr(trim((string) $md), 0, 80); if ($md === '') continue; $pr[$md] = ['in' => max(0, round((float) ($x['in'] ?? 0), 4)), 'out' => max(0, round((float) ($x['out'] ?? 0), 4))]; }
+        if (!function_exists('wf_ai_price_base')) require_once dirname(__DIR__) . '/features.php';
+        if ($do === 'ai_prices_sync') { $r = wf_ai_prices_sync(); wi_flash($r['ok'] ? sprintf(wi_t('Prices read: %1$d of %2$d models.'), $r['found'], $r['used']) : (string) $r['error'], $r['ok'] ? 'ok' : 'bad'); header('Location: ?p=saas#ai-cost'); exit; }
+        // a price kept as the list price (or emptied) follows the list; only a changed price is the super admin's own
+        $pr = []; foreach ((array) ($_POST['price'] ?? []) as $md => $x) { $md = mb_substr(trim((string) $md), 0, 80); if ($md === '' || trim((string) ($x['in'] ?? '')) === '' && trim((string) ($x['out'] ?? '')) === '') continue;
+            $in = max(0, round((float) ($x['in'] ?? 0), 4)); $out = max(0, round((float) ($x['out'] ?? 0), 4)); $b = wf_ai_price_base($md);
+            if (abs($in - $b['in']) < 0.00005 && abs($out - $b['out']) < 0.00005) continue; $pr[$md] = ['in' => $in, 'out' => $out]; }
         $cfg = wi_config(); $cfg['ai_prices'] = $pr; wi_write('config.json', $cfg); wi_log('ai_prices', ['models' => array_keys($pr)]); wi_flash('Saved.', 'ok'); header('Location: ?p=saas#ai-cost'); exit;
     }
     // Clients page (super admin): plan, end date, pause, seats and features of a client.

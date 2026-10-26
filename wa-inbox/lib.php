@@ -581,7 +581,7 @@ function wi_menu_registry(): array {
             ['key' => 'users', 'icon' => '🔐', 'label' => 'Users', 'who' => 'users'],
             ['key' => 'health', 'icon' => '☁️', 'label' => 'Health, report & backup', 'who' => 'admin', 'pages' => ['health', 'report', 'backup']],
             ['key' => 'ai', 'icon' => '✨', 'label' => 'AI providers', 'who' => 'ai'],
-            ['key' => 'integrations', 'icon' => '🔌', 'label' => 'Integrations', 'who' => 'admin']]],
+            ['key' => 'integrations', 'icon' => '🔌', 'label' => 'Integrations', 'who' => 'client']]],
     ];
 }
 /** The registry with this installation's changes applied (labels, icons, hidden items, section titles). */
@@ -599,7 +599,7 @@ function wi_menu(): array {
     return $out;
 }
 function wi_menu_can(string $who, bool $manager): bool {
-    return match ($who) { 'manager' => $manager, 'users' => wi_can_users(), 'admin' => wi_is_admin() || (wi_me()['role'] ?? '') === 'client', 'super' => wi_is_super(), 'ai' => wi_is_super() || (($w = wi_me()) && ($w['role'] ?? '') === 'client' && !empty($w['can_bot'])), default => true };
+    return match ($who) { 'manager' => $manager, 'users' => wi_can_users(), 'admin' => wi_is_admin() || (wi_me()['role'] ?? '') === 'client', 'super' => wi_is_super(), 'client' => (wi_me()['role'] ?? '') === 'client', 'ai' => wi_is_super() || (($w = wi_me()) && ($w['role'] ?? '') === 'client' && !empty($w['can_bot'])), default => true };
 }
 function wi_page_names(): array {
     return ['inbox' => 'Inbox', 'search' => 'Search', 'library' => 'Library', 'audio' => 'Audio', 'files' => 'Files', 'analytics' => 'Analytics', 'numbers' => 'Numbers', 'catalog' => 'Product catalog',
