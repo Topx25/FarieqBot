@@ -208,7 +208,7 @@ function wf_drive_callback(): void {
             $u = wf_drive_req('GET', 'https://www.googleapis.com/drive/v3/about?fields=user', (string) $c['access_token']);
             $prevEmail = (string) ($c['email'] ?? ''); $c['email'] = (string) ($u['body']['user']['emailAddress'] ?? '');
             // another Google account: its Drive has none of the old backup files, so the backup starts a fresh list there
-            if (wf_google_ws() === '' && $prevEmail !== '' && strcasecmp($prevEmail, $c['email']) !== 0) { unset($c['folder_id'], $c['packages_id'], $c['packages'], $c['archives']); wi_write('backup_manifest.json', ['files' => []]); wi_log('backup_new_drive', ['from' => $prevEmail, 'to' => $c['email']]); }
+            if (wf_google_ws() === '' && $prevEmail !== '' && strcasecmp($prevEmail, $c['email']) !== 0) { unset($c['folder_id'], $c['current_id'], $c['packages_id'], $c['packages'], $c['archives']); wi_read('backup_manifest.json', []); wi_write('backup_manifest.json', ['files' => []]); wi_log('backup_new_drive', ['from' => $prevEmail, 'to' => $c['email']]); }
             $c['scopes'] = (string) ($r['scope'] ?? '');
             // what was asked for but not granted (Google drops scopes that are not on the project's Data Access list, or that the person unticked)
             $want = ['meetings.space.created' => 'Meet recording', 'calendar.events' => 'Calendar (Meet links)', 'drive.file' => 'Google Drive'];

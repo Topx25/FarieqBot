@@ -79,6 +79,9 @@ function wf_backup_incremental(array $types, int $maxSeconds = 2700): array {
     $t0 = time(); $t = wf_drive_token(); if (!$t['ok']) return $t; $tok = $t['token'];
     $root = wf_drive_folder($tok); if ($root === '') return ['ok' => false, 'error' => 'Could not create the backup folder in Google Drive.'];
     $c = wf_drive_cfg();
+    // the Current folder was removed, or belongs to another Google account (reconnected): start a new one with a fresh list
+    if (!empty($c['current_id'])) { $chk = wf_drive_req('GET', 'https://www.googleapis.com/drive/v3/files/' . rawurlencode((string) $c['current_id']) . '?fields=id,trashed', $tok);
+        if ($chk['code'] === 404 || !empty($chk['body']['trashed'])) { unset($c['current_id']); wi_write('drive.json', $c); wi_read('backup_manifest.json', []); wi_write('backup_manifest.json', ['files' => []]); wi_log('backup_new_current', []); } }
     if (empty($c['current_id'])) { $c['current_id'] = wf_drive_child_folder($tok, $root, 'Current'); wi_write('drive.json', $c); }
     $cur = (string) $c['current_id']; if ($cur === '') return ['ok' => false, 'error' => 'Could not create the Current folder in Google Drive.'];
     $files = wf_backup_files($types); $man = wf_backup_manifest(); $mf = &$man['files'];
