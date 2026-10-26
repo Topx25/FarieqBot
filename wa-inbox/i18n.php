@@ -15,6 +15,7 @@ return [
     'Back' => 'رجوع',
     'Resend code' => 'ابعت الكود تاني',
     'Website chat' => 'شات للموقع',
+    'Where the bot answers (each on or off)' => 'البوت يرد فين (كل واحدة تشغيل أو إيقاف)',
     'minutes, and a new {one} nobody took for' => 'دقيقة، و{one} جديد محدش استلمه من',
     'A {one} nobody of the team answered is neglected after (days)' => '{the}{one} اللي محدش من الفريق رد عليه يتحسب مهمل بعد (أيام)',
     'Add private chats to the {one} record (for people who have one)' => 'ضم المحادثات الفردية لسجل {the}{one} (للي ليهم سجل)',

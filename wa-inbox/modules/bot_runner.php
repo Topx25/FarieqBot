@@ -412,7 +412,7 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
     $selfIds = []; $sAcc = (array) (wi_gateway('/status', null, $acc)['account'] ?? []); foreach (['id', 'lid'] as $k) { $d = preg_replace('/\D/', '', explode(':', explode('@', (string) ($sAcc[$k] ?? ''))[0])[0]); if ($d !== '') $selfIds[$d] = 1; }
     // only what the owner typed on the phone is a question; what the system posts there itself (a program's step, a reminder, an alert) is not
     $selfMap = fn(array $rows) => array_map(fn($m) => ($m['dir'] ?? '') === 'out' && in_array((string) ($m['via'] ?? ''), ['phone', ''], true) ? ['dir' => 'in'] + $m : $m, $rows);
-    foreach (($c['scope'] === 'groups' ? [] : ($ch['chats'] ?? [])) as $x) {
+    foreach ((in_array($c['scope'], ['groups', 'none'], true) ? [] : ($ch['chats'] ?? [])) as $x) { // private chats switched off: nothing here
         if ($n >= 2) break;
         if (!empty($x['group']) || !str_ends_with((string) $x['jid'], '@s.whatsapp.net') && !str_ends_with((string) $x['jid'], '@lid') && !str_ends_with((string) $x['jid'], '@fb')) continue; // @fb: a Facebook page's Messenger chat
         $isSelf = isset($selfIds[explode('@', (string) $x['jid'])[0]]);
