@@ -65,7 +65,10 @@ function wf_int_api(): void {
     header('X-Robots-Tag: noindex');
     $fail = function (int $c, string $e) { header('Content-Type: application/json; charset=utf-8'); http_response_code($c); echo json_encode(['ok' => false, 'error' => $e]); exit; };
     // send / media: Fariek's own API; sessions / session / send_text: the OpenWA (WAHA style) API, so a program made for that gateway works by changing its address and key
-    $what = (string) ($_GET['int_api'] ?? ''); if (!in_array($what, ['send', 'media', 'sessions', 'session', 'send_text'], true) || (in_array($what, ['send', 'send_text'], true) && $_SERVER['REQUEST_METHOD'] !== 'POST')) $fail(404, 'Use POST /v1/send, GET /v1/media, GET /api/sessions or POST /api/sessions/{id}/messages/send-text');
+    $what = (string) ($_GET['int_api'] ?? '');
+    // OpenWA's health check (a program's "Test connection"): the service answers, nothing else is told
+    if ($what === 'health') { header('Content-Type: application/json; charset=utf-8'); echo json_encode(['status' => 'ok', 'ok' => true]); exit; }
+    if (!in_array($what, ['send', 'media', 'sessions', 'session', 'send_text'], true) || (in_array($what, ['send', 'send_text'], true) && $_SERVER['REQUEST_METHOD'] !== 'POST')) $fail(404, 'Use POST /v1/send, GET /v1/media, GET /api/sessions or POST /api/sessions/{id}/messages/send-text');
     $key = (string) ($_SERVER['HTTP_X_API_KEY'] ?? ''); if (strlen($key) < 20) $fail(401, 'Missing X-Api-Key');
     $hash = hash('sha256', $key); $id = null; foreach (wf_int_all() as $iid => $x) if (hash_equals((string) wi_secret('int_key:' . $iid), $hash)) { $id = (string) $iid; break; }
     if ($id === null) $fail(401, 'Unknown API key'); $x = wf_int_all()[$id];

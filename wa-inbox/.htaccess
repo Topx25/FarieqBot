@@ -17,6 +17,7 @@ DirectoryIndex index.php
   # Integrations API with clean addresses (api host): /v1/send, /v1/media
   RewriteRule ^v1/(send|media)/?$ index.php?int_api=$1 [L,QSA]
   # the OpenWA (WAHA style) addresses, for programs made for that gateway
+  RewriteRule ^api/health/?$ index.php?int_api=health [L,QSA]
   RewriteRule ^api/sessions/?$ index.php?int_api=sessions [L,QSA]
   RewriteRule ^api/sessions/[^/]+/?$ index.php?int_api=session [L,QSA]
   RewriteRule ^api/sessions/[^/]+/messages/send-text/?$ index.php?int_api=send_text [L,QSA]
