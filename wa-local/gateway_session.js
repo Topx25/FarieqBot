@@ -226,6 +226,8 @@ async function keywordReply(sock, jid, msg, text) {
 }
 /** "#حالة" + a person's details in a group (keyword set per number in Cases → Case settings): the Inbox opens a case, asks the
  *  writer what is missing (quoting them) and waits for their answer. Only messages with "#", or from a writer the Inbox waits for, are sent. */
+/** Numbers already confirmed on WhatsApp (key "account|jid" -> until when): a send to them skips asking WhatsApp again for a week. */
+const waKnown = new Map();
 const intakeWait = new Map(), botSentIds = new Set();
 const recentVoice = new Map(); // group|writer -> their last recording (a case's voice may come just before the keyword)
 async function caseIntake(sock, jid, msg, text, kind, file) {
@@ -2531,10 +2533,15 @@ app.post('/send', requireToken, async (req, res) => {
   const jid = `${to}@s.whatsapp.net`;
   const attachment = safeAttachment(req.body.attachment);
   try {
-    const registrations = await withTimeout(socket.onWhatsApp(jid), 8000, 'WhatsApp recipient check timed out');
-    if (Array.isArray(registrations) && registrations[0] && registrations[0].exists === false) {
-      res.status(422).json({ ok: false, error: 'Recipient number is not registered on WhatsApp.' });
-      return;
+    const kk = `${accountId}|${jid}`;
+    if (!((waKnown.get(kk) || 0) > Date.now())) {
+      const registrations = await withTimeout(socket.onWhatsApp(jid), 8000, 'WhatsApp recipient check timed out');
+      if (Array.isArray(registrations) && registrations[0] && registrations[0].exists === false) {
+        res.status(422).json({ ok: false, error: 'Recipient number is not registered on WhatsApp.' });
+        return;
+      }
+      if (waKnown.size > 5000) waKnown.clear();
+      waKnown.set(kk, Date.now() + 7 * 86400000);
     }
     let sent;
     if (attachment) {
