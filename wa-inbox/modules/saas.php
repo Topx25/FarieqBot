@@ -223,7 +223,7 @@ function wi_client_ai_tokens(string $email): int { return function_exists('wf_cl
 /* ---------- Each client's files in a folder of its own, outside the site ---------- */
 /** clients/<client>/<number>/{media,whatsapp} at the installation root; the usual paths (storage/inbox_media/<aid>,
  *  wa-local/accounts/<aid>) become links to it. Only readable by the app's user; the folder also refuses web access. */
-function wi_client_folder(string $aid, string $owner): ?string {
+function wi_client_folder(string $aid, string $owner, bool $move = false): ?string {
     $aid = preg_replace('/[^a-z0-9_-]/', '', strtolower($aid)); $owner = strtolower(trim($owner)); if ($aid === '' || $owner === '') return null;
     $root = dirname(__DIR__, 2); $c = null; foreach (wi_users() as $u) if (strtolower((string) $u['email']) === $owner) { $c = $u; break; }
     $name = preg_replace('/[^a-z0-9-]/', '-', strtolower((string) (($c['slug'] ?? '') ?: strtok($owner, '@')))); $name = trim(preg_replace('/-+/', '-', $name), '-') ?: 'client';
@@ -231,7 +231,10 @@ function wi_client_folder(string $aid, string $owner): ?string {
     $dir = $base . '/' . $name . '-' . substr(md5($owner), 0, 6) . '/' . $aid;
     foreach (['media' => $root . '/storage/inbox_media/' . $aid, 'whatsapp' => $root . '/wa-local/accounts/' . $aid] as $sub => $link) {
         if (!is_dir($dir . '/' . $sub)) @mkdir($dir . '/' . $sub, 0700, true);
-        if (file_exists($link) || is_link($link)) continue; @mkdir(dirname($link), 0755, true);
+        if (is_link($link)) continue;
+        // an existing number: its folder is moved in (same disk, so open files keep working), then linked
+        if (is_dir($link)) { if (!$move || count((array) @scandir($dir . '/' . $sub)) > 2) continue; @rmdir($dir . '/' . $sub); if (!@rename($link, $dir . '/' . $sub)) { @mkdir($dir . '/' . $sub, 0700); continue; } @chmod($dir . '/' . $sub, 0700); }
+        elseif (file_exists($link)) continue; @mkdir(dirname($link), 0755, true);
         $rel = str_repeat('../', substr_count(substr($link, strlen($root) + 1), '/')) . substr($dir, strlen($root) + 1) . '/' . $sub; @symlink($rel, $link); }
     @chmod(dirname($dir), 0700); @chmod($dir, 0700);
     wi_log('client_folder', ['account' => $aid, 'folder' => substr($dir, strlen($root) + 1)]);

@@ -2,7 +2,8 @@
 // Moves one number (and its panel owner, team, settings and database rows) from this installation to another one.
 // Files (wa-local/accounts/<aid>, storage/inbox_media/<aid>) are copied apart, with tar or rsync.
 //   php tools/move_account.php export <aid> <bundle.json>             on the old server
-//   php tools/move_account.php import <bundle.json> [--apply] [--enable]  on the new server (dry run without --apply)
+//   php tools/move_account.php import <bundle.json> [--apply] [--enable] [--as=<new id>]  on the new server (dry run without --apply)
+// --as gives the number another id there (for example the old installation's main number): rows get new ids, its secrets are renamed.
 // The import stops before writing anything when a row id is already used by another number on the new server.
 declare(strict_types=1);
 chdir(dirname(__DIR__)); require 'lib.php'; require 'features.php';
@@ -46,12 +47,20 @@ if ($cmd === 'export') {
 if ($cmd === 'import') {
     $B = json_decode((string) @file_get_contents((string) ($argv[2] ?? '')), true); if (!is_array($B) || empty($B['aid'])) exit("Usage: import <bundle.json> [--apply] [--enable]\n");
     $apply = in_array('--apply', $argv, true); $enable = in_array('--enable', $argv, true); $aid = (string) $B['aid']; $owner = (string) $B['owner'];
+    $as = ''; foreach ($argv as $x) if (str_starts_with($x, '--as=')) $as = preg_replace('/[^a-z0-9_-]/', '', strtolower(substr($x, 5)));
+    if ($as !== '') { if ($as === 'main' || isset(wi_accounts()[$as])) exit("STOP: $as is already a number here.\n");
+        // the same number under another id: rows are added with new ids, secrets and stores move to the new id
+        $from = $aid; $aid = $as; foreach ($B['tables'] as $t => &$rows) foreach ($rows as &$r) $r['base'] = $aid; unset($rows, $r);
+        foreach ($B['secrets'] as &$r) $r['name'] = preg_replace('/:' . preg_quote($from, '/') . '$/', ':' . $aid, (string) $r['name']); unset($r);
+        $B['account']['id'] = $aid; unset($B['account']['main']); $B['account']['gateway'] = 'hub'; $B['account']['payments'] = false;
+        $used = array_map(fn($a) => (int) ($a['port'] ?? 0), wi_accounts()); $B['account']['port'] = 0; for ($p = 3201; $p <= 3299; $p++) if (!in_array($p, $used, true)) { $B['account']['port'] = $p; break; }
+        if (!$B['account']['port']) exit("STOP: no free port.\n"); $B['account']['owner'] = $owner; }
     // row ids already used by another number here: stop
     $clash = [];
-    foreach ($B['tables'] as $t => $rows) { $ids = array_column($rows, 'id'); if (!$ids || !is_numeric($ids[0])) continue;
+    if ($as === '') foreach ($B['tables'] as $t => $rows) { $ids = array_column($rows, 'id'); if (!$ids || !is_numeric($ids[0])) continue;
         foreach (array_chunk($ids, 500) as $ch) foreach (ma_rows($m, "SELECT id FROM `$t` WHERE id IN (" . ma_in($m, $ch) . ") AND base <> '" . $m->real_escape_string($aid) . "'") as $x) $clash[$t][] = $x['id']; }
     $tids = array_column($B['concept_terms'], 'id'); $cids = array_column($B['tables']['wi_concepts'] ?? [], 'id');
-    if ($tids) foreach (ma_rows($m, "SELECT id FROM wi_concept_terms WHERE id IN (" . ma_in($m, $tids) . ") AND concept_id NOT IN (" . ma_in($m, $cids) . ")") as $x) $clash['wi_concept_terms'][] = $x['id'];
+    if ($tids && $as === '') foreach (ma_rows($m, "SELECT id FROM wi_concept_terms WHERE id IN (" . ma_in($m, $tids) . ") AND concept_id NOT IN (" . ma_in($m, $cids) . ")") as $x) $clash['wi_concept_terms'][] = $x['id'];
     echo "Number $aid (owner $owner), bundle of {$B['at']}\n";
     echo '  users: ', implode(', ', array_column($B['users'], 'email')), "\n  stores: ", count($B['kv']), "\n";
     foreach ($B['tables'] as $t => $rows) echo "  $t: ", count($rows), " rows", isset($clash[$t]) ? ' — ' . count($clash[$t]) . ' ids used by another number' : '', "\n";
@@ -61,10 +70,18 @@ if ($cmd === 'import') {
 
     $m->begin_transaction();
     try {
-        foreach ($B['tables'] as $t => $rows) { $m->query("DELETE FROM `$t` WHERE base = '" . $m->real_escape_string($aid) . "'");
-            foreach ($rows as $r) { $cols = array_keys($r); $m->query("INSERT INTO `$t` (`" . implode('`,`', $cols) . "`) VALUES (" . implode(',', array_map(fn($v) => $v === null ? 'NULL' : "'" . $m->real_escape_string((string) $v) . "'", $r)) . ")") || throw new RuntimeException("$t: " . $m->error); } }
-        if ($cids) $m->query("DELETE FROM wi_concept_terms WHERE concept_id IN (" . ma_in($m, $cids) . ")");
-        foreach (['wi_concept_terms' => $B['concept_terms'], 'wi_secrets' => $B['secrets']] as $t => $rows) foreach ($rows as $r) { $cols = array_keys($r);
+        $map = ['doc' => [], 'concept' => []]; $auto = fn($t) => (bool) ($m->query("SHOW COLUMNS FROM `$t` WHERE Field = 'id' AND Extra LIKE '%auto_increment%'")->num_rows ?? 0);
+        $order = array_unique(array_merge(['wi_learn_docs', 'wi_concepts'], array_keys($B['tables'])));
+        foreach ($order as $t) { $rows = $B['tables'][$t] ?? []; $m->query("DELETE FROM `$t` WHERE base = '" . $m->real_escape_string($aid) . "'");
+            foreach ($rows as $r) {
+                if ($as !== '') { if ($t === 'wi_learn_chunks' && isset($r['doc_id'])) $r['doc_id'] = $map['doc'][$r['doc_id']] ?? $r['doc_id'];
+                    if (array_key_exists('concept_id', $r) && $r['concept_id'] !== null) $r['concept_id'] = $map['concept'][$r['concept_id']] ?? $r['concept_id'];
+                    $old = $r['id'] ?? null; if ($old !== null && $auto($t)) unset($r['id']); }
+                $cols = array_keys($r); $m->query("INSERT INTO `$t` (`" . implode('`,`', $cols) . "`) VALUES (" . implode(',', array_map(fn($v) => $v === null ? 'NULL' : "'" . $m->real_escape_string((string) $v) . "'", $r)) . ")") || throw new RuntimeException("$t: " . $m->error);
+                if ($as !== '' && isset($old) && !isset($r['id'])) { if ($t === 'wi_learn_docs') $map['doc'][$old] = $m->insert_id; if ($t === 'wi_concepts') $map['concept'][$old] = $m->insert_id; } } }
+        if ($as !== '') foreach ($B['concept_terms'] as &$r) { $r['concept_id'] = $map['concept'][$r['concept_id']] ?? $r['concept_id']; unset($r['id']); } unset($r);
+        if ($cids && $as === '') $m->query("DELETE FROM wi_concept_terms WHERE concept_id IN (" . ma_in($m, $cids) . ")");
+        foreach (['wi_concept_terms' => $B['concept_terms'], 'wi_secrets' => $B['secrets']] as $t => $rows) if ($as === '' || $t !== 'wi_concept_terms' || $rows) foreach ($rows as $r) { $cols = array_keys($r);
             $m->query("REPLACE INTO `$t` (`" . implode('`,`', $cols) . "`) VALUES (" . implode(',', array_map(fn($v) => $v === null ? 'NULL' : "'" . $m->real_escape_string((string) $v) . "'", $r)) . ")") || throw new RuntimeException("$t: " . $m->error); }
         $em = array_map(fn($u) => strtolower((string) $u['email']), $B['users']);
         if ($em) $m->query("DELETE FROM wi_grants WHERE LOWER(email) IN (" . ma_in($m, $em) . ")");
