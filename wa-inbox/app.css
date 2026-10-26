@@ -1433,3 +1433,14 @@ input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align
 .bp-ch{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}.bp-ch span{flex-basis:100%}.bp-ch button{border:1px solid var(--line,#e4e6eb);background:var(--card,#fff);color:inherit;border-radius:99px;padding:8px 14px;font:inherit;cursor:pointer}.bp-ch button b{font-size:12px;margin-inline-start:6px;color:var(--muted,#65676b)}.bp-ch button.on{border-color:var(--accent,#0866ff);background:color-mix(in srgb,var(--accent,#0866ff) 10%,transparent)}.bp-ch button.on b{color:var(--accent,#0866ff)}
 .bp-learn{margin:0 0 8px;padding-inline-start:20px;line-height:1.8}
 .bs-body .bp-ch,.bs-body .br-modes{grid-column:1/-1}
+/* Bot settings: one setting per row (title, then its field), long explanations behind a "?" */
+.bs-body{display:flex!important;flex-direction:column;gap:0}
+.bs-body>label{display:flex!important;flex-direction:row!important;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:11px 4px!important;margin:0;border-bottom:1px solid var(--line,#e4e6eb);background:none!important;border-radius:0!important;font-weight:500}
+.bs-body>label:last-child{border-bottom:0}
+.bs-body>label>input:not([type=checkbox]),.bs-body>label>select,.bs-body>label>textarea{width:auto;min-width:90px;max-width:220px;margin-inline-start:auto;flex:none}
+.bs-body>label>input#bp-test,.bs-body>label>textarea{max-width:100%;flex:1 1 220px}
+.bs-body>label.check>input[type=checkbox]{order:-1;width:18px;height:18px;margin:0;flex:none}
+.bs-body>label.check input[type=number],.bs-body>label.check select{width:70px;min-width:0;margin:0}
+.bs-q{width:20px;height:20px;border-radius:50%;border:1px solid var(--line,#ccd0d5);background:var(--card,#fff);color:var(--muted,#65676b);font-size:12px;line-height:1;padding:0;cursor:pointer;flex:none}
+.bs-hint{flex-basis:100%;line-height:1.6;font-weight:400}
+.bs-body>label>input[type=number]{max-width:110px}

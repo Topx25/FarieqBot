@@ -106,6 +106,18 @@
         SEC.forEach(function (x) { var body = wrap.querySelector('#bs-' + x[0] + ' .bs-body');
           x[4].forEach(function (id) { var f = document.getElementById(id); var lb = f && (f.closest('label') || f.closest('.gcf-wide')); if (lb && !wrap.contains(lb)) body.appendChild(lb); }); });
         var bm = host.querySelector('.br-modes'), sc = document.getElementById('bp-scope'); var rb = wrap.querySelector('#bs-run .bs-body'); if (sc) rb.insertBefore(sc, rb.firstChild); if (bm) rb.insertBefore(bm, rb.firstChild);
+        // short titles: the long explanation goes into a hint opened with "?" (some fields have their own short name and help)
+        var SHORT = { 'bp-test': ['🧪 ' + T('Test numbers'), ''], 'bp-qf': ['🌙 ' + T('Quiet hours'), ''], 'bp-p24': ['💬 ' + T('Private chats all day and night'), ''], 'bp-ri': ['📜 ' + T('Suggest a text or program'), T('When a written text or a program of your library fits the question by at least this match, the bot adds it at the end of its reply (as a suggestion to read or follow). Lower = suggested more often, higher = only when it clearly fits.')] };
+        [].forEach.call(wrap.querySelectorAll('.bs-body > label'), function (lb) {
+          var tn = [].filter.call(lb.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim().length > 2; })[0]; if (!tn) return;
+          var inp = lb.querySelector('input,select,textarea'), own = inp && SHORT[inp.id], full = tn.textContent.trim(), short = '', hint = '';
+          if (own) { short = own[0]; hint = (own[1] ? own[1] + ' — ' : '') + full.replace(/^[^\wء-ي]+/, ''); }
+          else { var m = full.match(/^(.{6,60}?)\s*[(:—]\s*(.+)$/); if (!m || full.length < 45) return; short = m[1]; hint = m[2].replace(/\)\s*$/, ''); }
+          tn.textContent = ' ' + short.trim() + ' ';
+          var q = document.createElement('button'); q.type = 'button'; q.className = 'bs-q'; q.textContent = '?'; q.title = hint;
+          var h = document.createElement('small'); h.className = 'bs-hint muted'; h.hidden = true; h.textContent = hint;
+          q.onclick = function (e) { e.preventDefault(); e.stopPropagation(); h.hidden = !h.hidden; };
+          tn.parentNode.insertBefore(q, tn.nextSibling); lb.appendChild(h); });
         [].forEach.call(host.querySelectorAll('.br-f, .gcf'), function (box) { if (!wrap.contains(box) && !box.querySelector('input,select,textarea')) box.remove(); }); // empty old containers
         [].forEach.call(wrap.querySelectorAll('.bs-sec'), function (sec) { if (!sec.querySelector('.bs-body > *')) sec.remove(); });
         wrap.querySelector('.bs-nav').onclick = function (e) { var a = e.target.closest('a'); if (!a) return; e.preventDefault(); var t = wrap.querySelector(a.getAttribute('href')); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; })();
