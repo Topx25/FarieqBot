@@ -1397,3 +1397,8 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .cl-view-list .cl-act{grid-column:1/-1;margin:0}
 .cl-view-compact .cl-card{padding:10px 14px!important}.cl-view-compact .cl-act>:not(:first-child){display:none}
 @media (max-width:720px){.cl-view-list .cl-card{grid-template-columns:1fr}}
+/* AI providers: folded cards, a place box, the hidden list */
+.ai-card .ai-body{display:none}.ai-card.open .ai-body{display:block}
+.ai-card .ai-h{cursor:pointer}.ai-fold{margin-inline-start:4px;color:var(--muted,#65676b);transition:transform .15s}.ai-card:not(.open) .ai-fold{transform:rotate(-90deg)}
+input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align:center;font-weight:600;border-radius:8px}
+.ai-hidden{margin-top:14px}.ai-hidden>summary{cursor:pointer;color:var(--muted,#65676b);font-weight:600;margin-bottom:8px}.ai-card.is-hidden{opacity:.75}
