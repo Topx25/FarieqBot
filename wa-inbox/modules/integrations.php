@@ -29,6 +29,8 @@ function wf_int_tick(): void {
         $r = wi_gateway('/archive?limit=300&months=1', null, $acc); if (empty($r['ok'])) continue;
         $new = array_values(array_filter((array) ($r['rows'] ?? []), fn($m) => ($m['dir'] ?? '') === 'in' && !in_array($m['kind'] ?? '', ['reaction', 'deleted', 'edit'], true) && strcmp((string) ($m['time'] ?? ''), $cur) > 0 && !str_ends_with((string) ($m['jid'] ?? ''), '@g.us') && !str_contains((string) ($m['jid'] ?? ''), 'status@')));
         usort($new, fn($a, $b) => strcmp((string) $a['time'], (string) $b['time']));
+        // "commands": only commands (# or /) and files (a receipt photo, a PDF) go to the system; Fariek's bot answers the rest
+        if (($x['filter'] ?? 'all') === 'commands') { $skip = array_filter($new, fn($m) => !wf_int_wanted($m)); if ($skip) { $st[$id]['cursor'] = max((string) $st[$id]['cursor'], (string) end($skip)['time']); $changed = true; } $new = array_values(array_filter($new, 'wf_int_wanted')); if (!$new) continue; }
         foreach (array_slice($new, 0, 50) as $m) {
             $res = wf_int_post($id, $x, wf_int_payload($x, $acc, $m));
             if (!$res['ok']) { $st[$id]['fail_since'] ??= time(); $st[$id]['last'] = ['at' => date('c'), 'ok' => false, 'code' => $res['code'], 'error' => $res['error']]; $changed = true;
@@ -99,19 +101,47 @@ function wf_int_page(): string {
             . '<span class="sa-chip ' . (!empty($x['active']) ? 'ok">' . $t('On') : '">' . $t('Off')) . '</span></div><span class="muted small" dir="ltr">' . wi_e($acc ? wi_account_label($acc) : (string) ($x['aid'] ?? '')) . '</span></div>'
             . '<div class="cl-grid" style="margin-top:8px"><div><small>' . $t('Webhook (messages in)') . '</small><b dir="ltr" style="word-break:break-all">' . wi_e((string) $x['url']) . '</b><em class="muted" dir="ltr">' . wi_e((string) (($x['header'] ?? '') ?: 'X-Webhook-Token')) . ': ' . (wi_secret('int_hook:' . $id) !== '' ? '••••••' : $t('none')) . '</em></div>'
             . '<div><small>' . $t('Sent to the webhook') . '</small><b>' . (int) ($s['sent'] ?? 0) . '</b><em class="' . (isset($l['ok']) && !$l['ok'] ? 'bad-t' : 'muted') . '">' . (isset($l['at']) ? wi_e(substr((string) $l['at'], 0, 16)) . ' · ' . (!empty($l['ok']) ? 'HTTP ' . (int) $l['code'] : wi_e(wi_t('failed')) . ' HTTP ' . (int) ($l['code'] ?? 0) . ' ' . wi_e((string) ($l['error'] ?? ''))) : $t('nothing yet')) . '</em></div>'
+            . '<div><small>' . $t('What goes to the webhook') . '</small><b>' . (($x['filter'] ?? 'all') === 'commands' ? $t('Commands and files') : $t('Every private message')) . '</b><em class="muted" dir="ltr">' . (!empty($x['lookup_url']) ? '🔎 ' . wi_e((string) $x['lookup_url']) : '') . '</em></div>'
             . '<div><small>' . $t('Sent through the API') . '</small><b>' . (int) ($s['out'] ?? 0) . '</b><em class="muted">' . (isset($s['last_out']['at']) ? wi_e(substr((string) $s['last_out']['at'], 0, 16)) : $t('nothing yet')) . '</em></div></div>'
             . '<form method="post" class="row wrap" style="margin-top:10px;gap:8px"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="int_act"><input type="hidden" name="id" value="' . wi_e((string) $id) . '">'
             . '<button class="btn ghost sm" name="act" value="test">🧪 ' . $t('Send a test to the webhook') . '</button><button class="btn ghost sm" name="act" value="key" onclick="return confirm(\'' . $t('Make a new API key? The old one stops working.') . '\')">🔑 ' . $t('New API key') . '</button>'
+            . '<select name="filter" style="width:auto"><option value="">' . $t('Change what goes to the webhook') . '</option><option value="all">' . $t('Every private message') . '</option><option value="commands">' . $t('Commands and files') . '</option></select><button class="btn ghost sm" name="act" value="filter">✔</button>'
             . '<button class="btn ghost sm" name="act" value="toggle">' . (!empty($x['active']) ? '⏸ ' . $t('Switch off') : '▶️ ' . $t('Switch on')) . '</button><button class="btn ghost sm" name="act" value="delete" onclick="return confirm(\'' . $t('Delete this integration?') . '\')">🗑 ' . $t('Delete') . '</button></form></article>'; }
     $o .= '<details class="card pad" style="margin:0 0 12px"' . (wf_int_mine() ? '' : ' open') . '><summary><b>➕ ' . $t('New integration') . '</b></summary><form method="post" class="stack" style="margin-top:10px;max-width:640px"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="int_save">'
         . '<label>' . $t('Name') . '<input name="name" required maxlength="60" placeholder="iptvpro.org" dir="auto"></label>'
         . '<label>' . $t('WhatsApp number') . '<select name="aid" required>' . implode('', array_map(fn($a) => '<option value="' . wi_e((string) $a['id']) . '">' . wi_e(wi_account_label($a)) . '</option>', $nums)) . '</select></label>'
         . '<label>' . $t('Webhook address (messages in)') . '<input name="url" type="url" required placeholder="https://example.com/wa/webhook" dir="ltr"></label>'
         . '<div class="row wrap"><label style="flex:1">' . $t('Header name') . '<input name="header" value="X-Webhook-Token" dir="ltr"></label><label style="flex:2">' . $t('Webhook token (the other system gives it)') . '<input name="token" type="password" autocomplete="off" dir="ltr"></label></div>'
+        . '<label>' . $t('What goes to the webhook') . '<select name="filter"><option value="all">' . $t('Every private message') . '</option><option value="commands">' . $t('Only commands (# or /) and files; Fariek\'s bot answers the rest') . '</option></select></label>'
+        . '<label>' . $t('Customer lookup address (optional)') . '<input name="lookup_url" type="url" placeholder="https://example.com/api/fariek/customer" dir="ltr"><small class="muted">' . $t('Fariek\'s bot asks it about the customer of each chat (orders, renewal) before it answers.') . '</small></label>'
         . '<button class="btn primary">💾 ' . $t('Create and show the API key') . '</button></form></details>';
     $o .= '<div class="card pad"><h2 style="margin:0 0 8px">📘 ' . $t('For the developer of the other system') . '</h2>'
         . '<h3>1. ' . $t('Messages in (Fariek → your webhook)') . '</h3><p class="small muted">' . $t('Within a minute of each private message. Answer with HTTP 200; any other answer is tried again the next minute.') . '</p>'
         . '<pre dir="ltr" style="overflow-x:auto;font-size:12.5px">POST https://your-site/wa/webhook\nX-Webhook-Token: &lt;your token&gt;\nContent-Type: application/json\n\n{"event":"message.received","integration":"iptvpro.org","number":"main",\n "data":{"id":"3EB0…","from":"2010xxxxxxxx","jid":"2010xxxxxxxx@s.whatsapp.net","name":"Ahmed",\n         "body":"Hello","type":"image","has_media":true,"time":"2026-10-26T14:05:00.000Z",\n         "media_url":"' . wi_e($base) . '?int_api=media&amp;f=inbox_media/…"}}\n\nmedia_url: GET with the same X-Api-Key header → the file (photo, voice, document).</pre>'
         . '<h3>2. ' . $t('Send a message (your system → Fariek)') . '</h3><pre dir="ltr" style="overflow-x:auto;font-size:12.5px">POST ' . wi_e($base) . '?int_api=send\nX-Api-Key: &lt;the API key shown when the integration was made&gt;\nContent-Type: application/json\n\n{"to":"2010xxxxxxxx","text":"Your order is ready"}\nor reply in the same chat (needed for hidden numbers): {"to":"&lt;data.jid from the webhook&gt;","text":"…"}\n\n→ {"ok":true,"id":"3EB0…"}   errors: 401 key, 422 data, 429 more than 60 a minute, 502 WhatsApp</pre></div>';
     return $o;
+}
+
+/** Commands and files: what a system with the "commands" filter receives. */
+function wf_int_wanted(array $m): bool { $t = ltrim((string) ($m['text'] ?? '')); return $t !== '' && ($t[0] === '#' || $t[0] === '/') || !empty($m['attachment']) && in_array($m['kind'] ?? '', ['image', 'document'], true); }
+
+/** The system's customer for a chat (lookup address of an integration of this number): a short text for the bot's prompt, '' when none.
+ *  GET <lookup_url>?phone=<digits>&jid=<jid> with the integration's token header; the answer {"ok":true,"summary":"…"} (or any JSON). Kept 10 minutes. */
+function wf_int_customer(array $acc, string $jid): string {
+    $jid = (string) explode('|', $jid)[0]; if ($jid === '' || str_ends_with($jid, '@g.us')) return '';
+    foreach (wf_int_all() as $id => $x) {
+        if (empty($x['active']) || empty($x['lookup_url']) || (string) ($x['aid'] ?? '') !== (string) ($acc['id'] ?? '')) continue;
+        $ck = 'intc_' . md5($id . $jid); static $mem = []; if (isset($mem[$ck])) return $mem[$ck];
+        $c = (array) wi_read('int_cache.json', []); if (isset($c[$ck]) && $c[$ck]['t'] > time() - 600) return $mem[$ck] = (string) $c[$ck]['v'];
+        $url = (string) $x['lookup_url'] . (str_contains((string) $x['lookup_url'], '?') ? '&' : '?') . http_build_query(['phone' => preg_replace('/\D/', '', strtok($jid, '@')), 'jid' => $jid]);
+        $tok = wi_secret('int_hook:' . $id); $hdr = preg_replace('/[^A-Za-z0-9-]/', '', (string) (($x['header'] ?? '') ?: 'X-Webhook-Token'));
+        $ch = curl_init($url); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_HTTPHEADER => $tok !== '' ? [$hdr . ': ' . $tok] : []]);
+        $out = (string) curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+        $j = json_decode($out, true); $v = '';
+        if ($code === 200 && is_array($j) && ($j['ok'] ?? true) !== false) { $v = isset($j['summary']) ? (string) $j['summary'] : json_encode($j, JSON_UNESCAPED_UNICODE); $v = mb_substr(trim($v), 0, 1500); }
+        if ($v !== '') $v = "\n" . wf_prompt('int_customer', (string) $acc['id'], ['system' => (string) $x['name'], 'data' => $v]);
+        $c[$ck] = ['t' => time(), 'v' => $v]; foreach ($c as $k => $e) if ($e['t'] < time() - 3600) unset($c[$k]); wi_write('int_cache.json', $c);
+        return $mem[$ck] = $v;
+    }
+    return '';
 }

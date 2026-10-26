@@ -194,13 +194,13 @@ function wf_bot_answer(array $acc, string $text, array $history = [], string $pr
         $modes .= "- bot (the team's assistant): greetings, questions about the team, groups, times, joining, anything else.\n" . trim((string) $rc['common']);
         $hint = ($opt['role'] ?? 'bot') !== 'bot' ? "(The customer's words suggest the mode: " . $opt['role'] . ")\n" : '';
         $prompt = wf_prompt('bot_brain', $aid, ['owner_rules' => $selfRule . wf_owner_rules($cfg), 'tone' => $tone,
-            'name_line' => ($cfg['name'] ?: 'the assistant') . ($cfg['name'] ? ' (your name is ' . $cfg['name'] . ')' : ''), 'who' => wf_card_text($card), 'modes' => $hint . $modes,
+            'name_line' => ($cfg['name'] ?: 'the assistant') . ($cfg['name'] ? ' (your name is ' . $cfg['name'] . ')' : ''), 'who' => wf_card_text($card) . (function_exists('wf_int_customer') ? wf_int_customer($acc, (string) ($opt['jid'] ?? '')) : ''), 'modes' => $hint . $modes,
             'avoid' => $avoid ? "YOUR EARLIER REPLIES HERE — never repeat or rephrase them:\n- " . implode("\n- ", array_map(fn($a) => mb_substr(preg_replace('/\s+/u', ' ', (string) $a), 0, 300), $avoid)) . "\n\n" : '',
             'examples' => $ex ?: '(none)', 'sources' => $ctx ?: '(none)', 'conversation' => $hist . 'Customer: ' . mb_substr($text, 0, 1500)]);
     } else
     $prompt = wf_prompt('bot_reply', $aid, ['owner_rules' => $rp['rules'] . $selfRule . wf_owner_rules($cfg), 'guide' => wf_guide_prompt($guide), 'tone' => $tone,
         'name_line' => ($cfg['name'] ?: 'the assistant') . ($cfg['name'] ? ' (your name is ' . $cfg['name'] . '; never make up another name)' : ' (never make up a personal name for yourself)'),
-        'style_rules' => wf_style_prompt($aid), 'who' => wf_card_text($card), 'owner_check' => $cfg['rules'] ? "- Before answering, check your reply against EVERY numbered OWNER RULE at the top; rewrite it if it breaks any.\n" : '',
+        'style_rules' => wf_style_prompt($aid), 'who' => wf_card_text($card) . (function_exists('wf_int_customer') ? wf_int_customer($acc, (string) ($opt['jid'] ?? '')) : ''), 'owner_check' => $cfg['rules'] ? "- Before answering, check your reply against EVERY numbered OWNER RULE at the top; rewrite it if it breaks any.\n" : '',
         'avoid' => $avoid ? "YOUR EARLIER REPLIES IN THIS CHAT — the new reply must NOT repeat or rephrase them; answer what is new, move the conversation forward, or set handoff=true:\n- " . implode("\n- ", array_map(fn($a) => mb_substr(preg_replace('/\s+/u', ' ', (string) $a), 0, 300), $avoid)) . "\n\n" : '',
         'examples' => $ex ?: '(none)', 'sources' => $ctx ?: '(none)', 'conversation' => $hist . 'Customer: ' . mb_substr($text, 0, 1500)]);
     if (!empty($cfg['sk_market']) && function_exists('wf_market_prompt') && ($mkP = wf_market_prompt($aid)) !== '') $prompt = str_replace("\nCONVERSATION:", "\nOUR MARKET:\n" . $mkP . "\nCONVERSATION:", $prompt);

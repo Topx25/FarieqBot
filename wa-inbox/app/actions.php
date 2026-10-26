@@ -271,12 +271,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($do === 'int_save') { $aid = (string) ($_POST['aid'] ?? ''); $url = trim((string) ($_POST['url'] ?? ''));
             if (!isset(wf_int_numbers()[$aid]) || !preg_match('#^https://[^\s]+$#', $url)) { wi_flash('Choose a number and give an https webhook address.', 'bad'); header('Location: ?p=integrations'); exit; }
             $id = 'int' . bin2hex(random_bytes(4)); $name = mb_substr(trim((string) ($_POST['name'] ?? '')), 0, 60) ?: $url;
-            wi_update('integrations.json', function ($A) use ($id, $aid, $url, $name) { $A[$id] = ['name' => $name, 'aid' => $aid, 'url' => $url, 'header' => preg_replace('/[^A-Za-z0-9-]/', '', (string) ($_POST['header'] ?? '')) ?: 'X-Webhook-Token', 'active' => true, 'by' => (string) $_SESSION['email'], 'at' => date('c')]; return $A; });
+            wi_update('integrations.json', function ($A) use ($id, $aid, $url, $name) { $A[$id] = ['name' => $name, 'aid' => $aid, 'url' => $url, 'header' => preg_replace('/[^A-Za-z0-9-]/', '', (string) ($_POST['header'] ?? '')) ?: 'X-Webhook-Token', 'active' => true,
+                'filter' => ($_POST['filter'] ?? '') === 'commands' ? 'commands' : 'all', 'lookup_url' => preg_match('#^https://\S+$#', trim((string) ($_POST['lookup_url'] ?? ''))) ? trim((string) $_POST['lookup_url']) : '', 'by' => (string) $_SESSION['email'], 'at' => date('c')]; return $A; });
             if (trim((string) ($_POST['token'] ?? '')) !== '') wi_secret_set('int_hook:' . $id, trim((string) $_POST['token']));
             $_SESSION['int_new_key'] = ['name' => $name, 'key' => wf_int_new_key($id)]; wi_log('int_add', ['id' => $id, 'account' => $aid]); header('Location: ?p=integrations'); exit; }
         $id = (string) ($_POST['id'] ?? ''); $x = wf_int_mine()[$id] ?? null; if (!$x) { wi_flash('Not found.', 'bad'); header('Location: ?p=integrations'); exit; }
         $act = (string) ($_POST['act'] ?? '');
         if ($act === 'key') { $_SESSION['int_new_key'] = ['name' => (string) $x['name'], 'key' => wf_int_new_key($id)]; wi_log('int_key', ['id' => $id]); }
+        if ($act === 'filter' && in_array($_POST['filter'] ?? '', ['all', 'commands'], true)) { $fv = (string) $_POST['filter']; wi_update('integrations.json', function ($A) use ($id, $fv) { $A[$id]['filter'] = $fv; return $A; }); wi_log('int_filter', ['id' => $id, 'filter' => $fv]); }
         if ($act === 'toggle') wi_update('integrations.json', function ($A) use ($id) { $A[$id]['active'] = empty($A[$id]['active']); return $A; });
         if ($act === 'delete') { wi_update('integrations.json', function ($A) use ($id) { unset($A[$id]); return $A; }); wi_secret_set('int_key:' . $id, ''); wi_secret_set('int_hook:' . $id, ''); wi_log('int_delete', ['id' => $id]); }
         if ($act === 'test') { $acc = wi_accounts()[(string) $x['aid']] ?? ['id' => (string) $x['aid']];
