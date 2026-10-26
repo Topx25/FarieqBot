@@ -67,17 +67,24 @@ function wf_err_page(): string {
     $o .= '<div class="row wrap">'; foreach ([6, 24, 48, 168] as $x) $o .= '<a class="chip-btn' . ($x === $h ? ' on' : '') . '" href="?p=errors&amp;h=' . $x . '">' . $x . ' h</a>'; $o .= '</div>';
     $o .= '<div class="cl-kpis">'; foreach ($tot as $t => $n) $o .= '<span class="cl-kpi"><b>' . (int) $n . '</b><small>' . wi_e(wi_t($t)) . '</small></span>'; $o .= '</div>';
     if (!$G) return $o . '<div class="card empty">' . wi_e(wi_t('No errors in this time.')) . '</div>';
-    $accs = wi_accounts(); $ack = (array) wi_read('err_ack.json', []); $hidden = 0; $rows = '';
+    $accs = wi_accounts(); $ack = (array) wi_read('err_ack.json', []); $hidden = 0; $rows = [];
     foreach (array_slice($G, 0, 300) as $g) { $k = substr(sha1($g['type'] . '|' . $g['where'] . '|' . $g['what']), 0, 16);
         if (isset($ack[$k]) && strcmp((string) $g['last'], (string) $ack[$k]) <= 0) { $hidden++; continue; } // marked as seen and nothing new since
         $wn = (string) ($accs[$g['where']]['name'] ?? ''); [$mean, $fix] = wf_err_explain($g['what']); $ts = $g['last'] !== '' ? strtotime($g['last']) : 0;
         $sev = in_array($g['type'], ['PHP fatal', 'bot'], true) || $g['count'] >= 50 ? 'bad' : ($g['count'] >= 10 ? 'warn' : 'acc');
-        $rows .= '<div class="err-row"><div class="err-top"><span class="sa-chip ' . $sev . '">' . (int) $g['count'] . '×</span> <b>' . wi_e(wi_t($g['type'])) . '</b> · ' . ($wn !== '' ? wi_e($wn) . ' <span class="muted small" dir="ltr">' . wi_e($g['where']) . '</span>' : '<span dir="ltr">' . wi_e($g['where']) . '</span>')
+        $rows[] = '<div class="err-row"><div class="err-top"><span class="sa-chip ' . $sev . '">' . (int) $g['count'] . '×</span> <b>' . wi_e(wi_t($g['type'])) . '</b> · ' . ($wn !== '' ? wi_e($wn) . ' <span class="muted small" dir="ltr">' . wi_e($g['where']) . '</span>' : '<span dir="ltr">' . wi_e($g['where']) . '</span>')
             . '<span class="muted small err-when">' . ($ts ? wi_e(wf_err_ago($ts)) : '') . '</span>'
             . '<form method="post" class="err-ack"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="err_ack"><input type="hidden" name="k" value="' . $k . '"><input type="hidden" name="last" value="' . wi_e($g['last']) . '"><button class="btn ghost sm">✓ ' . wi_e(wi_t('Seen')) . '</button></form></div>'
             . ($mean !== '' ? '<p class="err-mean">' . wi_e(wi_t($mean)) . '<br><span class="muted">👉 ' . wi_e(wi_t($fix)) . '</span></p>' : '')
             . '<code class="err-raw" dir="ltr">' . wi_e($g['what']) . '</code></div>'; }
-    $o .= '<div class="card">' . ($rows ?: '<div class="empty">' . wi_e(wi_t('No errors in this time.')) . '</div>') . '</div>';
+    // 20 groups a page
+    $per = 20; $pages = max(1, (int) ceil(count($rows) / $per)); $pg = min($pages, max(1, (int) ($_GET['pg'] ?? 1)));
+    $o .= '<div class="card">' . ($rows ? implode('', array_slice($rows, ($pg - 1) * $per, $per)) : '<div class="empty">' . wi_e(wi_t('No errors in this time.')) . '</div>') . '</div>';
+    if ($pages > 1) { $o .= '<div class="row sa-pager" style="justify-content:center;flex-wrap:wrap">';
+        if ($pg > 1) $o .= '<a class="chip-btn" href="?p=errors&amp;h=' . $h . '&amp;pg=' . ($pg - 1) . '">‹ ' . wi_e(wi_t('Previous')) . '</a>';
+        for ($i = 1; $i <= $pages; $i++) $o .= '<a class="chip-btn' . ($i === $pg ? ' on' : '') . '" href="?p=errors&amp;h=' . $h . '&amp;pg=' . $i . '">' . $i . '</a>';
+        if ($pg < $pages) $o .= '<a class="chip-btn" href="?p=errors&amp;h=' . $h . '&amp;pg=' . ($pg + 1) . '">' . wi_e(wi_t('Next')) . ' ›</a>';
+        $o .= '</div>'; }
     if ($hidden) $o .= '<p class="muted small">' . (int) $hidden . ' ' . wi_e(wi_t('marked as seen (they come back if they happen again)')) . '</p>';
     return $o;
 }

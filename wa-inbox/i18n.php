@@ -19,6 +19,8 @@ return [
     '%d h ago' => 'من %d ساعة',
     '%d days ago' => 'من %d يوم',
     'Seen' => 'شفتها',
+    'Previous' => 'السابق',
+    'Next' => 'التالي',
     'marked as seen (they come back if they happen again)' => 'متعلّم عليها إنها اتشافت (بترجع لو حصلت تاني)',
     'The number waited for a QR scan and nobody scanned it.' => 'الرقم كان مستني حد يعمل سكان للـQR ومحدش عمل.',
     'Open Numbers and scan the QR again, or delete the number if it is not used.' => 'افتح الأرقام واعمل سكان للـQR تاني، أو امسح الرقم لو مش مستخدم.',
