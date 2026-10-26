@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ربط جوجل خطوة بخطوة</title>
+<style>
+:root{--bg:#F0F2F5;--card:#fff;--ink:#1C1E21;--muted:#65676B;--line:#E4E6EB;--acc:#0866FF;--soft:#E7F0FF;--warn:#FFF3D6;--warn-ink:#8A5300;--bad:#FDE8E7;--bad-ink:#B3261E;--ok:#E3F5EA;--ok-ink:#17733F}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#18191A;--card:#242526;--ink:#E4E6EB;--muted:#B0B3B8;--line:#3A3B3C;--acc:#4599FF;--soft:#1B2A44;--warn:#3A2F17;--warn-ink:#E7A93A;--bad:#3D1F1D;--bad-ink:#F2665C;--ok:#1D3326;--ok-ink:#6DD58C;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#18191A;--card:#242526;--ink:#E4E6EB;--muted:#B0B3B8;--line:#3A3B3C;--acc:#4599FF;--soft:#1B2A44;--warn:#3A2F17;--warn-ink:#E7A93A;--bad:#3D1F1D;--bad-ink:#F2665C;--ok:#1D3326;--ok-ink:#6DD58C;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans Arabic","Segoe UI",Tahoma,sans-serif;font-size:15px;line-height:1.8}
+.wrap{max-width:900px;margin:0 auto;padding:24px 16px 60px;display:flex;flex-direction:column;gap:16px}
+h1{font-size:24px;margin:0}h2{font-size:18px;margin:0 0 8px;color:var(--acc)}h3{font-size:15.5px;margin:14px 0 4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;min-width:0}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.lang{display:flex;gap:6px}.lang button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 12px;font:inherit;cursor:pointer}.lang button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.muted{color:var(--muted)}
+ol,ul{margin:4px 0;padding-inline-start:22px}li{margin:4px 0}
+code{direction:ltr;unicode-bidi:embed;font-family:ui-monospace,Consolas,monospace;font-size:13px;background:var(--soft);padding:1px 6px;border-radius:5px;word-break:break-all}
+.note{border-radius:8px;padding:10px 14px;margin:10px 0;font-size:14px}
+.n-warn{background:var(--warn);color:var(--warn-ink)}.n-ok{background:var(--ok);color:var(--ok-ink)}.n-bad{background:var(--bad);color:var(--bad-ink)}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:start;vertical-align:top}th{color:var(--muted);font-weight:500}
+td:first-child{white-space:nowrap}
+nav a{display:inline-block;margin:2px 4px;color:var(--acc);text-decoration:none;font-weight:500}
+a{color:var(--acc)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ======================= Arabic ======================= -->
+<div id="ar">
+<div class="card top"><div><h1>ربط جوجل خطوة بخطوة</h1><div class="muted">النسخ الاحتياطي على الدرايف، والكاليندر، وروابط جوجل ميت، والدخول بجوجل. بتعمله مرة واحدة.</div></div><div class="lang"><button class="on" type="button" data-l="ar">عربي</button><button type="button" data-l="en">English</button></div></div>
+<div class="card"><nav><a href="#ar-1">1. المشروع</a><a href="#ar-2">2. الـAPIs</a><a href="#ar-3">3. Branding</a><a href="#ar-4">4. الصلاحيات</a><a href="#ar-5">5. النشر</a><a href="#ar-6">6. الـClient</a><a href="#ar-7">7. الربط</a><a href="#ar-err">الأخطاء وحلولها</a></nav></div>
+
+<div class="card"><h2>قبل ما تبدأ</h2>
+<ul>
+<li>محتاج حساب جوجل (Gmail). <b>للنسخ الاحتياطي استخدم إيميل صاحب السيستم</b>، لأن نسخ كل العملاء هتتحفظ على الدرايف بتاعه.</li>
+<li>كل الخطوات من <a href="https://console.cloud.google.com" target="_blank" rel="noopener">Google Cloud Console</a>، وكلها مجانية.</li>
+<li>مشروع جوجل واحد يكفي لكل السيرفرات ولكل العملاء.</li>
+</ul></div>
+
+<div class="card" id="ar-1"><h2>1. المشروع</h2>
+<ol><li>افتح Google Cloud Console، ومن فوق اختار المشروع أو اعمل مشروع جديد (New project).</li>
+<li>اتأكد إن اسم المشروع ظاهر فوق قبل أي خطوة، عشان كل اللي جاي يتعمل على نفس المشروع.</li></ol></div>
+
+<div class="card" id="ar-2"><h2>2. تفعيل الـAPIs</h2>
+<p>افتح كل رابط واضغط <b>Enable</b>:</p>
+<ul><li><a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener">Google Drive API</a> (النسخ الاحتياطي)</li>
+<li><a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" rel="noopener">Google Calendar API</a> (روابط ميت في الكاليندر)</li>
+<li><a href="https://console.cloud.google.com/apis/library/meet.googleapis.com" target="_blank" rel="noopener">Google Meet API</a> (تسجيل الاجتماعات)</li></ul></div>
+
+<div class="card" id="ar-3"><h2>3. Branding وAudience</h2>
+<ol><li>افتح <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener">Google Auth Platform</a> واضغط <b>Get started</b>.</li>
+<li><b>App Information:</b> اسم التطبيق (اسم نظامك) وإيميل الدعم.</li>
+<li><b>Audience:</b> اختار <b>External</b>. متختارش Internal، دي لحسابات شركة Google Workspace بس.</li>
+<li><b>Contact Information:</b> إيميلك، وبعدين وافق على الشروط واضغط <b>Create</b>.</li></ol>
+<div class="note n-warn">جوجل هيكتب إن التطبيق هيبدأ في وضع التجربة (Testing). ده طبيعي، وهنغيّره في الخطوة 5.</div></div>
+
+<div class="card" id="ar-4"><h2>4. الصلاحيات (Data Access)</h2>
+<ol><li>من القايمة: <b>Data Access</b> ← <b>Add or remove scopes</b>.</li>
+<li>دوّر وعلّم على التلاتة دول:
+<ul><li><code>https://www.googleapis.com/auth/drive.file</code></li><li><code>https://www.googleapis.com/auth/calendar.events</code></li><li><code>https://www.googleapis.com/auth/meetings.space.created</code></li></ul></li>
+<li>اضغط <b>Update</b> وبعدين <b>Save</b>.</li></ol>
+<div class="note n-warn">صلاحية <code>drive.readonly</code> (قراءة فولدرات الدرايف للتعلم) <b>اختيارية</b>. لو ضفتها، جوجل هيعتبر التطبيق «مقيد» وهيوري المستخدم تحذير، وممكن يطلب مراجعة. ضيفها بس لو هتستخدم الفولدر المربوط بالتعلم.</div></div>
+
+<div class="card" id="ar-5"><h2>5. النشر (Publish app): أهم خطوة</h2>
+<ol><li>من القايمة: <b>Audience</b>.</li>
+<li>تحت <b>Publishing status</b> هتلاقي <b>Testing</b>. اضغط <b>Publish app</b> ← <b>Confirm</b>.</li>
+<li>لازم تبقى <b>In production</b>.</li></ol>
+<div class="note n-bad">لو سبته Testing: محدش يقدر يربط غير الإيميلات اللي في Test users، وأي ربط بيقف لوحده بعد 7 أيام. ده كان سبب وقوع النسخ الاحتياطي.</div></div>
+
+<div class="card" id="ar-6"><h2>6. عمل الـClient</h2>
+<ol><li>من القايمة: <b>Clients</b> ← <b>Create client</b> ← النوع <b>Web application</b>.</li>
+<li><b>Authorized JavaScript origins:</b> عنوان كل سيرفر من غير مسار، مثلاً:
+<ul><li><code>https://your-domain.com</code></li></ul></li>
+<li><b>Authorized redirect URIs:</b> رابطين لكل سيرفر، واحد للربط وواحد للدخول بجوجل:
+<ul><li><code>https://your-domain.com/?drive_cb=1</code></li><li><code>https://your-domain.com/?google_cb=1</code></li></ul>
+الرابط الصح لكل سيرفر مكتوب على صفحة النسخ الاحتياطي فيه، بزرار نسخ.</li>
+<li>شيل العلامة من «Use this client for an AI-powered agent».</li>
+<li>اضغط <b>Create</b>. هيطلعلك <b>Client ID</b> و<b>Client secret</b>: انسخهم واحفظهم في مكان آمن، ومتبعتهمش في شات أو رسالة.</li></ol>
+<div class="note n-warn">جوجل بيقول إن التعديل في الـClient ممكن ياخد من 5 دقايق لكام ساعة. لو الربط رفض على طول بعد التعديل، استنى شوية وجرب تاني.</div></div>
+
+<div class="card" id="ar-7"><h2>7. الربط من اللوحة</h2>
+<h3>ربط السيستم (السوبر أدمن)</h3>
+<ol><li>اللوحة ← الصحة والتقرير والنسخ الاحتياطي ← <b>نسخ احتياطي على جوجل درايف</b>.</li>
+<li>الصق الـClient ID والـClient secret واضغط <b>اربط جوجل</b>.</li>
+<li>اختار حساب جوجل ووافق على الصلاحيات. لو ظهرت «Google hasn't verified this app»: اضغط <b>Advanced</b> ← <b>Go to … (unsafe)</b> ← Continue.</li>
+<li>هترجع للوحة ومكتوب «متصل» وجنبه الإيميل.</li></ol>
+<h3>ربط العميل لحسابه</h3>
+<ol><li>صاحب اللوحة: <b>حسابي</b> ← كارت «حساب جوجل» ← <b>اربط حساب جوجل بتاعي</b>.</li>
+<li>العميل مش محتاج Client ID: بيستخدم نفس تطبيق السيستم.</li></ol>
+<h3>قراءة فولدرات الدرايف (اختياري)</h3>
+<p>زرار <b>اسمح بقراءة فولدرات الدرايف</b> بيضيف الصلاحية على نفس الربط من غير ما يمسح اللي قبلها.</p>
+<h3>اتأكد إنه شغال</h3>
+<ul><li>في صفحة النسخ الاحتياطي اضغط «نسخ دلوقتي» واتأكد إن ملفات اترفعت.</li>
+<li>كل يوم الساعة 10:13 السيستم بيجرب الربط، ولو وقف بيوصلك تنبيه على الواتساب، والكارت بيكتب «واقف» وجنبه زرار «اربط تاني».</li></ul></div>
+
+<div class="card" id="ar-err"><h2>الأخطاء وحلولها</h2>
+<div class="tw"><table>
+<tr><th>الرسالة</th><th>معناها</th><th>الحل</th></tr>
+<tr><td><code>Error 403: access_denied</code><br>«لم يكمل تطبيق … عملية التحقق»</td><td>التطبيق لسه Testing والإيميل مش في Test users</td><td>الخطوة 5: Publish app. أو ضيف الإيميل في Audience ← Test users (مؤقت)</td></tr>
+<tr><td><code>Error 400: redirect_uri_mismatch</code></td><td>رابط الرجوع مش مضاف في الـClient أو مكتوب غلط</td><td>انسخ الرابط من صفحة النسخ الاحتياطي وضيفه في Authorized redirect URIs بالظبط (https، والـ/ والـ?)، واستنى دقايق</td></tr>
+<tr><td><code>Error 401: invalid_client</code></td><td>الـClient ID أو الـsecret غلط، أو الـClient اتمسح</td><td>انسخهم تاني من Clients والصقهم من غير مسافات</td></tr>
+<tr><td><code>invalid_grant</code><br>«Token has been expired or revoked»</td><td>الربط وقف: التطبيق كان Testing (7 أيام)، أو الباسورد اتغير، أو الصلاحية اتشالت من حساب جوجل</td><td>Publish app، وبعدين «اربط تاني»</td></tr>
+<tr><td>«Google hasn't verified this app»</td><td>تحذير عادي لتطبيق جديد مش موثّق</td><td>Advanced ← Go to … (unsafe) ← Continue. ولو عايز تشيله: Verification Center</td></tr>
+<tr><td>«This app is blocked»<br>«تم حظر هذا التطبيق»</td><td>طالب صلاحية مقيدة (<code>drive.readonly</code>) والحساب ده ممنوع يوافق عليها من غير توثيق</td><td>اربط من غير قراءة الفولدرات، أو اعمل التوثيق في Verification Center</td></tr>
+<tr><td><code>Error 403: org_internal</code></td><td>الـAudience متحدد Internal</td><td>Audience ← غيّره لـ External</td></tr>
+<tr><td><code>admin_policy_enforced</code></td><td>حساب شركة (Workspace) والأدمن مانع التطبيقات</td><td>اربط بحساب Gmail عادي، أو الأدمن يسمح بالتطبيق</td></tr>
+<tr><td>«Google did not grant: …»<br>«بعض الصلاحيات متدتش»</td><td>صلاحية مش مضافة في Data Access، أو اتشالت العلامة عليها وقت الموافقة</td><td>الخطوة 4، وبعدين اربط تاني وعلّم على كل الصلاحيات</td></tr>
+<tr><td>«Google Drive API has not been used… or it is disabled»</td><td>الـAPI مش متفعّلة</td><td>الخطوة 2: Enable</td></tr>
+<tr><td>«no refresh token returned»</td><td>جوجل مرجعش مفتاح دائم</td><td>Disconnect، وبعدين اربط تاني. ولو اتكرر: شيل التطبيق من <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">صلاحيات حساب جوجل</a> واربط من الأول</td></tr>
+<tr><td>«Google sign-in is not set up on this installation yet»</td><td>السوبر أدمن لسه محطش الـClient ID والـsecret</td><td>الخطوة 7 (ربط السيستم) الأول</td></tr>
+</table></div></div>
+
+</div>
+
+<!-- ======================= English ======================= -->
+<div id="en" hidden>
+<div class="card top"><div><h1>Connect Google, step by step</h1><div class="muted">Drive backups, Calendar, Google Meet links and Google sign-in. Done once.</div></div><div class="lang"><button type="button" data-l="ar">عربي</button><button class="on" type="button" data-l="en">English</button></div></div>
+<div class="card"><nav><a href="#en-1">1. Project</a><a href="#en-2">2. APIs</a><a href="#en-3">3. Branding</a><a href="#en-4">4. Scopes</a><a href="#en-5">5. Publish</a><a href="#en-6">6. Client</a><a href="#en-7">7. Connect</a><a href="#en-err">Errors and fixes</a></nav></div>
+
+<div class="card"><h2>Before you start</h2>
+<ul><li>You need a Google (Gmail) account. <b>For backups, use the system owner's account</b>: every client's backup is saved on its Drive.</li>
+<li>Everything is done in <a href="https://console.cloud.google.com" target="_blank" rel="noopener">Google Cloud Console</a>, free of charge.</li>
+<li>One Google project serves every server and every client.</li></ul></div>
+
+<div class="card" id="en-1"><h2>1. Project</h2>
+<ol><li>Open Google Cloud Console and pick (or create) a project at the top.</li><li>Check the project name at the top before each step.</li></ol></div>
+
+<div class="card" id="en-2"><h2>2. Enable the APIs</h2>
+<ul><li><a href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener">Google Drive API</a></li><li><a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" target="_blank" rel="noopener">Google Calendar API</a></li><li><a href="https://console.cloud.google.com/apis/library/meet.googleapis.com" target="_blank" rel="noopener">Google Meet API</a></li></ul>
+<p>Press <b>Enable</b> on each.</p></div>
+
+<div class="card" id="en-3"><h2>3. Branding and audience</h2>
+<ol><li><a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener">Google Auth Platform</a> → <b>Get started</b>.</li><li>App name and support email.</li><li>Audience: <b>External</b> (Internal is only for Google Workspace company accounts).</li><li>Contact email, accept the terms, <b>Create</b>.</li></ol></div>
+
+<div class="card" id="en-4"><h2>4. Scopes (Data Access)</h2>
+<p><b>Data Access</b> → <b>Add or remove scopes</b>, tick these three, then <b>Update</b> and <b>Save</b>:</p>
+<ul><li><code>https://www.googleapis.com/auth/drive.file</code></li><li><code>https://www.googleapis.com/auth/calendar.events</code></li><li><code>https://www.googleapis.com/auth/meetings.space.created</code></li></ul>
+<div class="note n-warn"><code>drive.readonly</code> (reading Drive folders for learning) is optional and restricted: users see a warning and Google may ask for a review. Add it only if you use a linked learning folder.</div></div>
+
+<div class="card" id="en-5"><h2>5. Publish the app (the key step)</h2>
+<p><b>Audience</b> → Publishing status <b>Testing</b> → <b>Publish app</b> → Confirm. It must say <b>In production</b>.</p>
+<div class="note n-bad">In Testing, only listed test users can connect, and every connection stops by itself after 7 days.</div></div>
+
+<div class="card" id="en-6"><h2>6. Create the client</h2>
+<ol><li><b>Clients</b> → <b>Create client</b> → <b>Web application</b>.</li>
+<li>JavaScript origins: each server's address, e.g. <code>https://your-domain.com</code>.</li>
+<li>Redirect URIs: two per server, e.g. <code>https://your-domain.com/?drive_cb=1</code> and <code>https://your-domain.com/?google_cb=1</code>. The exact one is shown with a copy button on the backup page of each server.</li>
+<li>Untick “Use this client for an AI-powered agent”, then <b>Create</b>. Keep the Client ID and secret safe; never paste them in a chat.</li></ol></div>
+
+<div class="card" id="en-7"><h2>7. Connect from the dashboard</h2>
+<ul><li><b>System (super admin):</b> Health, report and backup → Google Drive backup → paste the Client ID and secret → <b>Connect Google</b>. On “Google hasn't verified this app”: Advanced → Go to … (unsafe) → Continue.</li>
+<li><b>A client's own account:</b> My account → Google account → <b>Connect my Google account</b> (no Client ID needed).</li>
+<li><b>Drive folders (optional):</b> “Allow reading Drive folders” adds it to the same connection.</li>
+<li>Check: press “Back up now” and see files uploaded. Every day at 10:13 the connection is tried; if it stopped you get a WhatsApp alert and a “Connect again” button.</li></ul></div>
+
+<div class="card" id="en-err"><h2>Errors and fixes</h2>
+<div class="tw"><table>
+<tr><th>Message</th><th>Meaning</th><th>Fix</th></tr>
+<tr><td><code>403: access_denied</code></td><td>App still in Testing, account not a test user</td><td>Step 5: Publish app</td></tr>
+<tr><td><code>400: redirect_uri_mismatch</code></td><td>Redirect URI missing or different</td><td>Copy it from the backup page into Authorized redirect URIs, exactly; wait a few minutes</td></tr>
+<tr><td><code>401: invalid_client</code></td><td>Wrong Client ID or secret, or client deleted</td><td>Copy them again from Clients</td></tr>
+<tr><td><code>invalid_grant</code> (expired or revoked)</td><td>The connection stopped (Testing 7-day limit, password change, access removed)</td><td>Publish app, then Connect again</td></tr>
+<tr><td>Google hasn't verified this app</td><td>Normal warning for a new app</td><td>Advanced → Go to … (unsafe)</td></tr>
+<tr><td>This app is blocked</td><td>Restricted scope (<code>drive.readonly</code>) without verification</td><td>Connect without Drive folders, or verify the app</td></tr>
+<tr><td><code>403: org_internal</code></td><td>Audience set to Internal</td><td>Change it to External</td></tr>
+<tr><td><code>admin_policy_enforced</code></td><td>Workspace admin blocks the app</td><td>Use a normal Gmail account, or ask the admin</td></tr>
+<tr><td>Google did not grant: …</td><td>A scope is not in Data Access, or was unticked</td><td>Step 4, then connect again and tick everything</td></tr>
+<tr><td>API has not been used / disabled</td><td>API not enabled</td><td>Step 2</td></tr>
+<tr><td>no refresh token returned</td><td>Google gave no lasting key</td><td>Disconnect and connect again; if repeated, remove the app from <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">your Google account permissions</a> first</td></tr>
+</table></div></div>
+</div>
+
+</div>
+<script>
+(function () {
+  function show(l) { document.getElementById('ar').hidden = l !== 'ar'; document.getElementById('en').hidden = l !== 'en'; document.documentElement.lang = l; document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr'; }
+  document.addEventListener('click', function (e) { var b = e.target.closest('[data-l]'); if (b) show(b.dataset.l); });
+  var m = location.search.match(/[?&]lang=(ar|en)/); if (m) show(m[1]);
+  try { var t = localStorage.getItem('wi_theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+})();
+</script>
+</body>
+</html>

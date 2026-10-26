@@ -1774,6 +1774,7 @@ return [
     'Farieq violet' => 'بنفسجي فريق',
     'Farieq night and gold' => 'ليل وذهب',
     'Fariek theme' => 'ثيم فريق',
+    'Step-by-step guide and common errors' => 'شرح الربط خطوة بخطوة والأخطاء وحلولها',
     'Clients → Create client' => 'Clients ← Create client',
     'without it Google stops the connection after 7 days.' => 'من غيرها جوجل بيوقف الربط بعد 7 أيام.',
     'Data access' => 'Data access',

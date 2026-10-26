@@ -7,7 +7,7 @@
         if (!r.connected) {
           var L = function (u, t) { return '<a href="' + u + '" target="_blank" rel="noopener">' + t + ' ↗</a>'; };
           var S = function (s) { return '<code dir="ltr">' + s + '</code>'; };
-          h += '<h3>1️⃣ ' + T('Connect Google') + '</h3><p class="muted small">' + T('One connection for everything: Drive backups, Calendar and Google Meet links. Done once, and it does not stop after 7 days.') + '</p><ol class="small gsteps">'
+          h += '<h3>1️⃣ ' + T('Connect Google') + '</h3><p class="muted small">' + T('One connection for everything: Drive backups, Calendar and Google Meet links. Done once, and it does not stop after 7 days.') + '</p><p class="small">' + '<a href="?google_guide=1&lang=' + (document.documentElement.lang === 'ar' ? 'ar' : 'en') + '" target="_blank" rel="noopener">📘 ' + T('Step-by-step guide and common errors') + '</a>' + '</p><ol class="small gsteps">'
             + '<li>' + T('Enable the APIs:') + ' ' + L('https://console.cloud.google.com/apis/library/drive.googleapis.com', 'Google Drive API') + ' · ' + L('https://console.cloud.google.com/apis/library/calendar-json.googleapis.com', 'Google Calendar API') + ' · ' + L('https://console.cloud.google.com/apis/library/meet.googleapis.com', 'Google Meet API') + ' <span class="muted">(' + T('press “Enable” on each') + ')</span></li>'
             + '<li>' + L('https://console.cloud.google.com/auth/branding', T('Google Auth Platform → Branding')) + ': ' + T('the app name and your email (audience “External”).') + '</li>'
             + '<li>' + L('https://console.cloud.google.com/auth/scopes', T('Data access')) + ' → ' + T('Add or remove scopes') + ': ' + S('drive.file') + ' · ' + S('calendar.events') + ' · ' + S('meetings.space.created') + '</li>'
@@ -19,7 +19,7 @@
         } else {
           var mb = function (b) { b = Number(b || 0); return b > 1073741824 ? (b / 1073741824).toFixed(2) + ' GB' : (b / 1048576).toFixed(1) + ' MB'; };
           var P = r.progress || {}, run = r.busy || P.running;
-          if (r.broken) h += '<div class="pp-view small" style="margin-bottom:8px">⚠️ ' + T('Google stopped this connection. Connect again, and publish the Google app (Audience → Publish app) so it does not stop after 7 days.') + ' <button type="button" class="btn primary sm" id="bk-recon">🔗 ' + T('Connect again') + '</button></div>';
+          if (r.broken) h += '<div class="pp-view small" style="margin-bottom:8px">⚠️ ' + T('Google stopped this connection. Connect again, and publish the Google app (Audience → Publish app) so it does not stop after 7 days.') + ' <button type="button" class="btn primary sm" id="bk-recon">🔗 ' + T('Connect again') + '</button> ' + '<a href="?google_guide=1&lang=' + (document.documentElement.lang === 'ar' ? 'ar' : 'en') + '" target="_blank" rel="noopener">📘 ' + T('Step-by-step guide and common errors') + '</a>' + '</div>';
           h += '<div class="row"><span class="pill ' + (r.broken ? 'bad">⛔ ' + T('Stopped') : 'good">✅ ' + T('Connected')) + (r.email ? ' · ' + esc(r.email) : '') + '</span><button class="link-btn" id="bk-dis">' + T('Disconnect') + '</button></div>';
           // progress
           if (run) { var pct = P.bytes_total ? Math.round(P.bytes_done / P.bytes_total * 100) : (P.total ? Math.round(P.done / P.total * 100) : 0);
