@@ -111,6 +111,7 @@ function wf_wc_section(): string {
     foreach (wf_wc_mine() as $k => $s) { $on = !empty($s['on']);
         $o .= '<details class="sa-grp"><summary><b>' . wi_e((string) $s['name']) . '</b> <span class="muted small" dir="ltr">' . wi_e(implode(', ', (array) $s['domains'])) . '</span><span class="sa-chip ' . ($on ? 'ok">' . $t('On') : 'warn">' . $t('Off')) . '</span></summary><div style="padding:0 12px 12px">'
             . '<p class="small">' . $t('Put this line before </body> on the website:') . '</p><code dir="ltr" style="display:block;user-select:all;padding:8px;background:var(--card-in,#f5f6f7);border-radius:8px;word-break:break-all">' . wi_e('<script src="' . $base . '?wc=js&k=' . $k . '" async></script>') . '</code>'
+            . wf_wc_howto()
             . '<p class="muted small">' . $t('Number') . ': ' . wi_e((string) ($nums[$s['aid']]['name'] ?? $s['aid'])) . ' · ' . $t('Messages to') . ': <span dir="ltr">' . wi_e((string) $s['to']) . '</span></p>'
             . '<form method="post" class="row" style="gap:6px">' . $csrf . '<input type="hidden" name="do" value="wc_act"><input type="hidden" name="k" value="' . wi_e($k) . '">'
             . '<button class="btn ghost sm" name="act" value="toggle">' . ($on ? $t('Switch off') : $t('Switch on')) . '</button><button class="btn ghost sm" name="act" value="delete" onclick="return confirm(this.dataset.q)" data-q="' . $t('Delete') . '?">' . $t('Delete') . '</button></form></div></details>'; }
@@ -125,6 +126,19 @@ function wf_wc_section(): string {
         . '<label>' . $t('Color') . '<input type="color" name="color" value="#25d366"></label>'
         . '<div><button class="btn primary">' . $t('Save') . '</button></div></form></details></div>';
     return $o;
+}
+/** Where to paste the line, per kind of website, and what to check when the bubble does not show. */
+function wf_wc_howto(): string {
+    $t = fn($s) => wi_e(wi_t($s)); $li = fn(array $a) => '<ol class="small">' . implode('', array_map(fn($x) => '<li>' . $t($x) . '</li>', $a)) . '</ol>';
+    return '<details class="wc-howto"><summary class="small">📘 ' . $t('How to add it to your website') . '</summary>'
+        . '<p class="small"><b>HTML</b></p>' . $li(['Open the page file (index.html) and paste the line just before </body>.', 'To show it on every page, paste it in each page or in the shared footer.'])
+        . '<p class="small"><b>WordPress</b></p>' . $li(['Install the WPCode plugin (Insert Headers and Footers).', 'Code Snippets → Header & Footer: paste the line in Footer and save.'])
+        . '<p class="small"><b>Shopify</b></p>' . $li(['Online Store → Themes → Edit code → theme.liquid: paste the line just before </body>.'])
+        . '<p class="small"><b>Wix</b></p>' . $li(['Settings → Custom Code → Add Code: paste the line, choose All pages and Body – end.'])
+        . '<p class="small"><b>Blogger</b></p>' . $li(['Theme → Edit HTML: paste the line just before </body>.'])
+        . '<p class="small"><b>' . $t('Try it') . '</b></p>' . $li(['Open your website: a chat bubble shows in the corner.', 'Write a question: the bot answers.', 'Press Talk to a person: a message reaches you on WhatsApp. Reply to it and the reply shows on the website.'])
+        . '<p class="small"><b>' . $t('The bubble does not show?') . '</b></p>' . $li(['The domain here must be the website\'s domain (www and other sub-domains work).', 'The website chat must be switched on here.', 'Clear the website cache (a cache plugin or Cloudflare).'])
+        . '</details>';
 }
 /** Saves from the Integrations page. */
 function wf_wc_action(string $do): void {
