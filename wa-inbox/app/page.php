@@ -424,6 +424,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
           WI.post('my_google', { do: x.dataset.gg, read: x.dataset.read ? 1 : 0 }).then(function (r) { if (!r.ok) { alert(r.error || T('Failed')); return; } if (r.url) location.href = r.url; else load(); }); });
         load(); });</script>
       <?php endif; ?>
+      <?= function_exists('wf_acdel_card') ? wf_acdel_card() : '' ?>
     <?php elseif ($page === 'help'): ?>
       <iframe src="?help_doc=<?= (int) @filemtime(dirname(__DIR__) . '/help.html') ?>" title="Help" style="width:100%;height:calc(100vh - 120px);border:0;border-radius:14px;background:#fff"></iframe>
     <?php elseif ($page === 'changes'): ?>

@@ -113,6 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         session_regenerate_id(true); $_SESSION['email'] = $back; unset($_SESSION['imp_from'], $_SESSION['acc']); $_SESSION['seen'] = time();
         header('Location: ?p=users'); exit;
     }
+    if ($do === 'acdel_request' || $do === 'acdel_admin') { require_once dirname(__DIR__) . '/features.php'; $do === 'acdel_request' ? wf_acdel_request() : wf_acdel_admin(); }
     if ($do === 'terms_accept') { require_once dirname(__DIR__) . '/features.php'; wf_terms_accept(); }
     if ($do === 'logout') { wi_log('logout'); $_SESSION = []; session_destroy(); header('Location: ./'); exit; }
     // My account: every user can change their own name, WhatsApp number and password (the current password is required).

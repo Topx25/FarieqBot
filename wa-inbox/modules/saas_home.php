@@ -69,7 +69,7 @@ function wf_saas_page(): string {
         . '<tr><td><a href="?p=settings">' . $t('General settings') . '</a></td><td>→</td></tr>'
         . '<tr><td><a href="?landing=1" target="_blank" rel="noopener">' . $t('Product page') . '</a></td><td>↗</td></tr>'
         . '</table></div></div></div>';
-    return $o . wf_saas_ai_card() . wf_saas_reports_card() . '</div>';
+    return $o . (function_exists('wf_acdel_admin_card') ? wf_acdel_admin_card() : '') . wf_saas_ai_card() . wf_saas_reports_card() . '</div>';
 }
 /** Price in USD per million tokens of an AI model: the super admin's own price, else the providers' list price (refreshed daily), else an estimate by model family. */
 function wf_ai_price(string $model): array {
