@@ -1428,3 +1428,4 @@ input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align
 .wc-howto{margin:10px 0}.wc-howto summary{cursor:pointer;color:var(--accent,#0866ff)}.wc-howto ol{margin:4px 0 8px;padding-inline-start:20px}.wc-howto p{margin:8px 0 0}
 .err-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:4px 4px 10px;border-bottom:1px solid var(--line,#e4e6eb)}.err-all{display:flex;gap:6px;align-items:center;margin:0;margin-inline-end:auto;font-weight:500}.err-ck{width:auto;margin:0}.err-hid{opacity:.6}
 .err-all{flex-direction:row}.err-all input{width:auto;margin:0}
+.bp-web{display:flex;gap:8px;align-items:center;margin:8px 0;font-weight:500;flex-direction:row}.bp-web input{width:auto;margin:0}

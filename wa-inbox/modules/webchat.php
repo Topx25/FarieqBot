@@ -54,10 +54,13 @@ function wf_wc_public(): void {
     if (!wf_wc_allow($key, $sid)) $out(['ok' => true, 'msgs' => [['who' => 'bot', 'text' => wf_landing_t('Too many messages for now. Try again in a minute.', $lang)]]]);
     $set = array_filter(['name' => $name, 'phone' => $phone, 'page' => $page]); $c = wf_wc_conv($sid);
     if ($msg !== '') wf_wc_add($sid, $key, ['who' => 'me', 'text' => $msg], $set);
-    $wasHuman = !empty($c['human']); $isHuman = $human || $wasHuman; $reply = ''; $handoff = $isHuman;
+    $wasHuman = !empty($c['human']); $isHuman = $human || $wasHuman; $reply = '';
+    // the bot answers only when the site is in bot mode, the number's bot is on and its Website chat channel is ticked; else every message goes to the team on WhatsApp
+    $rc = function_exists('wf_bot_run_cfg') ? wf_bot_run_cfg((string) $s['aid']) : []; $botOn = ($s['mode'] ?? 'bot') === 'bot' && ($rc['mode'] ?? 'off') !== 'off' && ($rc['web_chat'] ?? true);
+    if (!$botOn) $isHuman = true;
     if (!$isHuman && $msg !== '') { $hist = []; foreach (array_slice((array) ($c['msgs'] ?? []), -8) as $m) $hist[] = ['from' => ($m['who'] ?? '') === 'me' ? 'customer' : 'bot', 'text' => (string) $m['text']];
         $r = wf_bot_answer($acc, $msg, $hist); if (!empty($r['ok']) && trim((string) ($r['reply'] ?? '')) !== '') $reply = trim((string) $r['reply']); $handoff = $reply === '' || !empty($r['handoff']); }
-    $new = [];
+    $new = []; $handoff = $handoff ?? $isHuman;
     if ($reply !== '') { wf_wc_add($sid, $key, ['who' => 'bot', 'text' => mb_substr($reply, 0, 2000)]); $new[] = ['who' => 'bot', 'text' => $reply]; }
     // the bot handed over (or could not answer, or the visitor asked for a person): the message goes to the admin on WhatsApp
     if ($handoff) { $c = wf_wc_conv($sid); $to = wf_wc_to((string) ($s['to'] ?? ''));
@@ -114,6 +117,7 @@ function wf_wc_section(): string {
             . wf_wc_howto()
             . '<p class="muted small">' . $t('Number') . ': ' . wi_e((string) ($nums[$s['aid']]['name'] ?? $s['aid'])) . ' · ' . $t('Messages to') . ': <span dir="ltr">' . wi_e((string) $s['to']) . '</span></p>'
             . '<form method="post" class="row" style="gap:6px">' . $csrf . '<input type="hidden" name="do" value="wc_act"><input type="hidden" name="k" value="' . wi_e($k) . '">'
+            . '<select name="mode" onchange="this.form.querySelector(\'[name=act][value=mode]\').click()"><option value="bot"' . (($s['mode'] ?? 'bot') === 'bot' ? ' selected' : '') . '>' . $t('The bot first, then the team on WhatsApp') . '</option><option value="team"' . (($s['mode'] ?? 'bot') === 'team' ? ' selected' : '') . '>' . $t('The team on WhatsApp (every message reaches WhatsApp)') . '</option></select><button name="act" value="mode" hidden></button>'
             . '<button class="btn ghost sm" name="act" value="toggle">' . ($on ? $t('Switch off') : $t('Switch on')) . '</button><button class="btn ghost sm" name="act" value="delete" onclick="return confirm(this.dataset.q)" data-q="' . $t('Delete') . '?">' . $t('Delete') . '</button></form></div></details>'; }
     $opt = ''; foreach ($nums as $aid => $a) $opt .= '<option value="' . wi_e((string) $aid) . '">' . wi_e((string) ($a['name'] ?? $aid)) . '</option>';
     $o .= '<details><summary class="btn ghost sm">➕ ' . $t('Add a website') . '</summary><form method="post" class="form-grid" style="margin-top:10px">' . $csrf . '<input type="hidden" name="do" value="wc_save">'
@@ -121,6 +125,7 @@ function wf_wc_section(): string {
         . '<label>' . $t('Domains (comma separated)') . '<input name="domains" required dir="ltr" placeholder="example.com"></label>'
         . '<label>' . $t('Number') . '<select name="aid">' . $opt . '</select></label>'
         . '<label>' . $t('Send what the bot cannot answer to (WhatsApp number or group ID)') . '<input name="to" required dir="ltr" placeholder="2010… / 1203…@g.us"></label>'
+        . '<label>' . $t('Who answers the visitors') . '<select name="mode"><option value="bot">' . $t('The bot first, then the team on WhatsApp') . '</option><option value="team">' . $t('The team on WhatsApp (every message reaches WhatsApp)') . '</option></select></label>'
         . '<label>' . $t('Welcome message') . '<input name="hello" maxlength="300"></label>'
         . '<label>' . $t('Language') . '<select name="lang"><option value="ar">' . $t('Arabic') . '</option><option value="en">' . $t('English') . '</option></select></label>'
         . '<label>' . $t('Color') . '<input type="color" name="color" value="#25d366"></label>'
@@ -147,10 +152,11 @@ function wf_wc_action(string $do): void {
         if (!isset(wf_int_numbers()[$aid]) || !$dom || wf_wc_to($to) === '') { wi_flash('Choose a number, a domain and a WhatsApp number or group.', 'bad'); header('Location: ?p=integrations'); exit; }
         $k = 'wc_' . bin2hex(random_bytes(8));
         wi_update('webchat.json', function ($A) use ($k, $aid, $dom, $to) { $A = (array) $A; $A[$k] = ['aid' => $aid, 'name' => mb_substr(trim((string) ($_POST['name'] ?? '')), 0, 60), 'domains' => $dom, 'to' => $to, 'on' => true,
-            'lang' => ($_POST['lang'] ?? '') === 'en' ? 'en' : 'ar', 'hello' => mb_substr(trim((string) ($_POST['hello'] ?? '')), 0, 300), 'color' => preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($_POST['color'] ?? '')) ? $_POST['color'] : '#25d366', 'at' => date('c')]; return $A; });
+            'mode' => ($_POST['mode'] ?? '') === 'team' ? 'team' : 'bot', 'lang' => ($_POST['lang'] ?? '') === 'en' ? 'en' : 'ar', 'hello' => mb_substr(trim((string) ($_POST['hello'] ?? '')), 0, 300), 'color' => preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($_POST['color'] ?? '')) ? $_POST['color'] : '#25d366', 'at' => date('c')]; return $A; });
         wi_log('webchat_add', ['site' => $k, 'account' => $aid]); header('Location: ?p=integrations'); exit; }
     $k = (string) ($_POST['k'] ?? ''); if (!isset(wf_wc_mine()[$k])) { wi_flash('Not found.', 'bad'); header('Location: ?p=integrations'); exit; }
     $act = (string) ($_POST['act'] ?? '');
+    if ($act === 'mode') { $mv = ($_POST['mode'] ?? '') === 'team' ? 'team' : 'bot'; wi_update('webchat.json', function ($A) use ($k, $mv) { $A[$k]['mode'] = $mv; return $A; }); }
     if ($act === 'toggle') wi_update('webchat.json', function ($A) use ($k) { $A[$k]['on'] = empty($A[$k]['on']); return $A; });
     if ($act === 'delete') wi_update('webchat.json', function ($A) use ($k) { unset($A[$k]); return $A; });
     wi_log('webchat_' . $act, ['site' => $k]); header('Location: ?p=integrations'); exit;
