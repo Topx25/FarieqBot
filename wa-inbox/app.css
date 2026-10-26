@@ -1410,3 +1410,13 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .ai-card .ai-h{cursor:pointer}.ai-fold{margin-inline-start:4px;color:var(--muted,#65676b);transition:transform .15s}.ai-card:not(.open) .ai-fold{transform:rotate(-90deg)}
 input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align:center;font-weight:600;border-radius:8px}
 .ai-hidden{margin-top:14px}.ai-hidden>summary{cursor:pointer;color:var(--muted,#65676b);font-weight:600;margin-bottom:8px}.ai-card.is-hidden{opacity:.75}
+/* System overview: customizable cards (one grid; the rows dissolve into it so each card can move) */
+.sa-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.sa-cards .sa-row{display:contents}.sa-cards>.card,.sa-cards .sa-row>.card{margin:0}.sa-cards .sa-wide{grid-column:1/-1}
+.sa-fold-h{cursor:pointer;user-select:none}.sa-fold-h h2::before{content:'▾';display:inline-block;margin-inline-end:6px;color:var(--muted,#65676b);transition:transform .15s}
+.sa-folded>.sa-fold-h h2::before{transform:rotate(-90deg)}[dir=rtl] .sa-folded>.sa-fold-h h2::before{transform:rotate(90deg)}
+.sa-folded>:not(.card-h){display:none!important}.sa-folded>.card-h{margin:0}
+.sa-cbar{display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin:0 0 12px}.sa-cpane{width:min(420px,100%);margin:0}
+.sa-cpane ul{list-style:none;margin:8px 0 12px;padding:0}.sa-cpane li{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line,#e4e6eb)}
+.sa-cpane li label{flex:1;display:flex;gap:8px;align-items:center;cursor:pointer}
+@media (max-width:900px){.sa-cards{grid-template-columns:1fr}}

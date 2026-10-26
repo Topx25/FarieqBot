@@ -43,6 +43,8 @@ function wf_saas_page(): string {
         . $kpi('?p=accounts', 'Numbers online', $up . ' / ' . count($live), $up === count($live) ? $t('All connected') : $t('Some are offline'), $up === count($live) ? 'ok' : 'bad')
         . $kpi('#ai-cost', 'AI this month', '$' . wi_e(number_format(wf_ai_month_cost(), 2)), wi_e(number_format($aiAll)) . ' ' . $t('tokens, all clients'), 'acc')
         . '</div>';
+    // the cards below the numbers: one grid the person can fold, hide and reorder (Customize; kept in this browser)
+    $o .= '<div class="sa-cards" data-sa-home data-l-custom="' . $t('Customize') . '" data-l-done="' . $t('Done') . '" data-l-reset="' . $t('Reset') . '" data-l-hint="' . $t('Tick the cards to show, use the arrows to move them, click a card title to fold it.') . '">';
     $o .= '<div class="sa-row"><div class="card"><div class="card-h"><h2>' . $t('Renewals and trials ending soon') . '</h2><a class="link" href="?p=clients&amp;f=expiring">' . $t('View all') . ' →</a></div>';
     if (!$S['due']) $o .= '<div class="empty">' . $t('No subscription ends within 7 days.') . '</div>';
     else { $o .= '<div style="overflow-x:auto"><table class="tbl"><tr><th>' . $t('Client') . '</th><th>' . $t('Plan') . '</th><th>' . $t('Ends on') . '</th><th>' . $t('Payment method') . '</th><th>' . $t('Status') . '</th></tr>';
@@ -67,7 +69,7 @@ function wf_saas_page(): string {
         . '<tr><td><a href="?p=settings">' . $t('General settings') . '</a></td><td>→</td></tr>'
         . '<tr><td><a href="?landing=1" target="_blank" rel="noopener">' . $t('Product page') . '</a></td><td>↗</td></tr>'
         . '</table></div></div></div>';
-    return $o . wf_saas_ai_card() . wf_saas_reports_card();
+    return $o . wf_saas_ai_card() . wf_saas_reports_card() . '</div>';
 }
 /** Price in USD per million tokens of an AI model: the super admin's own price, else the providers' list price (refreshed daily), else an estimate by model family. */
 function wf_ai_price(string $model): array {
