@@ -410,7 +410,8 @@ function wf_bot_tick(array $acc, bool $fast = false): array {
     if (empty($c['held']) && in_array($c['scope'], ['both', 'groups'], true)) { try { $did = array_merge($did, wf_bot_groups($acc, $c, $st, $team, $ch['chats'] ?? [])); } catch (Throwable $e) { wi_bot_log_add($aid, ['jid' => '', 'q' => '', 'reply' => '', 'result' => 'error', 'why' => 'groups run stopped: ' . mb_substr($e->getMessage(), 0, 240) . ' (' . basename($e->getFile()) . ':' . $e->getLine() . ')', 'at' => date('c')]); } }
     // The number's chat with itself is the owner's test chat: what the owner types there is answered like a customer's message.
     $selfIds = []; $sAcc = (array) (wi_gateway('/status', null, $acc)['account'] ?? []); foreach (['id', 'lid'] as $k) { $d = preg_replace('/\D/', '', explode(':', explode('@', (string) ($sAcc[$k] ?? ''))[0])[0]); if ($d !== '') $selfIds[$d] = 1; }
-    $selfMap = fn(array $rows) => array_map(fn($m) => ($m['dir'] ?? '') === 'out' && ($m['via'] ?? '') !== 'bot' ? ['dir' => 'in'] + $m : $m, $rows);
+    // only what the owner typed on the phone is a question; what the system posts there itself (a program's step, a reminder, an alert) is not
+    $selfMap = fn(array $rows) => array_map(fn($m) => ($m['dir'] ?? '') === 'out' && in_array((string) ($m['via'] ?? ''), ['phone', ''], true) ? ['dir' => 'in'] + $m : $m, $rows);
     foreach (($c['scope'] === 'groups' ? [] : ($ch['chats'] ?? [])) as $x) {
         if ($n >= 2) break;
         if (!empty($x['group']) || !str_ends_with((string) $x['jid'], '@s.whatsapp.net') && !str_ends_with((string) $x['jid'], '@lid') && !str_ends_with((string) $x['jid'], '@fb')) continue; // @fb: a Facebook page's Messenger chat
