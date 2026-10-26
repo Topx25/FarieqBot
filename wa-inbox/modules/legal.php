@@ -56,3 +56,45 @@ function wf_legal_page(string $kind): void {
         . '@media (prefers-color-scheme:dark){body{background:#0f1514;color:#e6ece9}}</style></head><body><main>' . $html . '</main></body></html>';
     exit;
 }
+
+/* ---------- Terms on a client's first sign-in ----------
+ * A client sees the terms once before the dashboard (again when the text changes): Arabic when they sign in from an Arab country,
+ * English from anywhere else (no country known: the interface language). The acceptance is kept with the time, IP, country and language. */
+const WF_ARAB_CC = ['EG', 'SA', 'AE', 'KW', 'QA', 'BH', 'OM', 'YE', 'IQ', 'SY', 'JO', 'LB', 'PS', 'LY', 'TN', 'DZ', 'MA', 'SD', 'MR', 'SO', 'DJ', 'KM'];
+/** The terms text with the placeholders filled, in one language. */
+function wf_terms_text(string $lang): string {
+    $own = trim((string) wi_sys('terms_text'));
+    if ($own !== '') { $L = preg_split('/\R/u', $own); } else { $ar = $lang === 'ar' ? (array) require __DIR__ . '/../i18n.php' : []; $L = array_map(fn($l) => $ar[$l] ?? $l, wf_legal_lines('terms')); }
+    $site = parse_url((string) wi_sys('base_url'), PHP_URL_HOST) ?: (string) ($_SERVER['HTTP_HOST'] ?? ''); $email = trim((string) wi_sys('legal_email'));
+    $brand = $lang === 'en' ? (trim((string) wi_sys('brand_name_en')) ?: (string) wi_sys('brand_name')) : (string) wi_sys('brand_name'); // the English text names the product in English
+    return strtr(implode("\n", $L), ['{product}' => $brand, '{owner}' => trim((string) wi_sys('legal_owner')) ?: $brand, '{site}' => $site, '{email}' => $email !== '' ? $email : $site]);
+}
+function wf_terms_lang(): string { $cc = wi_ip_country(); if ($cc !== '') return in_array($cc, WF_ARAB_CC, true) ? 'ar' : 'en'; return wi_lang() === 'ar' ? 'ar' : 'en'; }
+function wf_terms_ver(): string { return substr(sha1(wf_terms_text('en')), 0, 12); }
+/** This signed-in person still has to accept the terms (clients only; the super admin and team members never). */
+function wf_terms_needed(): bool {
+    $me = wi_me(); if (!$me || wi_is_super() || !empty($_SESSION['imp_from']) || ($me['role'] ?? '') !== 'client') return false; // the super admin viewing a client's panel is not asked
+    $ok = (array) (((array) wi_read('terms_ok.json', []))[strtolower((string) $me['email'])] ?? []);
+    return (string) ($ok['v'] ?? '') !== wf_terms_ver();
+}
+/** POST do=terms_accept: kept with the time, IP, country and language. */
+function wf_terms_accept(): void {
+    $me = wi_me(); if (!$me || empty($_POST['agree'])) { header('Location: ./'); exit; } $em = strtolower((string) $me['email']); $row = ['v' => wf_terms_ver(), 'at' => date('c'), 'ip' => wi_ip(), 'country' => wi_ip_country(), 'lang' => (string) ($_POST['lang'] ?? '')];
+    wi_update('terms_ok.json', function ($A) use ($em, $row) { $A = (array) $A; $A[$em] = $row; return $A; }); wi_log('terms_accept', ['email' => $em, 'v' => $row['v'], 'country' => $row['country']]); header('Location: ./'); exit;
+}
+/** The page shown instead of the dashboard until the terms are accepted. */
+function wf_terms_gate(): void {
+    $lang = in_array($_GET['tl'] ?? '', ['ar', 'en'], true) ? (string) $_GET['tl'] : wf_terms_lang(); $T = fn($s) => wi_e(wf_landing_t($s, $lang)); $html = '';
+    foreach (preg_split('/\R/u', wf_terms_text($lang)) as $l) { $l = trim($l); if ($l === '') continue; $html .= str_starts_with($l, '# ') ? '<h2>' . wi_e(substr($l, 2)) . '</h2>' : '<p>' . wi_e($l) . '</p>'; }
+    header('Content-Type: text/html; charset=utf-8'); header('Cache-Control: no-store');
+    echo '<!doctype html><html lang="' . $lang . '" dir="' . ($lang === 'ar' ? 'rtl' : 'ltr') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $T('Terms of service') . '</title>'
+        . '<style>:root{--bg:#f0f2f5;--card:#fff;--fg:#1c1e21;--mut:#65676b;--line:#e4e6eb;--acc:#0866ff}@media (prefers-color-scheme:dark){:root{--bg:#18191a;--card:#242526;--fg:#e4e6eb;--mut:#b0b3b8;--line:#3e4042}}'
+        . 'body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.7 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}main{max-width:720px;margin:24px auto;padding:0 16px}.c{background:var(--card);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.08);padding:20px 22px}'
+        . '.t{max-height:55vh;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:4px 16px;margin:12px 0}h1{font-size:22px;margin:0}h2{font-size:16px;margin:16px 0 4px}p{margin:0 0 6px}.m{color:var(--mut);font-size:13px}'
+        . 'label{display:flex;gap:8px;align-items:flex-start;margin:12px 0;cursor:pointer}button{width:100%;border:0;border-radius:10px;padding:12px;background:var(--acc);color:#fff;font:inherit;font-weight:700;cursor:pointer}button:disabled{opacity:.5;cursor:default}.r{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:12px}a{color:var(--acc)}</style></head><body><main><div class="c">'
+        . '<h1>📄 ' . $T('Terms of service') . '</h1><p class="m">' . $T('Please read and accept the terms to start using your dashboard.') . '</p><div class="t">' . $html . '</div>'
+        . '<form method="post"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="terms_accept"><input type="hidden" name="lang" value="' . $lang . '">'
+        . '<label><input type="checkbox" name="agree" value="1" required onchange="this.form.querySelector(\'button\').disabled=!this.checked"> <span>' . $T('I have read the terms and I agree to them.') . '</span></label><button disabled>' . $T('Agree and continue') . '</button></form>'
+        . '<div class="r m"><a href="?tl=' . ($lang === 'ar' ? 'en">English' : 'ar">' . wi_e(wf_landing_t('Arabic', 'ar'))) . '</a><form method="post" style="margin:0"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="logout"><button style="width:auto;background:none;color:var(--acc);padding:0;font-weight:400">' . $T('Sign out') . '</button></form></div></div></main></body></html>';
+    exit;
+}
