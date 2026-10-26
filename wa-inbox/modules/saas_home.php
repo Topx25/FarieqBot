@@ -62,7 +62,8 @@ function wf_saas_page(): string {
     $o .= '</div><div class="card"><div class="card-h"><h2>' . $t('System and security') . '</h2></div><div style="overflow-x:auto"><table class="tbl">'
         . '<tr><td><a href="?p=errors&amp;h=24">' . $t('Errors in the last 24 hours') . '</a></td><td><span class="sa-chip ' . ($errs ? 'warn' : 'ok') . '">' . (int) $errs . '</span></td></tr>'
         . '<tr><td><a href="?p=users">' . $t('Users and permissions') . '</a></td><td><span class="sa-chip acc">' . count(wi_users()) . '</span></td></tr>'
-        . '<tr><td><a href="?p=backup">' . $t('Backup') . '</a></td><td>→</td></tr>'
+        . (($gg = wf_home_google()) ? '<tr><td><a href="?p=backup">🔑 Google</a> <span class="muted small" dir="ltr">' . wi_e($gg['email']) . '</span></td><td><span class="sa-chip ' . ($gg['broken'] ? 'bad">' . $t('Stopped') : ($gg['connected'] ? 'ok">' . $t('Connected') : 'warn">' . $t('Not connected'))) . '</span></td></tr>' : '')
+        . '<tr><td><a href="?p=backup">' . $t('Backup') . '</a></td><td>' . (($bk = wf_drive_cfg()['last'] ?? null) && isset($bk['ok']) ? '<span class="sa-chip ' . ($bk['ok'] ? 'ok">✓ ' : 'bad">⚠ ') . wi_e(substr((string) ($bk['at'] ?? ''), 0, 10)) . '</span>' : '→') . '</td></tr>'
         . '<tr><td><a href="?p=settings">' . $t('General settings') . '</a></td><td>→</td></tr>'
         . '<tr><td><a href="?landing=1" target="_blank" rel="noopener">' . $t('Product page') . '</a></td><td>↗</td></tr>'
         . '</table></div></div></div>';

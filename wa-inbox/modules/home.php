@@ -22,8 +22,17 @@ function wf_api_home(string $api): void {
             'drafts' => ['count' => count($dr), 'items' => array_map(fn($d) => ['name' => $d['name'] ?? '', 'q' => mb_substr((string) ($d['q'] ?? ''), 0, 90), 'at' => $d['at'] ?? '', 'jid' => $d['jid'] ?? ''], array_slice($dr, 0, 4))],
             'reminders' => ['due' => count($due), 'total' => count($rem), 'items' => array_map(fn($r) => ['name' => $r['name'] ?? '', 'note' => $r['note'] ?? '', 'at' => $r['at'] ?? '', 'jid' => $r['jid'] ?? ''], array_slice($rem, 0, 5))],
             'meetings' => $meet, 'cases' => $cases, 'bot_today' => $botToday, 'ai' => ['tasks' => $aiN, 'tokens' => $aiTok], 'pages' => $pages,
-            'backup' => wi_is_admin() ? (wf_drive_cfg()['last'] ?? null) : null]);
+            'backup' => wi_is_admin() ? (wf_drive_cfg()['last'] ?? null) : null, 'google' => wf_home_google()]);
     }
 
     }
+}
+
+/** The Google connection on the home page: the system's for an admin, the panel owner's own for a client (null for a team user). */
+function wf_home_google(): ?array {
+    if (!function_exists('wf_drive_cfg')) return null;
+    $me = wi_me(); $ws = wf_google_ws(); $own = $ws !== '' && $ws !== '-' && strtolower((string) ($me['email'] ?? '')) === $ws;
+    if (!$own && !($ws === '' && wi_is_admin())) return null;
+    $c = wf_drive_cfg(); if ($own && empty($c['client_id'])) return null;
+    return ['connected' => !empty($c['refresh_token']), 'broken' => !empty($c['broken']), 'email' => (string) ($c['email'] ?? ''), 'link' => $own ? '?p=me' : '?p=backup'];
 }
