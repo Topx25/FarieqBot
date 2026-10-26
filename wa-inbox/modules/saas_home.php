@@ -197,3 +197,26 @@ function wf_saas_reports_card(): string {
     $next = date('Y-m-d', strtotime($last . ' +1 day')); $draft = date('Y-m-d', strtotime($last . ' -2 days'));
     return $o . '<p class="small">🕒 ' . wi_e(sprintf(wi_t('Automatic: the %1$s report is built as a draft every day from %2$s to %3$s, and as the final report on %4$s.'), $cur, $draft, $last, $next)) . '</p></div>';
 }
+
+/** The Plans page (super admin): every plan as a card with its limits (storage, AI tokens and replies, numbers, team) and features,
+ *  and how many clients are on it. The editor below it is in app/page.php (plans_save). */
+function wf_plans_page(): string {
+    if (!wi_is_super()) return '';
+    $t = fn($s) => wi_e(wi_t($s)); $cur = wi_e((string) (wi_sys('plan_currency') ?: '$')); $n = fn($x) => wi_e(number_format((float) $x));
+    $on = []; foreach (wi_users() as $u) if (($u['role'] ?? '') === 'client') { $k = (string) ($u['plan_id'] ?? ''); $on[$k] = ($on[$k] ?? 0) + 1; }
+    $o = '<section class="hero"><div class="hero-t"><span class="hero-ic">📦</span><div><h1>' . $t('Plans and subscriptions') . '</h1><p class="muted">' . $t('What each plan gives: storage, AI tokens and replies, numbers, team and features. A client gets these limits when you choose the plan for them.') . '</p></div></div></section><div class="pl-grid">';
+    foreach (wi_plans() as $id => $p) {
+        $lim = fn($v, $unit = '') => (int) $v > 0 ? $n($v) . $unit : $t('Unlimited');
+        $rows = [['💾', 'Storage', (int) ($p['media_gb'] ?? 0) > 0 ? $n($p['media_gb']) . ' GB' : $t('Unlimited')],
+            ['🔢', 'AI tokens a month', (int) ($p['ai_tokens'] ?? 0) > 0 ? $n($p['ai_tokens']) : $t('No limit')],
+            ['🤖', 'AI replies a month', (int) ($p['ai_calls'] ?? 0) > 0 ? $n($p['ai_calls']) : $t('None on our keys')],
+            ['📱', 'WhatsApp numbers', $lim($p['numbers'] ?? 0)], ['👥', 'Team members', $lim($p['team'] ?? 0)]];
+        $o .= '<article class="card pl-card' . (!empty($p['trial']) ? ' pl-trial' : '') . '"><div class="pl-h"><b dir="auto">' . wi_e((string) $p['name']) . '</b><span class="muted small" dir="ltr">' . wi_e((string) $id) . '</span></div>'
+            . '<div class="pl-price"><b dir="ltr">' . ((float) $p['price'] > 0 ? $cur . wi_e(rtrim(rtrim(number_format((float) $p['price'], 2, '.', ''), '0'), '.')) : $t('Free')) . '</b><span class="muted"> / ' . (int) $p['days'] . ' ' . $t('days') . '</span></div>'
+            . '<div class="pl-tags">' . (!empty($p['trial']) ? '<span class="sa-chip acc">' . $t('Trial') . '</span>' : '') . (!empty($p['public']) ? '<span class="sa-chip ok">' . $t('Shown on the pricing page') . '</span>' : '<span class="sa-chip">' . $t('Hidden') . '</span>') . '<span class="sa-chip">' . wi_e(sprintf(wi_t('%d clients'), (int) ($on[$id] ?? 0))) . '</span></div><ul class="pl-rows">';
+        foreach ($rows as $r) $o .= '<li><span>' . $r[0] . ' ' . $t($r[1]) . '</span><b dir="auto">' . $r[2] . '</b></li>';
+        $o .= '</ul><div class="pl-feat">';
+        foreach (['bot' => 'Bot', 'meetings' => 'Meetings', 'cases' => 'Cases', 'backup' => 'Backup'] as $k => $l) $o .= '<span class="' . (!empty($p[$k]) ? 'on' : 'off') . '">' . (!empty($p[$k]) ? '✓' : '✕') . ' ' . $t($l) . '</span>';
+        $o .= '</div></article>'; }
+    return $o . '</div><h2 style="margin:18px 0 6px">✏️ ' . $t('Edit the plans') . '</h2>';
+}

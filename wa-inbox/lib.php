@@ -367,7 +367,7 @@ function wi_user_in_scope(array $t): bool {
 }
 /** The dashboard themes (id => name). The super admin picks the default for everyone; each user may pick their own (My account). */
 const WI_THEMES = ['fq-meta' => 'Fariek theme', 'fq-violet' => 'Farieq violet', 'fq-night' => 'Farieq night and gold', 'fq-ink' => 'Farieq ink and green', 'fq-dawn' => 'Farieq dawn', 'aurora' => 'Aurora', 'google' => 'Google (Material)', 'classic' => 'Classic', 'orchid' => 'Orchid', 'studio' => 'Studio'];
-const WI_SUPER_PAGES = ['ai', 'settings', 'backup', 'report', 'clients', 'errors', 'saas'];
+const WI_SUPER_PAGES = ['ai', 'settings', 'backup', 'report', 'clients', 'errors', 'saas', 'plans'];
 /* ---------- Client teams (SaaS): the client owns their panel; under them supervisors (lead) and employees (agent) ----------
  * A team user belongs to one client (tenant = the client's email), works only on that client's numbers, never sees more
  * than the client has, and has page permissions (the menu) plus chat permissions (what they may do inside a conversation). */
@@ -547,7 +547,8 @@ function wi_menu_registry(): array {
     return [
         ['id' => 'saas', 'title' => 'System', 'items' => [
             ['key' => 'saas', 'icon' => '🏢', 'label' => 'System overview', 'who' => 'super'],
-            ['key' => 'clients', 'icon' => '🏪', 'label' => 'Clients & plans', 'who' => 'super'],
+            ['key' => 'clients', 'icon' => '🏪', 'label' => 'Clients', 'who' => 'super'],
+            ['key' => 'plans', 'icon' => '📦', 'label' => 'Plans and subscriptions', 'who' => 'super'],
             ['key' => 'errors', 'icon' => '🧯', 'label' => 'Error log', 'who' => 'super'],
             ['key' => 'settings', 'icon' => '⚙️', 'label' => 'General settings', 'who' => 'super']]],
         ['id' => 'today', 'title' => 'Today', 'items' => [['key' => 'dashboard', 'href' => './', 'icon' => '🏠', 'label' => 'Dashboard', 'who' => 'all']]],

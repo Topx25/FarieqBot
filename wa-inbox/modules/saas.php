@@ -21,7 +21,7 @@ function wi_plans(): array {
 /** One plan, cleaned. */
 function wi_plan_clean(array $p): array {
     return ['name' => mb_substr(trim((string) ($p['name'] ?? '')), 0, 40), 'price' => max(0, round((float) ($p['price'] ?? 0), 2)), 'days' => max(1, min(3650, (int) ($p['days'] ?? 30))),
-        'numbers' => max(0, min(100, (int) ($p['numbers'] ?? 1))), 'team' => max(0, min(500, (int) ($p['team'] ?? 0))), 'ai_calls' => max(0, min(1000000, (int) ($p['ai_calls'] ?? 0))), 'media_gb' => max(0, min(100000, (int) ($p['media_gb'] ?? 0))),
+        'numbers' => max(0, min(100, (int) ($p['numbers'] ?? 1))), 'team' => max(0, min(500, (int) ($p['team'] ?? 0))), 'ai_calls' => max(0, min(1000000, (int) ($p['ai_calls'] ?? 0))), 'ai_tokens' => max(0, min(10000000000, (int) ($p['ai_tokens'] ?? 0))), 'media_gb' => max(0, min(100000, (int) ($p['media_gb'] ?? 0))),
         'bot' => !empty($p['bot']), 'meetings' => !empty($p['meetings']), 'cases' => !empty($p['cases']), 'backup' => !empty($p['backup']), 'public' => !empty($p['public']), 'trial' => !empty($p['trial'])];
 }
 /** The plan a client is on (by its id), or null for a hand-made client. */
@@ -30,7 +30,7 @@ function wi_client_plan(array $client): ?array { $id = (string) ($client['plan_i
 function wi_plan_apply(array $client, string $planId, bool $setEnd): array {
     $p = wi_plans()[$planId] ?? null; if (!$p) return $client;
     $client['plan_id'] = $planId; $client['plan'] = (string) $p['name'];
-    $client['max_numbers'] = (int) $p['numbers']; $client['max_team'] = (int) $p['team']; $client['ai_calls'] = (int) $p['ai_calls']; $client['media_gb'] = (int) ($p['media_gb'] ?? 0);
+    $client['max_numbers'] = (int) $p['numbers']; $client['max_team'] = (int) $p['team']; $client['ai_calls'] = (int) $p['ai_calls']; $client['ai_tokens'] = (int) ($p['ai_tokens'] ?? 0); $client['media_gb'] = (int) ($p['media_gb'] ?? 0);
     $client['can_bot'] = !empty($p['bot']); $client['can_meetings'] = !empty($p['meetings']); $client['can_cases'] = !empty($p['cases']); $client['can_backup'] = !empty($p['backup']);
     if ($setEnd) { $client['expires'] = date('Y-m-d', strtotime('+' . (int) $p['days'] . ' days')); $client['plan_start'] = date('Y-m-d'); }
     return $client;
@@ -82,6 +82,7 @@ function wi_plan_usage(string $email): array {
     $msgs = 0; $Us = wi_read('usage.json', []); foreach ($nums as $aid) { $x = (array) ($Us[$aid][date('Y-m')] ?? []); $msgs += (int) ($x['in'] ?? 0) + (int) ($x['out'] ?? 0); }
     $rows = [$row('numbers', 'WhatsApp numbers', count($nums), wi_client_max_numbers($c)), $row('team', 'Team members', count(wi_team_of($e)), wi_team_seats($c)),
         $row('ai', 'AI replies this month', (int) (wi_read('ai_allowance.json', [])[$e][date('Y-m')] ?? 0), (int) ($c['ai_calls'] ?? 0)),
+        $row('tokens', 'AI tokens this month', wi_client_ai_tokens($e), (int) ($c['ai_tokens'] ?? 0)),
         $row('media', 'Media', round($mediaMb / 1024, 2), (int) ($c['media_gb'] ?? 0), 'GB')];
     if ($msgs > 0) $rows[] = $row('messages', 'Messages this month', $msgs, 0);
     $days = !empty($c['expires']) ? (int) floor((strtotime((string) $c['expires'] . ' 23:59:59') - time()) / 86400) : null;
@@ -118,6 +119,8 @@ function wi_client_has_ai(string $email): bool {
 /** Calls left this month on the operator's keys for a client (0 = none). */
 function wi_ai_allowance_left(array $client): int {
     $quota = (int) ($client['ai_calls'] ?? 0); if ($quota <= 0) return 0;
+    // the plan's monthly tokens (0 = no token limit, only the calls count)
+    $tk = (int) ($client['ai_tokens'] ?? 0); if ($tk > 0 && wi_client_ai_tokens((string) $client['email']) >= $tk) return 0;
     $used = (int) (wi_read('ai_allowance.json', [])[strtolower((string) $client['email'])][date('Y-m')] ?? 0);
     return max(0, $quota - $used);
 }
@@ -214,3 +217,23 @@ function wi_landing(): void {
     header('Content-Type: text/html; charset=utf-8'); echo $html; exit;
 }
 
+/** AI tokens a client used this month, over all their numbers (counted hourly from the AI log). */
+function wi_client_ai_tokens(string $email): int { return function_exists('wf_client_usage') ? (int) wf_client_usage($email)['ai_tokens'] : 0; }
+
+/* ---------- Each client's files in a folder of its own, outside the site ---------- */
+/** clients/<client>/<number>/{media,whatsapp} at the installation root; the usual paths (storage/inbox_media/<aid>,
+ *  wa-local/accounts/<aid>) become links to it. Only readable by the app's user; the folder also refuses web access. */
+function wi_client_folder(string $aid, string $owner): ?string {
+    $aid = preg_replace('/[^a-z0-9_-]/', '', strtolower($aid)); $owner = strtolower(trim($owner)); if ($aid === '' || $owner === '') return null;
+    $root = dirname(__DIR__, 2); $c = null; foreach (wi_users() as $u) if (strtolower((string) $u['email']) === $owner) { $c = $u; break; }
+    $name = preg_replace('/[^a-z0-9-]/', '-', strtolower((string) (($c['slug'] ?? '') ?: strtok($owner, '@')))); $name = trim(preg_replace('/-+/', '-', $name), '-') ?: 'client';
+    $base = $root . '/clients'; if (!is_dir($base)) { @mkdir($base, 0711, true); @file_put_contents($base . '/.htaccess', "Require all denied\n"); }
+    $dir = $base . '/' . $name . '-' . substr(md5($owner), 0, 6) . '/' . $aid;
+    foreach (['media' => $root . '/storage/inbox_media/' . $aid, 'whatsapp' => $root . '/wa-local/accounts/' . $aid] as $sub => $link) {
+        if (!is_dir($dir . '/' . $sub)) @mkdir($dir . '/' . $sub, 0700, true);
+        if (file_exists($link) || is_link($link)) continue; @mkdir(dirname($link), 0755, true);
+        $rel = str_repeat('../', substr_count(substr($link, strlen($root) + 1), '/')) . substr($dir, strlen($root) + 1) . '/' . $sub; @symlink($rel, $link); }
+    @chmod(dirname($dir), 0700); @chmod($dir, 0700);
+    wi_log('client_folder', ['account' => $aid, 'folder' => substr($dir, strlen($root) + 1)]);
+    return $dir;
+}

@@ -223,6 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'payments' => wi_is_super() ? !empty($_POST['payments']) : false, 'autoreply' => false, 'created_at' => date('c'), 'created_by' => (string) $_SESSION['email'], // payments: the payment bot sends receipts to the owner's invoice system (owner only)
                     'owner' => wi_is_super() ? null : (string) $_SESSION['email']];
                 wi_save_accounts($accounts); wi_log('account_add', ['account' => $id, 'name' => $name]);
+                if (!wi_is_super()) wi_client_folder($id, (string) $_SESSION['email']); // a client's files go to a folder of its own
                 if (!wi_is_super()) { // a user's own number is visible to that user
                     $users = wi_users();
                     foreach ($users as &$uu) if (strtolower($uu['email']) === strtolower((string) $_SESSION['email'])) $uu['accounts'] = array_values(array_unique(array_merge((array) ($uu['accounts'] ?? []), [$id])));
@@ -262,7 +263,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $out = []; foreach ((array) ($_POST['plans'] ?? []) as $id => $p) { $id = preg_replace('/[^a-z0-9_-]/', '', strtolower((string) ($p['id'] ?? $id))); if ($id === '' || trim((string) ($p['name'] ?? '')) === '' || !empty($p['del'])) continue; $out[$id] = wi_plan_clean((array) $p); }
         if ($out) wi_write('plans.json', $out);
         $cfg = wi_config(); $cfg['system']['signup_on'] = !empty($_POST['signup_on']) ? 1 : 0; $cfg['system']['google_login_on'] = !empty($_POST['google_login_on']) ? 1 : 0; $ts = trim((string) ($_POST['turnstile_site'] ?? '')); $cfg['system']['turnstile_site'] = preg_match('/^[A-Za-z0-9_-]{10,100}$/', $ts) ? $ts : ''; if (trim((string) ($_POST['turnstile_secret'] ?? '')) !== '') wi_secret_set('turnstile_secret', trim((string) $_POST['turnstile_secret'])); $sd = strtolower(trim((string) ($_POST['saas_domain'] ?? ''))); $cfg['system']['saas_domain'] = preg_match('/^([a-z0-9-]+\.)+[a-z]{2,}$/', $sd) ? $sd : ''; wi_write('config.json', $cfg);
-        wi_log('plans_save', ['plans' => array_keys($out)]); wi_flash('Saved.', 'ok'); header('Location: ?p=clients'); exit;
+        wi_log('plans_save', ['plans' => array_keys($out)]); wi_flash('Saved.', 'ok'); header('Location: ?p=plans'); exit;
     }
     // System overview (super admin): the price per million tokens of each AI model, for the cost estimate.
     if ($do === 'ai_prices') {
@@ -283,7 +284,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     foreach ($all as $x) if (strtolower((string) $x['email']) !== $email && (($u['slug'] !== '' && ($x['slug'] ?? '') === $u['slug']) || array_intersect($u['domains'], (array) ($x['domains'] ?? [])))) { wi_flash('This address is already used by another client.', 'bad'); header('Location: ?p=clients'); exit; } }
                 if (isset($_POST['brand_name'])) { $u['brand_name'] = mb_substr(trim((string) $_POST['brand_name']), 0, 60); $u['brand_logo'] = mb_substr(trim((string) ($_POST['brand_logo'] ?? '')), 0, 8); }
                 $u['max_numbers'] = max(0, min(100, (int) ($_POST['max_numbers'] ?? ($u['max_numbers'] ?? 1))));
-                $u['ai_calls'] = max(0, min(1000000, (int) ($_POST['ai_calls'] ?? ($u['ai_calls'] ?? 0))));
+                $u['ai_calls'] = max(0, min(1000000, (int) ($_POST['ai_calls'] ?? ($u['ai_calls'] ?? 0)))); $u['ai_tokens'] = max(0, min(10000000000, (int) ($_POST['ai_tokens'] ?? ($u['ai_tokens'] ?? 0))));
                 $ex = trim((string) ($_POST['expires'] ?? '')); $u['expires'] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $ex) ? $ex : '';
                 if (isset($_POST['pay_method'])) { $pm = (string) $_POST['pay_method']; $u['pay_method'] = isset(wi_pay_methods()[$pm]) ? $pm : ''; }
                 $ps = trim((string) ($_POST['plan_start'] ?? '')); if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $ps)) $u['plan_start'] = $ps;

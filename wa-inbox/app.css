@@ -1356,3 +1356,13 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .sa-bar em{font-style:normal;color:var(--muted,#65676b);text-align:end;font-variant-numeric:tabular-nums}
 @media (max-width:900px){.sa-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sa-row{grid-template-columns:1fr}}
 .sa-ai input{padding:4px 6px}.tbl .sa-sum td{background:var(--card-in,#f5f6f7)}
+/* Plans page */
+.pl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin:0 0 8px}
+.pl-card{display:flex;flex-direction:column;gap:10px;padding:16px!important}
+.pl-card.pl-trial{border-color:var(--accent,#0866ff)!important}
+.pl-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.pl-h b{font-size:17px}
+.pl-price b{font-size:24px}
+.pl-tags{display:flex;flex-wrap:wrap;gap:6px}
+.pl-rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pl-rows li{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line,#e4e6eb);padding-bottom:6px;font-size:13.5px}
+.pl-feat{display:flex;flex-wrap:wrap;gap:6px;font-size:12.5px}.pl-feat .on{color:var(--good,#1f9d55)}.pl-feat .off{color:var(--muted,#65676b);text-decoration:line-through}
