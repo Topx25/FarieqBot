@@ -24,8 +24,10 @@ function wf_saas_page(): string {
     if (!wi_is_super()) return '';
     $S = wf_saas_stats(); $t = fn($s) => wi_e(wi_t($s)); $cur = wi_e((string) (wi_sys('plan_currency') ?: '$'));
     $name = fn($c) => wi_e((string) (($c['panel_name'] ?? '') ?: (($c['name'] ?? '') ?: $c['email'])));
-    $nums = []; foreach (wi_accounts() as $aid => $a) { $hs = wi_gateway('/status', null, $a); $nums[] = ['a' => $a, 'up' => !empty($hs['connected'])]; }
-    $up = count(array_filter($nums, fn($n) => $n['up']));
+    // a switched-off number and a Facebook page have no WhatsApp gateway to check
+    $nums = []; foreach (wi_accounts() as $aid => $a) { $kind = ($a['channel'] ?? '') === 'fb' ? 'fb' : (empty($a['enabled']) ? 'off' : 'wa');
+        $nums[] = ['a' => $a, 'kind' => $kind, 'up' => $kind === 'wa' && !empty(wi_gateway('/status', null, $a)['connected'])]; }
+    $live = array_filter($nums, fn($n) => $n['kind'] === 'wa'); $up = count(array_filter($live, fn($n) => $n['up']));
     $errs = function_exists('wf_err_collect') ? array_sum(array_column(wf_err_collect(24), 'count')) : 0;
     $aiAll = array_sum(array_column($S['ai'], 'tokens'));
     $kpi = fn($href, $label, $val, $note, $cls) => '<a class="sa-kpi" href="' . $href . '"><small>' . $t($label) . '</small><b dir="ltr">' . $val . '</b><span class="sa-chip ' . $cls . '">' . $note . '</span></a>';
@@ -38,7 +40,7 @@ function wf_saas_page(): string {
         . $kpi('?p=clients', 'Sign-ups (30 days)', (int) $S['signups'], wi_e(sprintf(wi_t('%d clients in all'), $S['clients'])), 'acc')
         . $kpi('?p=clients', 'Expected revenue a month', $cur . wi_e(number_format($S['revenue'], 0)), $t('From paid plans'), 'ok')
         . $kpi('?p=clients&amp;f=expiring', 'Renewals within 7 days', count(array_filter($S['due'], fn($d) => $d['s']['days'] >= 0)), $t('Renew from the Clients page'), count($S['due']) ? 'warn' : 'ok')
-        . $kpi('?p=accounts', 'Numbers online', $up . ' / ' . count($nums), $up === count($nums) ? $t('All connected') : $t('Some are offline'), $up === count($nums) ? 'ok' : 'bad')
+        . $kpi('?p=accounts', 'Numbers online', $up . ' / ' . count($live), $up === count($live) ? $t('All connected') : $t('Some are offline'), $up === count($live) ? 'ok' : 'bad')
         . $kpi('#ai-cost', 'AI this month', '$' . wi_e(number_format(wf_ai_month_cost(), 2)), wi_e(number_format($aiAll)) . ' ' . $t('tokens, all clients'), 'acc')
         . '</div>';
     $o .= '<div class="sa-row"><div class="card"><div class="card-h"><h2>' . $t('Renewals and trials ending soon') . '</h2><a class="link" href="?p=clients&amp;f=expiring">' . $t('View all') . ' →</a></div>';
@@ -49,7 +51,8 @@ function wf_saas_page(): string {
                 . '<td><span class="sa-chip ' . ($dd < 0 ? 'bad' : (!empty($d['p']['trial']) ? 'acc' : 'warn')) . '">' . ($dd < 0 ? wi_e(sprintf(wi_t('%d day(s) ago'), -$dd)) : wi_e(sprintf(wi_t('%d day(s) left'), $dd))) . '</span></td></tr>'; }
         $o .= '</table></div>'; }
     $o .= '</div><div class="card"><div class="card-h"><h2>' . $t('Number and gateway health') . '</h2><a class="link" href="?p=health">' . $t('View all') . ' →</a></div><div style="overflow-x:auto"><table class="tbl">';
-    foreach ($nums as $n) $o .= '<tr><td dir="auto">' . ($n['up'] ? '🟢' : '🔴') . ' ' . wi_e(wi_account_label($n['a'])) . '</td><td class="muted">' . wi_e((string) (($n['a']['gateway'] ?? '') ?: 'local')) . '</td><td><span class="sa-chip ' . ($n['up'] ? 'ok">' . $t('Connected') : 'bad">' . $t('Offline')) . '</span></td></tr>';
+    foreach ($nums as $n) { $st = $n['kind'] === 'fb' ? ['🔵', 'acc', 'Facebook page'] : ($n['kind'] === 'off' ? ['⚪', '', 'Switched off'] : ($n['up'] ? ['🟢', 'ok', 'Connected'] : ['🔴', 'bad', 'Offline']));
+        $o .= '<tr><td dir="auto">' . $st[0] . ' ' . wi_e(wi_account_label($n['a'])) . '</td><td class="muted">' . ($n['kind'] === 'wa' ? wi_e((string) (($n['a']['gateway'] ?? '') ?: 'local')) : '') . '</td><td><span class="sa-chip ' . $st[1] . '">' . $t($st[2]) . '</span></td></tr>'; }
     $o .= '</table></div></div></div>';
     $max = max(1, (int) ($S['ai'][0]['tokens'] ?? 0));
     $o .= '<div class="sa-row"><div class="card"><div class="card-h"><h2>' . $t('AI use per client this month') . '</h2><a class="link" href="?p=ai">' . $t('AI providers') . ' →</a></div>';
