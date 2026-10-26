@@ -1774,6 +1774,8 @@ return [
     'Farieq violet' => 'بنفسجي فريق',
     'Farieq night and gold' => 'ليل وذهب',
     'Fariek theme' => 'ثيم فريق',
+    'Only when the other site\'s firewall lets a known User-Agent through.' => 'بس لو الـfirewall بتاع الموقع التاني بيسمح لـUser-Agent معيّن.',
+    'User-Agent (optional)' => 'الـUser-Agent (اختياري)',
     'Change what goes to the webhook' => 'غيّر اللي بيروح للـwebhook',
     'Commands and files' => 'الأوامر والملفات',
     'Fariek\'s bot asks it about the customer of each chat (orders, renewal) before it answers.' => 'بوت فريق بيسأله عن عميل كل محادثة (الطلبات والتجديد) قبل ما يرد.',

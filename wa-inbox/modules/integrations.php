@@ -54,7 +54,7 @@ function wf_int_post(string $id, array $x, array $payload): array {
     $tok = wi_secret('int_hook:' . $id); $hdr = preg_replace('/[^A-Za-z0-9-]/', '', (string) (($x['header'] ?? '') ?: 'X-Webhook-Token'));
     $ch = curl_init((string) $x['url']); $body = json_encode($payload, JSON_UNESCAPED_UNICODE);
     curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 45, CURLOPT_CONNECTTIMEOUT => 8, // a system may answer with AI before it replies
-        CURLOPT_HTTPHEADER => array_merge(['Content-Type: application/json', 'User-Agent: Fariek-Integrations/1'], $tok !== '' ? [$hdr . ': ' . $tok] : [])]);
+        CURLOPT_HTTPHEADER => array_merge(['Content-Type: application/json', 'User-Agent: ' . wf_int_ua($x)], $tok !== '' ? [$hdr . ': ' . $tok] : [])]);
     $out = curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch); curl_close($ch);
     return ['ok' => $code >= 200 && $code < 300, 'code' => $code, 'error' => $err !== '' ? $err : ($code >= 300 ? mb_substr((string) $out, 0, 200) : '')];
 }
@@ -106,6 +106,7 @@ function wf_int_page(): string {
             . '<form method="post" class="row wrap" style="margin-top:10px;gap:8px"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="int_act"><input type="hidden" name="id" value="' . wi_e((string) $id) . '">'
             . '<button class="btn ghost sm" name="act" value="test">🧪 ' . $t('Send a test to the webhook') . '</button><button class="btn ghost sm" name="act" value="key" onclick="return confirm(\'' . $t('Make a new API key? The old one stops working.') . '\')">🔑 ' . $t('New API key') . '</button>'
             . '<select name="filter" style="width:auto"><option value="">' . $t('Change what goes to the webhook') . '</option><option value="all">' . $t('Every private message') . '</option><option value="commands">' . $t('Commands and files') . '</option></select><button class="btn ghost sm" name="act" value="filter">✔</button>'
+            . '<input name="lookup_url" type="url" placeholder="' . $t('Customer lookup address (optional)') . '" value="' . wi_e((string) ($x['lookup_url'] ?? '')) . '" dir="ltr" style="width:260px"><input name="ua" placeholder="User-Agent" value="' . wi_e((string) ($x['ua'] ?? '')) . '" dir="ltr" style="width:170px"><button class="btn ghost sm" name="act" value="extra">💾</button>'
             . '<button class="btn ghost sm" name="act" value="toggle">' . (!empty($x['active']) ? '⏸ ' . $t('Switch off') : '▶️ ' . $t('Switch on')) . '</button><button class="btn ghost sm" name="act" value="delete" onclick="return confirm(\'' . $t('Delete this integration?') . '\')">🗑 ' . $t('Delete') . '</button></form></article>'; }
     $o .= '<details class="card pad" style="margin:0 0 12px"' . (wf_int_mine() ? '' : ' open') . '><summary><b>➕ ' . $t('New integration') . '</b></summary><form method="post" class="stack" style="margin-top:10px;max-width:640px"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="int_save">'
         . '<label>' . $t('Name') . '<input name="name" required maxlength="60" placeholder="iptvpro.org" dir="auto"></label>'
@@ -113,6 +114,7 @@ function wf_int_page(): string {
         . '<label>' . $t('Webhook address (messages in)') . '<input name="url" type="url" required placeholder="https://example.com/wa/webhook" dir="ltr"></label>'
         . '<div class="row wrap"><label style="flex:1">' . $t('Header name') . '<input name="header" value="X-Webhook-Token" dir="ltr"></label><label style="flex:2">' . $t('Webhook token (the other system gives it)') . '<input name="token" type="password" autocomplete="off" dir="ltr"></label></div>'
         . '<label>' . $t('What goes to the webhook') . '<select name="filter"><option value="all">' . $t('Every private message') . '</option><option value="commands">' . $t('Only commands (# or /) and files; Fariek\'s bot answers the rest') . '</option></select></label>'
+        . '<label>' . $t('User-Agent (optional)') . '<input name="ua" placeholder="Fariek-Integrations/1" dir="ltr"><small class="muted">' . $t('Only when the other site\'s firewall lets a known User-Agent through.') . '</small></label>'
         . '<label>' . $t('Customer lookup address (optional)') . '<input name="lookup_url" type="url" placeholder="https://example.com/api/fariek/customer" dir="ltr"><small class="muted">' . $t('Fariek\'s bot asks it about the customer of each chat (orders, renewal) before it answers.') . '</small></label>'
         . '<button class="btn primary">💾 ' . $t('Create and show the API key') . '</button></form></details>';
     $o .= '<div class="card pad"><h2 style="margin:0 0 8px">📘 ' . $t('For the developer of the other system') . '</h2>'
@@ -135,7 +137,7 @@ function wf_int_customer(array $acc, string $jid): string {
         $c = (array) wi_read('int_cache.json', []); if (isset($c[$ck]) && $c[$ck]['t'] > time() - 600) return $mem[$ck] = (string) $c[$ck]['v'];
         $url = (string) $x['lookup_url'] . (str_contains((string) $x['lookup_url'], '?') ? '&' : '?') . http_build_query(['phone' => preg_replace('/\D/', '', strtok($jid, '@')), 'jid' => $jid]);
         $tok = wi_secret('int_hook:' . $id); $hdr = preg_replace('/[^A-Za-z0-9-]/', '', (string) (($x['header'] ?? '') ?: 'X-Webhook-Token'));
-        $ch = curl_init($url); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_HTTPHEADER => $tok !== '' ? [$hdr . ': ' . $tok] : []]);
+        $ch = curl_init($url); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_HTTPHEADER => array_merge(['User-Agent: ' . wf_int_ua($x)], $tok !== '' ? [$hdr . ': ' . $tok] : [])]);
         $out = (string) curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
         $j = json_decode($out, true); $v = '';
         if ($code === 200 && is_array($j) && ($j['ok'] ?? true) !== false) { $v = isset($j['summary']) ? (string) $j['summary'] : json_encode($j, JSON_UNESCAPED_UNICODE); $v = mb_substr(trim($v), 0, 1500); }
@@ -145,3 +147,6 @@ function wf_int_customer(array $acc, string $jid): string {
     }
     return '';
 }
+
+/** The User-Agent Fariek sends to a system (some sites behind a firewall only let a known one through). */
+function wf_int_ua(array $x): string { $u = trim(preg_replace('/[^\x20-\x7E]/', '', (string) ($x['ua'] ?? ''))); return $u !== '' ? mb_substr($u, 0, 120) : 'Fariek-Integrations/1'; }
