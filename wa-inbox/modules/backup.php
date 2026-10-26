@@ -16,7 +16,7 @@ function wf_backup_files(array $types): array {
     $root = wf_backup_root(); $out = [];
     $walk = function (string $dir, string $prefix, ?callable $skip = null) use (&$out) {
         if (!is_dir($dir) || !is_readable($dir)) return;
-        $it = new RecursiveIteratorIterator(new RecursiveCallbackFilterIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
+        $it = new RecursiveIteratorIterator(new RecursiveCallbackFilterIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS),
             fn($f) => !$f->isDir() || is_readable($f->getPathname())), RecursiveIteratorIterator::LEAVES_ONLY, RecursiveIteratorIterator::CATCH_GET_CHILD);
         foreach ($it as $f) { if (!$f->isFile() || !$f->isReadable()) continue; $rel = substr($f->getPathname(), strlen($dir) + 1); if ($skip && $skip($rel)) continue; $out[$prefix . '/' . $rel] = $f->getPathname(); }
     };

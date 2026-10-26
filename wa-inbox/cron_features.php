@@ -116,7 +116,7 @@ try {
     $res = ['at' => date('c'), 'mem_mb' => round($mem / 1024), 'procs' => $procs, 'threads' => $threads, 'top' => array_map(fn($k) => round($k / 1024), array_slice($top, 0, 5, true)), 'limits' => $lim];
     $prev = wi_read('resources.json', []); $res['history'] = array_slice(array_merge($prev['history'] ?? [], [[date('H:i'), $res['mem_mb'], $res['threads']]]), -180);
     if ((int) date('i') === 0 || empty($prev['disk'])) { // folder sizes once an hour
-        $sz = function ($d) { $b = 0; if (!is_dir($d)) return 0; foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($d, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::LEAVES_ONLY, RecursiveIteratorIterator::CATCH_GET_CHILD) as $f) if ($f->isFile()) $b += $f->getSize(); return round($b / 1048576); };
+        $sz = function ($d) { $b = 0; if (!is_dir($d)) return 0; foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($d, FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS), RecursiveIteratorIterator::LEAVES_ONLY, RecursiveIteratorIterator::CATCH_GET_CHILD) as $f) if ($f->isFile()) $b += $f->getSize(); return round($b / 1048576); };
         $R = dirname(__DIR__); $res['disk'] = ['inbox_data' => $sz(WI_DIR), 'archives' => $sz($R . '/wa-local/archive') + $sz($R . '/wa-local/accounts'), 'media' => $sz($R . '/storage')];
     } else $res['disk'] = $prev['disk'];
     // Warn the super admin once when memory or threads reach the alert level of the plan (limits → alert_pct, 90% by default);
