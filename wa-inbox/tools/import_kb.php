@@ -12,7 +12,7 @@ $apply = in_array('--apply', $argv, true); $replace = in_array('--replace', $arg
 $items = []; foreach (array_values($in) as $r) { if (!is_array($r)) continue;
     $q = trim((string) ($r['q'] ?? $r['question'] ?? $r['title'] ?? '')); $a = trim((string) ($r['a'] ?? $r['answer'] ?? $r['content'] ?? ''));
     if ($q === '' || $a === '') continue; $id = substr(md5($aid . '|' . mb_strtolower($q)), 0, 12);
-    $items[$id] = ['id' => $id, 'topic' => mb_substr(trim((string) ($r['topic'] ?? $r['category'] ?? '')) ?: mb_substr($q, 0, 60), 0, 80), 'q' => mb_substr($q, 0, 500), 'a' => mb_substr($a, 0, 4000),
+    $items[$id] = ['id' => $id, 'topic' => mb_substr(($tp = trim((string) ($r['topic'] ?? $r['category'] ?? ''))) !== '' && !in_array(strtolower($tp), ['manual', 'official', 'site', 'auto', 'faq'], true) ? $tp : mb_substr($q, 0, 60), 0, 80), // a source label is not a topic 'q' => mb_substr($q, 0, 500), 'a' => mb_substr($a, 0, 4000),
         'type' => 'import', 'sources' => 1, 'status' => 'approved', 'at' => date('c'), 'by' => 'import']; }
 $cur = (array) (wi_read('learn_kb.json', [])[$aid] ?? []);
 echo "Number $aid: ", count($cur), " items now, ", count($items), " to import", $replace ? ' (replacing all current items)' : ' (same question = updated)', "\n";
