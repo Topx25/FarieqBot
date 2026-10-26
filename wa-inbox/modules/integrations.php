@@ -51,7 +51,7 @@ function wf_int_payload(array $x, array $acc, array $m): array {
 function wf_int_post(string $id, array $x, array $payload): array {
     $tok = wi_secret('int_hook:' . $id); $hdr = preg_replace('/[^A-Za-z0-9-]/', '', (string) (($x['header'] ?? '') ?: 'X-Webhook-Token'));
     $ch = curl_init((string) $x['url']); $body = json_encode($payload, JSON_UNESCAPED_UNICODE);
-    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_CONNECTTIMEOUT => 8,
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 45, CURLOPT_CONNECTTIMEOUT => 8, // a system may answer with AI before it replies
         CURLOPT_HTTPHEADER => array_merge(['Content-Type: application/json', 'User-Agent: Fariek-Integrations/1'], $tok !== '' ? [$hdr . ': ' . $tok] : [])]);
     $out = curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); $err = curl_error($ch); curl_close($ch);
     return ['ok' => $code >= 200 && $code < 300, 'code' => $code, 'error' => $err !== '' ? $err : ($code >= 300 ? mb_substr((string) $out, 0, 200) : '')];
