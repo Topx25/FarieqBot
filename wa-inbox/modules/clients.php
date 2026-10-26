@@ -4,6 +4,7 @@
 
 /** Counts this month's usage of every number (messages in/out, bot replies, stored media, AI calls). Run hourly by the cron. */
 function wf_usage_refresh(): void {
+    if (function_exists('wf_ai_report_cron')) { try { wf_ai_report_cron(); } catch (Throwable $e) { wi_catch($e, 'ai report'); } }
     $U = wi_read('usage.json', []); $m = date('Y-m'); $root = dirname(__DIR__, 2);
     foreach (wi_accounts() as $aid => $a) {
         $in = $out = $bot = 0; $f = wf_cb_archive_dir((string) $aid) . '/' . $m . '.jsonl';
@@ -24,7 +25,9 @@ function wf_usage_refresh(): void {
         $U['_models'][$mm][$md] = ['calls' => (int) ($mr['calls'] ?? 0) + 1, 'in' => (int) ($mr['in'] ?? 0) + (int) ($t['tokens_in'] ?? 0), 'out' => (int) ($mr['out'] ?? 0) + (int) ($t['tokens_out'] ?? 0)];
         if (strcmp($at, $newest) > 0) $newest = $at; }
     $U['_ai_last'] = $newest;
-    foreach ($U as $k => $v) if ($k !== '_ai_last' && is_array($v)) { krsort($v); $U[$k] = array_slice($v, 0, 6, true); } // six months kept
+    // six months kept; an older month stays until its half year's report is saved
+    foreach ($U as $k => $v) if ($k !== '_ai_last' && is_array($v)) { krsort($v); $keep = array_slice($v, 0, 6, true);
+        foreach (array_slice($v, 6, null, true) as $mm => $x) if (function_exists('wf_ai_report_ok') && !wf_ai_report_ok(wf_ai_period((string) $mm))) $keep[$mm] = $x; $U[$k] = $keep; }
     wi_write('usage.json', $U);
 }
 /** One client's usage for a month, summed over their numbers. */

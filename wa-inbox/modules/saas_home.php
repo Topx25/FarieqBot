@@ -63,7 +63,7 @@ function wf_saas_page(): string {
         . '<tr><td><a href="?p=settings">' . $t('General settings') . '</a></td><td>→</td></tr>'
         . '<tr><td><a href="?landing=1" target="_blank" rel="noopener">' . $t('Product page') . '</a></td><td>↗</td></tr>'
         . '</table></div></div></div>';
-    return $o . wf_saas_ai_card();
+    return $o . wf_saas_ai_card() . wf_saas_reports_card();
 }
 /** Price in USD per million tokens of an AI model: the super admin's own price, else a starting estimate by model family. */
 function wf_ai_price(string $model): array {
@@ -108,3 +108,85 @@ function wf_saas_ai_card(): string {
 }
 /** This month's estimated AI cost, all models. */
 function wf_ai_month_cost(): float { $c = 0.0; foreach ((array) (wi_read('usage.json', [])['_models'][date('Y-m')] ?? []) as $md => $r) $c += wf_ai_cost((string) $md, (int) ($r['in'] ?? 0), (int) ($r['out'] ?? 0)); return $c; }
+
+/* Six-month AI report: usage.json keeps six months, so every half year (January to June, July to December) is saved as one
+   report (HTML and PDF) under .data/ai_reports before its months leave usage.json. Built daily in the period's last 3 days,
+   built again (final) once the new period starts, and a month is only dropped from usage.json when its report is there. */
+
+/** The half year a month belongs to: '2026-H2'. */
+function wf_ai_period(string $month): string { return substr($month, 0, 4) . '-H' . ((int) substr($month, 5, 2) <= 6 ? '1' : '2'); }
+/** The months of a half year. */
+function wf_ai_period_months(string $p): array { $y = substr($p, 0, 4); $s = substr($p, -1) === '1' ? 1 : 7; $o = []; for ($i = 0; $i < 6; $i++) $o[] = $y . '-' . sprintf('%02d', $s + $i); return $o; }
+function wf_ai_report_dir(): string { $d = WI_DIR . '/ai_reports'; if (!is_dir($d)) @mkdir($d, 0750, true); return $d; }
+/** The PDF library (mPDF): the path in General settings (pdf_autoload), else the copy on this server. */
+function wf_pdf_lib(): bool {
+    if (class_exists('\Mpdf\Mpdf')) return true;
+    foreach (array_filter([(string) wi_sys('pdf_autoload'), dirname(__DIR__, 2) . '/ai-inv/vendor/autoload.php', dirname(__DIR__) . '/vendor/autoload.php']) as $f) if (is_file($f)) { require_once $f; if (class_exists('\Mpdf\Mpdf')) return true; }
+    return false;
+}
+/** A label in both languages: Arabic from i18n.php, then the English. */
+function wf_ai_bi(string $s): string { static $ar = null; $ar ??= (array) (@include dirname(__DIR__) . '/i18n.php'); return isset($ar[$s]) ? $ar[$s] . ' · ' . $s : $s; }
+/** Builds a half year's report (HTML, and PDF when the library is there). Returns what was written. */
+function wf_ai_report_build(string $p, bool $final): array {
+    $U = wi_read('usage.json', []); $months = wf_ai_period_months($p); $L = fn($s) => htmlspecialchars(wf_ai_bi($s));
+    $n = fn($x) => number_format((float) $x); $usd = fn($x) => '$' . number_format((float) $x, 2);
+    $tot = ['calls' => 0, 'in' => 0, 'out' => 0, 'cost' => 0.0]; $byPv = []; $rows = '';
+    foreach ($months as $m) { $mc = 0.0; $mt = ['calls' => 0, 'in' => 0, 'out' => 0];
+        foreach ((array) ($U['_models'][$m] ?? []) as $md => $r) { $c = wf_ai_cost((string) $md, (int) $r['in'], (int) $r['out']); $pv = strtok((string) $md, ' ') ?: 'unknown';
+            $rows .= '<tr><td>' . $m . '</td><td>' . htmlspecialchars($pv) . '</td><td>' . htmlspecialchars(trim(substr((string) $md, strlen($pv)))) . '</td><td>' . $n($r['calls']) . '</td><td>' . $n($r['in']) . '</td><td>' . $n($r['out']) . '</td><td>' . $usd($c) . '</td></tr>';
+            foreach ($mt as $k => $v) $mt[$k] += (int) $r[$k]; $mc += $c;
+            $b = $byPv[$pv] ?? ['calls' => 0, 'in' => 0, 'out' => 0, 'cost' => 0.0]; foreach (['calls', 'in', 'out'] as $k) $b[$k] += (int) $r[$k]; $b['cost'] += $c; $byPv[$pv] = $b; }
+        foreach ($mt as $k => $v) $tot[$k] += $v; $tot['cost'] += $mc; }
+    $cl = ''; foreach (array_filter(wi_users(), fn($u) => ($u['role'] ?? '') === 'client') as $c) { $calls = $tok = 0;
+        foreach ($months as $m) { $u = wf_client_usage((string) $c['email'], $m); $calls += $u['ai_calls']; $tok += $u['ai_tokens']; }
+        if ($tok > 0) $cl .= '<tr><td>' . htmlspecialchars((string) (($c['panel_name'] ?? '') ?: (($c['name'] ?? '') ?: $c['email']))) . '</td><td>' . $n($calls) . '</td><td>' . $n($tok) . '</td></tr>'; }
+    $pvRows = ''; ksort($byPv); foreach ($byPv as $pv => $b) $pvRows .= '<tr><td>' . htmlspecialchars($pv) . '</td><td>' . $n($b['calls']) . '</td><td>' . $n($b['in']) . '</td><td>' . $n($b['out']) . '</td><td>' . $usd($b['cost']) . '</td></tr>';
+    $th = fn(array $h) => '<tr>' . implode('', array_map(fn($x) => '<th>' . $L($x) . '</th>', $h)) . '</tr>';
+    $body = '<h1>' . $L('AI usage report') . ' ' . $p . '</h1><p>' . $months[0] . ' / ' . $months[5] . ' · ' . $L($final ? 'Final' : 'Draft') . ' · ' . date('Y-m-d H:i') . '</p><p>' . $L('Prices are in USD per million tokens. Change any price to your provider\'s real price and save; the cost is an estimate.') . '</p>'
+        . '<h2>' . $L('Total') . '</h2><table>' . $th(['Calls', 'Tokens in', 'Tokens out', 'Estimated cost']) . '<tr><td>' . $n($tot['calls']) . '</td><td>' . $n($tot['in']) . '</td><td>' . $n($tot['out']) . '</td><td><b>' . $usd($tot['cost']) . '</b></td></tr></table>'
+        . '<h2>' . $L('Provider') . '</h2><table>' . $th(['Provider', 'Calls', 'Tokens in', 'Tokens out', 'Estimated cost']) . $pvRows . '</table>'
+        . '<h2>' . $L('Month') . ' / ' . $L('Model') . '</h2><table>' . $th(['Month', 'Provider', 'Model', 'Calls', 'Tokens in', 'Tokens out', 'Estimated cost']) . $rows . '</table>'
+        . ($cl !== '' ? '<h2>' . $L('Clients') . '</h2><table>' . $th(['Client', 'Calls', 'Tokens']) . $cl . '</table>' : '');
+    $css = 'body{font-family:sans-serif;color:#1c1e21;font-size:12px}h1{color:#0866ff;font-size:20px}h2{font-size:14px;margin-top:18px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #e4e6eb;padding:5px 7px;text-align:right}th{background:#f0f2f5}';
+    $html = '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>' . $p . '</title><style>' . $css . '</style></head><body>' . $body . '</body></html>';
+    $d = wf_ai_report_dir(); $out = ['html' => false, 'pdf' => false];
+    $out['html'] = file_put_contents($d . '/' . $p . '.html', $html) !== false;
+    if (wf_pdf_lib()) { try { $pdf = new \Mpdf\Mpdf(['mode' => 'utf-8', 'tempDir' => sys_get_temp_dir(), 'autoScriptToLang' => true, 'autoLangToFont' => true, 'format' => 'A4-L']);
+        $pdf->SetDirectionality('rtl'); $pdf->WriteHTML($html); $pdf->Output($d . '/' . $p . '.pdf', 'F'); $out['pdf'] = is_file($d . '/' . $p . '.pdf') && filesize($d . '/' . $p . '.pdf') > 1000; } catch (Throwable $e) { wi_catch($e, 'ai report pdf'); } }
+    $st = (array) wi_read('ai_reports.json', []); $st[$p] = ['at' => date('c'), 'final' => $final, 'html' => $out['html'], 'pdf' => $out['pdf']]; wi_write('ai_reports.json', $st);
+    wi_log('ai_report', ['period' => $p, 'final' => $final] + $out);
+    return $out;
+}
+/** A half year's report is saved and final (HTML, and PDF when the library is there). */
+function wf_ai_report_ok(string $p): bool {
+    $r = (array) (((array) wi_read('ai_reports.json', []))[$p] ?? []); $d = wf_ai_report_dir();
+    return !empty($r['final']) && is_file($d . '/' . $p . '.html') && (!wf_pdf_lib() || is_file($d . '/' . $p . '.pdf'));
+}
+/** Hourly (before usage.json drops old months): a draft each day in the period's last 3 days, the final report once the next period starts. */
+function wf_ai_report_cron(): void {
+    $now = date('Y-m'); $cur = wf_ai_period($now); $st = (array) wi_read('ai_reports.json', []);
+    $endM = wf_ai_period_months($cur)[5]; $daysLeft = (int) date('t') - (int) date('j');
+    if ($now === $endM && $daysLeft < 3 && substr((string) ($st[$cur]['at'] ?? ''), 0, 10) !== date('Y-m-d')) wf_ai_report_build($cur, false);
+    $U = wi_read('usage.json', []); $periods = [];
+    foreach (array_keys((array) ($U['_models'] ?? [])) as $m) if (wf_ai_period((string) $m) !== $cur) $periods[wf_ai_period((string) $m)] = true;
+    foreach (array_keys($periods) as $p) if (!wf_ai_report_ok($p)) wf_ai_report_build($p, true);
+}
+/** Download (super admin): ?ai_report=2026-H2&fmt=pdf|html */
+function wf_ai_report_send(string $p, string $fmt): void {
+    if (!wi_is_super() || !preg_match('/^\d{4}-H[12]$/', $p)) { http_response_code(404); exit; }
+    $fmt = $fmt === 'html' ? 'html' : 'pdf'; $f = wf_ai_report_dir() . '/' . $p . '.' . $fmt;
+    if (!is_file($f)) { http_response_code(404); exit('Not found.'); }
+    header('Content-Type: ' . ($fmt === 'pdf' ? 'application/pdf' : 'text/html; charset=utf-8')); header('Content-Disposition: attachment; filename="ai-report-' . $p . '.' . $fmt . '"');
+    header('Content-Length: ' . filesize($f)); header('X-Robots-Tag: noindex'); readfile($f); exit;
+}
+/** The saved reports on the overview, with download links and a button to build the current half year now. */
+function wf_saas_reports_card(): string {
+    $t = fn($s) => wi_e(wi_t($s)); $st = (array) wi_read('ai_reports.json', []); krsort($st);
+    $o = '<div class="card"><div class="card-h"><h2>' . $t('Six-month AI reports') . '</h2></div><p class="muted small">' . $t('Every half year is saved as one report (HTML and PDF) before its months leave the six-month window. A month is never dropped while its report is missing.') . '</p>';
+    if (!wf_pdf_lib()) $o .= '<p class="bad-t small">' . $t('The PDF library is not installed on this server: reports are saved as HTML only.') . '</p>';
+    if ($st) { $o .= '<div style="overflow-x:auto"><table class="tbl"><tr><th>' . $t('Period') . '</th><th>' . $t('Status') . '</th><th>' . $t('Built on') . '</th><th>' . $t('Download') . '</th></tr>';
+        foreach ($st as $p => $r) $o .= '<tr><td dir="ltr">' . wi_e((string) $p) . '</td><td><span class="sa-chip ' . (!empty($r['final']) ? 'ok">' . $t('Final') : 'warn">' . $t('Draft')) . '</span></td><td dir="ltr">' . wi_e(substr((string) ($r['at'] ?? ''), 0, 16)) . '</td><td>'
+            . (!empty($r['pdf']) ? '<a class="btn ghost sm" href="?ai_report=' . wi_e((string) $p) . '&amp;fmt=pdf">PDF</a> ' : '') . (!empty($r['html']) ? '<a class="btn ghost sm" href="?ai_report=' . wi_e((string) $p) . '&amp;fmt=html">HTML</a>' : '') . '</td></tr>';
+        $o .= '</table></div>'; }
+    return $o . '<form method="post"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="ai_report_now"><button class="btn ghost sm">' . $t('Build this half year\'s report now') . '</button></form></div>';
+}

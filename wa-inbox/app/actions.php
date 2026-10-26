@@ -263,6 +263,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pr = []; foreach ((array) ($_POST['price'] ?? []) as $md => $x) { $md = mb_substr(trim((string) $md), 0, 80); if ($md === '') continue; $pr[$md] = ['in' => max(0, round((float) ($x['in'] ?? 0), 4)), 'out' => max(0, round((float) ($x['out'] ?? 0), 4))]; }
         $cfg = wi_config(); $cfg['ai_prices'] = $pr; wi_write('config.json', $cfg); wi_log('ai_prices', ['models' => array_keys($pr)]); wi_flash('Saved.', 'ok'); header('Location: ?p=saas#ai-cost'); exit;
     }
+    if ($do === 'ai_report_now') {
+        if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admin only.'); }
+        $r = wf_ai_report_build(wf_ai_period(date('Y-m')), false); wi_flash($r['html'] ? 'Saved.' : 'Could not save the report.', $r['html'] ? 'ok' : 'bad'); header('Location: ?p=saas'); exit;
+    }
     // Clients page (super admin): plan, end date, pause, seats and features of a client.
     if (in_array($do, ['client_save', 'client_extend', 'client_toggle'], true)) {
         if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admin only.'); }
