@@ -152,6 +152,8 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
     if (preg_match('/(^|\R)\s*#[^\s:\x{061B}]+\s*[:\x{061B}]/u', $text)) { // a filled form: "#case: name", "#mobile: +212…", "#reason: …" — only the labelled values (a title line or a lone #stage is skipped)
         $vals = []; foreach (preg_split('/\R/u', $text) as $ln) if (preg_match('/^\s*#?[^:\x{061B}\n]{1,30}[:\x{061B}]\s*(.+)$/u', $ln, $mm) && ($x = trim(preg_replace('/#\S+/u', '', $mm[1]))) !== '') $vals[] = $x;
         $ph = ''; foreach ($vals as $i => $x) if (preg_match('/^(?:\+|00)?\d[\d\s-]{7,16}\d$/', $x)) { $ph = $x; unset($vals[$i]); break; }
+        // the number may sit on a line without a label ("#الحالة +212…" then "#السبب: …"): it is still the person
+        if ($ph === '' && preg_match('/(?:\+|00)?\d[\d\s-]{7,16}\d/', $text, $pm)) $ph = trim($pm[0]);
         $vals = array_values($vals); $ref = $ph !== '' ? $ph : (string) array_shift($vals); if ($ph !== '' && count($vals) > 1) array_shift($vals); // with a number, the name line is not the reason
         $reason = trim(implode("\n", $vals));
     }
@@ -159,6 +161,15 @@ function wf_intake_command(array $acc, array $in, string $jid, string $from, str
     if (!$hits && $ref !== '') { $w = preg_split('/\s+/u', preg_replace('/@\d+/', '', $ref)); // "aamer reason words": try the first 1–3 words as the name
         for ($i = min(3, count($w)); $i >= 1 && !$hits; $i--) { $h = wf_intake_find($aid, implode(' ', array_slice($w, 0, $i)), [], $acc, true); if (count($h) === 1) { $hits = $h; $reason = trim(implode(' ', array_slice($w, $i)) . "\n" . $reason); } } }
     elseif ($hits && $mentions) $reason = trim(preg_replace('/@\d+/', '', $ref) . "\n" . $reason);
+    // not found: a number anywhere in the message is tried, then close names are offered ("did you mean…") instead of a flat no
+    if (!$hits && preg_match('/(?:\+|00)?\d[\d\s-]{7,16}\d/', $text, $pm) && ($h = wf_intake_find($aid, trim($pm[0]), [], $acc, true))) { if (count($h) === 1) { $hits = $h; $reason = trim($ref . "\n" . $reason); } else $hits = $h; }
+    if (!$hits && $ref !== '') { $sug = []; $words = array_filter(preg_split('/\s+/u', mb_strtolower(preg_replace('/@\d+/', '', $ref))), fn($w) => mb_strlen($w) >= 3);
+        foreach (wf_cases($aid) as $k => $c) { if (!is_array($c) || wf_case_is_private($c)) continue; $nm = mb_strtolower(trim((string) ($c['name'] ?? ''))); if ($nm === '') continue; $best = 0;
+            foreach ($words as $w) foreach (preg_split('/\s+/u', $nm) as $nw) { similar_text($w, $nw, $pc); $best = max($best, $pc); }
+            if ($best >= 70) $sug[$k] = [$best, $c]; }
+        if ($sug) { uasort($sug, fn($a, $b) => $b[0] <=> $a[0]);
+            $say(wf_msg('case_did_you_mean', ['case' => $one, 'query' => mb_substr($ref, 0, 40), 'list' => implode("\n", array_map(fn($k, $x) => '• ' . ($x[1]['name'] ?? '') . ' — ID ' . ($x[1]['no'] ?? '') . ' — ' . $k, array_keys(array_slice($sug, 0, 3, true)), array_slice($sug, 0, 3, true))), 'kw' => $kw]));
+            wi_log('case_did_you_mean', ['account' => $aid, 'query' => mb_substr($ref, 0, 40)]); return true; } }
     if (!$hits) { $dj = wf_intake_diag($aid); $dn = ''; if ($dj !== '') foreach ((array) (wi_gateway('/groups', null, $acc)['groups'] ?? []) as $g) if ((string) ($g['id'] ?? $g['jid'] ?? '') === $dj) $dn = (string) ($g['subject'] ?? $g['name'] ?? '');
         $say(wf_msg('case_not_found', ['case' => $one, 'query' => mb_substr($ref, 0, 40), 'diag' => $dn])); return true; }
     if (count($hits) > 1) { $say(wf_msg('case_many', ['case' => $one, 'list' => implode("\n", array_map(fn($k, $c) => '• ' . ($c['name'] ?? '') . ' — ID ' . ($c['no'] ?? '') . ' — ' . $k, array_keys(array_slice($hits, 0, 8, true)), array_slice($hits, 0, 8, true)))])); return true; }
