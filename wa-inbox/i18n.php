@@ -1774,6 +1774,7 @@ return [
     'Farieq violet' => 'بنفسجي فريق',
     'Farieq night and gold' => 'ليل وذهب',
     'Fariek theme' => 'ثيم فريق',
+    'Webhook token (empty = keep)' => 'توكن الـWebhook (فاضي = زي ما هو)',
     'Only when the other site\'s firewall lets a known User-Agent through.' => 'بس لو الـfirewall بتاع الموقع التاني بيسمح لـUser-Agent معيّن.',
     'User-Agent (optional)' => 'الـUser-Agent (اختياري)',
     'Change what goes to the webhook' => 'غيّر اللي بيروح للـwebhook',

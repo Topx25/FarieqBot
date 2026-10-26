@@ -280,7 +280,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($act === 'key') { $_SESSION['int_new_key'] = ['name' => (string) $x['name'], 'key' => wf_int_new_key($id)]; wi_log('int_key', ['id' => $id]); }
         if ($act === 'filter' && in_array($_POST['filter'] ?? '', ['all', 'commands'], true)) { $fv = (string) $_POST['filter']; wi_update('integrations.json', function ($A) use ($id, $fv) { $A[$id]['filter'] = $fv; return $A; }); wi_log('int_filter', ['id' => $id, 'filter' => $fv]); }
         if ($act === 'extra') { $lu = trim((string) ($_POST['lookup_url'] ?? '')); $lu = preg_match('#^https://\S+$#', $lu) ? $lu : ''; $ua = mb_substr(trim(preg_replace('/[^\x20-\x7E]/', '', (string) ($_POST['ua'] ?? ''))), 0, 120);
-            wi_update('integrations.json', function ($A) use ($id, $lu, $ua) { $A[$id]['lookup_url'] = $lu; $A[$id]['ua'] = $ua; return $A; }); wi_log('int_extra', ['id' => $id]); }
+            wi_update('integrations.json', function ($A) use ($id, $lu, $ua) { $A[$id]['lookup_url'] = $lu; $A[$id]['ua'] = $ua; return $A; });
+            if (trim((string) ($_POST['token'] ?? '')) !== '') wi_secret_set('int_hook:' . $id, trim((string) $_POST['token'])); wi_log('int_extra', ['id' => $id, 'token' => trim((string) ($_POST['token'] ?? '')) !== '']); }
         if ($act === 'toggle') wi_update('integrations.json', function ($A) use ($id) { $A[$id]['active'] = empty($A[$id]['active']); return $A; });
         if ($act === 'delete') { wi_update('integrations.json', function ($A) use ($id) { unset($A[$id]); return $A; }); wi_secret_set('int_key:' . $id, ''); wi_secret_set('int_hook:' . $id, ''); wi_log('int_delete', ['id' => $id]); }
         if ($act === 'test') { $acc = wi_accounts()[(string) $x['aid']] ?? ['id' => (string) $x['aid']];
