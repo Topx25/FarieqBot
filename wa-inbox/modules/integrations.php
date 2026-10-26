@@ -73,6 +73,9 @@ function wf_int_api(): void {
     $hash = hash('sha256', $key); $id = null; foreach (wf_int_all() as $iid => $x) if (hash_equals((string) wi_secret('int_key:' . $iid), $hash)) { $id = (string) $iid; break; }
     if ($id === null) $fail(401, 'Unknown API key'); $x = wf_int_all()[$id];
     if (empty($x['active'])) $fail(403, 'This integration is switched off');
+    // the number's owner (a client) must still have Integrations in their plan
+    $ia = wi_accounts()[(string) ($x['aid'] ?? '')] ?? null; $io = $ia ? wi_private_owner($ia) : '';
+    if ($io !== '') { foreach (wi_users() as $iu) if (strtolower((string) $iu['email']) === $io && ($iu['role'] ?? '') === 'client' && !wi_client_can($iu, 'integrations')) $fail(403, 'Integrations are not in this plan'); }
     if ($what === 'media') { $f = (string) ($_GET['f'] ?? ''); $aid = preg_replace('/[^a-z0-9_-]/', '', (string) $x['aid']);
         if (str_contains($f, '..') || !preg_match('#^inbox_media/' . preg_quote($aid, '#') . '/[A-Za-z0-9_./-]+$#', $f)) $fail(403, 'Not a file of this number');
         $p = dirname(__DIR__, 2) . '/storage/' . $f; if (!is_file($p)) $fail(404, 'File not found');

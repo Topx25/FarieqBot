@@ -8,9 +8,20 @@ declare(strict_types=1);
  */
 
 /** The plans: the saved ones (Clients → Plans), or the starting set. */
+/** The plan features, in one place: a new one is added here (or by an add-on through the plan_features filter) and shows by itself
+ *  in the plan editor, the plan cards, and the client and user dialogs. key => [icon, name, what it gives]; the client field is can_<key>. */
+function wi_plan_features(): array {
+    $f = ['bot' => ['🤖', 'Bot', 'The bot, learning and their own AI keys'], 'meetings' => ['🎥', 'Meetings', 'Meeting links for their customers'],
+        'cases' => ['🗂️', 'Cases', 'Case records of their number'], 'backup' => ['💾', 'Backup', 'Export their chats and data'],
+        'integrations' => ['🔌', 'Integrations', 'Connect other systems (a store, a CRM) to their numbers']];
+    return function_exists('wi_filter') ? (array) wi_filter('plan_features', $f) : $f;
+}
+/** The first four features; one added later is on wherever a plan or a client has not said otherwise, so nobody loses what already works. */
+const WI_PLAN_FEATURES_FIRST = ['bot', 'meetings', 'cases', 'backup'];
+function wi_client_can(array $c, string $k): bool { return array_key_exists('can_' . $k, $c) ? !empty($c['can_' . $k]) : !in_array($k, WI_PLAN_FEATURES_FIRST, true); }
 function wi_plans(): array {
     $saved = wi_read('plans.json', []);
-    if (is_array($saved) && $saved) return $saved;
+    if (is_array($saved) && $saved) { foreach ($saved as &$sp) foreach (array_keys(wi_plan_features()) as $fk) if (is_array($sp) && !array_key_exists($fk, $sp) && !in_array($fk, WI_PLAN_FEATURES_FIRST, true)) $sp[$fk] = true; unset($sp); return $saved; }
     return [
         'trial' => ['name' => 'Trial', 'price' => 0, 'days' => 14, 'numbers' => 1, 'team' => 2, 'bot' => true, 'meetings' => true, 'cases' => true, 'backup' => false, 'ai_calls' => 300, 'media_gb' => 0, 'public' => true, 'trial' => true],
         'starter' => ['name' => 'Starter', 'price' => 7, 'days' => 30, 'numbers' => 1, 'team' => 2, 'bot' => true, 'meetings' => false, 'cases' => true, 'backup' => false, 'ai_calls' => 500, 'media_gb' => 0, 'public' => true, 'trial' => false],
@@ -20,9 +31,10 @@ function wi_plans(): array {
 }
 /** One plan, cleaned. */
 function wi_plan_clean(array $p): array {
-    return ['name' => mb_substr(trim((string) ($p['name'] ?? '')), 0, 40), 'price' => max(0, round((float) ($p['price'] ?? 0), 2)), 'days' => max(1, min(3650, (int) ($p['days'] ?? 30))),
+    $feat = []; foreach (array_keys(wi_plan_features()) as $fk) $feat[$fk] = !empty($p[$fk]);
+    return $feat + ['name' => mb_substr(trim((string) ($p['name'] ?? '')), 0, 40), 'price' => max(0, round((float) ($p['price'] ?? 0), 2)), 'days' => max(1, min(3650, (int) ($p['days'] ?? 30))),
         'numbers' => max(0, min(100, (int) ($p['numbers'] ?? 1))), 'team' => max(0, min(500, (int) ($p['team'] ?? 0))), 'ai_calls' => max(0, min(1000000, (int) ($p['ai_calls'] ?? 0))), 'ai_tokens' => max(0, min(10000000000, (int) ($p['ai_tokens'] ?? 0))), 'media_gb' => max(0, min(100000, (int) ($p['media_gb'] ?? 0))),
-        'bot' => !empty($p['bot']), 'meetings' => !empty($p['meetings']), 'cases' => !empty($p['cases']), 'backup' => !empty($p['backup']), 'public' => !empty($p['public']), 'trial' => !empty($p['trial'])];
+        'public' => !empty($p['public']), 'trial' => !empty($p['trial'])];
 }
 /** The plan a client is on (by its id), or null for a hand-made client. */
 function wi_client_plan(array $client): ?array { $id = (string) ($client['plan_id'] ?? ''); $p = wi_plans()[$id] ?? null; return is_array($p) ? $p : null; }
@@ -31,7 +43,7 @@ function wi_plan_apply(array $client, string $planId, bool $setEnd): array {
     $p = wi_plans()[$planId] ?? null; if (!$p) return $client;
     $client['plan_id'] = $planId; $client['plan'] = (string) $p['name'];
     $client['max_numbers'] = (int) $p['numbers']; $client['max_team'] = (int) $p['team']; $client['ai_calls'] = (int) $p['ai_calls']; $client['ai_tokens'] = (int) ($p['ai_tokens'] ?? 0); $client['media_gb'] = (int) ($p['media_gb'] ?? 0);
-    $client['can_bot'] = !empty($p['bot']); $client['can_meetings'] = !empty($p['meetings']); $client['can_cases'] = !empty($p['cases']); $client['can_backup'] = !empty($p['backup']);
+    foreach (array_keys(wi_plan_features()) as $fk) $client['can_' . $fk] = !empty($p[$fk]);
     if ($setEnd) { $client['expires'] = date('Y-m-d', strtotime('+' . (int) $p['days'] . ' days')); $client['plan_start'] = date('Y-m-d'); }
     return $client;
 }

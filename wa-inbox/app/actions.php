@@ -321,7 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ps = trim((string) ($_POST['plan_start'] ?? '')); if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $ps)) $u['plan_start'] = $ps;
                 $u['max_team'] = max(0, min(500, (int) ($_POST['max_team'] ?? 0)));
                 $u['media_gb'] = max(0, min(100000, (int) ($_POST['media_gb'] ?? ($u['media_gb'] ?? 0))));
-                foreach (['can_bot', 'can_meetings', 'can_cases', 'can_backup'] as $fk) $u[$fk] = !empty($_POST[$fk]);
+                foreach (array_map(fn($k) => 'can_' . $k, array_keys(wi_plan_features())) as $fk) $u[$fk] = !empty($_POST[$fk]);
                 $u['client_note'] = mb_substr(trim((string) ($_POST['client_note'] ?? '')), 0, 500);
                 $u['panel_name'] = mb_substr(trim((string) ($_POST['panel_name'] ?? '')), 0, 60);
                 // a restricted business type is given by hand only
@@ -420,7 +420,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (($pw = (string) ($_POST['password'] ?? '')) !== '') { if (strlen($pw) < 10) { wi_flash('Password must be at least 10 characters.', 'bad'); header('Location: ?p=users'); exit; } $u['password_hash'] = password_hash($pw, PASSWORD_DEFAULT); }
                 if (($ph = trim((string) ($_POST['phone'] ?? ''))) !== '') { $n = wi_norm_phone($ph); if ($n === '') { wi_flash('Invalid WhatsApp number.', 'bad'); header('Location: ?p=users'); exit; } $u['phone'] = $n; }
                 if (isset($_POST['accounts_sent'])) { $u['accounts'] = array_values(array_intersect(array_keys(wi_accounts()), (array) ($_POST['accounts'] ?? []))); $u['can_reply'] = !empty($_POST['can_reply']); $u['can_link'] = !empty($_POST['can_link']); $u['can_share'] = !empty($_POST['can_share']); $u['cases_only'] = !empty($_POST['cases_only']); $keep = array_intersect_key((array) ($u['pages'] ?? []), ($_POST['role'] ?? $u['role'] ?? '') === 'manager' ? ['cases' => 1] : []); $u['pages'] = wi_pages_from_post() + $keep; } // a manager keeps the cases share he accepted
-                if (wi_is_super() && isset($_POST['accounts_sent'])) { foreach (['can_bot', 'can_meetings', 'can_cases', 'can_backup'] as $fk) $u[$fk] = !empty($_POST[$fk]); if (isset($_POST['max_team'])) $u['max_team'] = max(0, min(500, (int) $_POST['max_team'])); }
+                if (wi_is_super() && isset($_POST['accounts_sent'])) { foreach (array_map(fn($k) => 'can_' . $k, array_keys(wi_plan_features())) as $fk) $u[$fk] = !empty($_POST[$fk]); if (isset($_POST['max_team'])) $u['max_team'] = max(0, min(500, (int) $_POST['max_team'])); }
                 if (in_array($_POST['role'] ?? '', ['super', 'admin', 'manager', 'viewer', 'client'], true) && (wi_is_super() || ($_POST['role'] ?? '') !== 'client')) {
                     if ($_POST['role'] !== 'super' && wi_is_super() && $email === strtolower((string) $_SESSION['email'])) { wi_flash('You cannot remove your own admin role.', 'bad'); header('Location: ?p=users'); exit; }
                     if (($u['role'] ?? '') !== $_POST['role']) wi_log('role_change', ['target' => $email, 'from' => (string) ($u['role'] ?? ''), 'to' => (string) $_POST['role']]); // who turned a client into a super admin (or back) is in the audit

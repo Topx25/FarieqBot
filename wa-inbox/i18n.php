@@ -1774,6 +1774,8 @@ return [
     'Farieq violet' => 'بنفسجي فريق',
     'Farieq night and gold' => 'ليل وذهب',
     'Fariek theme' => 'ثيم فريق',
+    'Compact' => 'مختصر',
+    'Connect other systems (a store, a CRM) to their numbers' => 'ربط أنظمة تانية (متجر أو CRM) بأرقامهم',
     'Integrations are managed inside each client\'s panel: open the client\'s panel, then Integrations.' => 'الربط مع الأنظمة بيتدار من لوحة كل عميل: افتح لوحة العميل، وبعدين «الربط مع الأنظمة».',
     'not made yet' => 'لسه متعملش',
     'made; shown only once' => 'اتعمل، وبيظهر مرة واحدة بس',

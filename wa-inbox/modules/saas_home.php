@@ -246,7 +246,7 @@ function wf_plans_page(): string {
             . '<div class="pl-tags">' . (!empty($p['trial']) ? '<span class="sa-chip acc">' . $t('Trial') . '</span>' : '') . (!empty($p['public']) ? '<span class="sa-chip ok">' . $t('Shown on the pricing page') . '</span>' : '<span class="sa-chip">' . $t('Hidden') . '</span>') . '<span class="sa-chip">' . wi_e(sprintf(wi_t('%d clients'), (int) ($on[$id] ?? 0))) . '</span></div><ul class="pl-rows">';
         foreach ($rows as $r) $o .= '<li><span>' . $r[0] . ' ' . $t($r[1]) . '</span><b dir="auto">' . $r[2] . '</b></li>';
         $o .= '</ul><div class="pl-feat">';
-        foreach (['bot' => 'Bot', 'meetings' => 'Meetings', 'cases' => 'Cases', 'backup' => 'Backup'] as $k => $l) $o .= '<span class="' . (!empty($p[$k]) ? 'on' : 'off') . '">' . (!empty($p[$k]) ? '✓' : '✕') . ' ' . $t($l) . '</span>';
+        foreach (array_map(fn($pf) => $pf[1], wi_plan_features()) as $k => $l) $o .= '<span class="' . (!empty($p[$k]) ? 'on' : 'off') . '">' . (!empty($p[$k]) ? '✓' : '✕') . ' ' . $t($l) . '</span>';
         $o .= '</div></article>'; }
     return $o . '</div><h2 style="margin:18px 0 6px">✏️ ' . $t('Edit the plans') . '</h2>';
 }
