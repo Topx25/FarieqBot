@@ -228,7 +228,10 @@ function wi_client_folder(string $aid, string $owner, bool $move = false): ?stri
     $root = dirname(__DIR__, 2); $c = null; foreach (wi_users() as $u) if (strtolower((string) $u['email']) === $owner) { $c = $u; break; }
     $name = preg_replace('/[^a-z0-9-]/', '-', strtolower((string) (($c['slug'] ?? '') ?: strtok($owner, '@')))); $name = trim(preg_replace('/-+/', '-', $name), '-') ?: 'client';
     $base = $root . '/clients'; if (!is_dir($base)) { @mkdir($base, 0711, true); @file_put_contents($base . '/.htaccess', "Require all denied\n"); }
-    $dir = $base . '/' . $name . '-' . substr(md5($owner), 0, 6) . '/' . $aid;
+    $folder = $name . '-' . substr(md5($owner), 0, 6);
+    // the client already has a folder (another of its numbers, perhaps renamed by hand): the new number goes there too
+    foreach (array_keys(wi_owned_accounts($owner)) as $o) if ($o !== $aid && is_link($l = $root . '/storage/inbox_media/' . $o) && preg_match('#clients/([A-Za-z0-9_-]+)/#', (string) readlink($l), $mm)) { $folder = $mm[1]; break; }
+    $dir = $base . '/' . $folder . '/' . $aid;
     foreach (['media' => $root . '/storage/inbox_media/' . $aid, 'whatsapp' => $root . '/wa-local/accounts/' . $aid] as $sub => $link) {
         if (!is_dir($dir . '/' . $sub)) @mkdir($dir . '/' . $sub, 0700, true);
         if (is_link($link)) continue;
