@@ -1355,6 +1355,14 @@ a.mc-from,a.mc-chat,.ml-owner a{text-decoration:none;color:inherit}a.mc-from:hov
 .sa-bar i b{display:block;height:100%;background:var(--accent,#0866ff);border-radius:99px}
 .sa-bar em{font-style:normal;color:var(--muted,#65676b);text-align:end;font-variant-numeric:tabular-nums}
 @media (max-width:900px){.sa-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.sa-row{grid-template-columns:1fr}}
+/* calmer overview: equal columns, cards as tall as their content, flat lists inside cards, quieter tiles */
+.sa-row{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}
+.sa-row>.card .tbl{border:0;border-radius:0;margin:0}.sa-row>.card .tbl td{padding:10px 4px}
+.sa-row>.card .empty{padding:18px 8px;min-height:0}
+.sa-kpis{gap:10px}.sa-kpi{border-color:transparent;box-shadow:0 1px 2px rgba(0,0,0,.05);padding:16px 18px;gap:6px}
+.sa-kpi b{font-size:24px;font-weight:700}.sa-kpi .sa-chip{background:none;padding:0;font-weight:500;color:var(--muted,#65676b)}
+.sa-kpi .sa-chip.bad{color:var(--bad,#d93025)}.sa-kpi .sa-chip.warn{color:#b76e00}
+@media (max-width:900px){.sa-row{grid-template-columns:1fr}}
 .sa-ai input{padding:4px 6px}.tbl .sa-sum td{background:var(--card-in,#f5f6f7)}
 /* Plans page */
 .pl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin:0 0 8px}
