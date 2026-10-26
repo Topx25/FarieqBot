@@ -1420,3 +1420,4 @@ input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align
 .sa-cpane ul{list-style:none;margin:8px 0 12px;padding:0}.sa-cpane li{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line,#e4e6eb)}
 .sa-cpane li label{flex:1;display:flex;gap:8px;align-items:center;cursor:pointer}
 @media (max-width:900px){.sa-cards{grid-template-columns:1fr}}
+.sa-cpane li label{flex-direction:row;margin:0;font-weight:500}.sa-cpane li input{width:auto;margin:0;flex:none}
