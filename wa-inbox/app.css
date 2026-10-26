@@ -1444,3 +1444,27 @@ input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align
 .bs-q{width:20px;height:20px;border-radius:50%;border:1px solid var(--line,#ccd0d5);background:var(--card,#fff);color:var(--muted,#65676b);font-size:12px;line-height:1;padding:0;cursor:pointer;flex:none}
 .bs-hint{flex-basis:100%;line-height:1.6;font-weight:400}
 .bs-body>label>input[type=number]{max-width:110px}
+/* Learning → guide: clean header, try box and the growth settings as rows */
+.lgx-top{display:flex;flex-direction:column;gap:12px}.lgx-acts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.lgx-try{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--line,#e4e6eb)}.lgx-try span{font-weight:600}.lgx-try input{flex:1 1 240px;margin:0}
+.lgx-h{display:flex;gap:12px;align-items:center;margin-bottom:6px}.lgx-h>div{display:flex;flex-direction:column}.lgx-ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:var(--card-in,#f0f2f5);font-size:20px;flex:none}
+.lgx-rows{display:flex;flex-direction:column}.lgx-r{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:11px 2px;border-bottom:1px solid var(--line,#e4e6eb)}
+.lgx-sw{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;margin:0;font-weight:500}.lgx-sw input{width:18px;height:18px;margin:0}
+.lgx-r select{width:auto;min-width:100px;margin:0}.lgx-chips{display:flex;gap:8px;flex-wrap:wrap}.lgx-chips label{display:flex!important;flex-direction:row!important;align-items:center;gap:6px;margin:0;padding:6px 12px;border:1px solid var(--line,#e4e6eb);border-radius:99px;font-weight:500;cursor:pointer}.lgx-chips input{width:auto;margin:0}
+.lgx-n{display:flex;align-items:center;gap:6px}.lgx-n input{width:64px;margin:0}
+.lgx-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-top:12px}
+/* Bot → Learning and testing: one calm style for every section (title, one line of help, rows, actions at the bottom) */
+#bt-tabs{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:4px;padding:4px;border-radius:12px;background:var(--card,#fff);border:1px solid var(--line,#e4e6eb);scrollbar-width:none}
+#bt-tabs::-webkit-scrollbar{display:none}#bt-tabs a{white-space:nowrap;border-radius:9px;padding:8px 14px;border:0}#bt-tabs a.on{background:color-mix(in srgb,var(--accent,#0866ff) 12%,transparent);color:var(--accent,#0866ff);font-weight:700}
+#bt-body .card{padding:20px 22px;border-radius:14px;border:1px solid var(--line,#e4e6eb);box-shadow:none;margin:0 0 16px}
+#bt-body .card>h3{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+#bt-body .card>h3+p{margin:0 0 14px;font-size:13px;line-height:1.7;color:var(--muted,#65676b);max-width:860px}
+#bt-body .card>.row:last-child,#bt-body .card>.row.wrap:last-child{margin-top:14px;padding-top:14px;border-top:1px solid var(--line,#e4e6eb);gap:8px;align-items:center}
+#bt-body .card>label.check{display:flex;flex-direction:row;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line,#e4e6eb);margin:0;font-weight:500}
+#bt-body .card>label.check input{width:18px;height:18px;margin:0}
+#bt-body .card>.gcf{display:flex;flex-direction:column;gap:0}
+#bt-body .card>.gcf>label{display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:10px 0;margin:0;border-bottom:1px solid var(--line,#e4e6eb);background:none;border-radius:0;font-weight:500}
+#bt-body .card>.gcf>label>input:not([type=checkbox]),#bt-body .card>.gcf>label>select{width:auto;min-width:90px;max-width:260px;margin:0;flex:none}
+#bt-body .card>.gcf>label>textarea,#bt-body .card>.gcf>label>input[type=text]{flex:1 1 260px;max-width:100%}
+#bt-body .card>p.small{margin:8px 0 0}
+#bt-body .mt2-kpis{gap:10px}#bt-body .mt2-kpis>*{border:0;background:var(--card-in,#f5f6f7);border-radius:12px;box-shadow:none}
