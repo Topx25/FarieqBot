@@ -1774,6 +1774,7 @@ return [
     'Farieq violet' => 'بنفسجي فريق',
     'Farieq night and gold' => 'ليل وذهب',
     'Fariek theme' => 'ثيم فريق',
+    'a new backup is running now' => 'فيه نسخة جديدة شغالة دلوقتي',
     'Backups and Google Meet links need it' => 'النسخ الاحتياطي وروابط جوجل ميت محتاجينه',
     'Google is not connected' => 'جوجل مش مربوط',
     'Step-by-step guide and common errors' => 'شرح الربط خطوة بخطوة والأخطاء وحلولها',
