@@ -1694,3 +1694,4 @@ body:has(#brp) section.hero{display:none!important}
 #br-roles.ro-fold>h3::after{content:'▾';color:#8a8a96;transition:.2s}
 #br-roles.ro-closed>h3::after{transform:rotate(90deg)}
 #br-roles.ro-closed>:not(h3){display:none!important}
+.icon-btn svg{display:block;margin:auto}.icon-btn.lbl span svg{display:inline-block;vertical-align:-4px}
