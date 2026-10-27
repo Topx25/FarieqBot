@@ -555,6 +555,8 @@ return [
     'Document' => 'ملف',
     'Sending from the server — you can close this page' => 'بيتبعت من السيرفر — تقدر تقفل الصفحة',
     'Bot roles' => 'أدوار البوت',
+    'Bot in this chat' => 'البوت في الشات ده',
+    'The bot is off for this number' => 'البوت مقفول للرقم ده',
     'Role in groups' => 'الدور في الجروبات',
     'Last 7 days' => 'آخر 7 أيام',
     'replies sent' => 'رد اتبعت',

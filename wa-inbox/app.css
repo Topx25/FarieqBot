@@ -1684,3 +1684,13 @@ body:has(#brp) section.hero{display:none!important}
 #brp .bs-body>label{padding:11px 2px!important;font-size:13.5px}
 #brp .bt-grid>.bt-tabs{border-radius:14px!important;padding:5px!important}
 #brp .bt-grid>.bt-tabs a{border-radius:10px!important}
+/* bot switch in a chat, and the folded roles card */
+.chip-btn.bot-sw{display:inline-flex;align-items:center;gap:7px}
+.bot-sw i{width:30px;height:17px;border-radius:99px;background:#d6d6db;position:relative;flex:none;transition:.2s}
+.bot-sw i::before{content:'';position:absolute;top:2px;inset-inline-start:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:.2s}
+.bot-sw.on i{background:linear-gradient(135deg,#b8925a,#d9b97c)}.bot-sw.on i::before{inset-inline-start:15px}
+.bot-sw:disabled{opacity:.55;cursor:not-allowed}
+#br-roles.ro-fold>h3{cursor:pointer;margin:0;display:flex;justify-content:space-between}
+#br-roles.ro-fold>h3::after{content:'▾';color:#8a8a96;transition:.2s}
+#br-roles.ro-closed>h3::after{transform:rotate(90deg)}
+#br-roles.ro-closed>:not(h3){display:none!important}

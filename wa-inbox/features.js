@@ -171,7 +171,7 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
       window.addEventListener('hashchange', loadDraft); loadDraft();
       // Bot status for this chat: /stop – /start (also a button).
       var pb = document.createElement('button'); pb.type = 'button'; pb.className = 'chip-btn sm'; pb.hidden = true; bar.insertBefore(pb, bar.firstChild);
-      function loadPause() { var j = openJid(); pb.hidden = true; if (!j || /@g\.us$/.test(j)) return; get('bot_pause', { jid: j }).then(function (r) { if (!r.ok || r.mode === 'off' || openJid() !== j) return; pb.hidden = false; pb.dataset.p = r.paused ? '1' : ''; pb.textContent = r.paused ? '⏸️ ' + T('Bot paused here — /start') : '🤖 ' + T('Bot on here — /stop'); pb.title = T('Type /stop or /start in the chat (from here or the phone) to pause or resume the bot in this chat.'); }); }
+      function loadPause() { var j = openJid(); pb.hidden = true; if (!j || /@g\.us$/.test(j)) return; get('bot_pause', { jid: j }).then(function (r) { if (!r.ok || openJid() !== j) return; pb.hidden = false; var off = r.mode === 'off'; pb.disabled = off; pb.dataset.p = r.paused ? '1' : ''; pb.classList.add('bot-sw'); pb.classList.toggle('on', !r.paused && !off); pb.innerHTML = '<i></i>🤖 ' + esc(off ? T('The bot is off for this number') : T('Bot in this chat')); pb.title = T('Type /stop or /start in the chat (from here or the phone) to pause or resume the bot in this chat.'); }); }
       pb.onclick = function () { post('bot_pause', { jid: openJid(), pause: pb.dataset.p ? 0 : 1 }).then(loadPause); };
       window.addEventListener('hashchange', loadPause); loadPause();
       document.addEventListener('wi-sent', function () { setTimeout(loadPause, 300); });
@@ -1145,7 +1145,7 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
     var BR = { c: null, groups: [], q: '', f: '', sort: 'on' };
     root.innerHTML = hero('🤖', 'Bot', 'Switch the bot on, choose where it answers, and set up each group. Changes are saved automatically.', '<a class="chip-btn" href="?p=bot">🧠 ' + T('Learning & test') + '</a>') + '<div id="brp"><div class="empty">' + T('Loading…') + '</div></div><div class="card" id="br-roles" hidden></div>';
     // 🎭 Roles: the ones the business type defines on top of the regular bot, and the danger safeguard
-    get('bot_roles').then(function (r) { var box = document.getElementById('br-roles'); if (!r || !r.ok || !Object.keys(r.cfg.roles || {}).length) return; var c = r.cfg; box.hidden = false;
+    get('bot_roles').then(function (r) { var box = document.getElementById('br-roles'); if (!r || !r.ok || !Object.keys(r.cfg.roles || {}).length) return; var c = r.cfg; box.hidden = false; box.classList.add('ro-fold', 'ro-closed'); box.onclick = function (e) { if (e.target.closest('h3')) box.classList.toggle('ro-closed'); };
       box.innerHTML = '<h3>🎭 ' + T('Bot roles') + '</h3><p class="muted small">' + T('One bot, several hats: a message with a role\'s words is answered in that role, and the chat keeps it for a few hours. Anything else is answered by the regular bot.') + '</p>'
         + '<label class="check"><input type="checkbox" id="ro-on"' + (c.on ? ' checked' : '') + '> ' + T('On') + '</label>'
         + '<div class="gcf"><label>' + T('Keep the role in a chat (hours)') + '<input id="ro-h" type="number" min="1" max="72" value="' + (+c.sticky_h) + '"></label><label>' + T('Strong models, in order (providers)') + '<input id="ro-s" dir="ltr" value="' + esc(c.strong) + '"></label></div>'
@@ -1250,9 +1250,9 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
           x[4].forEach(function (id) { var f = document.getElementById(id); var lb = f && (f.closest('label') || f.closest('.gcf-wide')); if (lb && !wrap.contains(lb)) body.appendChild(lb); }); });
         var bm = host.querySelector('.br-modes'), sc = document.getElementById('bp-scope'); var rb = wrap.querySelector('#bs-run .bs-body'); if (sc) rb.insertBefore(sc, rb.firstChild); if (bm) rb.insertBefore(bm, rb.firstChild);
         // every section is a folded card (the working mode stays open); a click on its title opens or closes it, remembered in this browser
-        var OPEN = {}; try { OPEN = JSON.parse(localStorage.getItem('wi_bs_open') || '{}') || {}; } catch (e) {}
-        [].forEach.call(wrap.querySelectorAll('.bs-sec'), function (sec) { var k = sec.id.slice(3); if (!(k in OPEN ? OPEN[k] : k === 'run')) sec.classList.add('bs-closed');
-          sec.querySelector('.bs-h').onclick = function () { sec.classList.toggle('bs-closed'); OPEN[k] = !sec.classList.contains('bs-closed'); try { localStorage.setItem('wi_bs_open', JSON.stringify(OPEN)); } catch (e) {} }; });
+        var OPEN = {}; try { OPEN = JSON.parse(localStorage.getItem('wi_bs_open2') || '{}') || {}; } catch (e) {}
+        [].forEach.call(wrap.querySelectorAll('.bs-sec'), function (sec) { var k = sec.id.slice(3); if (!(k in OPEN ? OPEN[k] : false)) sec.classList.add('bs-closed');
+          sec.querySelector('.bs-h').onclick = function () { sec.classList.toggle('bs-closed'); OPEN[k] = !sec.classList.contains('bs-closed'); try { localStorage.setItem('wi_bs_open2', JSON.stringify(OPEN)); } catch (e) {} }; });
         [].forEach.call(wrap.querySelectorAll('.bs-nav a'), function (a) { a.addEventListener('click', function () { var s = document.querySelector(a.getAttribute('href')); if (s) s.classList.remove('bs-closed'); }); });
         // a closed section shows a short summary of its values beside its title (as in the approved design)
         function bsSum(sec) { var out = []; [].forEach.call(sec.querySelectorAll('.bs-body > label'), function (lb) { if (out.length >= 3) return; var f = lb.querySelector('select, input:not([type=hidden])'); if (!f) return;

@@ -19,7 +19,7 @@
       window.addEventListener('hashchange', loadDraft); loadDraft();
       // Bot status for this chat: /stop – /start (also a button).
       var pb = document.createElement('button'); pb.type = 'button'; pb.className = 'chip-btn sm'; pb.hidden = true; bar.insertBefore(pb, bar.firstChild);
-      function loadPause() { var j = openJid(); pb.hidden = true; if (!j || /@g\.us$/.test(j)) return; get('bot_pause', { jid: j }).then(function (r) { if (!r.ok || r.mode === 'off' || openJid() !== j) return; pb.hidden = false; pb.dataset.p = r.paused ? '1' : ''; pb.textContent = r.paused ? '⏸️ ' + T('Bot paused here — /start') : '🤖 ' + T('Bot on here — /stop'); pb.title = T('Type /stop or /start in the chat (from here or the phone) to pause or resume the bot in this chat.'); }); }
+      function loadPause() { var j = openJid(); pb.hidden = true; if (!j || /@g\.us$/.test(j)) return; get('bot_pause', { jid: j }).then(function (r) { if (!r.ok || openJid() !== j) return; pb.hidden = false; var off = r.mode === 'off'; pb.disabled = off; pb.dataset.p = r.paused ? '1' : ''; pb.classList.add('bot-sw'); pb.classList.toggle('on', !r.paused && !off); pb.innerHTML = '<i></i>🤖 ' + esc(off ? T('The bot is off for this number') : T('Bot in this chat')); pb.title = T('Type /stop or /start in the chat (from here or the phone) to pause or resume the bot in this chat.'); }); }
       pb.onclick = function () { post('bot_pause', { jid: openJid(), pause: pb.dataset.p ? 0 : 1 }).then(loadPause); };
       window.addEventListener('hashchange', loadPause); loadPause();
       document.addEventListener('wi-sent', function () { setTimeout(loadPause, 300); });
