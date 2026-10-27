@@ -1726,3 +1726,8 @@ section.inbox #reply:focus{outline:0;border-color:var(--gold)!important;box-shad
 section.inbox .attach-btn{border-radius:12px!important;border:1px solid var(--pline)!important;background:var(--pc)!important;color:var(--pink2)!important}
 section.inbox #send-btn{background:linear-gradient(135deg,var(--gold),var(--gold2))!important;color:#1b1406!important;border:0!important;box-shadow:0 6px 16px color-mix(in srgb,var(--gold) 35%,transparent)!important}
 section.inbox .bot-sw.on i{background:linear-gradient(135deg,var(--gold),var(--gold2))}
+/* chats: the attach button and the chat list button on one line, the same height as the composer buttons */
+section.inbox .attach-btn,section.inbox .composer .chip-btn,section.inbox .icon-btn.lbl{display:inline-flex!important;flex-direction:row!important;align-items:center!important;justify-content:center;gap:6px;height:40px!important;min-width:0;padding:0 12px!important;white-space:nowrap!important;font-size:13px!important;line-height:1!important;flex:none}
+section.inbox .attach-btn>*,section.inbox .icon-btn.lbl>*{display:inline-flex!important;align-items:center;margin:0!important;font-style:normal}
+section.inbox .icon-btn.lbl{width:auto!important}
+section.inbox #send-btn{width:44px!important;height:44px!important;flex:none}
