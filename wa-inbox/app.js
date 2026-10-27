@@ -405,7 +405,7 @@ document.addEventListener('keydown', function (e) {
     var view = rd(VK, { focus: false, thumbs: true, list: true, showHidden: false }), hiddenChats = rd(HK, []);
     // Full screen hides the top menu: a button that brings it back is always on the screen while it is on (it used to be only in the chat list, which can be hidden too)
     var fx = document.createElement('button'); fx.type = 'button'; fx.id = 'focus-exit'; fx.className = 'focus-exit'; fx.dataset.view = 'focus'; fx.innerHTML = '☰ <span>' + T('Show the menu') + '</span>'; fx.title = T('Leave full screen: show the top menu'); app.appendChild(fx);
-    function applyView() { app.classList.toggle('v-focus', !!view.focus); app.classList.toggle('v-nothumbs', !view.thumbs); app.classList.toggle('v-nolist', !view.list);
+    function applyView() { app.classList.toggle('v-focus', !!view.focus); app.classList.toggle('v-nothumbs', !view.thumbs); app.classList.toggle('v-nolist', !view.list && !!location.hash.slice(1));
       [].forEach.call(document.querySelectorAll('#view-bar [data-view]'), function (b) { var k = b.dataset.view; b.classList.toggle('on', k === 'thumbs' ? !view.thumbs : (k === 'list' ? !view.list : (k === 'hidden' ? !!view.showHidden : !!view[k]))); }); }
     document.addEventListener('click', function (e) { var b = e.target.closest('[data-view]'); if (!b) return; var k = b.dataset.view;
       if (k === 'thumbs') view.thumbs = !view.thumbs; else if (k === 'list') view.list = !view.list; else if (k === 'hidden') view.showHidden = !view.showHidden; else view[k] = !view[k];
@@ -478,7 +478,7 @@ document.addEventListener('keydown', function (e) {
       var w = e.target.closest('.who[data-member]'); if (w && open) { var ph = String(w.dataset.member).replace(/\D/g, ''); memberCard(open, ph, w.dataset.mname || '', null); } });
     function openChat(jid) {
       if (inboxEl) { if (isPhone() && !inboxEl.classList.contains('has-open')) history.pushState({ chat: 1 }, '', '#' + encodeURIComponent(jid)); inboxEl.classList.add('has-open'); }
-      open = jid; history.replaceState(history.state, '', '#' + encodeURIComponent(jid)); drawList();
+      open = jid; history.replaceState(history.state, '', '#' + encodeURIComponent(jid)); drawList(); applyView();
       var ip = document.getElementById('info-panel'); if (ip && !ip.hidden) ip.hidden = true;
       if (unread[jid]) { delete unread[jid]; saveUnread(); }
       var sbx = document.getElementById('sum-box'); if (sbx) sbx.hidden = true;
