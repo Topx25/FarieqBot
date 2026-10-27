@@ -103,16 +103,27 @@ function wf_terms_ver(): string { return substr(sha1(wf_terms_text('en')), 0, 12
 function wf_terms_needed(): bool {
     $me = wi_me(); if (!$me || wi_is_super() || !empty($_SESSION['imp_from']) || ($me['role'] ?? '') !== 'client') return false; // the super admin viewing a client's panel is not asked
     $ok = (array) (((array) wi_read('terms_ok.json', []))[strtolower((string) $me['email'])] ?? []);
-    return (string) ($ok['v'] ?? '') !== wf_terms_ver();
+    return (string) ($ok['v'] ?? '') !== wf_terms_ver() || empty($ok['info']);
 }
+/** After the terms: one card on how the chats and groups data is used, kept and protected (accepted once). */
+const WF_DATA_INFO = [
+    ['💬', 'Your chats and groups', 'The messages of your private chats and groups that arrive from WhatsApp are kept on your account, so the AI can learn from them to answer on your behalf and on behalf of your team, in your own style.'],
+    ['🧠', 'Why keeping them matters', 'If you choose not to keep the chat data, you will have to upload files for the bot to learn from in the knowledge base. That uses more tokens, takes longer to learn, and takes longer to tune the bot\'s reply style. It is not recommended.'],
+    ['🔐', 'Our duty to protect your data', 'The site is bound to secure your data: it is never sold, shared or published, it is protected from damage and loss with backups, and it is encrypted to protect your privacy.'],
+    ['👁️', 'You see who uses it', 'A section of your dashboard (Team → Activity) records every time a member of your team opens your data and what they did with it.'],
+];
+
 /** POST do=terms_accept: kept with the time, IP, country and language. */
 function wf_terms_accept(): void {
-    $me = wi_me(); if (!$me || empty($_POST['agree'])) { header('Location: ./'); exit; } $em = strtolower((string) $me['email']); $row = ['v' => wf_terms_ver(), 'at' => date('c'), 'ip' => wi_ip(), 'country' => wi_ip_country(), 'lang' => (string) ($_POST['lang'] ?? '')];
+    $me = wi_me(); if ($me && !empty($_POST['info'])) { $em = strtolower((string) $me['email']); wi_update('terms_ok.json', function ($A) use ($em) { $A = (array) $A; if (isset($A[$em])) $A[$em]['info'] = date('c'); return $A; }); wi_log('data_info_seen', ['email' => $em]); header('Location: ./'); exit; }
+    if (!$me || empty($_POST['agree'])) { header('Location: ./'); exit; } $em = strtolower((string) $me['email']); $row = ['v' => wf_terms_ver(), 'at' => date('c'), 'ip' => wi_ip(), 'country' => wi_ip_country(), 'lang' => (string) ($_POST['lang'] ?? '')];
     wi_update('terms_ok.json', function ($A) use ($em, $row) { $A = (array) $A; $A[$em] = $row; return $A; }); wi_log('terms_accept', ['email' => $em, 'v' => $row['v'], 'country' => $row['country']]); header('Location: ./'); exit;
 }
 /** The page shown instead of the dashboard until the terms are accepted. */
 function wf_terms_gate(): void {
     $lang = in_array($_GET['tl'] ?? '', ['ar', 'en'], true) ? (string) $_GET['tl'] : wf_terms_lang(); $T = fn($s) => wi_e(wf_landing_t($s, $lang)); $html = '';
+    $me = wi_me(); $ok = (array) (((array) wi_read('terms_ok.json', []))[strtolower((string) ($me['email'] ?? ''))] ?? []);
+    if ((string) ($ok['v'] ?? '') === wf_terms_ver()) { wf_data_info_card($lang); exit; }
     foreach (preg_split('/\R/u', wf_terms_text($lang)) as $l) { $l = trim($l); if ($l === '') continue; $html .= str_starts_with($l, '# ') ? '<h2>' . wi_e(substr($l, 2)) . '</h2>' : '<p>' . wi_e($l) . '</p>'; }
     header('Content-Type: text/html; charset=utf-8'); header('Cache-Control: no-store');
     echo '<!doctype html><html lang="' . $lang . '" dir="' . ($lang === 'ar' ? 'rtl' : 'ltr') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $T('Terms of service') . '</title>'
@@ -125,4 +136,18 @@ function wf_terms_gate(): void {
         . '<label><input type="checkbox" name="agree" value="1" required onchange="this.form.querySelector(\'button\').disabled=!this.checked"> <span>' . $T('I have read the terms and I agree to them.') . '</span></label><button disabled>' . $T('Agree and continue') . '</button></form>'
         . '<div class="r m"><a href="?tl=' . ($lang === 'ar' ? 'en">English' : 'ar">' . wi_e(wf_landing_t('Arabic', 'ar'))) . '</a><form method="post" style="margin:0"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="logout"><button style="width:auto;background:none;color:var(--acc);padding:0;font-weight:400">' . $T('Sign out') . '</button></form></div></div></main></body></html>';
     exit;
+}
+/** The data card shown once after the terms. */
+function wf_data_info_card(string $lang): void {
+    $T = fn($s) => wi_e(wf_landing_t($s, $lang)); $rows = '';
+    foreach (WF_DATA_INFO as $r) $rows .= '<div class="i"><span>' . $r[0] . '</span><div><b>' . $T($r[1]) . '</b><p>' . $T($r[2]) . '</p></div></div>';
+    header('Content-Type: text/html; charset=utf-8'); header('Cache-Control: no-store');
+    echo '<!doctype html><html lang="' . $lang . '" dir="' . ($lang === 'ar' ? 'rtl' : 'ltr') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $T('Your data') . '</title>'
+        . '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600&display=swap" rel="stylesheet">'
+        . '<style>:root{--bg:#f6f5f2;--card:#fff;--fg:#16161a;--mut:#6b6b76;--line:rgba(22,22,26,.08);--gold:#b8925a;--gold2:#d9b97c;--tile:#efede8}@media (prefers-color-scheme:dark){:root{--bg:#0e0f12;--card:#17191f;--fg:#f2f1ee;--mut:#a3a3ad;--line:rgba(255,255,255,.08);--tile:#1c1e24}}'
+        . 'body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.8 "IBM Plex Sans Arabic",system-ui,sans-serif}main{max-width:680px;margin:28px auto;padding:0 16px}.c{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:0 18px 40px rgba(0,0,0,.08);padding:24px}'
+        . 'h1{font-size:22px;margin:0 0 4px}.m{color:var(--mut);font-size:13.5px;margin:0 0 14px}.i{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--line)}.i>span{width:42px;height:42px;flex:none;border-radius:13px;background:var(--tile);display:grid;place-items:center;font-size:20px}.i b{font-size:15.5px}.i p{margin:2px 0 0;color:var(--mut);font-size:14px}'
+        . 'button{width:100%;margin-top:16px;border:0;border-radius:12px;padding:13px;background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1b1406;font:inherit;font-weight:600;cursor:pointer}</style></head><body><main><div class="c">'
+        . '<h1>🛡️ ' . $T('Your data') . '</h1><p class="m">' . $T('How your chats are used to teach the bot, and how they are protected.') . '</p>' . $rows
+        . '<form method="post"><input type="hidden" name="_csrf" value="' . wi_e(wi_csrf()) . '"><input type="hidden" name="do" value="terms_accept"><input type="hidden" name="info" value="1"><button>' . $T('Got it, start') . '</button></form></div></main></body></html>';
 }
