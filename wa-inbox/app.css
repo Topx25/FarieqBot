@@ -1580,3 +1580,10 @@ aside.side nav .nav-h{margin:8px 10px 2px!important;font-size:11px!important}
 /* date and time fields look like pickers: a calendar mark and a pointer */
 input[type=date],input[type=datetime-local],input[type=time],input[type=month]{cursor:pointer;min-width:150px}
 input[type=date]::-webkit-calendar-picker-indicator,input[type=datetime-local]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.8}
+/* flatpickr (dates and hours): fits the product colours, day and night */
+select.fp-under{display:none!important}
+input.fp-hour{width:96px!important;min-width:0!important;cursor:pointer;text-align:center;font-variant-numeric:tabular-nums}
+.flatpickr-calendar{border-radius:14px!important;box-shadow:0 12px 32px rgba(0,0,0,.18)!important;border:1px solid var(--line,#e4e6eb)!important;background:var(--card,#fff)!important;font-family:inherit!important}
+.flatpickr-day.selected,.flatpickr-day.selected:hover{background:var(--accent,#0866ff)!important;border-color:var(--accent,#0866ff)!important}
+.flatpickr-day.today{border-color:var(--accent,#0866ff)!important}
+@media (prefers-color-scheme:dark){.flatpickr-calendar,.flatpickr-months .flatpickr-month,.flatpickr-weekdays,span.flatpickr-weekday,.flatpickr-time input,.flatpickr-time .flatpickr-am-pm{background:var(--card,#242526)!important;color:var(--text,#e4e6eb)!important;fill:var(--text,#e4e6eb)!important}.flatpickr-day{color:var(--text,#e4e6eb)!important}.flatpickr-day.prevMonthDay,.flatpickr-day.nextMonthDay{opacity:.45}}
