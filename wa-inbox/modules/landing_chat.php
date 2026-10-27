@@ -33,15 +33,22 @@ function wf_landing_chat(): void {
     $msg = trim(mb_substr((string) ($in['msg'] ?? ''), 0, 500)); $lang = ($in['lang'] ?? '') === 'en' ? 'en' : 'ar';
     if ($msg === '') $out(['ok' => false]);
     if (!wf_landing_chat_allow()) $out(['ok' => true, 'reply' => wf_landing_t('Too many questions for now. Try again later.', $lang)]);
-    $hist = ''; foreach (array_slice((array) ($in['hist'] ?? []), -8) as $h) if (is_array($h)) $hist .= (!empty($h['me']) ? 'Visitor: ' : 'Assistant: ') . mb_substr(trim((string) ($h['text'] ?? '')), 0, 400) . "\n";
-    $ai = wi_ai('Product page chat', wf_prompt('landing_chat', '', ['facts' => wf_landing_facts(), 'history' => $hist, 'message' => $msg, 'lang' => $lang === 'en' ? 'English' : 'Egyptian Arabic']), 60, ['subject' => 'landing']);
-    $reply = trim((string) ($ai['data']['reply'] ?? ''));
+    $reply = wf_landing_answer($msg, array_slice((array) ($in['hist'] ?? []), -8), $lang);
     wi_log('landing_chat', ['ok' => $reply !== '', 'lang' => $lang]);
     $out(['ok' => true, 'reply' => $reply !== '' ? mb_substr($reply, 0, 1200) : wf_landing_t('Could not answer now. Try again.', $lang)]);
 }
+/** The product page answer: the AI with the product facts ('' when it cannot answer). $hist rows: {me, text}. */
+function wf_landing_answer(string $msg, array $hist, string $lang): string {
+    $h = ''; foreach ($hist as $x) if (is_array($x)) $h .= (!empty($x['me']) ? 'Visitor: ' : 'Assistant: ') . mb_substr(trim((string) ($x['text'] ?? '')), 0, 400) . "\n";
+    $ai = wi_ai('Product page chat', wf_prompt('landing_chat', '', ['facts' => wf_landing_facts(), 'history' => $h, 'message' => $msg, 'lang' => $lang === 'en' ? 'English' : 'Egyptian Arabic']), 60, ['subject' => 'landing']);
+    return trim((string) ($ai['data']['reply'] ?? ''));
+}
+/** The website chat site that serves the product page (marked landing): its widget replaces the AI-only one, so a visitor can reach the support team on WhatsApp. */
+function wf_landing_wc_key(): string { foreach ((array) wi_read('webchat.json', []) as $k => $x) if (!empty($x['landing']) && !empty($x['on'])) return (string) $k; return ''; }
 /** The chat widget, added to the product page when the chat is on. */
 function wf_landing_chat_widget(string $lang): string {
     if (!wi_sys('landing_chat_on')) return '';
+    if (($wk = wf_landing_wc_key()) !== '') return '<script src="./?k=' . $wk . '&amp;wc=js" defer></script>';
     $j = fn($v) => json_encode($v, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS); $h = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
     $w = []; foreach (['title' => 'Ask us anything', 'hello' => 'Hi! Ask me about the product, the plans or how to start.', 'ph' => 'Write your question', 'send' => 'Send', 'err' => 'Could not answer now. Try again.'] as $k => $en) $w[$k] = wf_landing_t($en, $lang);
     $dir = $lang === 'en' ? 'ltr' : 'rtl'; $side = $lang === 'en' ? 'right' : 'left';

@@ -56,10 +56,11 @@ function wf_wc_public(): void {
     if ($msg !== '') wf_wc_add($sid, $key, ['who' => 'me', 'text' => $msg], $set);
     $wasHuman = !empty($c['human']); $isHuman = $human || $wasHuman; $reply = '';
     // the bot answers only when the site is in bot mode, the number's bot is on and its Website chat channel is ticked; else every message goes to the team on WhatsApp
-    $rc = function_exists('wf_bot_run_cfg') ? wf_bot_run_cfg((string) $s['aid']) : []; $botOn = ($s['mode'] ?? 'bot') === 'bot' && ($rc['mode'] ?? 'off') !== 'off' && ($rc['web_chat'] ?? true);
+    $rc = function_exists('wf_bot_run_cfg') ? wf_bot_run_cfg((string) $s['aid']) : []; $botOn = ($s['mode'] ?? 'bot') === 'bot' && ($rc['mode'] ?? 'off') !== 'off' && ($rc['web_chat'] ?? true); if (!empty($s['landing'])) $botOn = ($s['mode'] ?? 'bot') === 'bot';
     if (!$botOn) $isHuman = true;
     if (!$isHuman && $msg !== '') { $hist = []; foreach (array_slice((array) ($c['msgs'] ?? []), -8) as $m) $hist[] = ['from' => ($m['who'] ?? '') === 'me' ? 'customer' : 'bot', 'text' => (string) $m['text']];
-        $r = wf_bot_answer($acc, $msg, $hist); if (!empty($r['ok']) && trim((string) ($r['reply'] ?? '')) !== '') $reply = trim((string) $r['reply']); $handoff = $reply === '' || !empty($r['handoff']); }
+        if (!empty($s['landing']) && function_exists('wf_landing_answer')) { $reply = wf_landing_answer($msg, array_map(fn($x) => ['me' => $x['from'] === 'customer', 'text' => $x['text']], $hist), $lang); $handoff = $reply === ''; }
+        else { $r = wf_bot_answer($acc, $msg, $hist); if (!empty($r['ok']) && trim((string) ($r['reply'] ?? '')) !== '') $reply = trim((string) $r['reply']); $handoff = $reply === '' || !empty($r['handoff']); } }
     $new = []; $handoff = $handoff ?? $isHuman;
     if ($reply !== '') { wf_wc_add($sid, $key, ['who' => 'bot', 'text' => mb_substr($reply, 0, 2000)]); $new[] = ['who' => 'bot', 'text' => $reply]; }
     // the bot handed over (or could not answer, or the visitor asked for a person): the message goes to the admin on WhatsApp
