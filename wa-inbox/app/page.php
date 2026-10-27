@@ -9,7 +9,7 @@
 <meta name="robots" content="noindex,nofollow">
 <title><?= htmlspecialchars((string) wi_brand('brand_name')) ?></title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Cairo:wght@400;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="app.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/app.css') ?>">
 <link rel="stylesheet" href="theme.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/theme.css') + (int) @filemtime(dirname(__DIR__) . '/features.js') ?>">
 <link rel="stylesheet" href="pro.css?v=<?= (int) @filemtime(dirname(__DIR__) . '/pro.css') ?>">
