@@ -63,10 +63,16 @@ function wf_wc_public(): void {
     $wasHuman = !empty($c['human']); $isHuman = $human || $wasHuman; $reply = '';
     // the bot answers only when the site is in bot mode, the number's bot is on and its Website chat channel is ticked; else every message goes to the team on WhatsApp
     $rc = function_exists('wf_bot_run_cfg') ? wf_bot_run_cfg((string) $s['aid']) : []; $botOn = ($s['mode'] ?? 'bot') === 'bot' && ($rc['mode'] ?? 'off') !== 'off' && ($rc['web_chat'] ?? true); if (!empty($s['landing'])) $botOn = ($s['mode'] ?? 'bot') === 'bot';
+    // the number is not linked yet (or is offline): nothing can reach the team, so the bot keeps answering and the visitor's details are kept as a lead
+    $gwOn = !empty(wi_gateway('/status', null, $acc)['connected']); if (!$gwOn && empty($s['landing'])) { $botOn = true; $isHuman = false; }
     if (!$botOn) $isHuman = true;
     if (!$isHuman && $msg !== '') { $hist = []; foreach (array_slice((array) ($c['msgs'] ?? []), -8) as $m) $hist[] = ['from' => ($m['who'] ?? '') === 'me' ? 'customer' : 'bot', 'text' => (string) $m['text']];
         if (!empty($s['landing']) && function_exists('wf_landing_answer')) { $reply = wf_landing_answer($msg, array_map(fn($x) => ['me' => $x['from'] === 'customer', 'text' => $x['text']], $hist), $lang); $handoff = $reply === ''; }
-        else { $r = wf_bot_answer($acc, $msg, $hist); if (!empty($r['ok']) && trim((string) ($r['reply'] ?? '')) !== '') $reply = trim((string) $r['reply']); $handoff = $reply === '' || !empty($r['handoff']); } }
+        else { $r = $gwOn ? wf_bot_answer($acc, $msg, $hist) : []; if (!empty($r['ok']) && trim((string) ($r['reply'] ?? '')) !== '' && empty($r['handoff'])) $reply = trim((string) $r['reply']);
+            if ($reply === '') $reply = wf_wc_site_answer($key, $s, $msg, $hist); $handoff = $reply === '' || (!empty($r['handoff']) && $gwOn); } }
+    if (!$gwOn && empty($s['landing']) && ($handoff ?? $human)) { $c = wf_wc_conv($sid); wi_update('webchat_leads.json', function ($A) use ($key, $c, $msg) { $A = (array) $A; $A[] = ['site' => $key, 'name' => (string) ($c['name'] ?? ''), 'phone' => (string) ($c['phone'] ?? ''), 'email' => (string) ($c['email'] ?? ''), 'text' => mb_substr($msg, 0, 800), 'at' => date('c')]; return array_slice($A, -2000); });
+        $t = wf_landing_t('Thank you! The team will contact you on WhatsApp soon.', $lang); $new = []; if ($reply !== '') { wf_wc_add($sid, $key, ['who' => 'bot', 'text' => mb_substr($reply, 0, 2000)]); $new[] = ['who' => 'bot', 'text' => $reply]; }
+        if (!$reply || $human) { wf_wc_add($sid, $key, ['who' => 'bot', 'text' => $t]); $new[] = ['who' => 'bot', 'text' => $t]; } wi_log('webchat_lead', ['site' => $key]); $out(['ok' => true, 'msgs' => $new, 'human' => false, 'last' => (int) (wf_wc_conv($sid)['seq'] ?? 0)]); }
     $new = []; $handoff = $handoff ?? $isHuman;
     if ($reply !== '') { wf_wc_add($sid, $key, ['who' => 'bot', 'text' => mb_substr($reply, 0, 2000)]); $new[] = ['who' => 'bot', 'text' => $reply]; }
     // the bot handed over (or could not answer, or the visitor asked for a person): the message goes to the admin on WhatsApp
@@ -79,6 +85,21 @@ function wf_wc_public(): void {
         $t = wf_landing_t(!empty($r['ok']) ? 'Your message reached the team on WhatsApp. Keep this page open, the reply will show here.' : 'Could not reach the team now. Try again later.', $lang);
         if (!$wasHuman || empty($r['ok'])) { wf_wc_add($sid, $key, ['who' => 'bot', 'text' => $t]); $new[] = ['who' => 'bot', 'text' => $t]; } wi_log('webchat_to_admin', ['site' => $key, 'ok' => !empty($r['ok'])]); }
     $cv = wf_wc_conv($sid); $out(['ok' => true, 'msgs' => $new, 'human' => !empty($cv['human']), 'last' => (int) ($cv['seq'] ?? 0)]);
+}
+/** The text of the client's own site (home page of its first domain), kept for a day: what the bot answers from when the number has no answer. */
+function wf_wc_site_text(string $key, array $s): string {
+    $C = (array) wi_read('webchat_site_text.json', []); $e = (array) ($C[$key] ?? []); if ($e && time() - (int) ($e['t'] ?? 0) < 86400) return (string) $e['x'];
+    $txt = ''; foreach (array_slice((array) ($s['domains'] ?? []), 0, 2) as $dm) { if (!preg_match('/^[a-z0-9.-]+\.[a-z]{2,}$/', (string) $dm)) continue;
+        $ch = curl_init('https://' . $dm . '/'); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_TIMEOUT => 8, CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_USERAGENT => 'Mozilla/5.0 (site chat)', CURLOPT_PROTOCOLS => CURLPROTO_HTTPS | CURLPROTO_HTTP]);
+        $h = (string) curl_exec($ch); curl_close($ch); if ($h === '') continue;
+        $h = preg_replace('#<(script|style|noscript|svg)[^>]*>.*?</\1>#si', ' ', $h); $t = html_entity_decode(strip_tags(preg_replace('#<(br|/p|/div|/li|/h[1-6])[^>]*>#i', "\n", $h)), ENT_QUOTES, 'UTF-8');
+        $txt .= trim(preg_replace("/[ \t]+/u", ' ', preg_replace("/\n\s*\n+/u", "\n", $t))) . "\n"; if (mb_strlen($txt) > 2000) break; }
+    $txt = mb_substr($txt, 0, 8000); $C[$key] = ['t' => time(), 'x' => $txt]; wi_write('webchat_site_text.json', $C); return $txt;
+}
+function wf_wc_site_answer(string $key, array $s, string $msg, array $hist): string {
+    $h = ''; foreach ($hist as $x) $h .= (($x['from'] ?? '') === 'customer' ? 'Visitor: ' : 'Assistant: ') . mb_substr((string) $x['text'], 0, 400) . "\n";
+    $ai = wi_ai('Website chat', wf_prompt('webchat_site', (string) $s['aid'], ['site' => (string) ($s['name'] ?? ''), 'pages' => wf_wc_site_text($key, $s), 'history' => $h, 'message' => $msg]), 60, ['subject' => 'webchat', 'prefer' => function_exists('wf_role_strong_model') ? wf_role_strong_model((string) $s['aid'], 'anthropic,gemini,opencode_go') : '']);
+    return trim((string) ($ai['data']['reply'] ?? ''));
 }
 /** The admin's replies (WhatsApp replies quoting a forwarded message) are added to the visitors' chats. Once every 5 seconds per site. */
 function wf_wc_pull(string $key, array $s, array $acc): void {
