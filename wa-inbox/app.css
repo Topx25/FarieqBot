@@ -1539,3 +1539,4 @@ input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align
 .bh-stats{gap:8px!important}
 .bh-stats>div{flex-direction:row!important;align-items:center;justify-content:space-between;gap:8px;padding:9px 14px!important;border-radius:12px!important}
 .bh-stats small{font-size:12.5px}.bh-stats b{font-size:17px!important;line-height:1.2}.bh-stats .bh-go{font-size:12px}
+#brp .bs-body>label>input#bp-test{flex:0 1 320px!important;max-width:320px!important;margin-inline-start:auto}
