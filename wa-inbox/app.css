@@ -1528,3 +1528,14 @@ input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align
 #brp .bt-grid{grid-template-columns:minmax(0,1fr)!important}
 #brp .bt-grid>.bt-tabs{flex-direction:row!important;flex-wrap:nowrap;overflow-x:auto;position:static!important;scrollbar-width:thin;gap:4px}
 #brp .bt-grid>.bt-tabs a{flex:none}
+/* bot menu: raised buttons in a card (3D look) */
+#brp .bt-grid>.bt-tabs{background:var(--card,#fff)!important;border:1px solid var(--line,#e4e6eb)!important;border-radius:16px!important;padding:8px!important;gap:8px!important;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+#brp .bt-grid>.bt-tabs a{background:var(--card,#fff);border:1px solid var(--line,#e4e6eb)!important;border-radius:12px!important;padding:9px 14px!important;box-shadow:0 2px 0 var(--line,#d8dbe0),0 3px 6px rgba(0,0,0,.06);transition:transform .12s,box-shadow .12s}
+#brp .bt-grid>.bt-tabs a:hover{transform:translateY(-1px);box-shadow:0 3px 0 var(--line,#d8dbe0),0 6px 12px rgba(0,0,0,.08)}
+#brp .bt-grid>.bt-tabs a.on{background:linear-gradient(180deg,color-mix(in srgb,var(--accent,#0866ff) 85%,#fff),var(--accent,#0866ff))!important;color:#fff!important;border-color:transparent!important;box-shadow:0 3px 0 color-mix(in srgb,var(--accent,#0866ff) 60%,#000),0 6px 14px color-mix(in srgb,var(--accent,#0866ff) 35%,transparent)}
+#brp .bt-grid>.bt-tabs a.on .bt-n{color:#fff}
+#brp .bt-grid>.bt-tabs a:active{transform:translateY(2px);box-shadow:0 0 0 var(--line,#d8dbe0)}
+/* the four number boxes: small, one line each (label, then the number) */
+.bh-stats{gap:8px!important}
+.bh-stats>div{flex-direction:row!important;align-items:center;justify-content:space-between;gap:8px;padding:9px 14px!important;border-radius:12px!important}
+.bh-stats small{font-size:12.5px}.bh-stats b{font-size:17px!important;line-height:1.2}.bh-stats .bh-go{font-size:12px}
