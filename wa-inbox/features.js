@@ -1249,6 +1249,11 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
         SEC.forEach(function (x) { var body = wrap.querySelector('#bs-' + x[0] + ' .bs-body');
           x[4].forEach(function (id) { var f = document.getElementById(id); var lb = f && (f.closest('label') || f.closest('.gcf-wide')); if (lb && !wrap.contains(lb)) body.appendChild(lb); }); });
         var bm = host.querySelector('.br-modes'), sc = document.getElementById('bp-scope'); var rb = wrap.querySelector('#bs-run .bs-body'); if (sc) rb.insertBefore(sc, rb.firstChild); if (bm) rb.insertBefore(bm, rb.firstChild);
+        // every section is a folded card (the working mode stays open); a click on its title opens or closes it, remembered in this browser
+        var OPEN = {}; try { OPEN = JSON.parse(localStorage.getItem('wi_bs_open') || '{}') || {}; } catch (e) {}
+        [].forEach.call(wrap.querySelectorAll('.bs-sec'), function (sec) { var k = sec.id.slice(3); if (!(k in OPEN ? OPEN[k] : k === 'run')) sec.classList.add('bs-closed');
+          sec.querySelector('.bs-h').onclick = function () { sec.classList.toggle('bs-closed'); OPEN[k] = !sec.classList.contains('bs-closed'); try { localStorage.setItem('wi_bs_open', JSON.stringify(OPEN)); } catch (e) {} }; });
+        [].forEach.call(wrap.querySelectorAll('.bs-nav a'), function (a) { a.addEventListener('click', function () { var s = document.querySelector(a.getAttribute('href')); if (s) s.classList.remove('bs-closed'); }); });
         // short titles: the long explanation goes into a hint opened with "?" (some fields have their own short name and help)
         var SHORT = { 'bp-test': ['🧪 ' + T('Test numbers'), ''], 'bp-qf': ['🌙 ' + T('Quiet hours'), ''], 'bp-p24': ['💬 ' + T('Private chats all day and night'), ''], 'bp-ri': ['📜 ' + T('Suggest a text or program'), T('When a written text or a program of your library fits the question by at least this match, the bot adds it at the end of its reply (as a suggestion to read or follow). Lower = suggested more often, higher = only when it clearly fits.')] };
         [].forEach.call(wrap.querySelectorAll('.bs-body > label'), function (lb) {
@@ -1464,6 +1469,9 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
       var bar = document.createElement('div'); bar.className = 'page-tabs sub bt-tabs';
       bar.innerHTML = folds.map(function (d) { var sm = d.querySelector('summary'); return '<a href="#" data-tab="' + d.dataset.key + '"' + ((d.dataset.off || (['groups', 'join'].indexOf(d.dataset.key) > -1 && ['groups', 'both'].indexOf(c.scope) < 0)) ? ' hidden' : '') + '>' + (d.dataset.tl ? d.dataset.tl : sm.innerHTML).replace(/<span class="muted small"[^>]*>\(([^)]*)\)<\/span>/, '<span class="bt-n">$1</span>') + '</a>'; }).join('');
       el.insertBefore(bar, el.firstChild);
+      // the tabs become a side menu next to the content (as in the approved design)
+      var grid = document.createElement('div'); grid.className = 'bt-grid'; var mainc = document.createElement('div'); mainc.className = 'bt-main';
+      el.insertBefore(grid, bar); grid.appendChild(bar); grid.appendChild(mainc); folds.forEach(function (d) { mainc.appendChild(d); });
       function show(k) { if (!folds.some(function (d) { return d.dataset.key === k; })) k = 'settings';
         folds.forEach(function (d) { d.hidden = d.dataset.key !== k; if (d.dataset.key === k) d.dispatchEvent(new Event('toggle')); });
         [].forEach.call(bar.children, function (a) { a.classList.toggle('on', a.dataset.tab === k); });

@@ -1468,3 +1468,38 @@ input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align
 #bt-body .card>.gcf>label>textarea,#bt-body .card>.gcf>label>input[type=text]{flex:1 1 260px;max-width:100%}
 #bt-body .card>p.small{margin:8px 0 0}
 #bt-body .mt2-kpis{gap:10px}#bt-body .mt2-kpis>*{border:0;background:var(--card-in,#f5f6f7);border-radius:12px;box-shadow:none}
+/* ===== Bot page, approved design (mockup bot-v2): side menu, folded section cards, switches, channel cards ===== */
+#brp .bt-grid{display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start}
+#brp .bt-grid>.bt-tabs{display:flex;flex-direction:column;gap:2px;background:var(--card,#fff);border:0;border-radius:16px;padding:8px;position:sticky;top:12px;overflow:visible;margin:0}
+#brp .bt-grid>.bt-tabs a{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;border:0;white-space:nowrap;font-weight:500;color:inherit}
+#brp .bt-grid>.bt-tabs a.on{background:color-mix(in srgb,var(--accent,#0866ff) 12%,transparent);color:var(--accent,#0866ff);font-weight:700}
+#brp .bt-grid>.bt-tabs a:not(.on):hover{background:var(--card-in,#f0f2f5)}
+#brp .bt-grid>.bt-tabs .bt-n{margin-inline-start:auto;font-size:12px;color:var(--muted,#65676b)}
+#brp .bt-main{min-width:0}#brp .bt-main>.bt-pane{margin:0;border:0;background:none;box-shadow:none;padding:0}
+#brp .bt-main>.bt-pane>summary{display:none}
+#brp .bs-nav{display:none}
+#brp .bs-wrap{display:flex;flex-direction:column;gap:12px}
+#brp .bs-sec{background:var(--card,#fff);border:1px solid var(--line,#e4e6eb);border-radius:16px;padding:4px 18px 6px;margin:0}
+#brp .bs-h{display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer;user-select:none;margin:0;border:0}
+#brp .bs-h>span{width:38px;height:38px;border-radius:11px;background:var(--card-in,#f0f2f5);display:grid;place-items:center;font-size:19px;flex:none}
+#brp .bs-h>div{flex:1;display:flex;flex-direction:column}#brp .bs-h b{font-size:15px}
+#brp .bs-h::after{content:'▾';color:var(--muted,#65676b);transition:transform .15s}
+#brp .bs-closed .bs-h::after{transform:rotate(90deg)}[dir=rtl] #brp .bs-closed .bs-h::after{transform:rotate(-90deg)}
+#brp .bs-closed>.bs-body{display:none!important}
+#brp .bs-body>label{border-top:1px solid var(--line,#e4e6eb);border-bottom:0!important}
+/* switches instead of tick boxes */
+#brp .bs-body input[type=checkbox],#brp .bp-ws input[type=checkbox]{appearance:none;-webkit-appearance:none;width:40px!important;height:23px!important;border-radius:99px;background:#ccd0d5;position:relative;cursor:pointer;transition:background .2s;flex:none;margin:0;border:0}
+#brp .bs-body input[type=checkbox]::before{content:'';position:absolute;top:3px;inset-inline-start:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:inset-inline-start .2s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+#brp .bs-body input[type=checkbox]:checked{background:var(--accent,#0866ff)}#brp .bs-body input[type=checkbox]:checked::before{inset-inline-start:20px}
+#brp .bs-body>label.check>input[type=checkbox]{order:2;margin-inline-start:auto}
+/* where the bot answers: three cards */
+#brp .bp-ch{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+#brp .bp-ch>span{grid-column:1/-1}
+#brp .bp-ch button{border:1.5px solid var(--line,#e4e6eb);border-radius:14px;padding:14px;text-align:start;display:flex;justify-content:space-between;align-items:center;font-weight:600;background:var(--card,#fff)}
+#brp .bp-ch button.on{border-color:var(--accent,#0866ff);background:color-mix(in srgb,var(--accent,#0866ff) 8%,transparent)}
+#brp .bp-ch button b{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--card-in,#f0f2f5)}#brp .bp-ch button.on b{background:var(--accent,#0866ff);color:#fff}
+/* modes as one segmented control */
+#brp .br-modes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#brp .bt-main>.bt-pane>.card,#brp .bt-main>.bt-pane>div>.card{border-radius:16px}
+@media (max-width:860px){#brp .bt-grid{grid-template-columns:1fr}#brp .bt-grid>.bt-tabs{flex-direction:row;overflow-x:auto;position:static}#brp .bp-ch,#brp .br-modes{grid-template-columns:1fr}}
+#brp .bt-grid>.bt-tabs a .muted{display:none}
