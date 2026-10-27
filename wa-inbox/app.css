@@ -1695,3 +1695,34 @@ body:has(#brp) section.hero{display:none!important}
 #br-roles.ro-closed>h3::after{transform:rotate(90deg)}
 #br-roles.ro-closed>:not(h3){display:none!important}
 .icon-btn svg{display:block;margin:auto}.icon-btn.lbl span svg{display:inline-block;vertical-align:-4px}
+/* chats page in the premium design (as the bot page): warm palette, IBM Plex, soft cards, gold for the active and the send */
+body:has(section.inbox){--pg:#f6f5f2;--pg2:#efede8;--pc:#fff;--pink:#16161a;--pink2:#4a4a55;--pmut:#8a8a96;--pline:rgba(22,22,26,.08);--gold:#b8925a;--gold2:#d9b97c;--psh1:0 1px 2px rgba(22,22,26,.04),0 4px 14px rgba(22,22,26,.05)}
+@media (prefers-color-scheme:dark){body:has(section.inbox){--pg:#0e0f12;--pg2:#1c1e24;--pc:#17191f;--pink:#f2f1ee;--pink2:#c9c8cf;--pmut:#8b8b96;--pline:rgba(255,255,255,.08)}}
+html[data-theme=dark] body:has(section.inbox),body.dark:has(section.inbox){--pg:#0e0f12;--pg2:#1c1e24;--pc:#17191f;--pink:#f2f1ee;--pink2:#c9c8cf;--pmut:#8b8b96;--pline:rgba(255,255,255,.08)}
+section.inbox,section.inbox button,section.inbox input,section.inbox textarea,section.inbox select{font-family:"IBM Plex Sans Arabic",system-ui,sans-serif!important}
+section.inbox.card{border-radius:22px!important;border:1px solid var(--pline)!important;box-shadow:var(--psh1)!important;overflow:hidden;background:var(--pc)!important}
+section.inbox .chat-list{background:var(--pc)!important;border-inline-start:1px solid var(--pline)!important}
+section.inbox .chat-list-h{border-bottom:1px solid var(--pline)!important}
+section.inbox #chat-q{height:38px!important;border-radius:12px!important;background:var(--pg)!important;border:1px solid var(--pline)!important}
+section.inbox #chat-q:focus{outline:0;border-color:var(--gold)!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 18%,transparent)!important}
+section.inbox .icon-btn{width:36px;height:36px;border-radius:11px!important;border:1px solid var(--pline)!important;background:var(--pc)!important;color:var(--pink2)!important;display:inline-grid;place-items:center;transition:.15s}
+section.inbox .icon-btn:hover{background:var(--pg2)!important}section.inbox .icon-btn.on{background:var(--pink)!important;color:var(--pc)!important}
+section.inbox .chips button,section.inbox .chips a,section.inbox .chips span[data-f]{border-radius:99px!important;border:1px solid var(--pline)!important;background:var(--pc)!important;color:var(--pink2)!important;font-size:13px!important;padding:5px 13px!important}
+section.inbox .chips .on{background:var(--pink)!important;color:var(--pc)!important;border-color:transparent!important}
+section.inbox .chats .c{border-radius:14px!important;margin:3px 8px!important;border:0!important;transition:background .15s}
+section.inbox .chats .c:hover{background:var(--pg)!important}
+section.inbox .chats .c.on,section.inbox .chats .c.active,section.inbox .chats .c.sel{background:linear-gradient(90deg,color-mix(in srgb,var(--gold2) 16%,var(--pc)),var(--pc))!important;box-shadow:inset -3px 0 0 var(--gold)}
+section.inbox .thread{background:var(--pg)!important}
+section.inbox .thread-h{background:var(--pc)!important;border-bottom:1px solid var(--pline)!important}
+section.inbox .chip-btn{border-radius:11px!important;border:1px solid var(--pline)!important;background:var(--pc)!important;color:var(--pink2)!important;height:34px;padding:0 12px!important;font-size:13px!important;box-shadow:none!important}
+section.inbox .chip-btn:hover{background:var(--pg2)!important}
+section.inbox .th-chip{border-radius:99px!important;border:1px solid var(--pline)!important;background:var(--pg)!important}
+section.inbox .b{border-radius:16px!important;box-shadow:0 1px 2px rgba(0,0,0,.06)!important}
+section.inbox .b.in{background:var(--pc)!important;border-start-start-radius:5px!important}
+section.inbox .b.out{background:color-mix(in srgb,var(--gold2) 22%,var(--pc))!important;border-start-end-radius:5px!important}
+section.inbox .composer{background:var(--pc)!important;border-top:1px solid var(--pline)!important}
+section.inbox #reply{border-radius:16px!important;background:var(--pg)!important;border:1px solid var(--pline)!important}
+section.inbox #reply:focus{outline:0;border-color:var(--gold)!important;box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 18%,transparent)!important}
+section.inbox .attach-btn{border-radius:12px!important;border:1px solid var(--pline)!important;background:var(--pc)!important;color:var(--pink2)!important}
+section.inbox #send-btn{background:linear-gradient(135deg,var(--gold),var(--gold2))!important;color:#1b1406!important;border:0!important;box-shadow:0 6px 16px color-mix(in srgb,var(--gold) 35%,transparent)!important}
+section.inbox .bot-sw.on i{background:linear-gradient(135deg,var(--gold),var(--gold2))}
