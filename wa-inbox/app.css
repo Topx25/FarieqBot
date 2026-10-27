@@ -1556,3 +1556,7 @@ aside.side nav>a.on,aside.side nav>a[aria-current]{font-weight:700}
 #brp .bt-grid>.bt-tabs a{padding:7px 12px!important;font-size:13.5px}
 /* side menu: the fold arrow sits next to its section title */
 aside.side nav .nav-h{justify-content:flex-start!important;gap:6px}
+/* bot menu: compact buttons so they all fit in one row */
+#brp .bt-grid>.bt-tabs{gap:4px!important;padding:6px!important}
+#brp .bt-grid>.bt-tabs a{padding:5px 9px!important;font-size:12.5px!important;gap:5px!important;border-radius:9px!important;box-shadow:0 2px 0 var(--line,#d8dbe0)}
+#brp .bt-grid>.bt-tabs a .bt-n{font-size:11px;padding:0 5px}
