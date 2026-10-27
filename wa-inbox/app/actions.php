@@ -31,8 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($many || wi_locked($email)) { wi_flash('Too many failed attempts. Try again in 15 minutes.', 'bad'); header('Location: ./?forgot'); exit; }
         $code = (string) random_int(100000, 999999);
         $_SESSION['reset_pending'] = ['email' => $u && !empty($u['active']) && !empty($u['phone']) ? $email : '', 'code' => password_hash($code, PASSWORD_DEFAULT), 'until' => time() + 600, 'tries' => 0];
-        if ($_SESSION['reset_pending']['email'] !== '') { wi_send_whatsapp((string) $u['phone'], wf_msg('reset_code', ['code' => $code, 'minutes' => 10])); wi_log('password_reset_code', ['target' => $email]); }
-        wi_flash('If this email has an account, a code was sent to its WhatsApp.'); header('Location: ./?forgot'); exit;
+        $byMail = wi_mail_on(); $_SESSION['reset_pending']['via'] = $byMail ? 'mail' : 'wa';
+        if ($byMail && $u && !empty($u['active'])) { $_SESSION['reset_pending']['email'] = $email; wi_mail($email, wi_t('Password reset code'), wf_msg('reset_code', ['code' => $code, 'minutes' => 10])); wi_log('password_reset_code', ['target' => $email, 'via' => 'mail']); }
+        elseif (!$byMail && $_SESSION['reset_pending']['email'] !== '') { wi_send_whatsapp((string) $u['phone'], wf_msg('reset_code', ['code' => $code, 'minutes' => 10])); wi_log('password_reset_code', ['target' => $email]); }
+        wi_flash($byMail ? 'If this email has an account, a code was sent to it.' : 'If this email has an account, a code was sent to its WhatsApp.'); header('Location: ./?forgot'); exit;
     }
     if ($do === 'forgot_code') {
         $P = (array) ($_SESSION['reset_pending'] ?? []); $pw = (string) ($_POST['password'] ?? '');
@@ -46,7 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($do === 'forgot_cancel') { unset($_SESSION['reset_pending']); header('Location: ./?login'); exit; }
     if ($do === 'signup_cancel') { unset($_SESSION['signup_pending'], $_SESSION['gsignup']); header('Location: ./?signup'); exit; }
     if ($do === 'login') {
-        $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+        $lid = wi_login_id((string) ($_POST['email'] ?? '')); $email = $lid['email'];
+        if ($lid['many']) { wi_flash('This number is on more than one account. Sign in with your email.', 'bad'); header('Location: ./?login'); exit; }
         $u = wi_find_user($email);
         if ($u && !wi_host_allows($u)) $u = null; // another client's address: treated as unknown
         if (wi_locked($email)) {
@@ -274,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admin only.'); }
         $out = []; foreach ((array) ($_POST['plans'] ?? []) as $id => $p) { $id = preg_replace('/[^a-z0-9_-]/', '', strtolower((string) ($p['id'] ?? $id))); if ($id === '' || trim((string) ($p['name'] ?? '')) === '' || !empty($p['del'])) continue; $out[$id] = wi_plan_clean((array) $p); }
         if ($out) wi_write('plans.json', $out);
-        $cfg = wi_config(); $cfg['system']['signup_on'] = !empty($_POST['signup_on']) ? 1 : 0; $cfg['system']['google_login_on'] = !empty($_POST['google_login_on']) ? 1 : 0; $ts = trim((string) ($_POST['turnstile_site'] ?? '')); $cfg['system']['turnstile_site'] = preg_match('/^[A-Za-z0-9_-]{10,100}$/', $ts) ? $ts : ''; if (trim((string) ($_POST['turnstile_secret'] ?? '')) !== '') wi_secret_set('turnstile_secret', trim((string) $_POST['turnstile_secret'])); $sd = strtolower(trim((string) ($_POST['saas_domain'] ?? ''))); $cfg['system']['saas_domain'] = preg_match('/^([a-z0-9-]+\.)+[a-z]{2,}$/', $sd) ? $sd : ''; wi_write('config.json', $cfg);
+        $cfg = wi_config(); $cfg['system']['signup_on'] = !empty($_POST['signup_on']) ? 1 : 0; $cfg['system']['google_login_on'] = !empty($_POST['google_login_on']) ? 1 : 0; $ts = trim((string) ($_POST['turnstile_site'] ?? '')); $cfg['system']['turnstile_site'] = preg_match('/^[A-Za-z0-9_-]{10,100}$/', $ts) ? $ts : ''; if (trim((string) ($_POST['turnstile_secret'] ?? '')) !== '') wi_secret_set('turnstile_secret', trim((string) $_POST['turnstile_secret'])); $sh = strtolower(trim((string) ($_POST['smtp_host'] ?? ''))); $cfg['system']['smtp_host'] = preg_match('/^[a-z0-9.-]{3,100}$/', $sh) ? $sh : ''; $cfg['system']['smtp_port'] = max(1, min(65535, (int) ($_POST['smtp_port'] ?? 587))); $su = trim((string) ($_POST['smtp_user'] ?? '')); $cfg['system']['smtp_user'] = strlen($su) <= 150 ? $su : ''; $sf = trim((string) ($_POST['smtp_from'] ?? '')); $cfg['system']['smtp_from'] = filter_var($sf, FILTER_VALIDATE_EMAIL) ? $sf : ''; if (trim((string) ($_POST['smtp_pass'] ?? '')) !== '') wi_secret_set('smtp_pass', trim((string) $_POST['smtp_pass'])); $sd = strtolower(trim((string) ($_POST['saas_domain'] ?? ''))); $cfg['system']['saas_domain'] = preg_match('/^([a-z0-9-]+\.)+[a-z]{2,}$/', $sd) ? $sd : ''; wi_write('config.json', $cfg);
         wi_log('plans_save', ['plans' => array_keys($out)]); wi_flash('Saved.', 'ok'); header('Location: ?p=plans'); exit;
     }
     // Integrations: a new one (its API key is shown once), and its buttons.

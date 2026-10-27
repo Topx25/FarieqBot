@@ -30,7 +30,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
       <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>">
       <?php $signup = isset($_GET['signup']) && wi_sys('signup_on') && empty($_SESSION['pending']); $sp = $signup && !empty($_SESSION['signup_pending']); $fg = !$signup && isset($_GET['forgot']) && empty($_SESSION['pending']); $fp = $fg && !empty($_SESSION['reset_pending']); if ($fp): ?>
         <input type="hidden" name="do" value="forgot_code">
-        <label>Code sent to your WhatsApp<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus class="otp" placeholder="••••••"></label>
+        <label><?= ($_SESSION['reset_pending']['via'] ?? '') === 'mail' ? 'Code sent to your email' : 'Code sent to your WhatsApp' ?><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus class="otp" placeholder="••••••"></label>
         <label>New password<input type="password" name="password" autocomplete="new-password" minlength="10" required dir="ltr"></label>
         <button class="btn primary">Change password</button>
       <?php elseif ($fg): ?>
@@ -57,7 +57,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         <button class="btn primary">Sign in</button>
       <?php else: ?>
         <input type="hidden" name="do" value="login">
-        <label>Email<input type="email" name="email" autocomplete="username" required autofocus dir="ltr"></label>
+        <label>Email or WhatsApp number<input type="text" name="email" autocomplete="username" required autofocus dir="ltr" placeholder="name@mail.com / 01001234567"></label>
         <label>Password<input type="password" name="password" autocomplete="current-password" required dir="ltr"></label>
         <button class="btn primary">Continue</button>
       <?php endif; ?>
@@ -267,6 +267,11 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
           <label class="check"><input type="checkbox" name="google_login_on" value="1" <?= wi_sys('google_login_on') ? 'checked' : '' ?>> Sign in and sign up with Google <small class="muted">— uses the Google app of this installation; add <span dir="ltr"><?= wi_e(wi_sys('base_url')) ?>?google_cb=1</span> to its redirect URIs</small></label>
           <label>Cloudflare Turnstile site key <small class="muted">— the captcha on the sign-up page (empty = off)</small><input name="turnstile_site" value="<?= wi_e((string) wi_sys('turnstile_site')) ?>" dir="ltr" style="max-width:320px"></label>
           <label>Cloudflare Turnstile secret key <small class="muted">— <?= wi_secret('turnstile_secret') !== '' ? 'saved; type a new one to replace it' : 'not set' ?></small><input type="password" name="turnstile_secret" autocomplete="off" dir="ltr" style="max-width:320px"></label>
+          <label>Email server (SMTP) <small class="muted">— sends the password reset code by email; empty = the code goes to WhatsApp</small><input name="smtp_host" value="<?= wi_e((string) wi_sys('smtp_host')) ?>" dir="ltr" placeholder="smtp.gmail.com" style="max-width:320px"></label>
+          <label>SMTP port <small class="muted">— 587 or 465</small><input type="number" name="smtp_port" value="<?= (int) (wi_sys('smtp_port') ?: 587) ?>" dir="ltr" style="max-width:120px"></label>
+          <label>SMTP user<input name="smtp_user" value="<?= wi_e((string) wi_sys('smtp_user')) ?>" dir="ltr" autocomplete="off" style="max-width:320px"></label>
+          <label>SMTP password <small class="muted">— <?= wi_secret('smtp_pass') !== '' ? 'saved; type a new one to replace it' : 'not set' ?></small><input type="password" name="smtp_pass" autocomplete="new-password" dir="ltr" style="max-width:320px"></label>
+          <label>Sender email <small class="muted">— empty = the SMTP user</small><input type="email" name="smtp_from" value="<?= wi_e((string) wi_sys('smtp_from')) ?>" dir="ltr" style="max-width:320px"></label>
           <label>SaaS domain <small class="muted">— each client may get name.this-domain (point *.this-domain to this server)</small><input name="saas_domain" value="<?= wi_e((string) wi_sys('saas_domain')) ?>" dir="ltr" placeholder="crm.example.com" style="max-width:320px"></label>
           <div style="overflow-x:auto"><table class="tbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Days</th><th>Numbers</th><th>Team</th><th>AI calls / month</th><th>AI tokens / month (0 = no limit)</th><th>Media GB (0 = unlimited)</th><?php foreach (wi_plan_features() as $pf): ?><th><?= wi_e(wi_t($pf[1])) ?></th><?php endforeach; ?><th>Shown</th><th>Trial</th><th>Delete</th></tr>
           <?php $prow = 0; foreach (wi_plans() + ['' => ['name' => '', 'price' => 0, 'days' => 30, 'numbers' => 1, 'team' => 0, 'ai_calls' => 0, 'media_gb' => 0]] as $pid => $pp): $n = 'plans[' . $prow++ . ']'; ?>

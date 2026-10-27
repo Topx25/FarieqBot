@@ -1115,3 +1115,31 @@ function wi_mentions_present(array $post, array $acc): array {
     if ($gone) { $post['text'] = trim(preg_replace('/@(' . implode('|', array_map('preg_quote', array_filter($gone))) . ')\b\s?/u', '', (string) ($post['text'] ?? ''))); if (function_exists('wi_log')) wi_log('mention_dropped', ['group' => $g, 'who' => $gone]); }
     return $post;
 }
+/** Sign-in with an email or a WhatsApp number: a number on one account gives its email; on several accounts the person must use the email. */
+function wi_login_id(string $in): array {
+    $in = strtolower(trim($in)); if ($in === '' || str_contains($in, '@')) return ['email' => $in, 'many' => false];
+    $p = wi_norm_phone($in); if ($p === '') return ['email' => $in, 'many' => false];
+    $hit = array_values(array_unique(array_map(fn($u) => strtolower((string) $u['email']), array_filter(wi_users(), fn($u) => !empty($u['active']) && wi_norm_phone((string) ($u['phone'] ?? '')) === $p))));
+    return ['email' => count($hit) === 1 ? $hit[0] : $in, 'many' => count($hit) > 1];
+}
+/** Email by SMTP (Plans page: host, port, user, sender; the password is kept as a secret). Port 465 = TLS from the start, other ports use STARTTLS. */
+function wi_mail_on(): bool { return trim((string) wi_sys('smtp_host')) !== '' && trim((string) wi_sys('smtp_user')) !== '' && wi_secret('smtp_pass') !== ''; }
+function wi_mail(string $to, string $subject, string $text): bool {
+    if (!wi_mail_on() || !filter_var($to, FILTER_VALIDATE_EMAIL)) return false;
+    $host = trim((string) wi_sys('smtp_host')); $port = (int) (wi_sys('smtp_port') ?: 587); $user = trim((string) wi_sys('smtp_user')); $from = trim((string) (wi_sys('smtp_from') ?: $user));
+    $s = @stream_socket_client(($port === 465 ? 'ssl://' : 'tcp://') . $host . ':' . $port, $en, $es, 15); if (!$s) { wi_log('mail_failed', ['why' => 'connect']); return false; }
+    stream_set_timeout($s, 15);
+    $rd = function () use ($s) { $r = ''; while (($l = fgets($s, 1000)) !== false) { $r .= $l; if (strlen($l) < 4 || $l[3] === ' ') break; } return $r; };
+    $cmd = function ($c, $ok) use ($s, $rd) { if ($c !== null) fwrite($s, $c . "\r\n"); $r = $rd(); return in_array(substr($r, 0, 3), (array) $ok, true); };
+    $me = parse_url((string) wi_sys('base_url'), PHP_URL_HOST) ?: 'localhost';
+    $good = $cmd(null, '220') && $cmd('EHLO ' . $me, '250');
+    if ($good && $port !== 465) $good = $cmd('STARTTLS', '220') && stream_socket_enable_crypto($s, true, STREAM_CRYPTO_METHOD_TLS_CLIENT) && $cmd('EHLO ' . $me, '250');
+    $good = $good && $cmd('AUTH LOGIN', '334') && $cmd(base64_encode($user), '334') && $cmd(base64_encode(wi_secret('smtp_pass')), '235')
+        && $cmd('MAIL FROM:<' . $from . '>', '250') && $cmd('RCPT TO:<' . $to . '>', ['250', '251']) && $cmd('DATA', '354');
+    if ($good) { $name = (string) (wi_sys('brand_name') ?: $me);
+        $h = 'From: =?UTF-8?B?' . base64_encode($name) . '?= <' . $from . ">\r\nTo: <" . $to . ">\r\nSubject: =?UTF-8?B?" . base64_encode($subject) . "?=\r\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\nDate: " . date('r') . "\r\nMessage-ID: <" . bin2hex(random_bytes(8)) . '@' . $me . ">\r\n";
+        $good = $cmd($h . "\r\n" . chunk_split(base64_encode($text)) . '.', '250'); }
+    @fwrite($s, "QUIT\r\n"); fclose($s);
+    if (!$good) wi_log('mail_failed', ['to' => $to]);
+    return $good;
+}
