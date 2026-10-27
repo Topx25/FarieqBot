@@ -78,10 +78,10 @@ function wf_landing_chat(): void {
     wi_log('landing_chat', ['ok' => $reply !== '', 'lang' => $lang]);
     $out(['ok' => true, 'reply' => $reply !== '' ? mb_substr($reply, 0, 1200) : wf_landing_t('Could not answer now. Try again.', $lang)]);
 }
-/** The product page answer: the AI with the product facts ('' when it cannot answer). $hist rows: {me, text}. */
+/** The product page answer: the AI with the product facts, on the first paid model that is on (System setting landing_chat_models, default Anthropic then Gemini then OpenCode Go) ('' when it cannot answer). $hist rows: {me, text}. */
 function wf_landing_answer(string $msg, array $hist, string $lang): string {
     $h = ''; foreach ($hist as $x) if (is_array($x)) $h .= (!empty($x['me']) ? 'Visitor: ' : 'Assistant: ') . mb_substr(trim((string) ($x['text'] ?? '')), 0, 400) . "\n";
-    $ai = wi_ai('Product page chat', wf_prompt('landing_chat', '', ['facts' => wf_landing_facts(), 'history' => $h, 'message' => $msg, 'lang' => $lang === 'en' ? 'English' : 'Egyptian Arabic']), 60, ['subject' => 'landing']);
+    $ai = wi_ai('Product page chat', wf_prompt('landing_chat', '', ['facts' => wf_landing_facts(), 'history' => $h, 'message' => $msg, 'lang' => $lang === 'en' ? 'English' : 'Egyptian Arabic']), 60, ['subject' => 'landing', 'prefer' => function_exists('wf_role_strong_model') ? wf_role_strong_model('main', (string) (wi_sys('landing_chat_models') ?: 'anthropic,gemini,opencode_go')) : '']);
     return trim((string) ($ai['data']['reply'] ?? ''));
 }
 /** The website chat site that serves the product page (marked landing): its widget replaces the AI-only one, so a visitor can reach the support team on WhatsApp. */
