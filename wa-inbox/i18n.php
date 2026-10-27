@@ -30,6 +30,8 @@ return [
     'Every message of your numbers (private chats, groups and their media) is deleted each time you sign out.' => 'تُحذف جميع رسائل أرقامك (المحادثات الخاصة والجروبات ووسائطها) في كل مرة تسجّل فيها الخروج.',
     'The bot cannot learn from your real conversations: you must upload files with your answers to the knowledge base.' => 'لن يتمكن البوت من التعلم من محادثاتك الفعلية، وسيكون عليك رفع ملفات تتضمن إجاباتك إلى قاعدة المعرفة.',
     'Teaching the bot from files directly costs you more tokens, takes longer to learn, and takes longer to tune its reply style.' => 'تعليم البوت من الملفات مباشرة يكلّفك توكنز أكثر، ويستغرق وقتًا أطول في التعلم وفي ضبط أسلوب الردود.',
+    'Only your own sign out deletes them, and anyone on your team who is working at that moment loses these messages too.' => 'لا يتم الحذف إلا عند تسجيل خروجك أنت، وأي فرد من فريقك يعمل في تلك اللحظة ستُحذف الرسائل من عنده أيضًا.',
+    'Signing out deletes every message of your numbers, as you chose. Anyone on your team who is working now will lose these messages too. Sign out?' => 'تسجيل الخروج سيحذف كل رسائل أرقامك حسب اختيارك. وأي فرد من فريقك يعمل الآن ستُحذف الرسائل من عنده أيضًا. هل تريد تسجيل الخروج؟',
     'Deleted messages cannot be brought back.' => 'لا يمكن استرجاع الرسائل بعد حذفها.',
     'I have read this and I understand it.' => 'قرأت ما سبق وأفهمه.',
     'Keep my chat data to teach the bot' => 'الاحتفاظ ببيانات محادثاتي لتعليم البوت',

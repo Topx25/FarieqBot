@@ -99,7 +99,8 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
     <div class="me">
       <a href="?p=me" class="avatar" title="My account"><?= wi_e(mb_strtoupper(mb_substr(($me['name'] ?? '') ?: $me['email'], 0, 1))) ?></a>
       <div class="me-t"><b><?= wi_e(($me['name'] ?? '') ?: $me['email']) ?></b><small><?= ['super' => 'Super admin', 'admin' => 'Admin', 'manager' => 'Manager', 'client' => 'Client', 'lead' => 'Supervisor', 'agent' => 'Employee'][$me['role'] ?? ''] ?? 'Viewer' ?></small></div>
-      <form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="logout"><button class="icon-btn" title="Sign out">⎋</button></form>
+<?php $outWarn = (empty($_SESSION['imp_from']) && function_exists('wf_data_keep') && ((wi_me() ?? [])['role'] ?? '') === 'client' && !wf_data_keep((string) $_SESSION['email'])) ? ' onsubmit="return confirm(' . wi_e(json_encode(wi_t('Signing out deletes every message of your numbers, as you chose. Anyone on your team who is working now will lose these messages too. Sign out?'), JSON_UNESCAPED_UNICODE)) . ')"' : ''; ?>
+      <form method="post"<?= $outWarn ?>><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="logout"><button class="icon-btn" title="Sign out">⎋</button></form>
     </div>
   </aside>
   <main class="main<?= in_array($page, ['inbox'], true) ? ' is-inbox' : '' ?>">
@@ -119,7 +120,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         <a class="tb-btn" href="?p=<?= wi_e($page) ?>&amp;lang=<?= wi_lang() === 'ar' ? 'en' : 'ar' ?>" title="Language"><?= wi_lang() === 'ar' ? 'EN' : 'ع' ?></a>
         <a class="tb-btn tb-ver" href="?p=changes" title="What's new">🆕 <?= wi_e($versions[0]['v'] ?? '') ?></a>
         <div class="tb-me" title="<?= wi_e($me['email'] ?? '') ?>"><a href="?p=me" class="avatar" title="My account"><?= wi_e(mb_strtoupper(mb_substr(($me['name'] ?? '') ?: ($me['email'] ?? '?'), 0, 1))) ?></a>
-          <form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="logout"><button class="tb-btn tb-out" title="Sign out"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Sign out</span></button></form></div>
+          <form method="post"<?= $outWarn ?>><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="logout"><button class="tb-btn tb-out" title="Sign out"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Sign out</span></button></form></div>
       </div>
     </header>
     <?php if ($flash): ?><div class="alert <?= wi_e($flash['t']) ?>"><?= wi_e($flash['m']) ?></div><?php endif; ?>
