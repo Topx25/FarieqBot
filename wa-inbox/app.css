@@ -1540,3 +1540,19 @@ input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align
 .bh-stats>div{flex-direction:row!important;align-items:center;justify-content:space-between;gap:8px;padding:9px 14px!important;border-radius:12px!important}
 .bh-stats small{font-size:12.5px}.bh-stats b{font-size:17px!important;line-height:1.2}.bh-stats .bh-go{font-size:12px}
 #brp .bs-body>label>input#bp-test{flex:0 1 320px!important;max-width:320px!important;margin-inline-start:auto}
+/* side menu tidy: a full-height brand at the top, clear section titles, even items */
+aside.side .brand{height:auto!important;min-height:60px;padding:12px 14px!important;display:flex!important;align-items:center;gap:10px;overflow:visible!important;border-bottom:1px solid var(--line,#e4e6eb);margin-bottom:6px}
+aside.side .brand>div{display:flex;flex-direction:column;line-height:1.35;min-width:0;flex:1}
+aside.side .brand>div>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+aside.side .brand .logo{flex:none}
+aside.side nav .nav-h{margin:14px 10px 4px!important;padding:0 8px!important;font-size:11.5px!important;font-weight:700;letter-spacing:.2px;color:var(--muted,#65676b);justify-content:space-between;align-items:center}
+aside.side nav .nav-h:first-child{margin-top:4px!important}
+aside.side nav>a{height:38px!important;margin:1px 8px;padding:0 10px!important;border-radius:10px;display:flex;align-items:center;gap:10px;font-weight:500}
+aside.side nav>a>i{width:26px;height:26px;display:grid;place-items:center;font-style:normal;flex:none;border-radius:8px}
+aside.side nav>a.on,aside.side nav>a[aria-current]{font-weight:700}
+.app .side .brand{flex-shrink:0!important;min-height:60px!important;padding:10px 12px!important}
+/* bot menu: wraps onto a second row on narrow screens (no scroll bar), smaller buttons */
+#brp .bt-grid>.bt-tabs{flex-wrap:wrap!important;overflow:visible!important;gap:6px!important}
+#brp .bt-grid>.bt-tabs a{padding:7px 12px!important;font-size:13.5px}
+/* side menu: the fold arrow sits next to its section title */
+aside.side nav .nav-h{justify-content:flex-start!important;gap:6px}
