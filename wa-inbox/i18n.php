@@ -22,6 +22,8 @@ return [
     'A section of your dashboard (Team → Activity) records every time a member of your team opens your data and what they did with it.' => 'يوجد في لوحتك قسم (الفريق ← النشاط) يسجل كل دخول لأحد أفراد فريقك على بياناتك وما فعله بها.',
     'Got it, start' => 'فهمت، ابدأ',
     'I agree' => 'موافق',
+    'About the company (the bot answers visitors from this, with the website pages)' => 'عن الشركة (البوت بيرد على الزوار من الكلام ده ومن صفحات الموقع)',
+    'Services, products, prices, branches, working hours, contacts…' => 'الخدمات، المنتجات، الأسعار، الفروع، مواعيد العمل، التواصل…',
     'Thank you! The team will contact you on WhatsApp soon.' => 'شكرًا! الفريق هيتواصل معاك على الواتساب قريب.',
     'Send one message to many customers or groups, now or at a set time, with a safe pace so the number is not banned.' => 'ابعت رسالة واحدة لعملاء أو جروبات كتير، دلوقتي أو في معاد تحدده، بسرعة آمنة عشان الرقم ميتحظرش.',
     'On the Bot page, the Channels card has three on/off switches: Private chats, Groups and Website chat. Switch on only Groups to have the bot answer in groups alone; each group is then set up in the Groups tab (mode, trigger word, hours, anti-spam).' => 'في صفحة البوت، كارت القنوات فيه 3 مفاتيح: الشات الخاص، والجروبات، وشات الموقع. شغّل الجروبات بس عشان البوت يرد في الجروبات لوحدها، وبعدها ظبط كل جروب من تاب الجروبات (الوضع، كلمة التشغيل، المواعيد، منع السبام).',

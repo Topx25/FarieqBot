@@ -98,7 +98,7 @@ function wf_wc_site_text(string $key, array $s): string {
 }
 function wf_wc_site_answer(string $key, array $s, string $msg, array $hist): string {
     $h = ''; foreach ($hist as $x) $h .= (($x['from'] ?? '') === 'customer' ? 'Visitor: ' : 'Assistant: ') . mb_substr((string) $x['text'], 0, 400) . "\n";
-    $ai = wi_ai('Website chat', wf_prompt('webchat_site', (string) $s['aid'], ['site' => (string) ($s['name'] ?? ''), 'pages' => wf_wc_site_text($key, $s), 'history' => $h, 'message' => $msg]), 60, ['subject' => 'webchat', 'prefer' => function_exists('wf_role_strong_model') ? wf_role_strong_model((string) $s['aid'], 'anthropic,gemini,opencode_go') : '']);
+    $ai = wi_ai('Website chat', wf_prompt('webchat_site', (string) $s['aid'], ['site' => (string) ($s['name'] ?? ''), 'pages' => trim(trim((string) ($s['about'] ?? '')) . "\n\n" . wf_wc_site_text($key, $s)), 'history' => $h, 'message' => $msg]), 60, ['subject' => 'webchat', 'prefer' => function_exists('wf_role_strong_model') ? wf_role_strong_model((string) $s['aid'], 'anthropic,gemini,opencode_go') : '']);
     return trim((string) ($ai['data']['reply'] ?? ''));
 }
 /** The admin's replies (WhatsApp replies quoting a forwarded message) are added to the visitors' chats. Once every 5 seconds per site. */
@@ -174,7 +174,9 @@ function wf_wc_section(): string {
             . '<p class="muted small">' . $t('Number') . ': ' . wi_e((string) ($nums[$s['aid']]['name'] ?? $s['aid'])) . ' · ' . $t('Messages to') . ': <span dir="ltr">' . wi_e((string) $s['to']) . '</span></p>'
             . '<form method="post" class="row" style="gap:6px">' . $csrf . '<input type="hidden" name="do" value="wc_act"><input type="hidden" name="k" value="' . wi_e($k) . '">'
             . '<select name="mode" onchange="this.form.querySelector(\'[name=act][value=mode]\').click()"><option value="bot"' . (($s['mode'] ?? 'bot') === 'bot' ? ' selected' : '') . '>' . $t('The bot first, then the team on WhatsApp') . '</option><option value="team"' . (($s['mode'] ?? 'bot') === 'team' ? ' selected' : '') . '>' . $t('The team on WhatsApp (every message reaches WhatsApp)') . '</option></select><button name="act" value="mode" hidden></button>'
-            . '<button class="btn ghost sm" name="act" value="toggle">' . ($on ? $t('Switch off') : $t('Switch on')) . '</button><button class="btn ghost sm" name="act" value="delete" onclick="return confirm(this.dataset.q)" data-q="' . $t('Delete') . '?">' . $t('Delete') . '</button></form></div></details>'; }
+            . '<button class="btn ghost sm" name="act" value="toggle">' . ($on ? $t('Switch off') : $t('Switch on')) . '</button><button class="btn ghost sm" name="act" value="delete" onclick="return confirm(this.dataset.q)" data-q="' . $t('Delete') . '?">' . $t('Delete') . '</button></form>'
+            . '<form method="post" class="stack" style="margin-top:10px">' . $csrf . '<input type="hidden" name="do" value="wc_act"><input type="hidden" name="k" value="' . wi_e($k) . '"><input type="hidden" name="act" value="about">'
+            . '<label>' . $t('About the company (the bot answers visitors from this, with the website pages)') . '<textarea name="about" rows="5" maxlength="6000" dir="auto" placeholder="' . $t('Services, products, prices, branches, working hours, contacts…') . '">' . wi_e((string) ($s['about'] ?? '')) . '</textarea></label><div><button class="btn primary sm">' . $t('Save') . '</button></div></form></div></details>'; }
     $opt = ''; foreach ($nums as $aid => $a) $opt .= '<option value="' . wi_e((string) $aid) . '">' . wi_e((string) ($a['name'] ?? $aid)) . '</option>';
     $o .= '<details><summary class="btn ghost sm">➕ ' . $t('Add a website') . '</summary><form method="post" class="form-grid" style="margin-top:10px">' . $csrf . '<input type="hidden" name="do" value="wc_save">'
         . '<label>' . $t('Website name') . '<input name="name" required maxlength="60"></label>'
@@ -224,6 +226,7 @@ function wf_wc_action(string $do): void {
     $k = (string) ($_POST['k'] ?? ''); if (!isset(wf_wc_mine()[$k])) { wi_flash('Not found.', 'bad'); header('Location: ?p=integrations'); exit; }
     $act = (string) ($_POST['act'] ?? '');
     if ($act === 'mode') { $mv = ($_POST['mode'] ?? '') === 'team' ? 'team' : 'bot'; wi_update('webchat.json', function ($A) use ($k, $mv) { $A[$k]['mode'] = $mv; return $A; }); }
+    if ($act === 'about') { $ab = mb_substr(trim((string) ($_POST['about'] ?? '')), 0, 6000); wi_update('webchat.json', function ($A) use ($k, $ab) { $A[$k]['about'] = $ab; return $A; }); }
     if ($act === 'toggle') wi_update('webchat.json', function ($A) use ($k) { $A[$k]['on'] = empty($A[$k]['on']); return $A; });
     if ($act === 'delete') wi_update('webchat.json', function ($A) use ($k) { unset($A[$k]); return $A; });
     wi_log('webchat_' . $act, ['site' => $k]); header('Location: ?p=integrations'); exit;
