@@ -45,14 +45,20 @@ function wf_wc_public(): void {
     $c = wf_wc_conv($sid); if ($c && ($c['k'] ?? '') !== $key) $out(['ok' => false], 403);
     $lang = ($s['lang'] ?? 'ar') === 'en' ? 'en' : 'ar';
     if ($what === 'poll') { if ($c && !empty($c['fwd'])) wf_wc_pull($key, $s, $acc); $after = (int) ($_GET['after'] ?? 0);
-        $out(['ok' => true, 'msgs' => array_values(array_filter((array) (wf_wc_conv($sid)['msgs'] ?? []), fn($m) => (int) $m['n'] > $after && ($m['who'] ?? '') !== 'me'))]); }
+        $cv = wf_wc_conv($sid); $out(['ok' => true, 'human' => !empty($cv['human']), 'ended' => !empty($cv['ended']), 'msgs' => array_values(array_filter((array) ($cv['msgs'] ?? []), fn($m) => (int) $m['n'] > $after && ($m['who'] ?? '') !== 'me'))]); }
     if ($what !== 'send' || ($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') $out(['ok' => false], 404);
     $in = json_decode((string) file_get_contents('php://input', false, null, 0, 8000), true) ?: [];
     $msg = trim(mb_substr((string) ($in['msg'] ?? ''), 0, 800)); $human = !empty($in['human']);
-    $name = mb_substr(trim(strip_tags((string) ($in['name'] ?? ''))), 0, 60); $phone = substr(preg_replace('/\D/', '', (string) ($in['phone'] ?? '')), 0, 16); $page = mb_substr((string) ($in['page'] ?? ''), 0, 300);
+    if (!empty($in['end']) || !empty($in['bot'])) { $c = wf_wc_conv($sid); if (!$c) $out(['ok' => true, 'msgs' => []]);
+        if (!empty($in['bot'])) { wf_wc_add($sid, $key, [], ['human' => false]); $out(['ok' => true, 'human' => false, 'msgs' => []]); }
+        wf_wc_add($sid, $key, [], ['ended' => date('c'), 'human' => false]);
+        if (!empty($c['fwd']) && ($to = wf_wc_to((string) ($s['to'] ?? ''))) !== '') wi_gateway('/chat/send', ['jid' => $to, 'text' => wf_msg('webchat_ended', ['site' => (string) ($s['name'] ?? ''), 'name' => (string) ($c['name'] ?? '') ?: '-'])], $acc);
+        wi_log('webchat_end', ['site' => $key]); $out(['ok' => true, 'ended' => true, 'human' => false, 'msgs' => []]); }
+    if (!empty(wf_wc_conv($sid)['ended'])) $out(['ok' => true, 'ended' => true, 'msgs' => []]);
+    $name = mb_substr(trim(strip_tags((string) ($in['name'] ?? ''))), 0, 60); $email = filter_var(trim((string) ($in['email'] ?? '')), FILTER_VALIDATE_EMAIL) ?: ''; $phone = substr(preg_replace('/\D/', '', (string) ($in['phone'] ?? '')), 0, 16); $page = mb_substr((string) ($in['page'] ?? ''), 0, 300);
     if ($msg === '' && !$human) $out(['ok' => false], 400);
     if (!wf_wc_allow($key, $sid)) $out(['ok' => true, 'msgs' => [['who' => 'bot', 'text' => wf_landing_t('Too many messages for now. Try again in a minute.', $lang)]]]);
-    $set = array_filter(['name' => $name, 'phone' => $phone, 'page' => $page]); $c = wf_wc_conv($sid);
+    $set = array_filter(['name' => $name, 'phone' => $phone, 'email' => $email, 'page' => $page]); $c = wf_wc_conv($sid);
     if ($msg !== '') wf_wc_add($sid, $key, ['who' => 'me', 'text' => $msg], $set);
     $wasHuman = !empty($c['human']); $isHuman = $human || $wasHuman; $reply = '';
     // the bot answers only when the site is in bot mode, the number's bot is on and its Website chat channel is ticked; else every message goes to the team on WhatsApp
@@ -66,13 +72,13 @@ function wf_wc_public(): void {
     // the bot handed over (or could not answer, or the visitor asked for a person): the message goes to the admin on WhatsApp
     if ($handoff) { $c = wf_wc_conv($sid); $to = wf_wc_to((string) ($s['to'] ?? ''));
         $txt = $msg !== '' ? $msg : implode("\n", array_map(fn($m) => (string) $m['text'], array_slice(array_filter((array) ($c['msgs'] ?? []), fn($m) => ($m['who'] ?? '') === 'me'), -3)));
-        $r = $to !== '' ? wi_gateway('/chat/send', ['jid' => $to, 'text' => wf_msg('webchat_to_admin', ['site' => (string) ($s['name'] ?? ''), 'name' => (string) ($c['name'] ?? '') ?: '-', 'phone' => !empty($c['phone']) ? '+' . $c['phone'] : '-', 'page' => (string) ($c['page'] ?? '') ?: '-', 'text' => mb_substr($txt, 0, 1500)]), 'via' => 'bot'], $acc) : [];
+        $r = $to !== '' ? wi_gateway('/chat/send', ['jid' => $to, 'text' => wf_msg('webchat_to_admin', ['site' => (string) ($s['name'] ?? ''), 'name' => trim(((string) ($c['name'] ?? '') ?: '-') . (!empty($c['email']) ? ' · ' . $c['email'] : '')), 'phone' => !empty($c['phone']) ? '+' . $c['phone'] : '-', 'page' => (string) ($c['page'] ?? '') ?: '-', 'text' => mb_substr($txt, 0, 1500)]), 'via' => 'bot'], $acc) : [];
         $mid = (string) ($r['id'] ?? $r['message_id'] ?? '');
         if ($mid !== '') { wi_update('webchat_fwd.json', function ($F) use ($mid, $sid) { $F = (array) $F; $F[$mid] = $sid; return array_slice($F, -3000, null, true); }); }
         wf_wc_add($sid, $key, [], ['human' => true, 'fwd' => array_slice(array_merge((array) ($c['fwd'] ?? []), $mid !== '' ? [$mid] : []), -20)]);
         $t = wf_landing_t(!empty($r['ok']) ? 'Your message reached the team on WhatsApp. Keep this page open, the reply will show here.' : 'Could not reach the team now. Try again later.', $lang);
         if (!$wasHuman || empty($r['ok'])) { wf_wc_add($sid, $key, ['who' => 'bot', 'text' => $t]); $new[] = ['who' => 'bot', 'text' => $t]; } wi_log('webchat_to_admin', ['site' => $key, 'ok' => !empty($r['ok'])]); }
-    $out(['ok' => true, 'msgs' => $new, 'last' => (int) (wf_wc_conv($sid)['seq'] ?? 0)]);
+    $cv = wf_wc_conv($sid); $out(['ok' => true, 'msgs' => $new, 'human' => !empty($cv['human']), 'last' => (int) ($cv['seq'] ?? 0)]);
 }
 /** The admin's replies (WhatsApp replies quoting a forwarded message) are added to the visitors' chats. Once every 5 seconds per site. */
 function wf_wc_pull(string $key, array $s, array $acc): void {
@@ -90,6 +96,9 @@ function wf_wc_pull(string $key, array $s, array $acc): void {
         if (($m['dir'] ?? '') === 'out') { if (isset($F[$id])) { $lastF = $id; $lastT = $tm; } continue; }
         if ($q === '' && $lastF !== null && $tm >= $lastT && $tm - $lastT <= 3600) $q = $lastF;
         if ($q === '' || $id === '' || $t === '' || !isset($F[$q]) || isset($seen[$id])) continue;
+        // the admin's commands for this visitor: the words of seed_webchat_end end the chat, those of seed_webchat_bot give it back to the bot
+        $cmd = mb_strtolower(trim($t, " /\t")); $isEnd = in_array($cmd, wf_seed_list('webchat_end'), true); if ($isEnd || in_array($cmd, wf_seed_list('webchat_bot'), true)) { $seen[$id] = time();
+            wf_wc_add((string) $F[$q], $key, ['who' => 'sys', 'text' => wf_landing_t($isEnd ? 'The chat has ended. Thank you!' : 'The bot answers you now', ($s['lang'] ?? 'ar') === 'en' ? 'en' : 'ar')], $isEnd ? ['ended' => date('c'), 'human' => false] : ['human' => false]); continue; }
         $seen[$id] = time(); wf_wc_add((string) $F[$q], $key, ['who' => 'team', 'text' => mb_substr($t, 0, 2000)]); }
     if (count($seen) > 3000) $seen = array_slice($seen, -2000, null, true); wi_write('webchat_seen.json', $seen);
 }
@@ -97,23 +106,39 @@ function wf_wc_pull(string $key, array $s, array $acc): void {
 function wf_wc_script(string $key, array $s): string {
     $lang = ($s['lang'] ?? 'ar') === 'en' ? 'en' : 'ar'; $L = fn($e) => wf_landing_t($e, $lang);
     $cfg = ['api' => rtrim((string) wi_sys('base_url'), '/') . '/?k=' . $key . '&wc=', 'dir' => $lang === 'en' ? 'ltr' : 'rtl', 'color' => preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($s['color'] ?? '')) ? $s['color'] : '#25d366',
-        'title' => (string) ($s['name'] ?? ''), 'hello' => trim((string) ($s['hello'] ?? '')) ?: $L('Hi! How can we help you?'), 'ph' => $L('Write your message'), 'send' => $L('Send'), 'human' => $L('Talk to a person'),
-        'name' => $L('Your name (optional)'), 'phone' => $L('Your WhatsApp (optional)'), 'err' => $L('Could not send now. Try again.')];
+        'title' => (string) ($s['name'] ?? ''), 'hello' => trim((string) ($s['hello'] ?? '')) ?: $L('Hi! How can we help you?'), 'ph' => $L('Write your message'), 'send' => $L('Send'),
+        'start' => $L('Start the chat'), 'intro' => $L('Your details, so the team can reach you if the chat is cut:'), 'name' => $L('Your name'), 'phone' => $L('Your WhatsApp number'), 'email' => $L('Your email (optional)'),
+        'botoff' => $L('Talk to a person'), 'boton' => $L('Back to the bot'), 'end' => $L('End the chat'), 'endq' => $L('End this chat? A new one starts next time.'), 'ended' => $L('The chat has ended. Thank you!'), 'again' => $L('New chat'),
+        'person' => $L('A person answers you now'), 'bot' => $L('The bot answers you now'), 'need' => $L('Write your name and WhatsApp number.'), 'err' => $L('Could not send now. Try again.')];
     return '(function(){if(window.__fqwc)return;window.__fqwc=1;var C=' . json_encode($cfg, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) . ";\n" . <<<'JS'
-var S;try{S=localStorage.getItem('fqwc_sid');if(!S){S=Array.from(crypto.getRandomValues(new Uint8Array(16)),function(b){return('0'+b.toString(16)).slice(-2)}).join('');localStorage.setItem('fqwc_sid',S)}}catch(e){S=Math.random().toString(36).slice(2)+Date.now().toString(36)+Math.random().toString(36).slice(2)}
-var last=0,side=C.dir==='rtl'?'left':'right',d=document,st=d.createElement('style');
-st.textContent='#fqwc-b{position:fixed;bottom:18px;'+side+':18px;z-index:2147483000;width:58px;height:58px;border-radius:50%;border:0;background:'+C.color+';color:#fff;font-size:26px;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer}#fqwc-w{position:fixed;bottom:86px;'+side+':18px;z-index:2147483000;width:min(360px,calc(100vw - 36px));height:min(500px,72vh);background:#fff;color:#111;border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.25);display:none;flex-direction:column;overflow:hidden;font:14px/1.5 system-ui,sans-serif;direction:'+C.dir+'}#fqwc-w.on{display:flex}#fqwc-h{background:'+C.color+';color:#fff;padding:12px 14px;font-weight:700}#fqwc-l{flex:1;overflow:auto;padding:12px;background:#f5f6f7}#fqwc-l div{max-width:85%;margin:0 0 8px;padding:8px 11px;border-radius:12px;white-space:pre-wrap;word-wrap:break-word}#fqwc-l .me{margin-inline-start:auto;background:'+C.color+';color:#fff}#fqwc-l .bot,#fqwc-l .team{background:#fff;border:1px solid #e4e6eb}#fqwc-l .team{border-color:'+C.color+'}#fqwc-f{display:flex;gap:6px;padding:8px;border-top:1px solid #e4e6eb}#fqwc-f input{flex:1;border:1px solid #ccd0d5;border-radius:10px;padding:8px;font:inherit;min-width:0}#fqwc-f button,#fqwc-x button{border:0;border-radius:10px;padding:8px 12px;background:'+C.color+';color:#fff;font:inherit;cursor:pointer}#fqwc-x{display:flex;gap:6px;padding:6px 8px 0;flex-wrap:wrap}#fqwc-x input{flex:1;min-width:120px;border:1px solid #ccd0d5;border-radius:8px;padding:6px;font:inherit;font-size:12px}#fqwc-x button{background:#fff;color:#111;border:1px solid #ccd0d5;font-size:12px;padding:6px 10px}';
+var d=document,S,last=0,human=false,ended=false,me={};
+var newSid=function(){try{S=Array.from(crypto.getRandomValues(new Uint8Array(16)),function(b){return('0'+b.toString(16)).slice(-2)}).join('')}catch(e){S=Math.random().toString(36).slice(2)+Date.now().toString(36)+Math.random().toString(36).slice(2)}try{localStorage.setItem('fqwc_sid',S)}catch(e){}};
+try{S=localStorage.getItem('fqwc_sid');me=JSON.parse(localStorage.getItem('fqwc_me')||'{}')||{}}catch(e){}if(!S)newSid();
+var side=C.dir==='rtl'?'left':'right',st=d.createElement('style'),c=C.color;
+st.textContent='#fqwc-b{position:fixed;bottom:18px;'+side+':18px;z-index:2147483000;width:58px;height:58px;border-radius:50%;border:0;background:'+c+';color:#fff;font-size:26px;box-shadow:0 6px 20px rgba(0,0,0,.25);cursor:pointer}'
++'#fqwc-w{position:fixed;bottom:86px;'+side+':18px;z-index:2147483000;width:min(370px,calc(100vw - 36px));height:min(540px,75vh);background:#fff;color:#111;border-radius:18px;box-shadow:0 14px 44px rgba(0,0,0,.25);display:none;flex-direction:column;overflow:hidden;font:14px/1.55 system-ui,sans-serif;direction:'+C.dir+'}#fqwc-w.on{display:flex}'
++'#fqwc-h{background:'+c+';color:#fff;padding:10px 12px;display:flex;align-items:center;gap:8px}#fqwc-h b{flex:1;font-size:15px}#fqwc-h small{display:block;font-weight:400;opacity:.85;font-size:11.5px}#fqwc-h button{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:9px;height:30px;padding:0 9px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}#fqwc-h button:hover{background:rgba(255,255,255,.3)}'
++'#fqwc-l{flex:1;overflow:auto;padding:12px;background:#f5f6f7}#fqwc-l>div{max-width:85%;margin:0 0 8px;padding:8px 11px;border-radius:12px;white-space:pre-wrap;word-wrap:break-word}#fqwc-l .me{margin-inline-start:auto;background:'+c+';color:#fff}#fqwc-l .bot,#fqwc-l .team{background:#fff;border:1px solid #e4e6eb}#fqwc-l .team{border-color:'+c+'}#fqwc-l .sys{max-width:100%;text-align:center;background:none;color:#65676b;font-size:12px;padding:2px}'
++'#fqwc-f{display:flex;gap:6px;padding:8px;border-top:1px solid #e4e6eb}#fqwc-f input{flex:1;border:1px solid #ccd0d5;border-radius:10px;padding:8px;font:inherit;min-width:0}#fqwc-f button,#fqwc-s button{border:0;border-radius:10px;padding:8px 14px;background:'+c+';color:#fff;font:inherit;cursor:pointer}'
++'#fqwc-s{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:8px;background:#f5f6f7}#fqwc-s p{margin:0 0 4px;color:#444}#fqwc-s input{border:1px solid #ccd0d5;border-radius:10px;padding:9px;font:inherit;background:#fff}#fqwc-s .er{color:#b42318;font-size:12px;min-height:16px}';
 d.head.appendChild(st);
 var b=d.createElement('button');b.id='fqwc-b';b.type='button';b.textContent='💬';var w=d.createElement('div');w.id='fqwc-w';
-w.innerHTML='<div id="fqwc-h"></div><div id="fqwc-l"></div><div id="fqwc-x"><input id="fqwc-n"><input id="fqwc-p" inputmode="tel"><button type="button" id="fqwc-hu"></button></div><form id="fqwc-f"><input id="fqwc-i" autocomplete="off"><button></button></form>';
+w.innerHTML='<div id="fqwc-h"><b><span id="fqwc-t"></span><small id="fqwc-m"></small></b><button type="button" id="fqwc-hu"></button><button type="button" id="fqwc-e"></button><button type="button" id="fqwc-c">✕</button></div>'
++'<form id="fqwc-s"><p id="fqwc-in"></p><input id="fqwc-n" autocomplete="name" maxlength="60"><input id="fqwc-p" inputmode="tel" autocomplete="tel" maxlength="20" dir="ltr"><input id="fqwc-em" type="email" autocomplete="email" maxlength="80" dir="ltr"><div class="er" id="fqwc-er"></div><button id="fqwc-go"></button></form>'
++'<div id="fqwc-l"></div><form id="fqwc-f"><input id="fqwc-i" autocomplete="off"><button></button></form>';
 d.body.appendChild(w);d.body.appendChild(b);
-var $=function(i){return d.getElementById(i)},L=$('fqwc-l');$('fqwc-h').textContent=C.title;$('fqwc-n').placeholder=C.name;$('fqwc-p').placeholder=C.phone;$('fqwc-hu').textContent=C.human;$('fqwc-i').placeholder=C.ph;w.querySelector('#fqwc-f button').textContent=C.send;
-var add=function(who,t){var e=d.createElement('div');e.className=who;var im=[];t=String(t).replace(/\[img:([a-z0-9-]+)\]/g,function(_,k){im.push(k);return''}).trim();e.textContent=t;im.forEach(function(k){var g=d.createElement('img');g.src=C.api.split('?')[0]+'?guide_img='+k+'&lang='+(C.dir==='rtl'?'ar':'en');g.style.cssText='display:block;width:100%;border-radius:10px;margin-top:6px';e.appendChild(g)});L.appendChild(e);L.scrollTop=L.scrollHeight};add('bot',C.hello);
-var send=function(body){body.name=$('fqwc-n').value;body.phone=$('fqwc-p').value;body.page=location.href;return fetch(C.api+'send&sid='+S,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(j){(j.msgs||[]).forEach(function(m){add(m.who,m.text)});if(j.last)last=Math.max(last,j.last)}).catch(function(){add('bot',C.err)})};
+var $=function(i){return d.getElementById(i)},L=$('fqwc-l');$('fqwc-t').textContent=C.title;$('fqwc-in').textContent=C.intro;$('fqwc-n').placeholder=C.name;$('fqwc-p').placeholder=C.phone;$('fqwc-em').placeholder=C.email;$('fqwc-go').textContent=C.start;$('fqwc-e').textContent=C.end;$('fqwc-i').placeholder=C.ph;w.querySelector('#fqwc-f button').textContent=C.send;
+var add=function(who,t){var e=d.createElement('div');e.className=who;var im=[];t=String(t).replace(/\[img:([a-z0-9-]+)\]/g,function(_,k){im.push(k);return''}).trim();e.textContent=t;im.forEach(function(k){var g=d.createElement('img');g.src=C.api.split('?')[0]+'?guide_img='+k+'&lang='+(C.dir==='rtl'?'ar':'en');g.style.cssText='display:block;width:100%;border-radius:10px;margin-top:6px';e.appendChild(g)});L.appendChild(e);L.scrollTop=L.scrollHeight};
+var paint=function(){var ok=!!(me.name&&me.phone);$('fqwc-s').style.display=ok?'none':'flex';L.style.display=ok?'block':'none';$('fqwc-f').style.display=ok&&!ended?'flex':'none';$('fqwc-hu').style.display=ok&&!ended?'':'none';$('fqwc-e').textContent=ended?C.again:C.end;$('fqwc-e').style.display=ok?'':'none';$('fqwc-hu').textContent=human?C.boton:C.botoff;$('fqwc-m').textContent=ok?(human?C.person:C.bot):''};
+var state=function(j){if(!j)return;if('human' in j)human=!!j.human;if(j.ended){if(!ended)add('sys',C.ended);ended=true}paint()};
+var send=function(body){body.name=me.name||'';body.phone=me.phone||'';body.email=me.email||'';body.page=location.href;return fetch(C.api+'send&sid='+S,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json()}).then(function(j){(j.msgs||[]).forEach(function(m){add(m.who,m.text)});if(j.last)last=Math.max(last,j.last);state(j)}).catch(function(){add('sys',C.err)})};
+$('fqwc-s').addEventListener('submit',function(e){e.preventDefault();var n=$('fqwc-n').value.trim(),p=$('fqwc-p').value.replace(/[^0-9+]/g,'');if(!n||p.replace(/\D/g,'').length<8){$('fqwc-er').textContent=C.need;return}me={name:n,phone:p,email:$('fqwc-em').value.trim()};try{localStorage.setItem('fqwc_me',JSON.stringify(me))}catch(x){}paint();if(!L.children.length)add('bot',C.hello);$('fqwc-i').focus()});
 $('fqwc-f').addEventListener('submit',function(e){e.preventDefault();var i=$('fqwc-i'),t=i.value.trim();if(!t)return;i.value='';add('me',t);send({msg:t})});
-$('fqwc-hu').addEventListener('click',function(){send({human:1})});
-var poll=function(){if(!w.classList.contains('on'))return;fetch(C.api+'poll&sid='+S+'&after='+last).then(function(r){return r.json()}).then(function(j){(j.msgs||[]).forEach(function(m){if(m.n>last){last=m.n;if(m.who==='team')add('team',m.text)}})}).catch(function(){})};
-setInterval(poll,6000);b.addEventListener('click',function(){w.classList.toggle('on');if(w.classList.contains('on'))$('fqwc-i').focus()});
+$('fqwc-hu').addEventListener('click',function(){send(human?{bot:1}:{human:1})});
+$('fqwc-e').addEventListener('click',function(){if(ended){newSid();ended=false;human=false;last=0;L.innerHTML='';add('bot',C.hello);paint();return}if(!confirm(C.endq))return;send({end:1})});
+$('fqwc-c').addEventListener('click',function(){w.classList.remove('on')});
+var poll=function(){if(!w.classList.contains('on'))return;fetch(C.api+'poll&sid='+S+'&after='+last).then(function(r){return r.json()}).then(function(j){(j.msgs||[]).forEach(function(m){if(m.n>last){last=m.n;if(m.who==='team'||m.who==='sys')add(m.who,m.text)}});state(j)}).catch(function(){})};
+setInterval(poll,6000);b.addEventListener('click',function(){w.classList.toggle('on');if(w.classList.contains('on')){paint();if(me.name&&!L.children.length)add('bot',C.hello);poll()}});paint();
 })();
 JS;
 }
