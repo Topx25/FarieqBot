@@ -238,6 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // where every number runs in the one hub process (the Docker server), a new number joins the hub too: nothing else would start its gateway
                 if ((string) (wi_config()['main_gateway'] ?? '') === 'hub') $accounts[$id]['gateway'] = 'hub';
                 wi_save_accounts($accounts); wi_log('account_add', ['account' => $id, 'name' => $name]);
+                wi_archive_encrypt($id); // every new number keeps its messages encrypted
                 if (!wi_is_super()) wi_client_folder($id, (string) $_SESSION['email']); // a client's files go to a folder of its own
                 if (!wi_is_super()) { // a user's own number is visible to that user
                     $users = wi_users();

@@ -661,6 +661,19 @@ async function postInvoiceWebhook(payload) {
 
 /* ---------- Message archive: every message in and out, one JSON line each (wa-local/archive/YYYY-MM.jsonl, not web-readable). */
 const archiveDir = path.join(dataDir, 'archive');
+// Encrypted archive (numbers switched on by the dashboard: a file encrypt.on in this number's folder): the message text is kept as AES-256-GCM,
+// with the installation key in wa-local/.archive_key. Ids, chats and times stay plain so lists and indexes work; every read decrypts.
+const ARCH_ENC = '§e1:', ARCH_FIELDS = ['text', 'caption', 'quote_text'];
+let archKey = null, encOn = { at: 0, v: false };
+function archiveKey() { if (archKey !== null) return archKey; try { const b = Buffer.from(fs.readFileSync(path.join(__dirname, '.archive_key'), 'utf8').trim(), 'base64'); archKey = b.length === 32 ? b : false; } catch { archKey = false; } return archKey; }
+function encryptOn() { if (Date.now() - encOn.at < 30000) return encOn.v; encOn = { at: Date.now(), v: fs.existsSync(path.join(dataDir, 'encrypt.on')) && !!archiveKey() }; return encOn.v; }
+function encField(v) { const iv = crypto.randomBytes(12), c = crypto.createCipheriv('aes-256-gcm', archiveKey(), iv); const ct = Buffer.concat([c.update(String(v), 'utf8'), c.final()]); return ARCH_ENC + Buffer.concat([iv, c.getAuthTag(), ct]).toString('base64'); }
+function decField(v) {
+  if (typeof v !== 'string' || !v.startsWith(ARCH_ENC)) return v; const k = archiveKey(); if (!k) return '';
+  try { const b = Buffer.from(v.slice(ARCH_ENC.length), 'base64'), d = crypto.createDecipheriv('aes-256-gcm', k, b.subarray(0, 12)); d.setAuthTag(b.subarray(12, 28)); return Buffer.concat([d.update(b.subarray(28)), d.final()]).toString('utf8'); } catch { return ''; }
+}
+function decRow(r) { if (r) for (const f of ARCH_FIELDS) if (typeof r[f] === 'string' && r[f].startsWith(ARCH_ENC)) r[f] = decField(r[f]); return r; }
+function encRow(r) { if (!encryptOn()) return r; const o = { ...r }; for (const f of ARCH_FIELDS) if (typeof o[f] === 'string' && o[f] !== '') o[f] = encField(o[f]); return o; }
 /* ---------- Live events for the Inbox (new messages, typing, ticks) ---------- */
 const liveEvents = [];
 let liveSeq = 0;
@@ -712,7 +725,7 @@ function archive(entry) {
     if (entry.ts) { row.time = new Date(Number(entry.ts) * 1000).toISOString(); delete row.ts;
       if (Date.now() - Date.parse(row.time) > 120000) row.got = new Date().toISOString(); } // arrived late (phone was offline): when it reached us, for "deleted chat" checks
     if (row.text && row.text.length > 4000) row.text = Array.from(row.text).slice(0, 4000).join('');
-    fs.appendFileSync(path.join(archiveDir, `${row.time.slice(0, 7)}.jsonl`), `${JSON.stringify(row)}\n`);
+    fs.appendFileSync(path.join(archiveDir, `${row.time.slice(0, 7)}.jsonl`), `${JSON.stringify(encRow(row))}\n`);
     if (['in', 'out', 'revoked', 'edited', 'deleted'].includes(row.dir)) pushEvent('msg', { row });
     if (knownIds && row.id && (row.dir === 'in' || row.dir === 'out')) knownIds.add(row.id);
     if (mqIndex && row.id) {
@@ -773,7 +786,7 @@ function readArchiveRows({ phone = '', q = '', limit = 300, months = 3, jid = ''
     for (let ai = 0, an = ids ? ids.length : ac.lines.length; ai < an; ai++) {
       const line = ac.lines[ids ? ids[ai] : ai];
       if (!line || (jidNeedle && !line.includes(jidNeedle))) continue; // one chat asked for: other chats' lines are skipped without parsing
-      let r; try { r = JSON.parse(line); } catch { continue; }
+      let r; try { r = decRow(JSON.parse(line)); } catch { continue; }
       if (r.dir === 'deleted') { deleted.add(r.id); continue; }
       if (r.dir === 'revoked') { revoked.set(r.id, r.time); continue; }
       if (r.dir === 'media') { fetched.set(r.id, r.attachment); continue; }
@@ -1733,7 +1746,7 @@ app.get('/trash', requireToken, (req, res) => {
     for (const f of files) {
       for (const line of fs.readFileSync(path.join(archiveDir, f), 'utf8').split('\n')) {
         if (!line) continue;
-        let r; try { r = JSON.parse(line); } catch { continue; }
+        let r; try { r = decRow(JSON.parse(line)); } catch { continue; }
         if (r.dir === 'hidden') msgs.set(r.id, { jid: r.jid, id: r.id, time: r.time, by: r.by || '' });
         else if (r.dir === 'unhidden') msgs.delete(r.id);
         else if (r.dir === 'chat_cleared') chats.set(r.jid, { jid: r.jid, time: r.time, by: r.by || '', count: 0, last: null });

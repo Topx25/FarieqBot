@@ -1148,3 +1148,20 @@ function wi_mail(string $to, string $subject, string $text): bool {
     if (!$good) wi_log('mail_failed', ['to' => $to]);
     return $good;
 }
+/** Encrypted message archive (see gateway_session.js): the installation key (made once, a copy kept as a secret) and the switch per number. */
+function wi_archive_key(): string {
+    $f = dirname(__DIR__) . '/wa-local/.archive_key'; $k = is_file($f) ? trim((string) @file_get_contents($f)) : '';
+    if (strlen((string) base64_decode($k, true)) === 32) return $k;
+    $k = function_exists('wi_secret') ? wi_secret('archive_key') : ''; if (strlen((string) base64_decode($k, true)) !== 32) $k = base64_encode(random_bytes(32));
+    @file_put_contents($f, $k, LOCK_EX); @chmod($f, 0600); if (function_exists('wi_secret_set') && wi_secret('archive_key') !== $k) wi_secret_set('archive_key', $k); return $k;
+}
+function wi_archive_encrypt(string $aid, bool $on = true): bool {
+    $dir = dirname(__DIR__) . '/wa-local' . ($aid === 'main' ? '' : '/accounts/' . preg_replace('/[^a-z0-9_-]/', '', $aid)); if (!is_dir($dir) && !@mkdir($dir, 0700, true)) return false;
+    if ($on) { wi_archive_key(); return @file_put_contents($dir . '/encrypt.on', date('c')) !== false; } return !is_file($dir . '/encrypt.on') || @unlink($dir . '/encrypt.on');
+}
+function wi_archive_dec(array $r): array {
+    static $k = null; $k ??= (string) base64_decode(wi_archive_key(), true);
+    foreach (['text', 'caption', 'quote_text'] as $f) if (is_string($r[$f] ?? null) && str_starts_with($r[$f], '§e1:')) { $b = (string) base64_decode(substr($r[$f], strlen('§e1:')), true);
+        $v = strlen($b) > 28 ? openssl_decrypt(substr($b, 28), 'aes-256-gcm', $k, OPENSSL_RAW_DATA, substr($b, 0, 12), substr($b, 12, 16)) : false; $r[$f] = $v === false ? '' : $v; }
+    return $r;
+}

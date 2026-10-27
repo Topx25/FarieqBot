@@ -66,7 +66,7 @@ function wf_hist_rows(array $acc, array $o = []): array {
     foreach ($files as $f) { $fh = @fopen($f, 'rb'); if (!$fh) continue;
         while (($line = fgets($fh)) !== false) {
             if ($jid !== '' && strpos($line, '"jid":' . json_encode($jid)) === false) continue;
-            $r = json_decode($line, true); if (!is_array($r)) continue;
+            $r = json_decode($line, true); if (!is_array($r)) continue; if (str_contains($line, '§e1:')) $r = wi_archive_dec($r);
             if ($until !== '' && (string) ($r['time'] ?? '') >= $until) continue;
             $d = (string) ($r['dir'] ?? '');
             if (in_array($d, ['deleted', 'hidden'], true)) { $gone[(string) ($r['id'] ?? '')] = 1; continue; }
