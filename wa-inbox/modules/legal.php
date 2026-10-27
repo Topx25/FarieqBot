@@ -73,7 +73,7 @@ function wf_legal_default(string $kind): string {
 }
 function wf_legal_page(string $kind): void {
     $kind = $kind === 'terms' ? 'terms' : 'privacy';
-    $lang = in_array($_GET['lang'] ?? '', ['ar', 'en'], true) ? (string) $_GET['lang'] : wf_terms_lang(); $T = fn($x) => wi_e(wf_landing_t($x, $lang));
+    $lang = in_array($_GET['lang'] ?? '', ['ar', 'en'], true) ? (string) $_GET['lang'] : (wi_ip_country() !== '' ? wf_terms_lang() : (function_exists('wf_landing_lang') ? wf_landing_lang() : 'ar')); $T = fn($x) => wi_e(wf_landing_t($x, $lang));
     if ($kind === 'terms') $text = wf_terms_text($lang);
     else { $text = trim((string) wi_sys('privacy_text')); if ($text === '') { $ar = $lang === 'ar' ? (array) require __DIR__ . '/../i18n.php' : []; $text = implode("\n", array_map(fn($l) => $ar[$l] ?? $l, wf_legal_lines('privacy'))); }
         $site = parse_url((string) wi_sys('base_url'), PHP_URL_HOST) ?: (string) ($_SERVER['HTTP_HOST'] ?? ''); $owner = trim((string) wi_sys('legal_owner')) ?: (string) wi_sys('brand_name'); $email = trim((string) wi_sys('legal_email'));
