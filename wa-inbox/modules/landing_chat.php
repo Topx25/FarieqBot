@@ -21,11 +21,12 @@ function wf_landing_guide(): array {
     $root = dirname(__DIR__); $files = array_merge(glob($root . '/src/app/*.js') ?: [], glob($root . '/src/features/*.js') ?: [], [$root . '/app/page.php', __FILE__]);
     $sig = md5(implode('|', array_map(fn($f) => $f . @filemtime($f), $files))); $c = (array) wi_read('landing_guide.json', []);
     if (($c['sig'] ?? '') === $sig) return (array) $c['pages'];
-    $skip = '/ruqyah|healing|symptom|super|client panel|every client|error log|plans and subscriptions|system overview/i'; $P = [];
+    $skip = '/ruqyah|healing|symptom|super|client panel|every client|error log|plans and subscriptions|system overview|general settings|ai providers/i'; $P = [];
     $add = function (string $ic, string $t, string $d) use (&$P, $skip) { $t = trim(stripslashes($t)); $d = trim(stripslashes($d)); if ($t === '' || !preg_match('/^[A-Z]/', $t) || str_contains($t, '_') || $d === '' || preg_match($skip, $t . ' ' . $d)) return;
         $k = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($t)), '-'); if ($k !== '' && !isset($P[$k])) $P[$k] = ['icon' => $ic, 'title' => $t, 'desc' => mb_substr($d, 0, 400)]; };
     $add('🏠', 'Dashboard', 'The first page after sign-in: today\'s messages, the chats waiting for a reply, the bot\'s work and the team at a glance.');
     $add('💬', 'Conversations', 'Every WhatsApp chat of your numbers in one inbox: reply as the team, send files and voice notes, use saved replies, ask the bot for a suggested reply, label chats, hide them, and switch the bot on or off for one chat.');
+    $add('📱', 'Numbers', 'Where you connect your WhatsApp number: press «Add a number», a QR code shows, and you scan it from WhatsApp on that phone (Linked devices), as with WhatsApp Web. The page then shows each number, whether it is connected, and lets you reconnect or remove it.');
     $add('🔌', 'Bot channels', 'On the Bot page, the Channels card has three on/off switches: Private chats, Groups and Website chat. Switch on only Groups to have the bot answer in groups alone; each group is then set up in the Groups tab (mode, trigger word, hours, anti-spam).');
     $add('📣', 'Broadcast', 'Send one message to many customers or groups, now or at a set time, with a safe pace so the number is not banned.');
     foreach ($files as $f) { $src = (string) @file_get_contents($f);
