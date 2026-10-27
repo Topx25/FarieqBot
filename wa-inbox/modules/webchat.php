@@ -129,7 +129,7 @@ function wf_wc_section(): string {
         . '<label>' . $t('Who answers the visitors') . '<select name="mode"><option value="bot">' . $t('The bot first, then the team on WhatsApp') . '</option><option value="team">' . $t('The team on WhatsApp (every message reaches WhatsApp)') . '</option></select></label>'
         . '<label>' . $t('Welcome message') . '<input name="hello" maxlength="300"></label>'
         . '<label>' . $t('Language') . '<select name="lang"><option value="ar">' . $t('Arabic') . '</option><option value="en">' . $t('English') . '</option></select></label>'
-        . '<label>' . $t('Color') . '<input type="color" name="color" value="#25d366"></label>'
+        . '<label>' . $t('Color') . '<input type="color" name="color" value="#25d366"></label>' . (wi_is_super() ? '<label class="check"><input type="checkbox" name="landing" value="1"> ' . $t('This product\'s own page (replaces its chat bubble)') . '</label>' : '')
         . '<div><button class="btn primary">' . $t('Save') . '</button></div></form></details></div>';
     return $o;
 }
@@ -164,7 +164,7 @@ function wf_wc_action(string $do): void {
         if (!isset(wf_int_numbers()[$aid]) || !$dom || wf_wc_to($to) === '') { wi_flash('Choose a number, a domain and a WhatsApp number or group.', 'bad'); header('Location: ?p=integrations'); exit; }
         $k = 'wc_' . bin2hex(random_bytes(8));
         wi_update('webchat.json', function ($A) use ($k, $aid, $dom, $to) { $A = (array) $A; $A[$k] = ['aid' => $aid, 'name' => mb_substr(trim((string) ($_POST['name'] ?? '')), 0, 60), 'domains' => $dom, 'to' => $to, 'on' => true,
-            'mode' => ($_POST['mode'] ?? '') === 'team' ? 'team' : 'bot', 'lang' => ($_POST['lang'] ?? '') === 'en' ? 'en' : 'ar', 'hello' => mb_substr(trim((string) ($_POST['hello'] ?? '')), 0, 300), 'color' => preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($_POST['color'] ?? '')) ? $_POST['color'] : '#25d366', 'at' => date('c')]; return $A; });
+            'mode' => ($_POST['mode'] ?? '') === 'team' ? 'team' : 'bot', 'lang' => ($_POST['lang'] ?? '') === 'en' ? 'en' : 'ar', 'hello' => mb_substr(trim((string) ($_POST['hello'] ?? '')), 0, 300), 'color' => preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($_POST['color'] ?? '')) ? $_POST['color'] : '#25d366', 'landing' => wi_is_super() && !empty($_POST['landing']) ? 1 : 0, 'at' => date('c')]; return $A; });
         wi_log('webchat_add', ['site' => $k, 'account' => $aid]); header('Location: ?p=integrations'); exit; }
     $k = (string) ($_POST['k'] ?? ''); if (!isset(wf_wc_mine()[$k])) { wi_flash('Not found.', 'bad'); header('Location: ?p=integrations'); exit; }
     $act = (string) ($_POST['act'] ?? '');

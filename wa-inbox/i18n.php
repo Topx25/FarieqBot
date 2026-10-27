@@ -22,6 +22,7 @@ return [
     'A section of your dashboard (Team → Activity) records every time a member of your team opens your data and what they did with it.' => 'يوجد في لوحتك قسم (الفريق ← النشاط) يسجل كل دخول لأحد أفراد فريقك على بياناتك وما فعله بها.',
     'Got it, start' => 'فهمت، ابدأ',
     'I agree' => 'موافق',
+    "This product's own page (replaces its chat bubble)" => 'صفحة المنتج نفسه (بدل فقاعة الشات بتاعتها)',
     'Chat data' => 'بيانات المحادثات',
     'Not chosen yet' => 'لم يختر بعد',
     'Kept to teach the bot' => 'موافق: محفوظة لتعليم البوت',
