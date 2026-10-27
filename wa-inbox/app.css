@@ -1577,3 +1577,6 @@ aside.side nav .nav-h{margin:8px 10px 2px!important;font-size:11px!important}
 .bs-pop-ex{margin-top:10px;padding:9px 11px;border-radius:10px;font-size:12.5px;line-height:1.7;background:color-mix(in srgb,var(--accent,#0866ff) 8%,transparent);color:var(--text,#1c1e21)}
 @keyframes bsPop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .bs-q{transition:background .15s}.bs-q:hover{background:var(--accent,#0866ff);color:#fff;border-color:transparent}
+/* date and time fields look like pickers: a calendar mark and a pointer */
+input[type=date],input[type=datetime-local],input[type=time],input[type=month]{cursor:pointer;min-width:150px}
+input[type=date]::-webkit-calendar-picker-indicator,input[type=datetime-local]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.8}
