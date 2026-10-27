@@ -1524,3 +1524,7 @@ input.ai-n{width:46px!important;min-width:0;padding:4px 6px!important;text-align
 #brp .br-savebar .muted{color:inherit!important;opacity:.9}
 @media (max-width:860px){.bh-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.bh-modes{margin:0;width:100%}.bh-modes .br-opt{flex:1;justify-content:center}}
 #brp #bh-card.bh-card{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important}.bh-stats>div{border:1px solid var(--line,#e4e6eb)}
+/* the bot menu sits on top (one row of tabs), not at the side */
+#brp .bt-grid{grid-template-columns:minmax(0,1fr)!important}
+#brp .bt-grid>.bt-tabs{flex-direction:row!important;flex-wrap:nowrap;overflow-x:auto;position:static!important;scrollbar-width:thin;gap:4px}
+#brp .bt-grid>.bt-tabs a{flex:none}
