@@ -1560,3 +1560,9 @@ aside.side nav .nav-h{justify-content:flex-start!important;gap:6px}
 #brp .bt-grid>.bt-tabs{gap:4px!important;padding:6px!important}
 #brp .bt-grid>.bt-tabs a{padding:5px 9px!important;font-size:12.5px!important;gap:5px!important;border-radius:9px!important;box-shadow:0 2px 0 var(--line,#d8dbe0)}
 #brp .bt-grid>.bt-tabs a .bt-n{font-size:11px;padding:0 5px}
+/* side menu: compact so more of it shows without scrolling */
+aside.side nav>a{height:32px!important;margin:0 8px!important;font-size:13.5px!important;gap:8px!important}
+aside.side nav>a>i{width:22px!important;height:22px!important;font-size:15px}
+aside.side nav .nav-h{margin:8px 10px 2px!important;font-size:11px!important}
+.app .side .brand{min-height:52px!important;padding:8px 12px!important}
+.shell-v3 #side-nav a,#side-nav a{min-height:32px!important;height:32px!important;padding:0 10px!important;font-size:13.5px!important;gap:8px!important;margin:0 8px!important}.shell-v3 #side-nav .nav-h,#side-nav .nav-h{margin:8px 10px 2px!important;min-height:0!important;padding:0 8px!important}
