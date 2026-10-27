@@ -118,7 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($do === 'acdel_request' || $do === 'acdel_admin') { require_once dirname(__DIR__) . '/features.php'; $do === 'acdel_request' ? wf_acdel_request() : wf_acdel_admin(); }
     if ($do === 'terms_accept') { require_once dirname(__DIR__) . '/features.php'; wf_terms_accept(); }
-    if ($do === 'logout') { wi_log('logout'); $_SESSION = []; session_destroy(); header('Location: ./'); exit; }
+    if ($do === 'logout') { if (!empty($_SESSION['email'])) { require_once dirname(__DIR__) . '/features.php'; if (function_exists('wf_data_purge_chats')) wf_data_purge_chats((string) $_SESSION['email']); } wi_log('logout'); $_SESSION = []; session_destroy(); header('Location: ./'); exit; }
     // My account: every user can change their own name, WhatsApp number and password (the current password is required).
     // Any user: their own dashboard theme ('' = the system's).
     if ($do === 'my_theme' && !empty($_SESSION['email'])) {
