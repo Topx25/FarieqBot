@@ -13,7 +13,7 @@ function wf_landing_facts(): string {
         $L[] = '- ' . $p['name'] . ': ' . ($p['price'] > 0 ? $cur . rtrim(rtrim(number_format((float) $p['price'], 2, '.', ''), '0'), '.') : 'free') . ', ' . $p['numbers'] . ' WhatsApp numbers, ' . ($p['team'] ?: 'unlimited') . ' team members' . (!empty($p['trial']) ? ', trial' : ''); }
     return 'Brand: ' . wi_sys('brand_name') . "\nPlans:\n" . ($L ? implode("\n", $L) : '- none published') . "\nSign-up open: " . (wi_sys('signup_on') ? 'yes' : 'no') . "\n" . trim((string) wi_sys('landing_chat_facts'))
         . (defined('WF_DATA_INFO') ? "\nData and privacy (answer privacy questions from this, with confidence):\n" . implode("\n", array_map(fn($r) => '- ' . $r[1] . ': ' . $r[2], WF_DATA_INFO)) : '')
-        . (function () { $g = wf_landing_guide(); $h = (array) ($g['_bot_hints'] ?? []); unset($g['_bot_hints']); return "\nSystem guide (every page of the dashboard; picture key in brackets):\n" . implode("\n", array_map(fn($k, $v) => '- [' . $k . '] ' . $v['icon'] . ' ' . $v['title'] . ': ' . $v['desc'], array_keys($g), $g)) . ($h ? "\nBot settings, with examples:\n- " . implode("\n- ", $h) : ''); })()
+        . (function () { $g = wf_landing_guide(); $h = (array) ($g['_bot_hints'] ?? []); unset($g['_bot_hints']); return "\nSystem guide (every page of the dashboard; picture key in brackets):\n" . implode("\n", array_map(fn($k, $v) => '- [' . $k . '] ' . $v['icon'] . ' ' . $v['title'] . ' (Arabic menu name: ' . wf_landing_t($v['title'], 'ar') . '): ' . $v['desc'], array_keys($g), $g)) . ($h ? "\nBot settings, with examples:\n- " . implode("\n- ", $h) : ''); })()
         . (function_exists('wf_terms_text') ? "\nTerms of service:\n" . mb_substr(wf_terms_text('en'), 0, 6000) : '');
 }
 /** The system guide for the product chat: every page's title and description, read from the pages themselves (cached until a file changes). Super admin and healing pages are left out. */
@@ -26,6 +26,7 @@ function wf_landing_guide(): array {
         $k = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($t)), '-'); if ($k !== '' && !isset($P[$k])) $P[$k] = ['icon' => $ic, 'title' => $t, 'desc' => mb_substr($d, 0, 400)]; };
     $add('🏠', 'Dashboard', 'The first page after sign-in: today\'s messages, the chats waiting for a reply, the bot\'s work and the team at a glance.');
     $add('💬', 'Conversations', 'Every WhatsApp chat of your numbers in one inbox: reply as the team, send files and voice notes, use saved replies, ask the bot for a suggested reply, label chats, hide them, and switch the bot on or off for one chat.');
+    $add('🔌', 'Bot channels', 'On the Bot page, the Channels card has three on/off switches: Private chats, Groups and Website chat. Switch on only Groups to have the bot answer in groups alone; each group is then set up in the Groups tab (mode, trigger word, hours, anti-spam).');
     $add('📣', 'Broadcast', 'Send one message to many customers or groups, now or at a set time, with a safe pace so the number is not banned.');
     foreach ($files as $f) { $src = (string) @file_get_contents($f);
         if (preg_match_all("/hero\\('([^']+)', '([^']+)', '((?:[^'\\\\]|\\\\.)+)'/u", $src, $m, PREG_SET_ORDER)) foreach ($m as $x) $add($x[1], $x[2], $x[3]);
