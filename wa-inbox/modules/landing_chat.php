@@ -43,16 +43,19 @@ function wf_guide_img(): void {
     if (!$g || $k === '_bot_hints') { http_response_code(404); exit; }
     $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES | ENT_XML1, 'UTF-8'); $t = wf_landing_t($g['title'], $lang); $d = wf_landing_t($g['desc'], $lang); $rtl = $lang === 'ar';
     $lines = []; $cur = ''; foreach (preg_split('/\s+/u', $d) as $w) { if (mb_strlen($cur . ' ' . $w) > 52) { $lines[] = $cur; $cur = $w; } else $cur = trim($cur . ' ' . $w); } if ($cur !== '') $lines[] = $cur; $lines = array_slice($lines, 0, 6);
-    $x = $rtl ? 560 : 40; $an = $rtl ? 'end' : 'start'; $body = '';
-    foreach ($lines as $i => $l) $body .= '<text x="' . $x . '" y="' . (190 + $i * 30) . '" text-anchor="' . $an . '" font-size="18" fill="#4a4a55">' . $e($l) . '</text>';
-    $menu = ''; $all = wf_landing_guide(); $items = array_values(array_filter(array_map(fn($kk) => $all[$kk] ?? null, ['dashboard', 'conversations', 'groups', 'broadcast', 'bot', 'learning', 'files', 'numbers']))); if (!in_array($g, $items, true)) $items[] = $g;
-    foreach ($items as $i => $it) { $on = $it['title'] === $g['title']; $menu .= '<rect x="' . ($rtl ? 612 : 12) . '" y="' . (70 + $i * 34) . '" width="176" height="28" rx="8" fill="' . ($on ? '#16161a' : 'transparent') . '"/><text x="' . ($rtl ? 778 : 22) . '" y="' . (89 + $i * 34) . '" text-anchor="' . $an . '" font-size="13" fill="' . ($on ? '#fff' : '#4a4a55') . '">' . $e($it['icon'] . ' ' . mb_substr(wf_landing_t($it['title'], $lang), 0, 22)) . '</text>'; }
-    header('Content-Type: image/svg+xml; charset=utf-8'); header('Cache-Control: public, max-age=3600');
-    echo '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420" direction="' . ($rtl ? 'rtl' : 'ltr') . '" font-family="IBM Plex Sans Arabic, Tahoma, sans-serif">'
-        . '<rect width="800" height="420" rx="22" fill="#f6f5f2"/><rect x="' . ($rtl ? 600 : 0) . '" y="0" width="200" height="420" fill="#fff"/><text x="' . ($rtl ? 778 : 22) . '" y="44" text-anchor="' . $an . '" font-size="18" font-weight="700" fill="#16161a">' . $e((string) wi_sys('brand_name')) . '</text>' . $menu
-        . '<rect x="' . ($rtl ? 20 : 220) . '" y="30" width="560" height="360" rx="20" fill="#fff" stroke="rgba(22,22,26,.08)"/>'
-        . '<rect x="' . ($rtl ? 504 : 240) . '" y="56" width="56" height="56" rx="16" fill="#efede8"/><text x="' . ($rtl ? 532 : 268) . '" y="96" text-anchor="middle" font-size="28">' . $e($g['icon']) . '</text>'
-        . '<text x="' . ($rtl ? 488 : 312) . '" y="92" text-anchor="' . $an . '" font-size="26" font-weight="700" fill="#16161a">' . $e($t) . '</text><rect x="' . ($rtl ? 40 : 240) . '" y="130" width="520" height="3" rx="2" fill="#d9b97c"/>' . str_replace('x="' . $x . '"', 'x="' . ($rtl ? 560 : 240) . '"', $body) . '</svg>';
+    $T = function (float $x, float $y, string $txt, int $size, string $fill, string $w = '400') use ($e, $rtl) { return '<text x="' . $x . '" y="' . $y . '" direction="' . ($rtl ? 'rtl' : 'ltr') . '" text-anchor="start" font-size="' . $size . '" font-weight="' . $w . '" fill="' . $fill . '">' . $e($txt) . '</text>'; };
+    $all = wf_landing_guide(); $items = array_values(array_filter(array_map(fn($kk) => $all[$kk] ?? null, ['dashboard', 'conversations', 'groups', 'broadcast', 'bot', 'learning', 'files', 'numbers']))); if (!in_array($g, $items, true)) $items[] = $g;
+    // the side menu is on the right in Arabic, on the left in English; the page card fills the rest
+    $mx = $rtl ? 600 : 0; $cx = $rtl ? 20 : 220; $menu = $T($rtl ? 778 : 22, 44, (string) wi_sys('brand_name'), 18, '#16161a', '700');
+    foreach ($items as $i => $it) { $on = $it['title'] === $g['title']; $menu .= '<rect x="' . ($mx + 12) . '" y="' . (66 + $i * 36) . '" width="176" height="30" rx="9" fill="' . ($on ? '#16161a' : 'none') . '"/>' . $T($rtl ? 778 : 24, 86 + $i * 36, $it['icon'] . ' ' . mb_substr(wf_landing_t($it['title'], $lang), 0, 20), 13, $on ? '#ffffff' : '#4a4a55'); }
+    $tx = $rtl ? $cx + 450 : $cx + 110; $icx = $rtl ? $cx + 476 : $cx + 28; $body = '';
+    foreach ($lines as $i => $l) $body .= $T($rtl ? $cx + 530 : $cx + 30, 192 + $i * 32, $l, 18, '#4a4a55');
+    header('Content-Type: image/svg+xml; charset=utf-8'); header('Cache-Control: public, max-age=600');
+    echo '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="420" viewBox="0 0 800 420" font-family="IBM Plex Sans Arabic, Tahoma, Arial, sans-serif">'
+        . '<rect width="800" height="420" rx="22" fill="#f6f5f2"/><rect x="' . $mx . '" y="0" width="200" height="420" fill="#ffffff"/>' . $menu
+        . '<rect x="' . $cx . '" y="30" width="560" height="360" rx="20" fill="#ffffff" stroke="#e8e6e1"/>'
+        . '<rect x="' . $icx . '" y="54" width="56" height="56" rx="16" fill="#efede8"/><text x="' . ($icx + 28) . '" y="93" text-anchor="middle" font-size="28">' . $e($g['icon']) . '</text>'
+        . $T($tx, 92, $t, 26, '#16161a', '700') . '<rect x="' . ($cx + 30) . '" y="132" width="500" height="3" rx="2" fill="#d9b97c"/>' . $body . '</svg>';
     exit;
 }
 /** Counts one message of this visitor; false when a limit is reached. */
