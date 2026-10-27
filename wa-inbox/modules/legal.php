@@ -73,15 +73,26 @@ function wf_legal_default(string $kind): string {
 }
 function wf_legal_page(string $kind): void {
     $kind = $kind === 'terms' ? 'terms' : 'privacy';
-    $text = trim((string) wi_sys($kind . '_text')); if ($text === '') $text = wf_legal_default($kind);
-    $site = parse_url((string) wi_sys('base_url'), PHP_URL_HOST) ?: (string) ($_SERVER['HTTP_HOST'] ?? '');
-    $owner = trim((string) wi_sys('legal_owner')) ?: (string) wi_sys('brand_name'); $email = trim((string) wi_sys('legal_email'));
-    $text = strtr($text, ['{product}' => (string) wi_sys('brand_name'), '{owner}' => $owner, '{site}' => $site, '{email}' => $email !== '' ? $email : $site]);
-    $html = ''; foreach (preg_split('/\R/u', $text) as $l) { $l = trim($l); if ($l === '') continue; $html .= str_starts_with($l, '# ') ? '<h2 dir="auto">' . wi_e(substr($l, 2)) . '</h2>' : '<p dir="auto">' . wi_e($l) . '</p>'; }
+    $lang = in_array($_GET['lang'] ?? '', ['ar', 'en'], true) ? (string) $_GET['lang'] : wf_terms_lang(); $T = fn($x) => wi_e(wf_landing_t($x, $lang));
+    if ($kind === 'terms') $text = wf_terms_text($lang);
+    else { $text = trim((string) wi_sys('privacy_text')); if ($text === '') { $ar = $lang === 'ar' ? (array) require __DIR__ . '/../i18n.php' : []; $text = implode("\n", array_map(fn($l) => $ar[$l] ?? $l, wf_legal_lines('privacy'))); }
+        $site = parse_url((string) wi_sys('base_url'), PHP_URL_HOST) ?: (string) ($_SERVER['HTTP_HOST'] ?? ''); $owner = trim((string) wi_sys('legal_owner')) ?: (string) wi_sys('brand_name'); $email = trim((string) wi_sys('legal_email'));
+        $text = strtr($text, ['{product}' => (string) wi_sys('brand_name'), '{owner}' => $owner, '{site}' => $site, '{email}' => $email !== '' ? $email : $site]); }
+    $html = ''; foreach (preg_split('/\R/u', $text) as $l) { $l = trim($l); if ($l === '') continue; $html .= str_starts_with($l, '# ') ? '<h2>' . wi_e(substr($l, 2)) . '</h2>' : '<p>' . wi_e($l) . '</p>'; }
+    // the data card the clients see after the terms: how their chats teach the bot and how they are protected
+    $data = ''; foreach (WF_DATA_INFO as $r) $data .= '<div class="i"><span>' . $r[0] . '</span><div><b>' . $T($r[1]) . '</b><p>' . $T($r[2]) . '</p></div></div>';
+    $title = $kind === 'terms' ? 'Terms of service' : 'Privacy policy'; $other = $kind === 'terms' ? ['privacy', 'Privacy policy'] : ['terms', 'Terms of service'];
     header('Content-Type: text/html; charset=utf-8'); header('Cache-Control: public, max-age=600');
-    echo '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . wi_e(($kind === 'terms' ? 'Terms of service' : 'Privacy policy') . ' — ' . wi_sys('brand_name')) . '</title>'
-        . '<style>body{margin:0;background:#f6f8f7;color:#1f2a27;font:16px/1.7 system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}main{max-width:760px;margin:0 auto;padding:32px 20px 60px}h2{font-size:19px;margin:28px 0 6px}h2:first-child{font-size:26px;margin-top:0}p{margin:0 0 10px}'
-        . '@media (prefers-color-scheme:dark){body{background:#0f1514;color:#e6ece9}}</style></head><body><main>' . $html . '</main></body></html>';
+    echo '<!doctype html><html lang="' . $lang . '" dir="' . ($lang === 'ar' ? 'rtl' : 'ltr') . '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' . $T($title) . ' — ' . wi_e((string) wi_sys('brand_name')) . '</title>'
+        . '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">'
+        . '<style>:root{--bg:#f1f4f7;--card:#fff;--fg:#1c2b33;--mut:#465a69;--line:#1c2b3314;--blue:#0866ff;--gold:#c9a24a;--tile:#e7eef8}@media (prefers-color-scheme:dark){:root{--bg:#0a1317;--card:#1c2b33;--fg:#f1f4f7;--mut:#c5d0d8;--line:#ffffff17;--tile:#26363f}}'
+        . 'body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.85 "IBM Plex Sans Arabic",system-ui,sans-serif}header{background:var(--card);border-bottom:1px solid var(--line)}header div{max-width:820px;margin:auto;padding:14px 20px;display:flex;align-items:center;gap:12px}header b{flex:1;font-size:18px}header a{color:var(--blue);text-decoration:none;font-size:14px;border:1px solid var(--line);border-radius:99px;padding:5px 14px}'
+        . 'main{max-width:820px;margin:0 auto;padding:28px 20px 60px}.c{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 28px;margin-bottom:18px}h1{font-size:28px;margin:0 0 4px}h1+small{color:var(--mut)}h2{font-size:18px;margin:26px 0 6px;padding-inline-start:12px;border-inline-start:3px solid var(--gold)}p{margin:0 0 10px;color:var(--mut)}'
+        . '.i{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--line)}.i>span{width:42px;height:42px;flex:none;border-radius:13px;background:var(--tile);display:grid;place-items:center;font-size:20px}.i b{color:var(--fg)}.i p{margin:2px 0 0}footer{text-align:center;color:var(--mut);font-size:13px}footer a{color:var(--blue)}</style></head><body>'
+        . '<header><div><b>' . wi_e((string) wi_sys('brand_name')) . '</b><a href="?' . $kind . '=1&amp;lang=' . ($lang === 'ar' ? 'en">English' : 'ar">' . wi_e(wf_landing_t('Arabic', 'ar'))) . '</a><a href="./">' . $T('Home') . '</a></div></header><main>'
+        . '<div class="c"><h1>' . $T($title) . '</h1><small>' . $T('Last updated') . ' <span dir="ltr">' . date('Y-m-d', (int) @filemtime(__FILE__)) . '</span></small>' . $html . '</div>'
+        . '<div class="c"><h1>🛡️ ' . $T('Your data') . '</h1><small>' . $T('How your chats are used to teach the bot, and how they are protected.') . '</small>' . $data . '</div>'
+        . '<footer><a href="?' . $other[0] . '=1&amp;lang=' . $lang . '">' . $T($other[1]) . '</a></footer></main></body></html>';
     exit;
 }
 
