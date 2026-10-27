@@ -67,7 +67,7 @@ function wf_wc_public(): void {
     $gwOn = !empty(wi_gateway('/status', null, $acc)['connected']); if (!$gwOn && empty($s['landing'])) { $botOn = true; $isHuman = false; }
     if (!$botOn) $isHuman = true;
     if (!$isHuman && $msg !== '') { $hist = []; foreach (array_slice((array) ($c['msgs'] ?? []), -8) as $m) $hist[] = ['from' => ($m['who'] ?? '') === 'me' ? 'customer' : 'bot', 'text' => (string) $m['text']];
-        if (!empty($s['landing']) && function_exists('wf_landing_answer')) { $reply = wf_landing_answer($msg, array_map(fn($x) => ['me' => $x['from'] === 'customer', 'text' => $x['text']], $hist), $lang); $handoff = $reply === ''; }
+        if (!empty($s['landing']) && function_exists('wf_landing_answer')) { $reply = wf_landing_answer($msg, array_map(fn($x) => ['me' => $x['from'] === 'customer', 'text' => $x['text']], $hist), $lang); $handoff = $reply === '' || !empty($GLOBALS['wf_landing_handoff']); }
         else { $r = $gwOn ? wf_bot_answer($acc, $msg, $hist) : []; if (!empty($r['ok']) && trim((string) ($r['reply'] ?? '')) !== '' && empty($r['handoff'])) $reply = trim((string) $r['reply']);
             if ($reply === '') $reply = wf_wc_site_answer($key, $s, $msg, $hist); $handoff = $reply === '' || (!empty($r['handoff']) && $gwOn); } }
     if (!$gwOn && empty($s['landing']) && ($handoff ?? $human)) { $c = wf_wc_conv($sid); wi_update('webchat_leads.json', function ($A) use ($key, $c, $msg) { $A = (array) $A; $A[] = ['site' => $key, 'name' => (string) ($c['name'] ?? ''), 'phone' => (string) ($c['phone'] ?? ''), 'email' => (string) ($c['email'] ?? ''), 'text' => mb_substr($msg, 0, 800), 'at' => date('c')]; return array_slice($A, -2000); });

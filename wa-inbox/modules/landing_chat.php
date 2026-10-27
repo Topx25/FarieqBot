@@ -86,6 +86,7 @@ function wf_landing_chat(): void {
 function wf_landing_answer(string $msg, array $hist, string $lang): string {
     $h = ''; foreach ($hist as $x) if (is_array($x)) $h .= (!empty($x['me']) ? 'Visitor: ' : 'Assistant: ') . mb_substr(trim((string) ($x['text'] ?? '')), 0, 400) . "\n";
     $ai = wi_ai('Product page chat', wf_prompt('landing_chat', '', ['facts' => wf_landing_facts(), 'history' => $h, 'message' => $msg, 'lang' => $lang === 'en' ? 'English' : 'Egyptian Arabic']), 60, ['subject' => 'landing', 'prefer' => function_exists('wf_role_strong_model') ? wf_role_strong_model('main', (string) (wi_sys('landing_chat_models') ?: 'anthropic,gemini,opencode_go')) : '']);
+    $GLOBALS['wf_landing_handoff'] = !empty($ai['data']['handoff']);
     return trim((string) ($ai['data']['reply'] ?? ''));
 }
 /** The website chat site that serves the product page (marked landing): its widget replaces the AI-only one, so a visitor can reach the support team on WhatsApp. */
