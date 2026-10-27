@@ -274,6 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: ?p=accounts'); exit;
     }
     // Clients page (super admin): the plans themselves, and whether visitors may sign up.
+    if ($do === 'archive_key_backup' && wi_is_super()) { $r = wi_archive_key_backup(); wi_flash(sprintf(wi_t('Key sent: %d on WhatsApp, %d by email.'), $r['wa'], $r['mail']), $r['wa'] + $r['mail'] ? 'ok' : 'bad'); header('Location: ?p=plans'); exit; }
     if ($do === 'plans_save') {
         if (!wi_is_super() || !empty($_SESSION['imp_from'])) { http_response_code(403); exit('Super admin only.'); }
         $out = []; foreach ((array) ($_POST['plans'] ?? []) as $id => $p) { $id = preg_replace('/[^a-z0-9_-]/', '', strtolower((string) ($p['id'] ?? $id))); if ($id === '' || trim((string) ($p['name'] ?? '')) === '' || !empty($p['del'])) continue; $out[$id] = wi_plan_clean((array) $p); }

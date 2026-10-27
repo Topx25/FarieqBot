@@ -1165,3 +1165,11 @@ function wi_archive_dec(array $r): array {
         $v = strlen($b) > 28 ? openssl_decrypt(substr($b, 28), 'aes-256-gcm', $k, OPENSSL_RAW_DATA, substr($b, 0, 12), substr($b, 12, 16)) : false; $r[$f] = $v === false ? '' : $v; }
     return $r;
 }
+/** Sends the archive key to the super admins (their WhatsApp from the main number, and email when SMTP is set). The words "archive password" keep the gateway from storing the message. */
+function wi_archive_key_backup(): array {
+    if (!function_exists('wf_msg')) require_once __DIR__ . '/features.php'; $txt = wf_msg('archive_key_backup', ['key' => wi_archive_key()]); $out = ['wa' => 0, 'mail' => 0];
+    foreach (wi_users() as $u) { if (($u['role'] ?? '') !== 'super' || empty($u['active'])) continue;
+        if (($ph = wi_norm_phone((string) ($u['phone'] ?? ''))) !== '' && wi_send_whatsapp($ph, $txt)) $out['wa']++;
+        if (wi_mail_on() && wi_mail((string) $u['email'], wi_t('Message archive key (backup)'), $txt)) $out['mail']++; }
+    wi_log('archive_key_backup', $out); return $out;
+}
