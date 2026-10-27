@@ -1667,3 +1667,20 @@ body:has(#brp) section.hero{display:none!important}
 #brp .bs-body select{width:auto!important;min-width:96px;max-width:220px}
 #brp input.fp-hour{width:84px!important;height:36px!important;padding:6px 8px!important}
 #brp .bs-body button:not([data-ch]):not(.bs-q):not(.br-opt){height:34px;padding:0 14px!important;font-size:13px!important;border-radius:10px!important}
+/* bot page as mockup bot-v4: a compact hero and stats, smaller section headers and tabs */
+#brp #bh-card.bh-card{padding:20px 22px!important;border-radius:22px!important;gap:16px!important}
+#brp .bh-av{width:52px!important;height:52px!important;border-radius:16px!important;font-size:26px!important}
+#brp .bh-t h2{font-size:20px!important}
+#brp .bh-modes .br-opt{padding:6px 14px!important;border-radius:9px!important}
+#brp .bh-modes .br-modes{border-radius:12px!important;padding:4px!important}
+#brp .bh-stats{gap:10px!important}
+#brp .bh-stats>div{padding:10px 12px!important;border-radius:12px!important}
+#brp .bh-stats b{font-size:19px!important}#brp .bh-stats small{font-size:12px!important}
+#brp .bs-sec{border-radius:18px!important;padding:0 18px!important;margin-bottom:10px}
+#brp .bs-h{padding:13px 0!important}
+#brp .bs-h>span:first-child{width:38px!important;height:38px!important;border-radius:12px!important;font-size:18px!important}
+#brp .bs-h b{font-size:15px!important}#brp .bs-h small{font-size:12px!important}
+#brp .bs-h::after{width:26px;height:26px;border-radius:8px}
+#brp .bs-body>label{padding:11px 2px!important;font-size:13.5px}
+#brp .bt-grid>.bt-tabs{border-radius:14px!important;padding:5px!important}
+#brp .bt-grid>.bt-tabs a{border-radius:10px!important}

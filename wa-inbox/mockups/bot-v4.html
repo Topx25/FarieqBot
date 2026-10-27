@@ -1,0 +1,66 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bot page v4</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--pg:#f6f5f2;--pg2:#efede8;--pc:#fff;--ink:#16161a;--ink2:#4a4a55;--mut:#8a8a96;--line:rgba(22,22,26,.08);--gold:#b8925a;--gold2:#d9b97c;--ok:#2f7d5b;--okbg:#e7f3ec;--sh:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05)}
+*{box-sizing:border-box}body{margin:0;background:var(--pg);font:14px "IBM Plex Sans Arabic",system-ui;color:var(--ink);display:flex;min-height:100vh}
+aside{width:230px;background:var(--pc);border-inline-start:1px solid var(--line);padding:18px 12px;flex:none}
+.br{display:flex;gap:10px;align-items:center;margin-bottom:18px}.br i{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:grid;place-items:center;font-style:normal}
+.br b{display:block}.br small{color:var(--mut)}
+aside h6{margin:14px 8px 4px;color:var(--mut);font-size:11px;font-weight:500}
+aside a{display:flex;gap:10px;align-items:center;height:34px;padding:0 10px;border-radius:10px;color:var(--ink2);text-decoration:none;font-size:13.5px}
+aside a.on{background:var(--ink);color:#fff}
+main{flex:1;padding:22px 26px;max-width:1100px}
+.hero{background:var(--pc);border:1px solid var(--line);border-radius:22px;padding:20px 22px;box-shadow:var(--sh);display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+.av{width:52px;height:52px;border-radius:16px;background:var(--pg2);display:grid;place-items:center;font-size:26px}
+.hero h2{margin:0;font-size:20px;font-weight:600}.pill{background:var(--okbg);color:var(--ok);border-radius:99px;padding:2px 10px;font-size:12px}
+.modes{margin-inline-start:auto;display:flex;background:var(--pg2);border-radius:12px;padding:4px}.modes span{padding:6px 14px;border-radius:9px;font-size:13px;color:var(--mut);cursor:pointer}.modes .on{background:linear-gradient(135deg,var(--gold),var(--gold2));color:#1b1406}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%}.stats div{background:var(--pg);border:1px solid var(--line);border-radius:12px;padding:10px 12px}.stats small{color:var(--mut);font-size:12px;display:block}.stats b{font-size:19px;font-weight:600}
+.tabs{position:sticky;top:8px;margin:14px 0;display:flex;gap:2px;background:rgba(255,255,255,.75);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px;padding:5px;z-index:3}
+.tabs a{padding:6px 11px;border-radius:10px;font-size:12.5px;color:var(--ink2);text-decoration:none}.tabs a.on{background:var(--ink);color:#fff}
+.sec{background:var(--pc);border:1px solid var(--line);border-radius:18px;box-shadow:var(--sh);margin-bottom:10px;padding:0 18px}
+.h{display:flex;align-items:center;gap:12px;padding:13px 0;cursor:pointer}
+.ic{width:38px;height:38px;border-radius:12px;background:var(--pg2);display:grid;place-items:center;font-size:18px;flex:none}
+.t{flex:1;min-width:0}.t b{display:block;font-size:15px;font-weight:600}.t small{color:var(--mut);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.sum{display:flex;gap:6px;max-width:42%;overflow:hidden}.sum span{padding:2px 10px;border-radius:99px;background:var(--pg2);border:1px solid var(--line);color:var(--ink2);font-size:12px;white-space:nowrap}
+.ar{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;color:var(--mut);transition:.2s}.sec.open .ar{transform:rotate(180deg)}
+.sec.open .sum{display:none}.body{display:none;grid-template-columns:1fr 1fr;gap:0 24px;padding-bottom:10px}.sec.open .body{display:grid}
+label{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding:11px 2px;font-size:13.5px}
+.q{width:18px;height:18px;border-radius:50%;border:1px solid var(--line);font-size:11px;display:inline-grid;place-items:center;color:var(--mut);margin-inline-start:6px}
+select,input[type=text]{height:36px;padding:0 10px;border-radius:10px;border:1px solid var(--line);background:var(--pg);font:inherit;font-size:13.5px;min-width:90px}
+input.hr{width:84px;text-align:center}
+.sw{width:38px;height:22px;border-radius:99px;background:var(--pg2);border:1px solid var(--line);position:relative;flex:none;cursor:pointer}.sw::before{content:'';position:absolute;top:2px;inset-inline-start:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.2s}
+.sw.on{background:linear-gradient(135deg,var(--gold),var(--gold2));border-color:transparent}.sw.on::before{inset-inline-start:18px}
+.btn{height:34px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--pc);font:inherit;font-size:13px}.btn.p{background:var(--ink);color:#fff;border:0}
+.row{display:flex;gap:8px;justify-content:flex-end;grid-column:1/-1;padding:10px 0}
+</style></head><body>
+<aside><div class="br"><i>💬</i><div><b>فريق</b><small>الفرقان · متصل</small></div></div>
+<h6>اليوم</h6><a>🏠 لوحة التحكم</a><h6>التواصل</h6><a>💭 المحادثات</a><a>👥 جروبات</a><a>📢 رسائل جماعية</a>
+<h6>الحالات</h6><a>🩺 الحالات</a><a>⏰ الجدولة</a><h6>الأتمتة</h6><a class="on">🤖 البوت</a><a>🎓 التعلّم</a><a>📈 التحليلات</a><a>📱 الأرقام</a></aside>
+<main>
+<div class="hero"><div class="av">🤖</div><div><h2>البوت</h2><span class="pill">● شغال ومتصل</span></div>
+<div class="modes"><span>مقفول</span><span>اقتراح</span><span class="on">تلقائي</span></div>
+<div class="stats"><div><small>ردود النهارده</small><b>48</b></div><div><small>اتحولت للفريق</small><b>6</b></div><div><small>متوسط الثقة</small><b>82%</b></div><div><small>ردود في الساعة</small><b>12</b></div></div></div>
+<div class="tabs"><a class="on">الإعدادات</a><a>القنوات</a><a>الجروبات</a><a>الفريق</a><a>التعلّم</a><a>التجربة</a></div>
+
+<div class="sec open"><div class="h"><span class="ic">⚙️</span><div class="t"><b>التشغيل</b><small>الثقة وأرقام التجربة</small></div><span class="sum"></span><span class="ar">▾</span></div>
+<div class="body"><label><span>رد تلقائي لما الثقة على الأقل<span class="q">?</span></span><select><option>70%</option></select></label>
+<label><span>في الجروبات لما الثقة على الأقل<span class="q">?</span></span><select><option>60%</option></select></label>
+<label><span>🧪 أرقام التجربة فقط<span class="q">?</span></span><input type="text" value="201554605666" style="width:180px"></label>
+<label><span>يرد على الخاص<span class="q">?</span></span><i class="sw on"></i></label>
+<div class="row"><button class="btn">إلغاء</button><button class="btn p">حفظ</button></div></div></div>
+
+<div class="sec"><div class="h"><span class="ic">🕘</span><div class="t"><b>المواعيد</b><small>ساعات العمل، والرد طول اليوم، وساعات الهدوء بالليل</small></div><span class="sum"><span>09:00 – 23:00</span><span>ردود الرعاية</span></span><span class="ar">▾</span></div>
+<div class="body"><label><span>من</span><input class="hr" value="09:00"></label><label><span>لحد</span><input class="hr" value="23:00"></label><label><span>يرد طول اليوم</span><i class="sw"></i></label><label><span>هدوء بالليل</span><i class="sw on"></i></label></div></div>
+
+<div class="sec"><div class="h"><span class="ic">💬</span><div class="t"><b>أسلوب الرد</b><small>الطول، والكتابة، والفويس، والمحتوى المناسب</small></div><span class="sum"><span>طول الرد: مفتوح</span><span>فويس: لأ</span></span><span class="ar">▾</span></div>
+<div class="body"><label><span>طول الرد القصير</span><input type="text" value="0" style="width:84px"></label><label><span>طول الرد الطويل</span><input type="text" value="0" style="width:84px"></label><label><span>يرد بفويس</span><i class="sw"></i></label><label><span>يكتب بالعامية</span><i class="sw on"></i></label></div></div>
+
+<div class="sec"><div class="h"><span class="ic">🙋</span><div class="t"><b>التحويل للفريق</b><small>إمتى البوت يسيب الشات وإمتى يرجع</small></div><span class="sum"><span>بعد 4 رسايل</span><span>يرجع بعد 10 د</span></span><span class="ar">▾</span></div>
+<div class="body"><label><span>يحوّل بعد</span><select><option>4 رسايل</option></select></label><label><span>يرجع بعد</span><select><option>10 دقايق</option></select></label></div></div>
+
+<div class="sec"><div class="h"><span class="ic">🛡️</span><div class="t"><b>الحماية</b><small>التكرار وحظر الواتساب</small></div><span class="sum"><span>بلا حد</span><span>مفيش انتظار</span></span><span class="ar">▾</span></div><div class="body"></div></div>
+
+<div class="sec"><div class="h"><span class="ic">🔔</span><div class="t"><b>المتابعة والتنبيهات</b><small>المتابعة الدورية، والأسئلة اللي ما اتردش عليها</small></div><span class="sum"><span>جروب الإدارة</span><span>كل 3 أيام</span></span><span class="ar">▾</span></div><div class="body"></div></div>
+</main>
+<script>document.querySelectorAll('.h').forEach(h=>h.onclick=()=>h.parentNode.classList.toggle('open'));document.querySelectorAll('.sw').forEach(s=>s.onclick=e=>{e.preventDefault();s.classList.toggle('on')});document.querySelectorAll('.modes span').forEach(m=>m.onclick=()=>{m.parentNode.querySelector('.on').classList.remove('on');m.classList.add('on')})</script>
+</body></html>
