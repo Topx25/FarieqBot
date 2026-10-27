@@ -78,7 +78,12 @@ function wf_wc_public(): void {
 function wf_wc_pull(string $key, array $s, array $acc): void {
     $go = false; wi_update('webchat_pull.json', function ($P) use ($key, &$go) { $P = (array) $P; if ((int) ($P[$key] ?? 0) > time() - 5) return $P; $P[$key] = time(); $go = true; return $P; }); if (!$go) return;
     $to = wf_wc_to((string) ($s['to'] ?? '')); if ($to === '') return; $F = (array) wi_read('webchat_fwd.json', []); $seen = (array) wi_read('webchat_seen.json', []);
-    foreach ((array) (wi_gateway('/archive/thread?limit=80&jid=' . rawurlencode($to), null, $acc)['rows'] ?? []) as $m) {
+    // WhatsApp now often files the admin's own replies under a hidden id (…@lid), not the phone number: that chat is read too (found once by its phone, kept for a day)
+    $jids = [$to]; if (str_ends_with($to, '@s.whatsapp.net')) { $ph = strstr($to, '@', true); $LM = (array) wi_read('webchat_lid.json', []); $e = (array) ($LM[$ph] ?? []);
+        if (!$e || time() - (int) ($e['t'] ?? 0) > 86400) { $e = ['t' => time(), 'j' => []]; foreach ((array) (wi_gateway('/archive/chats?limit=400', null, $acc)['chats'] ?? []) as $ch) if (str_ends_with((string) ($ch['jid'] ?? ''), '@lid') && (string) ($ch['phone'] ?? '') === $ph) $e['j'][] = (string) $ch['jid']; $LM[$ph] = $e; wi_write('webchat_lid.json', $LM); }
+        $jids = array_merge($jids, (array) $e['j']); }
+    $rows = []; foreach ($jids as $j) $rows = array_merge($rows, (array) (wi_gateway('/archive/thread?limit=80&jid=' . rawurlencode($j), null, $acc)['rows'] ?? []));
+    foreach ($rows as $m) {
         $q = (string) ($m['quote'] ?? ''); $id = (string) ($m['id'] ?? ''); $t = trim((string) ($m['text'] ?? ''));
         if ($q === '' || $id === '' || $t === '' || !isset($F[$q]) || isset($seen[$id])) continue;
         $seen[$id] = time(); wf_wc_add((string) $F[$q], $key, ['who' => 'team', 'text' => mb_substr($t, 0, 2000)]); }
