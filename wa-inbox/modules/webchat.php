@@ -83,8 +83,12 @@ function wf_wc_pull(string $key, array $s, array $acc): void {
         if (!$e || time() - (int) ($e['t'] ?? 0) > 86400) { $e = ['t' => time(), 'j' => []]; foreach ((array) (wi_gateway('/archive/chats?limit=400', null, $acc)['chats'] ?? []) as $ch) if (str_ends_with((string) ($ch['jid'] ?? ''), '@lid') && (string) ($ch['phone'] ?? '') === $ph) $e['j'][] = (string) $ch['jid']; $LM[$ph] = $e; wi_write('webchat_lid.json', $LM); }
         $jids = array_merge($jids, (array) $e['j']); }
     $rows = []; foreach ($jids as $j) $rows = array_merge($rows, (array) (wi_gateway('/archive/thread?limit=80&jid=' . rawurlencode($j), null, $acc)['rows'] ?? []));
+    // a plain message (not a reply) goes to the visitor of the latest forwarded message, when that was within the last hour
+    usort($rows, fn($x, $y) => strcmp((string) ($x['time'] ?? ''), (string) ($y['time'] ?? ''))); $lastF = null; $lastT = 0;
     foreach ($rows as $m) {
-        $q = (string) ($m['quote'] ?? ''); $id = (string) ($m['id'] ?? ''); $t = trim((string) ($m['text'] ?? ''));
+        $q = (string) ($m['quote'] ?? ''); $id = (string) ($m['id'] ?? ''); $t = trim((string) ($m['text'] ?? '')); $tm = strtotime((string) ($m['time'] ?? '')) ?: 0;
+        if (($m['dir'] ?? '') === 'out') { if (isset($F[$id])) { $lastF = $id; $lastT = $tm; } continue; }
+        if ($q === '' && $lastF !== null && $tm >= $lastT && $tm - $lastT <= 3600) $q = $lastF;
         if ($q === '' || $id === '' || $t === '' || !isset($F[$q]) || isset($seen[$id])) continue;
         $seen[$id] = time(); wf_wc_add((string) $F[$q], $key, ['who' => 'team', 'text' => mb_substr($t, 0, 2000)]); }
     if (count($seen) > 3000) $seen = array_slice($seen, -2000, null, true); wi_write('webchat_seen.json', $seen);
