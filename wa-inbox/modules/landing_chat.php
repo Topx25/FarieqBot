@@ -11,7 +11,9 @@ function wf_landing_facts(): string {
     $cur = (string) (wi_sys('plan_currency') ?: '$'); $L = [];
     foreach (array_filter(wi_plans(), fn($p) => !empty($p['public'])) as $p) { $p = wi_plan_clean($p);
         $L[] = '- ' . $p['name'] . ': ' . ($p['price'] > 0 ? $cur . rtrim(rtrim(number_format((float) $p['price'], 2, '.', ''), '0'), '.') : 'free') . ', ' . $p['numbers'] . ' WhatsApp numbers, ' . ($p['team'] ?: 'unlimited') . ' team members' . (!empty($p['trial']) ? ', trial' : ''); }
-    return 'Brand: ' . wi_sys('brand_name') . "\nPlans:\n" . ($L ? implode("\n", $L) : '- none published') . "\nSign-up open: " . (wi_sys('signup_on') ? 'yes' : 'no') . "\n" . trim((string) wi_sys('landing_chat_facts'));
+    return 'Brand: ' . wi_sys('brand_name') . "\nPlans:\n" . ($L ? implode("\n", $L) : '- none published') . "\nSign-up open: " . (wi_sys('signup_on') ? 'yes' : 'no') . "\n" . trim((string) wi_sys('landing_chat_facts'))
+        . (defined('WF_DATA_INFO') ? "\nData and privacy (answer privacy questions from this, with confidence):\n" . implode("\n", array_map(fn($r) => '- ' . $r[1] . ': ' . $r[2], WF_DATA_INFO)) : '')
+        . (function_exists('wf_terms_text') ? "\nTerms of service:\n" . mb_substr(wf_terms_text('en'), 0, 6000) : '');
 }
 /** Counts one message of this visitor; false when a limit is reached. */
 function wf_landing_chat_allow(): bool {
