@@ -796,6 +796,11 @@ function wi_gateway(string $path, ?array $post = null, $acc = null): array {
     curl_close($ch);
     return is_array($r) ? $r : ['ok' => false, 'error' => 'This account\'s gateway is not running yet (it starts within a minute of being added).'];
 }
+/** A code message, then the code alone in its own message so it is copied with one press. */
+function wi_send_code(string $to, string $message, string $code): bool {
+    if (!wi_send_whatsapp($to, $message)) return false;
+    wi_send_whatsapp($to, $code); return true;
+}
 function wi_send_whatsapp(string $to, string $message): bool {
     $r = wi_gateway('/send', ['to' => $to, 'message' => $message, 'via' => 'inbox'], 'main');
     return !empty($r['ok']);

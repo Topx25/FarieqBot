@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($err !== '') { wi_flash($err, 'bad'); header('Location: ./?signup'); exit; }
         $code = (string) random_int(100000, 999999);
         $_SESSION['signup_pending'] = ['in' => $in + ['password_hash' => $ph] + ($g ? ['google' => true] : []), 'code' => password_hash($code, PASSWORD_DEFAULT), 'until' => time() + 600, 'tries' => 0];
-        if (!wi_send_whatsapp(wi_norm_phone((string) $in['phone']), wf_msg('signup_code', ['code' => $code, 'minutes' => 10]))) { unset($_SESSION['signup_pending']); wi_flash('Could not send the code on WhatsApp. Check the number and try again.', 'bad'); header('Location: ./?signup'); exit; }
+        if (!wi_send_code(wi_norm_phone((string) $in['phone']), wf_msg('signup_code', ['code' => $code, 'minutes' => 10]), $code)) { unset($_SESSION['signup_pending']); wi_flash('Could not send the code on WhatsApp. Check the number and try again.', 'bad'); header('Location: ./?signup'); exit; }
         wi_log('signup_code', ['target' => strtolower((string) $in['email'])]); header('Location: ./?signup'); exit;
     }
     if ($do === 'signup_code') {
@@ -32,8 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $code = (string) random_int(100000, 999999);
         $_SESSION['reset_pending'] = ['email' => $u && !empty($u['active']) && !empty($u['phone']) ? $email : '', 'code' => password_hash($code, PASSWORD_DEFAULT), 'until' => time() + 600, 'tries' => 0];
         $byMail = wi_mail_on(); $_SESSION['reset_pending']['via'] = $byMail ? 'mail' : 'wa';
-        if ($byMail && $u && !empty($u['active'])) { $_SESSION['reset_pending']['email'] = $email; wi_mail($email, wi_t('Password reset code'), wf_msg('reset_code', ['code' => $code, 'minutes' => 10])); wi_log('password_reset_code', ['target' => $email, 'via' => 'mail']); }
-        elseif (!$byMail && $_SESSION['reset_pending']['email'] !== '') { wi_send_whatsapp((string) $u['phone'], wf_msg('reset_code', ['code' => $code, 'minutes' => 10])); wi_log('password_reset_code', ['target' => $email]); }
+        if ($byMail && $u && !empty($u['active'])) { $_SESSION['reset_pending']['email'] = $email; wi_mail($email, wi_t('Password reset code') . ': ' . $code, $code . "\n\n" . wf_msg('reset_code', ['code' => $code, 'minutes' => 10])); if (!empty($u['phone'])) wi_send_code((string) $u['phone'], wf_msg('reset_code', ['code' => $code, 'minutes' => 10]), $code); wi_log('password_reset_code', ['target' => $email, 'via' => 'mail']); }
+        elseif (!$byMail && $_SESSION['reset_pending']['email'] !== '') { wi_send_code((string) $u['phone'], wf_msg('reset_code', ['code' => $code, 'minutes' => 10]), $code); wi_log('password_reset_code', ['target' => $email]); }
         wi_flash($byMail ? 'If this email has an account, a code was sent to it.' : 'If this email has an account, a code was sent to its WhatsApp.'); header('Location: ./?forgot'); exit;
     }
     if ($do === 'forgot_code') {
@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $code = (string) random_int(100000, 999999);
                 $_SESSION['pending'] = ['email' => $email, 'hash' => password_hash($code, PASSWORD_DEFAULT), 'at' => time(), 'tries' => 0];
                 require_once dirname(__DIR__) . '/features.php';
-                if (wi_send_whatsapp((string) $u['phone'], wf_msg('otp', ['code' => $code, 'minutes' => (int) wi_sys('otp_min')]))) {
+                if (wi_send_code((string) $u['phone'], wf_msg('otp', ['code' => $code, 'minutes' => (int) wi_sys('otp_min')]), $code)) {
                     wi_flash('A 6-digit code was sent to your WhatsApp.', 'ok');
                 } elseif (($inst = json_decode((string) @file_get_contents(WI_DIR . '/installed.json'), true)) && empty($inst['first_number_at']) && strtolower((string) ($inst['by'] ?? '')) === $email) {
                     // Fresh install: no WhatsApp number is linked yet, so the installer's admin signs in with the password alone (until a number connects).
@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$p || !$u || time() - $p['at'] > WI_OTP_TTL * 3) { unset($_SESSION['pending']); wi_flash('The code expired. Please sign in again.', 'bad'); header('Location: ./'); exit; }
         if ((int) ($p['resent'] ?? 0) >= 3 || time() - (int) ($p['sent_at'] ?? $p['at']) < 30) { wi_flash('Wait a little before asking for a new code.', 'bad'); header('Location: ./'); exit; }
         require_once __DIR__ . '/../features.php'; $code = (string) random_int(100000, 999999);
-        if (!wi_send_whatsapp((string) $u['phone'], wf_msg('otp', ['code' => $code, 'minutes' => (int) wi_sys('otp_min')]))) { wi_flash('Could not send the code on WhatsApp. Check that the gateway is connected.', 'bad'); header('Location: ./'); exit; }
+        if (!wi_send_code((string) $u['phone'], wf_msg('otp', ['code' => $code, 'minutes' => (int) wi_sys('otp_min')]), $code)) { wi_flash('Could not send the code on WhatsApp. Check that the gateway is connected.', 'bad'); header('Location: ./'); exit; }
         $_SESSION['pending'] = ['hash' => password_hash($code, PASSWORD_DEFAULT), 'at' => time(), 'sent_at' => time(), 'tries' => 0, 'resent' => (int) ($p['resent'] ?? 0) + 1] + $p;
         wi_log('otp_resend', ['email' => (string) $p['email']]); wi_flash('A new code was sent to your WhatsApp.', 'ok'); header('Location: ./'); exit; }
     if ($do === 'cancel') { unset($_SESSION['pending']); header('Location: ./'); exit; }
