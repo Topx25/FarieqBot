@@ -6,6 +6,7 @@ if (!is_file(WI_DIR . '/installed.json') && !wi_users()) { header('Location: ins
 // before any session starts — otherwise an empty session would replace the person's and sign them out.
 if (isset($_GET['int_api'])) { require __DIR__ . '/features.php'; wf_int_api(); } // Integrations: another system sends through a number with its API key
 if (isset($_GET['wc'])) { require __DIR__ . '/features.php'; wf_wc_public(); } // website chat on a client's site (public, no session)
+if (isset($_GET['ext_send'])) { require __DIR__ . '/features.php'; wf_ext_send((string) $_GET['ext_send']); } // this server's own tools send a code from the main number (token per tool)
 if (isset($_GET['landing_chat'])) { require __DIR__ . '/features.php'; wf_landing_chat(); } // the product page chat (public, no session)
 if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; if (function_exists('wf_fb_oauth_callback')) wf_fb_oauth_callback(); }
 // Google sends the person back from its own site, so the (strict) session cookie is left out: one hop through a page of this site
