@@ -1566,3 +1566,7 @@ aside.side nav>a>i{width:22px!important;height:22px!important;font-size:15px}
 aside.side nav .nav-h{margin:8px 10px 2px!important;font-size:11px!important}
 .app .side .brand{min-height:52px!important;padding:8px 12px!important}
 .shell-v3 #side-nav a,#side-nav a{min-height:32px!important;height:32px!important;padding:0 10px!important;font-size:13.5px!important;gap:8px!important;margin:0 8px!important}.shell-v3 #side-nav .nav-h,#side-nav .nav-h{margin:8px 10px 2px!important;min-height:0!important;padding:0 8px!important}
+/* settings rows side by side: two per line (a row with long content still takes the whole line) */
+#brp .bs-body{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
+#brp .bs-body>.bp-ch,#brp .bs-body>.br-modes,#brp .bs-body>.gcf-wide,#brp .bs-body>label:has(textarea),#brp .bs-body>label:has(#bp-test),#brp .bs-body>label:has(.bs-hint:not([hidden])){grid-column:1/-1}
+@media (max-width:900px){#brp .bs-body{grid-template-columns:minmax(0,1fr)}}
