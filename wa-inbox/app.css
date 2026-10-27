@@ -1656,3 +1656,14 @@ body:has(#brp) section.hero{display:none!important}
 #brp .bt-grid>.bt-tabs a{padding:7px 11px!important;font-size:13px!important}
 #brp .bt-grid>.bt-tabs{gap:2px!important}#brp .bt-grid>.bt-tabs a{padding:6px 9px!important;font-size:12.5px!important;gap:4px!important}
 #brp .bt-grid{margin-top:16px}
+/* bot page polish: the folded summary is one row of small chips (it was caught by the icon-tile rule), smaller switches, one size for fields and buttons */
+#brp .bs-h>span.bs-sum{width:auto!important;height:auto!important;background:none!important;border:0!important;border-radius:0!important;display:flex!important;flex-wrap:nowrap!important;gap:6px;max-width:42%;overflow:hidden;flex:0 1 auto!important;font-size:12px}
+#brp .bs-h>span.bs-sum span{padding:3px 10px;border-radius:99px;background:var(--pg2);color:var(--pink2);font-size:12px;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;border:1px solid var(--pline)}
+#brp .bs-h>div small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#brp .bs-body input[type=checkbox]{width:38px!important;height:22px!important;min-width:38px!important;flex:none}
+#brp .bs-body input[type=checkbox]::before{width:16px!important;height:16px!important;top:2px!important}
+#brp .bs-body input[type=checkbox]:checked::before{inset-inline-start:18px!important}
+#brp .bs-body input:not([type=checkbox]),#brp .bs-body select{height:36px!important;min-height:36px!important;padding:6px 10px!important;font-size:13.5px!important;box-sizing:border-box}
+#brp .bs-body select{width:auto!important;min-width:96px;max-width:220px}
+#brp input.fp-hour{width:84px!important;height:36px!important;padding:6px 8px!important}
+#brp .bs-body button:not([data-ch]):not(.bs-q):not(.br-opt){height:34px;padding:0 14px!important;font-size:13px!important;border-radius:10px!important}
