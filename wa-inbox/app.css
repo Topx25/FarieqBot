@@ -1570,3 +1570,10 @@ aside.side nav .nav-h{margin:8px 10px 2px!important;font-size:11px!important}
 #brp .bs-body{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:28px}
 #brp .bs-body>.bp-ch,#brp .bs-body>.br-modes,#brp .bs-body>.gcf-wide,#brp .bs-body>label:has(textarea),#brp .bs-body>label:has(#bp-test),#brp .bs-body>label:has(.bs-hint:not([hidden])){grid-column:1/-1}
 @media (max-width:900px){#brp .bs-body{grid-template-columns:minmax(0,1fr)}}
+/* the "?" card: raised, with a little arrow, the explanation and an example */
+.bs-pop{position:absolute;z-index:1000;width:min(340px,calc(100vw - 16px));background:var(--card,#fff);color:var(--text,#1c1e21);border:1px solid var(--line,#e4e6eb);border-radius:14px;padding:14px 16px;box-shadow:0 12px 32px rgba(0,0,0,.18),0 2px 6px rgba(0,0,0,.08);animation:bsPop .14s ease-out}
+.bs-pop::before{content:'';position:absolute;top:-7px;left:var(--ax,50%);width:12px;height:12px;background:inherit;border-top:1px solid var(--line,#e4e6eb);border-left:1px solid var(--line,#e4e6eb);transform:translateX(-50%) rotate(45deg)}
+.bs-pop b{display:block;font-size:14px;margin-bottom:4px}.bs-pop p{margin:0;font-size:13px;line-height:1.7;color:var(--muted,#65676b)}
+.bs-pop-ex{margin-top:10px;padding:9px 11px;border-radius:10px;font-size:12.5px;line-height:1.7;background:color-mix(in srgb,var(--accent,#0866ff) 8%,transparent);color:var(--text,#1c1e21)}
+@keyframes bsPop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.bs-q{transition:background .15s}.bs-q:hover{background:var(--accent,#0866ff);color:#fff;border-color:transparent}

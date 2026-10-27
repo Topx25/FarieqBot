@@ -112,6 +112,15 @@
           sec.querySelector('.bs-h').onclick = function () { sec.classList.toggle('bs-closed'); OPEN[k] = !sec.classList.contains('bs-closed'); try { localStorage.setItem('wi_bs_open', JSON.stringify(OPEN)); } catch (e) {} }; });
         [].forEach.call(wrap.querySelectorAll('.bs-nav a'), function (a) { a.addEventListener('click', function () { var s = document.querySelector(a.getAttribute('href')); if (s) s.classList.remove('bs-closed'); }); });
         // short titles: the long explanation goes into a hint opened with "?" (some fields have their own short name and help)
+        // the "?" opens a small raised card: what the setting does, and an example
+        var EXM = { 'bp-test': T('Example: 201001234567, 201112223334 — the bot answers these two numbers even if they are on your team, so you can try it yourself.'), 'bp-qf': T('Example: 00:00 → 08:00 with 0.5 — at night a reply with 50% confidence or more is sent with a line that the team will confirm in the morning.'), 'bp-p24': T('Example: working hours 09:00 → 17:00, but a customer who writes in private at 2 at night still gets an answer.'), 'bp-ri': T('Example: 75% — someone asks about sleep problems, and a text in your library about sleep matches by 80%, so the bot adds it at the end of its reply.'), 'bp-conf': T('Example: 80% — the bot sends by itself only when it is 80% sure or more; below that it writes a draft for the team.') };
+        function bsPop(q) { var p = document.getElementById('bs-pop'); if (p && p.dataset.for === q.dataset.title) { p.remove(); return; } if (p) p.remove();
+          p = document.createElement('div'); p.id = 'bs-pop'; p.className = 'bs-pop'; p.dataset.for = q.dataset.title;
+          var b = document.createElement('b'), d = document.createElement('p'); b.textContent = q.dataset.title; d.textContent = q.dataset.hint; p.appendChild(b); p.appendChild(d);
+          if (q.dataset.ex) { var x = document.createElement('div'); x.className = 'bs-pop-ex'; x.textContent = '💡 ' + q.dataset.ex; p.appendChild(x); }
+          document.body.appendChild(p); var r = q.getBoundingClientRect(), w = p.offsetWidth, left = Math.min(Math.max(8, r.left + r.width / 2 - w / 2), window.innerWidth - w - 8);
+          p.style.top = (window.scrollY + r.bottom + 10) + 'px'; p.style.left = (window.scrollX + left) + 'px'; p.style.setProperty('--ax', (r.left + r.width / 2 - left) + 'px'); }
+        if (!window.__bsPopOff) { window.__bsPopOff = 1; document.addEventListener('click', function (e) { if (!e.target.closest('#bs-pop, .bs-q')) { var p = document.getElementById('bs-pop'); if (p) p.remove(); } }); document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { var p = document.getElementById('bs-pop'); if (p) p.remove(); } }); }
         var SHORT = { 'bp-test': ['🧪 ' + T('Test numbers'), ''], 'bp-qf': ['🌙 ' + T('Quiet hours'), ''], 'bp-p24': ['💬 ' + T('Private chats all day and night'), ''], 'bp-ri': ['📜 ' + T('Suggest a text or program'), T('When a written text or a program of your library fits the question by at least this match, the bot adds it at the end of its reply (as a suggestion to read or follow). Lower = suggested more often, higher = only when it clearly fits.')] };
         [].forEach.call(wrap.querySelectorAll('.bs-body > label'), function (lb) {
           var tn = [].filter.call(lb.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim().length > 2; })[0]; if (!tn) return;
@@ -120,9 +129,9 @@
           else { var m = full.match(/^(.{6,60}?)\s*[(:—]\s*(.+)$/); if (!m || full.length < 45) return; short = m[1]; hint = m[2].replace(/\)\s*$/, ''); }
           tn.textContent = ' ' + short.trim() + ' ';
           var q = document.createElement('button'); q.type = 'button'; q.className = 'bs-q'; q.textContent = '?'; q.title = hint;
-          var h = document.createElement('small'); h.className = 'bs-hint muted'; h.hidden = true; h.textContent = hint;
-          q.onclick = function (e) { e.preventDefault(); e.stopPropagation(); h.hidden = !h.hidden; };
-          tn.parentNode.insertBefore(q, tn.nextSibling); lb.appendChild(h); });
+          q.dataset.title = short.trim(); q.dataset.hint = hint; q.dataset.ex = (inp && EXM[inp.id]) || '';
+          q.onclick = function (e) { e.preventDefault(); e.stopPropagation(); bsPop(q); };
+          tn.parentNode.insertBefore(q, tn.nextSibling); });
         [].forEach.call(host.querySelectorAll('.br-f, .gcf'), function (box) { if (!wrap.contains(box) && !box.querySelector('input,select,textarea')) box.remove(); }); // empty old containers
         [].forEach.call(wrap.querySelectorAll('.bs-sec'), function (sec) { if (!sec.querySelector('.bs-body > *')) sec.remove(); });
         wrap.querySelector('.bs-nav').onclick = function (e) { var a = e.target.closest('a'); if (!a) return; e.preventDefault(); var t = wrap.querySelector(a.getAttribute('href')); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }; })();
