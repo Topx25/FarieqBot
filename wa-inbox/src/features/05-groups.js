@@ -44,9 +44,12 @@
           + '<section class="hero gv-hero"><div class="hero-t">' + avatar(jid, r.name) + '<div><h1 dir="auto">' + esc(r.name) + '</h1><p class="muted">👤 ' + fmt(r.members.filter(function (m) { return m.member; }).length) + ' ' + T('members') + ' · ✍️ ' + fmt(writers) + ' ' + T('wrote') + ' · 🩺 ' + fmt(tracked) + ' ' + T('followed') + ' · 💬 ' + fmt(r.total) + '</p></div></div>'
           + '<div class="hero-tools"><a class="chip-btn" href="?p=inbox#' + encodeURIComponent(jid) + '">💬 ' + T('Open chat') + '</a><a class="chip-btn" href="?p=media&chat=' + encodeURIComponent(jid) + '">📚 ' + T('Group library') + '</a>' + (isAdmin ? '<label class="chip-btn"><input type="checkbox" id="gv-reg" ' + (r.registry ? 'checked' : '') + '> 📋 ' + T('Case registry group') + '</label><label class="chip-btn"><input type="checkbox" id="gv-mon" ' + (r.monitored ? 'checked' : '') + '> 🩺 ' + T('Follow everyone who writes here') + '</label>' : '') + (r.registry ? '<a class="chip-btn" href="?p=cases&tab=registry">📋 ' + T('Open the registry') + '</a>' : '') + '</div></section>'
           + '<div class="gv-help card">① ' + T('Pick a person from the list (or from a message).') + ' ② ' + T('Press 🩺 Follow — a case page is created for that number.') + ' ③ ' + T('Their messages, replies to them and their private chat are collected there, with AI diagnosis.') + '</div>'
+          + fbar('gv-f', { dates: true, extra: '<label>🔎 <input type="search" data-f="mq" placeholder="' + esc(T('Search the messages…')) + '" dir="auto"></label><label><select data-f="mk"><option value="">' + T('All messages') + '</option><option value="text">💬 ' + T('Text') + '</option><option value="media">🖼️ ' + T('Media and voice') + '</option><option value="team">↩️ ' + T('Our replies') + '</option></select></label>' })
           + '<div class="gv"><div class="card gv-people"><div class="gv-ph"><b>' + T('People') + '</b><input type="search" id="gv-pq" placeholder="' + T('Name or number…') + '" dir="auto"><div class="seg sm" id="gv-pf"><button data-f="" class="on">' + T('All') + '</button><button data-f="w">' + T('Wrote') + '</button><button data-f="c">🩺</button></div></div><div id="gv-plist" class="gv-plist"></div></div>'
           + '<div class="card gv-msgs"><div class="gv-ph"><b id="gv-mt">' + T('Messages') + '</b><button class="link-btn" id="gv-all" hidden>✕ ' + T('Show everyone') + '</button></div><div id="gv-mlist" class="gv-mlist"></div></div></div>';
         drawPeople(); drawMsgs();
+        fwire('gv-f', function () { drawPeople(); drawMsgs(); });
+        document.querySelector('#gv-f [data-f=mq]').oninput = function () { drawMsgs(); };
         document.getElementById('gv-pq').oninput = function () { G.pq = this.value; drawPeople(); };
         document.getElementById('gv-pf').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; G.pf = b.dataset.f; [].forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); }); drawPeople(); };
         document.getElementById('gv-all').onclick = function () { G.who = ''; drawMsgs(); drawPeople(); };
@@ -64,8 +67,8 @@
     }
     function person(m) { return m.name || ('+' + m.phone); }
     function drawPeople() {
-      var r = G.view, q = (G.pq || '').toLowerCase();
-      var rows = r.members.filter(function (m) { return (!q || (person(m) + ' ' + m.phone).toLowerCase().indexOf(q) !== -1) && (G.pf !== 'w' || m.messages) && (G.pf !== 'c' || m.case); });
+      var r = G.view, q = (G.pq || '').toLowerCase(); var f = fval('gv-f');
+      var rows = r.members.filter(function (m) { return (!q || (person(m) + ' ' + m.phone).toLowerCase().indexOf(q) !== -1) && (G.pf !== 'w' || m.messages) && (G.pf !== 'c' || m.case) && inRange(m.last, f.from, f.to); });
       document.getElementById('gv-plist').innerHTML = rows.slice(0, 600).map(function (m) {
         return '<div class="gv-p' + (G.who === m.phone ? ' on' : '') + '" data-who="' + esc(m.phone) + '">' + avatar(m.phone + '@s.whatsapp.net', person(m))
           + '<div class="gv-pb"><b dir="auto">' + esc(person(m)) + '</b><small class="muted" dir="ltr">+' + esc(m.phone) + (m.admin ? ' · ' + T('Admin') : '') + (!m.member ? ' · ' + T('left / not a member') : '') + '</small>'
@@ -74,7 +77,11 @@
       }).join('') || '<div class="empty">' + T('Nothing found.') + '</div>';
     }
     function drawMsgs() {
-      var r = G.view, who = G.who, rows = r.messages;
+      var r = G.view, who = G.who, f = fval('gv-f'), mq = String(f.mq || '').trim().toLowerCase();
+      // the period, the words and the kind narrow the messages first; picking a person narrows them again
+      var rows = r.messages.filter(function (m) { var tx = String(m.text || '').trim();
+        return inRange(m.time, f.from, f.to) && (!mq || tx.toLowerCase().indexOf(mq) !== -1 || String(m.from_name || '').toLowerCase().indexOf(mq) !== -1)
+          && (!f.mk || (f.mk === 'text' ? tx !== '' : (f.mk === 'media' ? tx === '' || (m.kind && m.kind !== 'text') : m.dir === 'out'))); });
       if (who) {
         var mine = {}; rows.forEach(function (m) { if (m.dir === 'in' && m.from === who) mine[m.id] = 1; });
         rows = rows.filter(function (m) { return (m.dir === 'in' && m.from === who) || (m.quote && mine[m.quote]) || m.quote_from === who; });
