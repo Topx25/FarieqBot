@@ -14,6 +14,11 @@ DirectoryIndex index.php
   RewriteRule ^welcome6/?$ index.php?landing=1&v=6 [L,QSA]
   RewriteRule ^welcome1/?$ index.php?landing=1&v=1 [L,QSA]
   RewriteRule ^data-deletion/?$ index.php?privacy=1 [L,QSA]
+  # the installable app (PWA): its manifest, icons and service worker
+  RewriteRule ^manifest\.webmanifest$ index.php?pwa=manifest [L,QSA]
+  RewriteRule ^sw\.js$ index.php?pwa=sw [L,QSA]
+  RewriteRule ^pwa-(192|512)\.png$ index.php?pwa=icon&s=$1 [L,QSA]
+  RewriteRule ^pwa-512m\.png$ index.php?pwa=icon&s=512&m=1 [L,QSA]
   # Integrations API with clean addresses (api host): /v1/send, /v1/media
   RewriteRule ^v1/(send|media)/?$ index.php?int_api=$1 [L,QSA]
   # the OpenWA (WAHA style) addresses, for programs made for that gateway

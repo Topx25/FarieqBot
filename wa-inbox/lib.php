@@ -20,9 +20,11 @@ function wi_sys_defaults(): array {
 }
 function wi_sys(?string $k = null) {
     static $S = null;
-    if ($S === null) { $c = json_decode((string) @file_get_contents(WI_DIR . '/config.json'), true); $S = (array) ($c['system'] ?? []) + wi_sys_defaults(); }
+    if ($S === null) { $c = json_decode((string) @file_get_contents(WI_DIR . '/config.json'), true); $S = (array) ($c['system'] ?? []) + wi_sys_defaults(); $S['edition'] = (string) (getenv('WI_EDITION') ?: ($c['edition'] ?? (is_file(__DIR__ . '/edition.php') ? (require __DIR__ . '/edition.php') : 'saas'))); if ($S['edition'] === 'standalone') { $S['signup_on'] = 0; $S['landing_home'] = 0; $S['saas_domain'] = ''; } }
     return $k === null ? $S : ($S[$k] ?? null);
 }
+/** Single-customer (self-hosted) edition: no clients, plans, sign-up or product page. Set by WI_EDITION=standalone or config.json "edition". */
+function wi_standalone(): bool { return wi_sys('edition') === 'standalone'; }
 define('WI_IDLE', max(5, (int) wi_sys('idle_min')) * 60);   // inactivity before sign-out
 define('WI_OTP_TTL', max(1, (int) wi_sys('otp_min')) * 60); // login code lifetime
 define('WI_MAX_FAILS', max(3, (int) wi_sys('max_fails')));  // failed attempts before a lock
@@ -546,9 +548,9 @@ const WI_TECH_PAGES = ['ai', 'settings', 'backup', 'report', 'health', 'users'];
 function wi_menu_registry(): array {
     return [
         ['id' => 'saas', 'title' => 'System', 'items' => [
-            ['key' => 'saas', 'icon' => '🏢', 'label' => 'System overview', 'who' => 'super'],
-            ['key' => 'clients', 'icon' => '🏪', 'label' => 'Clients', 'who' => 'super'],
-            ['key' => 'plans', 'icon' => '📦', 'label' => 'Plans and subscriptions', 'who' => 'super'],
+            ['key' => 'saas', 'icon' => '🏢', 'label' => 'System overview', 'who' => wi_standalone() ? 'none' : 'super'],
+            ['key' => 'clients', 'icon' => '🏪', 'label' => 'Clients', 'who' => wi_standalone() ? 'none' : 'super'],
+            ['key' => 'plans', 'icon' => '📦', 'label' => 'Plans and subscriptions', 'who' => wi_standalone() ? 'none' : 'super'],
             ['key' => 'errors', 'icon' => '🧯', 'label' => 'Error log', 'who' => 'super'],
             ['key' => 'settings', 'icon' => '⚙️', 'label' => 'General settings', 'who' => 'super']]],
         ['id' => 'today', 'title' => 'Today', 'items' => [['key' => 'dashboard', 'href' => './', 'icon' => '🏠', 'label' => 'Dashboard', 'who' => 'all']]],
@@ -599,7 +601,7 @@ function wi_menu(): array {
     return $out;
 }
 function wi_menu_can(string $who, bool $manager): bool {
-    return match ($who) { 'manager' => $manager, 'users' => wi_can_users(), 'admin' => wi_is_admin() || (wi_me()['role'] ?? '') === 'client', 'super' => wi_is_super(), 'integrations' => (($ime = wi_me()) && ($ime['role'] ?? '') === 'client' && wi_client_can($ime, 'integrations')), 'ai' => wi_is_super() || (($w = wi_me()) && ($w['role'] ?? '') === 'client' && !empty($w['can_bot'])), default => true };
+    return match ($who) { 'none' => false, 'manager' => $manager, 'users' => wi_can_users(), 'admin' => wi_is_admin() || (wi_me()['role'] ?? '') === 'client', 'super' => wi_is_super(), 'integrations' => (($ime = wi_me()) && ($ime['role'] ?? '') === 'client' && wi_client_can($ime, 'integrations')), 'ai' => wi_is_super() || (($w = wi_me()) && ($w['role'] ?? '') === 'client' && !empty($w['can_bot'])), default => true };
 }
 function wi_page_names(): array {
     return ['inbox' => 'Inbox', 'search' => 'Search', 'library' => 'Library', 'audio' => 'Audio', 'files' => 'Files', 'analytics' => 'Analytics', 'numbers' => 'Numbers', 'catalog' => 'Product catalog',

@@ -654,3 +654,6 @@ body.wa-mode.wa-menu .shell-v3 .side #side-nav{display:block!important}
 .cf-bar input{flex:1 1 180px;min-width:140px}.cf-bar select{width:auto}
 .msgs.cf-on .b.cf-off,.msgs.cf-on>.day{display:none!important}.cf-btn.on{background:var(--accent,#0866ff);color:#fff}
 .thread-h .cf-btn{flex:none!important;width:auto!important;align-self:center;margin-inline-start:4px}
+.pwa-btn{display:inline-grid;place-items:center;width:34px;height:34px;border:0;border-radius:50%;background:transparent;color:var(--muted,#667781);cursor:pointer}.pwa-btn:hover{background:var(--card-in,#f0f2f5);color:var(--accent,#0866ff)}
+.pwa-pop{position:fixed;z-index:200;width:290px;background:var(--card,#fff);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px -14px rgba(0,0,0,.3);padding:14px;display:flex;flex-direction:column;gap:10px}
+.pwa-pop[hidden]{display:none}.pwa-pop hr{border:0;border-top:1px solid var(--line);margin:2px 0}.pwa-pop p{margin:0}.pwa-pop .ok{color:#0a7d3e;font-weight:600}.pwa-pop .row{display:flex;gap:6px}

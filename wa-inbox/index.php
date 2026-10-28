@@ -7,7 +7,9 @@ if (!is_file(WI_DIR . '/installed.json') && !wi_users()) { header('Location: ins
 if (isset($_GET['int_api'])) { require __DIR__ . '/features.php'; wf_int_api(); } // Integrations: another system sends through a number with its API key
 if (isset($_GET['wc'])) { require __DIR__ . '/features.php'; wf_wc_public(); } // website chat on a client's site (public, no session)
 if (isset($_GET['ext_send'])) { require __DIR__ . '/features.php'; wf_ext_send((string) $_GET['ext_send']); } // this server's own tools send a code from the main number (token per tool)
+if (isset($_GET['pwa'])) { require __DIR__ . '/features.php'; if ($_GET['pwa'] !== '1') wf_pwa_serve((string) $_GET['pwa']); } // the installable app: manifest, icons, service worker
 if (isset($_GET['guide_img'])) { require __DIR__ . '/features.php'; wf_guide_img(); } // a picture card of one page, for the product chat
+if (wi_standalone() && (isset($_GET['landing_chat']) || isset($_GET['landing']))) { header('Location: ./'); exit; } // the self-hosted edition has no product page
 if (isset($_GET['landing_chat'])) { require __DIR__ . '/features.php'; wf_landing_chat(); } // the product page chat (public, no session)
 if (isset($_GET['fb_cb'])) { require __DIR__ . '/features.php'; if (function_exists('wf_fb_oauth_callback')) wf_fb_oauth_callback(); }
 // Google sends the person back from its own site, so the (strict) session cookie is left out: one hop through a page of this site
@@ -105,7 +107,7 @@ require __DIR__ . '/app/actions.php'; // form actions (POST)
 $flash = wi_flash();
 ob_start('wi_translate_html');
 // the super admin's home is the clients dashboard (every client panel, with «Open the panel»)
-$page = (string) ($_GET['p'] ?? (wi_is_super() && empty($_SESSION['imp_from']) ? 'saas' : 'dashboard'));
+$page = (string) ($_GET['p'] ?? (wi_is_super() && empty($_SESSION['imp_from']) && !wi_standalone() ? 'saas' : 'dashboard'));
 // A user who is to link their own number and has none yet starts on the "link a number" page.
 if (!wi_my_accounts() && wi_can_link_own() && !wi_is_super() && !in_array($page, ['accounts', 'link', 'changes', 'help', 'users', 'me'], true)) {
     if (empty($_SESSION['own_hint'])) { $_SESSION['own_hint'] = 1; wi_flash('Welcome! Link your WhatsApp number to start: add it here, then scan the QR code with WhatsApp on your phone.', 'ok'); }
@@ -115,7 +117,8 @@ if (wi_logged_in() && isset($_GET['acc']) && isset(wi_my_accounts()[(string) $_G
 // Facebook menu: Messenger and the page's comments / posts / numbers open on a Facebook page (the first one) when a number is open
 if (wi_logged_in() && (($_GET['ch'] ?? '') === 'fb' || $page === 'facebook') && ((wi_current()['channel'] ?? '') !== 'fb')) foreach (wi_my_accounts() as $fbId => $fbA) if (($fbA['channel'] ?? '') === 'fb') { $_SESSION['acc'] = (string) $fbId; break; } // links that open a page for a given number
 if (isset($_GET['ai_report']) && wi_is_super()) { require_once __DIR__ . '/features.php'; wf_ai_report_send((string) $_GET['ai_report'], (string) ($_GET['fmt'] ?? 'pdf')); }
-if (in_array($page, ['saas', 'plans', 'clients', 'errors'], true) && !wi_is_super()) $page = 'dashboard'; // subscriptions are the super admin's
+if (in_array($page, ['saas', 'plans', 'clients', 'errors'], true) && !wi_is_super()) $page = 'dashboard';
+if (in_array($page, ['saas', 'plans', 'clients'], true) && wi_standalone()) $page = 'dashboard'; // one customer: no subscriptions // subscriptions are the super admin's
 // Integrations live in each client's panel (the super admin opens the client's panel to see them)
 if ($page === 'integrations' && (wi_me()['role'] ?? '') === 'client' && !wi_client_can(wi_me(), 'integrations')) $page = 'dashboard'; // switched off in the client's plan
 if ($page === 'integrations' && (wi_me()['role'] ?? '') !== 'client') { if (wi_is_super()) { wi_flash('Integrations are managed inside each client\'s panel: open the client\'s panel, then Integrations.', 'ok'); header('Location: ?p=clients'); exit; } $page = 'dashboard'; }

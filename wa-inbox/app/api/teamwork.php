@@ -81,6 +81,8 @@
             if ($to !== '' && !in_array($to, array_map(fn($p) => strtolower($p['email']), wi_account_people($acc)), true)) wi_json(['ok' => false, 'error' => 'This user does not work on this number.'], 422);
             $A = wi_update('assign.json', function ($A) use ($aid, $jid, $to, $me) { if ($to === '') unset($A[$aid][$jid]); else $A[$aid][$jid] = ['to' => $to, 'by' => $me, 'at' => date('c')]; return $A; }); // under the lock
             wi_log('assign', ['account' => $aid, 'jid' => $jid, 'to' => $to]);
+            // the colleague gets it on their phone too (the app's notifications)
+            if ($to !== '' && $to !== strtolower((string) $me) && function_exists('wi_push_user')) { $cn = (string) (wi_contact($jid, $acc)['name'] ?? ''); wi_push_user($to, ['title' => wi_t('A chat was handed to you'), 'body' => ($cn !== '' ? $cn : '+' . explode('@', $jid)[0]) . ' · ' . (string) $acc['name'], 'url' => './?p=inbox#' . rawurlencode($jid), 'tag' => 'chat-' . $jid]); }
             wi_json(['ok' => true, 'assign' => $A[$aid][$jid] ?? null]);
         }
         if ($act === 'remind' || $act === 'remind_done') {
