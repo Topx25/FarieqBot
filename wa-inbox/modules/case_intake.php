@@ -31,7 +31,7 @@ function wf_intake_has_target(array $in, string $text): bool { return !empty($in
 /** The AI reads all that the writer sent so far into the case fields. */
 function wf_intake_extract(string $aid, string $text): array {
     $F = wf_intake_fields($aid); $list = implode("\n", array_map(fn($k, $l) => '- ' . $k . ': ' . $l, array_keys($F), $F));
-    $ai = wi_ai('Case from a group', wf_prompt('case_intake', $aid, ['fields' => $list, 'text' => mb_substr($text, 0, 8000)]), 150, ['subject' => mb_substr($text, 0, 60)]);
+    $ai = wi_ai('Case from a group', wf_prompt('case_intake', $aid, ['fields' => $list, 'text' => mb_substr($text, 0, 8000)]), 150, ['subject' => mb_substr($text, 0, 60), 'prefer' => wi_ai_paid()]);
     $d = (array) (($ai['data'] ?? [])['fields'] ?? []); $out = [];
     foreach ($F as $k => $l) { $v = $d[$k] ?? ''; if (is_array($v)) $v = implode("\n", array_map('strval', $v)); $v = trim(mb_substr((string) $v, 0, $k === 'story' || $k === 'symptoms' ? 4000 : 300)); if ($v !== '') $out[$k] = $v; }
     return ['ok' => !empty($ai['ok']), 'fields' => $out, 'error' => (string) ($ai['error'] ?? '')];

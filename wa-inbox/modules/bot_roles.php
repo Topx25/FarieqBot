@@ -10,7 +10,7 @@ function wf_roles_cfg(string $aid): array {
     $p = wf_pack($aid); $own = (array) (wi_read('bot_roles.json', [])[$aid] ?? []); $roles = [];
     foreach ((array) ($p['roles'] ?? []) as $k => $r) $roles[$k] = ((array) ($own['roles'][$k] ?? [])) + (array) $r;
     $crisis = ((array) ($own['crisis'] ?? [])) + (array) ($p['crisis'] ?? []) + ['on' => 1, 'words' => '', 'alert' => ''];
-    return ['common' => (string) ($own['common'] ?? ($p['roles_common'] ?? '')), 'group_role' => (string) ($own['group_role'] ?? ($p['group_role'] ?? '')), 'on' => (int) ($own['on'] ?? (!empty($roles) ? 1 : 0)), 'sticky_h' => (int) ($own['sticky_h'] ?? 6), 'strong' => (string) ($own['strong'] ?? 'opencode_go,gemini'), 'roles' => $roles, 'crisis' => $crisis];
+    return ['common' => (string) ($own['common'] ?? ($p['roles_common'] ?? '')), 'group_role' => (string) ($own['group_role'] ?? ($p['group_role'] ?? '')), 'on' => (int) ($own['on'] ?? (!empty($roles) ? 1 : 0)), 'sticky_h' => (int) ($own['sticky_h'] ?? 6), 'strong' => (string) ($own['strong'] ?? 'anthropic,opencode_go,gemini'), 'roles' => $roles, 'crisis' => $crisis];
 }
 function wf_roles_words(string $list): array { return array_values(array_filter(array_map(fn($w) => trim(wf_intake_norm($w)), preg_split('/[\n,\x{060C}]+/u', $list)))); }
 /** A short word (3 letters or less, like "مس" or "عين") must stand alone; a longer one may be part of a word. */

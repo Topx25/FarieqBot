@@ -1173,3 +1173,8 @@ function wi_archive_key_backup(): array {
         if (wi_mail_on() && wi_mail((string) $u['email'], wi_t('Message archive key (backup)'), $txt)) $out['mail']++; }
     wi_log('archive_key_backup', $out); return $out;
 }
+/** The work that must be right (group cases, commands, roles) goes to the paid models first: the first provider of this order that is on, with its chosen model. Free ones stay the fallback. */
+function wi_ai_paid(string $order = 'anthropic,opencode_go'): string {
+    static $m = []; if (isset($m[$order])) return $m[$order]; if (!function_exists('wf_role_strong_model')) @include_once __DIR__ . '/features.php';
+    return $m[$order] = function_exists('wf_role_strong_model') ? wf_role_strong_model('', $order) : '';
+}

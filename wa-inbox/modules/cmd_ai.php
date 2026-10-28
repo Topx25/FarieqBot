@@ -21,7 +21,7 @@ function wf_cmdai_read(array $acc, string $text): array {
     uasort($cases, fn($a, $b) => strcmp((string) ($b['updated'] ?? ''), (string) ($a['updated'] ?? ''))); $cl = '';
     foreach (array_slice($cases, 0, 150, true) as $k => $c) $cl .= 'key ' . $k . ' | ID ' . ($c['no'] ?? '') . ' | ' . mb_substr((string) ($c['name'] ?? ''), 0, 40) . "\n";
     $ex = ''; foreach (array_slice((array) wf_cmdai_get($aid)['learned'], -15) as $l) $ex .= '«' . mb_substr((string) $l['wrong'], 0, 160) . '» → «' . mb_substr((string) $l['right'], 0, 160) . "»\n";
-    $r = wi_ai('Read a group command', wf_prompt('cmd_understand', $aid, ['message' => mb_substr($text, 0, 1500), 'commands' => $list, 'cases' => $cl, 'examples' => $ex ?: '-']), 60, ['subject' => 'group command', 'prefer' => function_exists('wf_fast_model') ? wf_fast_model(true) : '']);
+    $r = wi_ai('Read a group command', wf_prompt('cmd_understand', $aid, ['message' => mb_substr($text, 0, 1500), 'commands' => $list, 'cases' => $cl, 'examples' => $ex ?: '-']), 60, ['subject' => 'group command', 'prefer' => wi_ai_paid() ?: (function_exists('wf_fast_model') ? wf_fast_model(true) : '')]);
     $d = (array) ($r['data'] ?? []); $cmd = (string) ($d['command'] ?? ''); $key = preg_replace('/[^0-9A-Za-z]/', '', (string) ($d['case_key'] ?? ''));
     if ($cmd !== $kw && !isset($cmds[$cmd])) return []; if ($key === '' || !isset($cases[$key])) return [];
     return ['cmd' => $cmd, 'key' => $key, 'reason' => trim((string) ($d['reason'] ?? '')), 'sure' => (float) ($d['confidence'] ?? 0) >= 0.85, 'case' => $cases[$key]];

@@ -257,7 +257,7 @@ function wf_api_cases(string $api): void {
             $conv .= '[' . substr((string) $m['time'], 0, 10) . ' ' . ($m['src'] === 'group' ? 'group' : 'private') . '] ' . ($m['dir'] === 'out' || !empty($m['by']) ? wf_pack($aid)['staff'] : wf_pack($aid)['client']) . ': ' . (trim((string) ($m['text'] ?? '')) !== '' ? mb_substr(preg_replace('/\s+/u', ' ', (string) $m['text']), 0, 600) : '(' . ($m['kind'] ?? 'media') . ')') . "\n";
         if ($conv === '') wi_json(['ok' => false, 'error' => 'No messages from this person yet.']);
         $prompt = wf_prompt('case_analysis', $aid, ['messages' => mb_substr($conv, -26000)]);
-        $ai = wi_ai('Case analysis', $prompt, 210, ['subject' => '+' . $ph]);
+        $ai = wi_ai('Case analysis', $prompt, 210, ['subject' => '+' . $ph, 'prefer' => wi_ai_paid()]);
         if (empty($ai['ok']) || !is_array($ai['data'] ?? null)) wi_json(['ok' => false, 'error' => $ai['error'] ?? 'AI failed.']);
         $all[$aid][$ph]['ai'] = $ai['data'] + ['at' => date('c'), 'model' => trim(($ai['provider'] ?? '') . ' ' . ($ai['model'] ?? '')), 'messages' => count($msgs)];
         foreach (['gender', 'age', 'country'] as $k) if (empty($all[$aid][$ph]['data'][$k]) && !empty($ai['data']['data'][$k])) $all[$aid][$ph]['data'][$k] = mb_substr((string) $ai['data']['data'][$k], 0, 60);
