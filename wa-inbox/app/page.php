@@ -685,7 +685,11 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
           </form></details>
         <?php endif; ?>
         <?php endforeach; ?>
-        <?php if (wi_is_admin() || (wi_can_link_own() && !$owns)): ?>
+        <?php $addFull = !wi_is_super() && !(wi_is_admin() && empty($me['own_number'])) && count(array_filter(wi_accounts(), fn($a) => !empty($a['owner']) && strtolower($a['owner']) === strtolower($me['email']))) >= (($me['role'] ?? '') === 'client' ? wi_client_max_numbers($me) : 1); ?>
+        <?php if ((wi_is_admin() || wi_can_link_own()) && $addFull): ?>
+        <div class="card acc add" id="add"><div class="card-h"><h2>➕ Add WhatsApp account</h2></div>
+          <div class="pad stack"><p class="muted">You reached the numbers of your plan. Upgrade your plan or ask us for more.</p><a class="btn primary" href="pricing.php">⬆️ <span>Upgrade the plan</span></a></div></div>
+        <?php elseif (wi_is_admin() || wi_can_link_own()): ?>
         <form method="post" class="card acc add" id="add">
           <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="add_account">
           <div class="card-h"><h2>➕ Add WhatsApp account</h2></div>

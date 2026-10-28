@@ -223,7 +223,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $target = $accounts[(string) ($_POST['acc'] ?? '')] ?? null;
         $owned = array_filter($accounts, fn($a) => !empty($a['owner']) && strtolower($a['owner']) === strtolower((string) $_SESSION['email']));
         $allowed = $do === 'add_account' ? ((wi_is_admin() && empty(wi_me()['own_number'])) || (wi_can_link_own() && count($owned) < ((wi_me()['role'] ?? '') === 'client' ? wi_client_max_numbers(wi_me()) : 1))) : ($target && (wi_is_super() || (wi_can_manage($target) && empty($target['main']))));
-        if (!$allowed) { wi_flash($do === 'add_account' ? 'You reached the numbers of your plan. Upgrade your plan or ask us for more.' : 'Not allowed for this number.', 'bad'); header('Location: ?p=accounts'); exit; }
+        if (!$allowed) { wi_flash($do === 'add_account' ? 'You reached the numbers of your plan. Upgrade your plan or ask us for more.' : 'Not allowed for this number.', 'bad'); header('Location: ' . ($do === 'add_account' ? 'pricing.php' : '?p=accounts')); exit; }
         if ($do === 'add_account') {
             $name = trim((string) ($_POST['name'] ?? ''));
             $used = array_map(fn($a) => (int) $a['port'], $accounts);
