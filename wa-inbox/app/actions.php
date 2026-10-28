@@ -462,7 +462,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // "Cases only" is a viewer mode, and every non-super user needs at least one number to see anything.
             $warn = '';
             foreach ($users as &$u) if (strtolower($u['email']) === $email) {
-                if (($u['role'] ?? '') !== 'super' && empty($u['accounts']) && empty($u['cases_only'])) $warn .= ' No WhatsApp number is ticked — this user will see no cases or chats.';
+                if (($u['role'] ?? '') !== 'super' && empty($u['accounts']) && empty($u['cases_only']) && !wi_owned_accounts($email)) $warn .= ' No WhatsApp number is ticked — this user will see no cases or chats.';
             }
             unset($u);
             wi_save_users($users); wi_log('user_update', ['target' => $email]); wi_flash('Updated.' . $warn, $warn ? 'bad' : 'ok');
