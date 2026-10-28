@@ -1147,6 +1147,7 @@ return [
     'Show less' => 'عرض أقل',
     'Open chat' => 'فتح المحادثة',
     'Group library' => 'مكتبة الجروب',
+    'Main menu' => 'القائمة الرئيسية',
     'Menu on top' => 'فوق',
     'Menu on the right' => 'يمين',
     'Menu on the left' => 'شمال',

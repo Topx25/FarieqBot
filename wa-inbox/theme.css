@@ -638,3 +638,7 @@ body.wa-mode section.inbox .composer #reply{flex:1 1 auto!important}
 .shell-v3.app.nav-top #side-nav,.shell-v3.app.nav-bottom #side-nav{flex-wrap:wrap!important;row-gap:4px!important}
 .shell-v3.app.nav-top .side,.shell-v3.app.nav-bottom .side{overflow:visible!important;flex-wrap:wrap!important}
 .composer input[type=file][hidden]{display:none!important}
+.wa-mode-menu{display:none;position:fixed;z-index:95;bottom:14px;inset-inline-start:250px;border:0;border-radius:99px;background:#fff;color:#111b21;padding:8px 14px;font:600 13px system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 18px -6px rgba(0,0,0,.35)}
+body.wa-mode .wa-mode-menu{display:block}
+body.wa-mode.wa-menu .shell-v3 .side{display:flex!important;flex-direction:column;position:fixed!important;top:0!important;bottom:0!important;inset-inline-start:0;width:260px!important;height:100vh!important;z-index:120!important;overflow:auto!important;box-shadow:0 0 40px rgba(0,0,0,.35)!important;background:var(--card,#fff)!important}
+body.wa-mode.wa-menu .shell-v3 .side #side-nav{display:block!important}
