@@ -41,7 +41,7 @@
   var st = { pin: ld('wi_nav_pin2', true), pos: ld('wi_nav_pos', ld('wi_nav_flip', false) ? 'end' : 'start'), hide: ld('wi_nav_hide', false), chat: ld('wi_nav_chat', 'open') };
   var rtl = document.documentElement.dir === 'rtl' || document.body.dir === 'rtl';
   var box = document.createElement('span'); box.className = 'nav-ctl';
-  box.innerHTML = '<button type="button" data-n="hide"></button><button type="button" data-n="pin"></button><button type="button" data-n="pos" title="' + T('Where the menu sits, and its order') + '">📍</button>';
+  box.innerHTML = '<button type="button" data-n="hide"></button><button type="button" data-n="pin"></button><button type="button" data-n="pos" title="' + T('Where the menu sits, and its order') + '" class="nav-pos-btn"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M15 4v16"/><path d="M17.5 8h1M17.5 11h1M17.5 14h1"/></svg></button>';
   bar.insertBefore(box, bar.firstChild);
   // the place menu: the four sides, then reorder (drag the pages) and back to the original order
   var pop = document.createElement('div'); pop.className = 'nav-pos-pop'; pop.hidden = true;
