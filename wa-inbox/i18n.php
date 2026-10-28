@@ -1146,6 +1146,7 @@ return [
     'Read more' => 'اقرأ المزيد',
     'Show less' => 'عرض أقل',
     'Open chat' => 'فتح المحادثة',
+    'Group library' => 'مكتبة الجروب',
     'Activity, reply speed and data found in the messages of' => 'النشاط وسرعة الرد والبيانات الموجودة في رسائل',
     '📊 Daily activity' => '📊 النشاط اليومي',
     '⚡ Reply speed' => '⚡ سرعة الرد',

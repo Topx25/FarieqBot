@@ -1877,7 +1877,7 @@ document.addEventListener('keydown', function (e) {
   if (page === 'media') {
     var mroot = document.getElementById('ml-page'), mk = '', mf = '', mq = '', mcur = null, mbin = /[?&]bin=1/.test(location.search), mvault = false, msel = {}, mfolders = [], msort = 'new';
     try { msort = localStorage.getItem('wi_ml_sort') || 'new'; } catch (e) {}
-    var mchat = '', mfrom = '', mto = '', mview = 'grid', mdet = false; try { mview = localStorage.getItem('wi_ml_view') || 'grid'; mdet = localStorage.getItem('wi_ml_det') === '1'; } catch (e) {}
+    var mchat = (location.search.match(/[?&]chat=([^&]+)/) || [])[1] ? decodeURIComponent(location.search.match(/[?&]chat=([^&]+)/)[1]) : '', mfrom = '', mto = '', mview = 'grid', mdet = false; try { mview = localStorage.getItem('wi_ml_view') || 'grid'; mdet = localStorage.getItem('wi_ml_det') === '1'; } catch (e) {}
     var MLC = [];
     // the chat filter: type a name or a number, matching chats are suggested as you type
     function mlChatBox() { var sel = document.getElementById('ml-chat'); if (!sel || document.getElementById('ml-chat-q')) return; sel.hidden = true;
@@ -1894,7 +1894,7 @@ document.addEventListener('keydown', function (e) {
       q.addEventListener('blur', function () { setTimeout(function () { box.hidden = true; }, 150); }); }
     function mlChats(items) { var by = {}; items.forEach(function (i) { if (!i.jid) return; by[i.jid] = by[i.jid] || { n: 0, name: i.chat || i.jid.split('@')[0], g: /@g\.us$/.test(i.jid) }; by[i.jid].n++; });
       MLC = Object.keys(by).map(function (j) { return { j: j, name: by[j].name, n: by[j].n, g: by[j].g, num: j.split('@')[0] }; }).sort(function (a, b) { return b.n - a.n; });
-      var el = document.getElementById('ml-chat'); if (!el) return; el.innerHTML = '<option value="">💬 ' + T('All chats and groups') + '</option>' + Object.keys(by).sort(function (a, b) { return by[b].n - by[a].n; }).map(function (j) { return '<option value="' + esc(j) + '"' + (j === mchat ? ' selected' : '') + '>' + (by[j].g ? '👥 ' : '👤 ') + esc(by[j].name) + ' (' + fmt(by[j].n) + ')</option>'; }).join(''); }
+      var cq = document.getElementById('ml-chat-q'); if (cq && mchat && !cq.value && by[mchat]) cq.value = by[mchat].name; var el = document.getElementById('ml-chat'); if (!el) return; el.innerHTML = '<option value="">💬 ' + T('All chats and groups') + '</option>' + Object.keys(by).sort(function (a, b) { return by[b].n - by[a].n; }).map(function (j) { return '<option value="' + esc(j) + '"' + (j === mchat ? ' selected' : '') + '>' + (by[j].g ? '👥 ' : '👤 ') + esc(by[j].name) + ' (' + fmt(by[j].n) + ')</option>'; }).join(''); }
     // storage used: the whole library and each kind, as bars
     function mlSpace(items) { // space used by kind: files, size and share of the total (+ what waits in Deleted)
       var tot = 0, by = {}, n = {}; items.forEach(function (i) { tot += i.size; by[i.kind] = (by[i.kind] || 0) + i.size; n[i.kind] = (n[i.kind] || 0) + 1; });
