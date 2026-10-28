@@ -374,7 +374,12 @@ function unwrapMessageContent(message) {
       || payload.viewOnceMessageV2?.message
       || payload.viewOnceMessageV2Extension?.message
       || payload.documentWithCaptionMessage?.message
-      || payload.editedMessage?.message;
+      || payload.editedMessage?.message
+      || payload.futureProofMessage?.message
+      || payload.groupMentionedMessage?.message
+      || payload.botInvokeMessage?.message
+      || payload.associatedChildMessage?.message
+      || payload.lottieStickerMessage?.message;
     if (!wrapped) break;
     payload = wrapped;
   }
@@ -388,6 +393,15 @@ function textFromMessage(message) {
     || payload.imageMessage?.caption
     || payload.documentMessage?.caption
     || payload.videoMessage?.caption
+    // links and texts sent from apps and websites come as templates, buttons, lists or interactive cards
+    || payload.templateMessage?.hydratedTemplate?.hydratedContentText
+    || payload.templateMessage?.hydratedFourRowTemplate?.hydratedContentText
+    || payload.buttonsMessage?.contentText
+    || payload.interactiveMessage?.body?.text
+    || payload.listMessage?.description
+    || payload.eventMessage?.name
+    || payload.extendedTextMessage?.matchedText
+    || payload.extendedTextMessage?.canonicalUrl
     || '';
 }
 

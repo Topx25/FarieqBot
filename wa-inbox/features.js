@@ -667,7 +667,7 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
           + '<section class="hero gv-hero"><div class="hero-t">' + avatar(jid, r.name) + '<div><h1 dir="auto">' + esc(r.name) + '</h1><p class="muted">👤 ' + fmt(r.members.filter(function (m) { return m.member; }).length) + ' ' + T('members') + ' · ✍️ ' + fmt(writers) + ' ' + T('wrote') + ' · 🩺 ' + fmt(tracked) + ' ' + T('followed') + ' · 💬 ' + fmt(r.total) + '</p></div></div>'
           + '<div class="hero-tools"><a class="chip-btn" href="?p=inbox#' + encodeURIComponent(jid) + '">💬 ' + T('Open chat') + '</a><a class="chip-btn" href="?p=media&chat=' + encodeURIComponent(jid) + '">📚 ' + T('Group library') + '</a>' + (isAdmin ? '<label class="chip-btn"><input type="checkbox" id="gv-reg" ' + (r.registry ? 'checked' : '') + '> 📋 ' + T('Case registry group') + '</label><label class="chip-btn"><input type="checkbox" id="gv-mon" ' + (r.monitored ? 'checked' : '') + '> 🩺 ' + T('Follow everyone who writes here') + '</label>' : '') + (r.registry ? '<a class="chip-btn" href="?p=cases&tab=registry">📋 ' + T('Open the registry') + '</a>' : '') + '</div></section>'
           + '<div class="gv-help card">① ' + T('Pick a person from the list (or from a message).') + ' ② ' + T('Press 🩺 Follow — a case page is created for that number.') + ' ③ ' + T('Their messages, replies to them and their private chat are collected there, with AI diagnosis.') + '</div>'
-          + fbar('gv-f', { dates: true, extra: '<label>🔎 <input type="search" data-f="mq" placeholder="' + esc(T('Search the messages…')) + '" dir="auto"></label><label><select data-f="mk"><option value="">' + T('All messages') + '</option><option value="text">💬 ' + T('Text') + '</option><option value="media">🖼️ ' + T('Media and voice') + '</option><option value="team">↩️ ' + T('Our replies') + '</option></select></label>' })
+          + fbar('gv-f', { dates: true, extra: '<label>🔎 <input type="search" data-f="mq" placeholder="' + esc(T('Search the messages…')) + '" dir="auto"></label><label><select data-f="mk"><option value="">' + T('All messages') + '</option><option value="text">💬 ' + T('Text') + '</option><option value="media">🖼️ ' + T('Media and voice') + '</option><option value="team">↩️ ' + T('Our replies') + '</option></select></label><label>↕️ <select data-f="mo"><option value="new">' + T('Newest first') + '</option><option value="old">' + T('Oldest first') + '</option></select></label><label><select data-f="mn"><option value="100">100</option><option value="300" selected>300</option><option value="1500">' + T('All') + '</option></select></label><label><select data-f="mv"><option value="">' + T('Comfortable') + '</option><option value="compact">' + T('Compact') + '</option><option value="gallery">🖼️ ' + T('Gallery') + '</option></select></label>' })
           + '<div class="gv"><div class="card gv-people"><div class="gv-ph"><b>' + T('People') + '</b><input type="search" id="gv-pq" placeholder="' + T('Name or number…') + '" dir="auto"><div class="seg sm" id="gv-pf"><button data-f="" class="on">' + T('All') + '</button><button data-f="w">' + T('Wrote') + '</button><button data-f="c">🩺</button></div></div><div id="gv-plist" class="gv-plist"></div></div>'
           + '<div class="card gv-msgs"><div class="gv-ph"><b id="gv-mt">' + T('Messages') + '</b><button class="link-btn" id="gv-all" hidden>✕ ' + T('Show everyone') + '</button></div><div id="gv-mlist" class="gv-mlist"></div></div></div>';
         drawPeople(); drawMsgs();
@@ -712,17 +712,38 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
       var p = who ? r.members.filter(function (m) { return m.phone === who; })[0] : null;
       document.getElementById('gv-mt').textContent = who ? T('Messages of') + ' ' + (p ? person(p) : '+' + who) + ' (' + fmt(rows.length) + ')' : T('Latest messages');
       document.getElementById('gv-all').hidden = !who;
-      var el = document.getElementById('gv-mlist');
-      el.innerHTML = rows.slice(-300).map(function (m) {
+      var el = document.getElementById('gv-mlist'), mn = +(f.mn || 300), newest = (f.mo || 'new') === 'new';
+      rows = rows.slice(-mn); if (newest) rows = rows.slice().reverse();
+      el.className = 'gv-mlist' + (f.mv ? ' gv-' + f.mv : '');
+      if (f.mv === 'gallery') {
+        var pics = rows.filter(function (m) { return gvSrc(m) && /image|sticker|video/.test(m.kind || ''); });
+        el.innerHTML = pics.map(function (m) { return '<a class="gv-g" href="' + esc(gvSrc(m)) + '" target="_blank" rel="noopener" title="' + esc(when(m.time)) + '">' + (/video/.test(m.kind) ? '<video src="' + esc(gvSrc(m)) + '" preload="metadata" muted></video><i>▶</i>' : '<img loading="lazy" src="' + esc(gvSrc(m)) + '" alt="">') + '</a>'; }).join('') || '<div class="empty">' + T('No photos or videos in this period.') + '</div>';
+        el.scrollTop = 0; return;
+      }
+      el.innerHTML = rows.map(function (m) {
         var mp = r.members.filter(function (x) { return x.phone === m.from; })[0], nm = m.dir === 'out' ? (m.by || T('You')) : (mp ? person(mp) : (m.from_name || '+' + m.from));
         var link = who && m.from !== who ? '<span class="why">↩️ ' + T('reply to them') + '</span>' : '';
         return '<div class="gv-m ' + (m.dir === 'out' ? 'out' : 'in') + (m.case ? ' tracked' : '') + '"><div class="gv-mh">' + (m.dir === 'in' ? '<button class="gv-who" data-who="' + esc(m.from) + '">' + esc(nm) + '</button>' : '<b>' + esc(nm) + '</b>') + link + '<small class="muted">' + esc(when(m.time)) + '</small>'
           + (m.dir === 'in' && !m.case ? '<button class="link-btn" data-track="' + esc(m.from) + '" title="' + T('Follow this person') + '">🩺</button>' : (m.case ? '<span class="tag mon">🩺</span>' : '')) + '</div>'
-          + '<div dir="auto" class="gv-mt">' + (String(m.text || '').trim() ? esc(m.text) : '<i class="muted">[' + esc(m.kind) + ']</i>') + '</div></div>';
+          + gvMedia(m) + '<div dir="auto" class="gv-mt">' + (String(m.text || m.caption || '').trim() ? esc(m.text || m.caption) : (gvSrc(m) ? '' : '<i class="muted">[' + esc(m.kind) + ']</i>')) + '</div></div>';
       }).join('') || '<div class="empty">' + T('No messages.') + '</div>';
-      el.scrollTop = el.scrollHeight;
+      el.scrollTop = newest ? 0 : el.scrollHeight;
     }
+    // a message's saved file, shown as the chat page shows it: photo, video, voice or a file link
+    function gvSrc(m) { var a = String(m.attachment || ''); if (/^inbox_uploads\//.test(a)) return '?api=media&f=' + encodeURIComponent(a.split('/').pop());
+      if (/^inbox_media\//.test(a)) { var pp = a.split('/'); return '?api=media&a=' + encodeURIComponent(pp[1]) + '&f=' + encodeURIComponent(pp.slice(2).join('/')); } return ''; }
+    function gvMedia(m) { var u = gvSrc(m), k = m.kind || ''; if (!u) return /image|video|sticker|voice|audio|document/.test(k) && m.id ? '<button type="button" class="chip-btn sm gv-dl" data-dl="' + esc(m.id) + '">⬇️ ' + T('Show the file') + '</button>' : '';
+      if (/image|sticker/.test(k)) return '<a class="gv-img" href="' + esc(u) + '" target="_blank" rel="noopener"><img loading="lazy" src="' + esc(u) + '" alt=""></a>';
+      if (/video/.test(k)) return '<video class="gv-vid" src="' + esc(u) + '" controls preload="metadata"></video>';
+      if (/audio|voice|ptt/.test(k)) return '<audio class="gv-aud" src="' + esc(u) + '" controls preload="none"></audio>';
+      return '<a class="chip-btn sm" href="' + esc(u) + '" target="_blank" rel="noopener">📄 ' + T('Open the file') + '</a>'; }
     root.addEventListener('click', function (e) {
+      // a file WhatsApp still keeps but the server did not save: downloaded when asked, then shown in place
+      var dl = e.target.closest('[data-dl]');
+      if (dl) { var mm = G.view.messages.filter(function (x) { return x.id === dl.dataset.dl; })[0]; dl.disabled = true; dl.textContent = '⏳ ' + T('Loading…');
+        post('fetch_media', { id: dl.dataset.dl, jid: G.view.jid }).then(function (x) {
+          if (x.ok && x.attachment && mm) { mm.attachment = x.attachment; dl.outerHTML = gvMedia(mm); } else { dl.disabled = false; dl.textContent = '⚠️ ' + T(x.error || 'Could not download'); } });
+        return; }
       var w = e.target.closest('[data-who]:not([data-track])');
       if (w && !e.target.closest('[data-track],a')) { G.who = w.dataset.who === G.who ? '' : w.dataset.who; drawPeople(); drawMsgs(); return; }
       var t = e.target.closest('[data-track]'); if (!t) return;
@@ -2841,4 +2862,42 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
   exit.addEventListener('click', function () { set(false); });
   document.addEventListener('keydown', function (e) { if (on && e.key === 'Escape' && !document.querySelector('dialog[open], .dlg:not([hidden])')) set(false); });
   apply();
+})();
+/* ---------- Chat page: a filter bar over the open chat (period, words, kind) that hides the messages that do not match ---------- */
+(function () {
+  var app = document.querySelector('.app.shell-v3'); if (!app || app.getAttribute('data-page') !== 'inbox') return;
+  var T = function (x) { return (window.WI_T || {})[x] || x; };
+  var msgs = document.querySelector('section.inbox .msgs'), head = document.querySelector('section.inbox .thread-h'); if (!msgs || !head) return;
+  var bar = document.createElement('div'); bar.className = 'cf-bar'; bar.hidden = true;
+  bar.innerHTML = '<input type="search" data-c="q" dir="auto" placeholder="' + T('Search the messages…') + '">'
+    + '<select data-c="k"><option value="">' + T('All messages') + '</option><option value="text">💬 ' + T('Text') + '</option><option value="link">🔗 ' + T('Links') + '</option><option value="image">🖼️ ' + T('Photos and videos') + '</option><option value="voice">🎤 ' + T('Voice') + '</option><option value="document">📄 ' + T('Files') + '</option><option value="out">↩️ ' + T('Our replies') + '</option></select>'
+    + '<select data-c="d"><option value="">' + T('Any time') + '</option><option value="1">' + T('Today') + '</option><option value="7">7' + T('d') + '</option><option value="30">30' + T('d') + '</option><option value="90">90' + T('d') + '</option></select>'
+    + '<span class="cf-n muted small"></span><button type="button" class="link-btn" data-c="x">✕</button>';
+  head.parentNode.insertBefore(bar, head.nextSibling);
+  var btn = document.createElement('button'); btn.type = 'button'; btn.className = 'chip-btn cf-btn'; btn.title = T('Filter the messages'); btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 5h16l-6 8v5l-4 2v-7z"/></svg> <span>' + T('Filter') + '</span>';
+  // the header is redrawn with every chat: the button is put back each time
+  var place = function () { var h = document.querySelector('section.inbox .thread-h'); if (h && !h.contains(btn)) h.appendChild(btn); }; place();
+  new MutationObserver(place).observe(head.parentNode, { childList: true, subtree: true });
+  var v = function (c) { return (bar.querySelector('[data-c=' + c + ']') || {}).value || ''; };
+  function run() {
+    var q = v('q').trim().toLowerCase(), k = v('k'), d = v('d'), from = d ? new Date(Date.now() - (d === '1' ? 0 : d * 86400000)).toISOString().slice(0, 10) : '', shown = 0, all = 0;
+    [].forEach.call(msgs.querySelectorAll('.b'), function (b) { all++;
+      var kind = b.dataset.k || 'text', tx = b.textContent.toLowerCase(), ok = true;
+      if (q && tx.indexOf(q) === -1) ok = false;
+      if (from && (b.dataset.t || '') < from) ok = false;
+      if (k === 'text' && kind !== 'text') ok = false;
+      if (k === 'link' && !b.querySelector('a[href^="http"]') && !/https?:\/\/|www\./.test(tx)) ok = false;
+      if (k === 'image' && !/image|video|gif|sticker/.test(kind)) ok = false;
+      if (k === 'voice' && !/voice|audio/.test(kind)) ok = false;
+      if (k === 'document' && kind !== 'document') ok = false;
+      if (k === 'out' && !b.classList.contains('out')) ok = false;
+      b.classList.toggle('cf-off', !ok); if (ok) shown++; });
+    var on = q || k || d; msgs.classList.toggle('cf-on', !!on); btn.classList.toggle('on', !!on);
+    bar.querySelector('.cf-n').textContent = on ? shown + ' / ' + all : '';
+  }
+  btn.addEventListener('click', function () { bar.hidden = !bar.hidden; if (!bar.hidden) bar.querySelector('input').focus(); });
+  bar.addEventListener('input', run); bar.addEventListener('change', run);
+  bar.querySelector('[data-c=x]').addEventListener('click', function () { [].forEach.call(bar.querySelectorAll('input,select'), function (i) { i.value = ''; }); run(); bar.hidden = true; });
+  // the chat redraws its messages (new ones, another chat): the filter is applied again
+  var t = null; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(msgs, { childList: true });
 })();

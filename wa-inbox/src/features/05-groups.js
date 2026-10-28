@@ -44,7 +44,7 @@
           + '<section class="hero gv-hero"><div class="hero-t">' + avatar(jid, r.name) + '<div><h1 dir="auto">' + esc(r.name) + '</h1><p class="muted">👤 ' + fmt(r.members.filter(function (m) { return m.member; }).length) + ' ' + T('members') + ' · ✍️ ' + fmt(writers) + ' ' + T('wrote') + ' · 🩺 ' + fmt(tracked) + ' ' + T('followed') + ' · 💬 ' + fmt(r.total) + '</p></div></div>'
           + '<div class="hero-tools"><a class="chip-btn" href="?p=inbox#' + encodeURIComponent(jid) + '">💬 ' + T('Open chat') + '</a><a class="chip-btn" href="?p=media&chat=' + encodeURIComponent(jid) + '">📚 ' + T('Group library') + '</a>' + (isAdmin ? '<label class="chip-btn"><input type="checkbox" id="gv-reg" ' + (r.registry ? 'checked' : '') + '> 📋 ' + T('Case registry group') + '</label><label class="chip-btn"><input type="checkbox" id="gv-mon" ' + (r.monitored ? 'checked' : '') + '> 🩺 ' + T('Follow everyone who writes here') + '</label>' : '') + (r.registry ? '<a class="chip-btn" href="?p=cases&tab=registry">📋 ' + T('Open the registry') + '</a>' : '') + '</div></section>'
           + '<div class="gv-help card">① ' + T('Pick a person from the list (or from a message).') + ' ② ' + T('Press 🩺 Follow — a case page is created for that number.') + ' ③ ' + T('Their messages, replies to them and their private chat are collected there, with AI diagnosis.') + '</div>'
-          + fbar('gv-f', { dates: true, extra: '<label>🔎 <input type="search" data-f="mq" placeholder="' + esc(T('Search the messages…')) + '" dir="auto"></label><label><select data-f="mk"><option value="">' + T('All messages') + '</option><option value="text">💬 ' + T('Text') + '</option><option value="media">🖼️ ' + T('Media and voice') + '</option><option value="team">↩️ ' + T('Our replies') + '</option></select></label>' })
+          + fbar('gv-f', { dates: true, extra: '<label>🔎 <input type="search" data-f="mq" placeholder="' + esc(T('Search the messages…')) + '" dir="auto"></label><label><select data-f="mk"><option value="">' + T('All messages') + '</option><option value="text">💬 ' + T('Text') + '</option><option value="media">🖼️ ' + T('Media and voice') + '</option><option value="team">↩️ ' + T('Our replies') + '</option></select></label><label>↕️ <select data-f="mo"><option value="new">' + T('Newest first') + '</option><option value="old">' + T('Oldest first') + '</option></select></label><label><select data-f="mn"><option value="100">100</option><option value="300" selected>300</option><option value="1500">' + T('All') + '</option></select></label><label><select data-f="mv"><option value="">' + T('Comfortable') + '</option><option value="compact">' + T('Compact') + '</option><option value="gallery">🖼️ ' + T('Gallery') + '</option></select></label>' })
           + '<div class="gv"><div class="card gv-people"><div class="gv-ph"><b>' + T('People') + '</b><input type="search" id="gv-pq" placeholder="' + T('Name or number…') + '" dir="auto"><div class="seg sm" id="gv-pf"><button data-f="" class="on">' + T('All') + '</button><button data-f="w">' + T('Wrote') + '</button><button data-f="c">🩺</button></div></div><div id="gv-plist" class="gv-plist"></div></div>'
           + '<div class="card gv-msgs"><div class="gv-ph"><b id="gv-mt">' + T('Messages') + '</b><button class="link-btn" id="gv-all" hidden>✕ ' + T('Show everyone') + '</button></div><div id="gv-mlist" class="gv-mlist"></div></div></div>';
         drawPeople(); drawMsgs();
@@ -89,17 +89,38 @@
       var p = who ? r.members.filter(function (m) { return m.phone === who; })[0] : null;
       document.getElementById('gv-mt').textContent = who ? T('Messages of') + ' ' + (p ? person(p) : '+' + who) + ' (' + fmt(rows.length) + ')' : T('Latest messages');
       document.getElementById('gv-all').hidden = !who;
-      var el = document.getElementById('gv-mlist');
-      el.innerHTML = rows.slice(-300).map(function (m) {
+      var el = document.getElementById('gv-mlist'), mn = +(f.mn || 300), newest = (f.mo || 'new') === 'new';
+      rows = rows.slice(-mn); if (newest) rows = rows.slice().reverse();
+      el.className = 'gv-mlist' + (f.mv ? ' gv-' + f.mv : '');
+      if (f.mv === 'gallery') {
+        var pics = rows.filter(function (m) { return gvSrc(m) && /image|sticker|video/.test(m.kind || ''); });
+        el.innerHTML = pics.map(function (m) { return '<a class="gv-g" href="' + esc(gvSrc(m)) + '" target="_blank" rel="noopener" title="' + esc(when(m.time)) + '">' + (/video/.test(m.kind) ? '<video src="' + esc(gvSrc(m)) + '" preload="metadata" muted></video><i>▶</i>' : '<img loading="lazy" src="' + esc(gvSrc(m)) + '" alt="">') + '</a>'; }).join('') || '<div class="empty">' + T('No photos or videos in this period.') + '</div>';
+        el.scrollTop = 0; return;
+      }
+      el.innerHTML = rows.map(function (m) {
         var mp = r.members.filter(function (x) { return x.phone === m.from; })[0], nm = m.dir === 'out' ? (m.by || T('You')) : (mp ? person(mp) : (m.from_name || '+' + m.from));
         var link = who && m.from !== who ? '<span class="why">↩️ ' + T('reply to them') + '</span>' : '';
         return '<div class="gv-m ' + (m.dir === 'out' ? 'out' : 'in') + (m.case ? ' tracked' : '') + '"><div class="gv-mh">' + (m.dir === 'in' ? '<button class="gv-who" data-who="' + esc(m.from) + '">' + esc(nm) + '</button>' : '<b>' + esc(nm) + '</b>') + link + '<small class="muted">' + esc(when(m.time)) + '</small>'
           + (m.dir === 'in' && !m.case ? '<button class="link-btn" data-track="' + esc(m.from) + '" title="' + T('Follow this person') + '">🩺</button>' : (m.case ? '<span class="tag mon">🩺</span>' : '')) + '</div>'
-          + '<div dir="auto" class="gv-mt">' + (String(m.text || '').trim() ? esc(m.text) : '<i class="muted">[' + esc(m.kind) + ']</i>') + '</div></div>';
+          + gvMedia(m) + '<div dir="auto" class="gv-mt">' + (String(m.text || m.caption || '').trim() ? esc(m.text || m.caption) : (gvSrc(m) ? '' : '<i class="muted">[' + esc(m.kind) + ']</i>')) + '</div></div>';
       }).join('') || '<div class="empty">' + T('No messages.') + '</div>';
-      el.scrollTop = el.scrollHeight;
+      el.scrollTop = newest ? 0 : el.scrollHeight;
     }
+    // a message's saved file, shown as the chat page shows it: photo, video, voice or a file link
+    function gvSrc(m) { var a = String(m.attachment || ''); if (/^inbox_uploads\//.test(a)) return '?api=media&f=' + encodeURIComponent(a.split('/').pop());
+      if (/^inbox_media\//.test(a)) { var pp = a.split('/'); return '?api=media&a=' + encodeURIComponent(pp[1]) + '&f=' + encodeURIComponent(pp.slice(2).join('/')); } return ''; }
+    function gvMedia(m) { var u = gvSrc(m), k = m.kind || ''; if (!u) return /image|video|sticker|voice|audio|document/.test(k) && m.id ? '<button type="button" class="chip-btn sm gv-dl" data-dl="' + esc(m.id) + '">⬇️ ' + T('Show the file') + '</button>' : '';
+      if (/image|sticker/.test(k)) return '<a class="gv-img" href="' + esc(u) + '" target="_blank" rel="noopener"><img loading="lazy" src="' + esc(u) + '" alt=""></a>';
+      if (/video/.test(k)) return '<video class="gv-vid" src="' + esc(u) + '" controls preload="metadata"></video>';
+      if (/audio|voice|ptt/.test(k)) return '<audio class="gv-aud" src="' + esc(u) + '" controls preload="none"></audio>';
+      return '<a class="chip-btn sm" href="' + esc(u) + '" target="_blank" rel="noopener">📄 ' + T('Open the file') + '</a>'; }
     root.addEventListener('click', function (e) {
+      // a file WhatsApp still keeps but the server did not save: downloaded when asked, then shown in place
+      var dl = e.target.closest('[data-dl]');
+      if (dl) { var mm = G.view.messages.filter(function (x) { return x.id === dl.dataset.dl; })[0]; dl.disabled = true; dl.textContent = '⏳ ' + T('Loading…');
+        post('fetch_media', { id: dl.dataset.dl, jid: G.view.jid }).then(function (x) {
+          if (x.ok && x.attachment && mm) { mm.attachment = x.attachment; dl.outerHTML = gvMedia(mm); } else { dl.disabled = false; dl.textContent = '⚠️ ' + T(x.error || 'Could not download'); } });
+        return; }
       var w = e.target.closest('[data-who]:not([data-track])');
       if (w && !e.target.closest('[data-track],a')) { G.who = w.dataset.who === G.who ? '' : w.dataset.who; drawPeople(); drawMsgs(); return; }
       var t = e.target.closest('[data-track]'); if (!t) return;

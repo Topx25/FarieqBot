@@ -62,11 +62,11 @@ function wf_api_groups(string $api): void {
         $members = array_values($members);
         usort($members, fn($a, $b) => [$b['messages'], (string) $b['last']] <=> [$a['messages'], (string) $a['last']]);
         $msgs = [];
-        foreach (array_slice($rows, -400) as $x) {
+        foreach (array_slice($rows, -1500) as $x) {
             if (!in_array($x['dir'] ?? '', ['in', 'out'], true)) continue;
             $p = wf_phone($x['from'] ?? '');
             $msgs[] = ['id' => $x['id'] ?? '', 'dir' => $x['dir'], 'time' => $x['time'], 'kind' => $x['kind'] ?? 'text', 'text' => mb_substr((string) ($x['text'] ?? ''), 0, 1500), 'from' => $p, 'from_name' => $x['from_name'] ?? '', 'case' => $idMap[$p] ?? null,
-                'quote' => $x['quote'] ?? null, 'quote_from' => wf_phone($x['quote_from'] ?? ''), 'by' => $x['by'] ?? ''];
+                'quote' => $x['quote'] ?? null, 'quote_from' => wf_phone($x['quote_from'] ?? ''), 'by' => $x['by'] ?? '', 'attachment' => (string) ($x['attachment'] ?? ''), 'caption' => mb_substr((string) ($x['caption'] ?? ''), 0, 600)];
         }
         $left = empty($m['ok']);
         if ($left && empty($m['name'])) { foreach ((wi_gateway('/archive/chats?months=' . (int) wi_sys('months_long') )['chats'] ?? []) as $c) if ($c['jid'] === $jid) $m['name'] = $c['name']; }
