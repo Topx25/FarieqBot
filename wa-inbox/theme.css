@@ -602,7 +602,7 @@ body.wa-mode .shell-v3.app{display:block!important}
 body.wa-mode .shell-v3 .main{padding:0!important;margin:0!important}
 body.wa-mode section.inbox.card{position:fixed!important;inset:0!important;z-index:90;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:var(--wa-panel)!important;display:grid!important;grid-template-columns:minmax(300px,30%) minmax(0,1fr)!important;height:100vh!important;max-height:none!important}
 body.wa-mode section.inbox,body.wa-mode section.inbox *{font-family:"Segoe UI","Helvetica Neue",Helvetica,"Lucida Grande",Arial,Ubuntu,Cantarell,"Fira Sans",sans-serif!important}
-body.wa-mode section.inbox .chat-list{background:var(--wa-panel)!important;border:0!important;border-inline-end:1px solid var(--wa-line)!important;height:100vh!important;max-height:none!important;display:flex;flex-direction:column}
+body.wa-mode section.inbox .chat-list{background:var(--wa-panel)!important;border:0!important;border-inline-end:1px solid var(--wa-line)!important;height:100vh!important;max-height:none!important;display:flex!important;flex-direction:column}
 body.wa-mode section.inbox .chat-list-h{background:var(--wa-panel)!important;border-bottom:1px solid var(--wa-line)!important;padding:8px 12px!important}
 body.wa-mode section.inbox #chat-q{background:var(--wa-head)!important;border:0!important;border-radius:8px!important;height:35px!important;color:var(--wa-ink)!important;box-shadow:none!important}
 body.wa-mode section.inbox .icon-btn{background:transparent!important;border:0!important;color:var(--wa-mut)!important;border-radius:50%!important}
@@ -632,3 +632,9 @@ body.wa-mode section.inbox .safe-note{display:none!important}
 .wa-mode-exit{display:none;position:fixed;z-index:95;bottom:14px;inset-inline-start:14px;border:0;border-radius:99px;background:#00a884;color:#fff;padding:8px 14px;font:600 13px system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 18px -6px rgba(0,0,0,.35);opacity:.85}
 .wa-mode-exit:hover{opacity:1}body.wa-mode .wa-mode-exit{display:block}
 @media (max-width:800px){body.wa-mode section.inbox.card{grid-template-columns:1fr!important}}
+body.wa-mode section.inbox input[hidden],body.wa-mode section.inbox [hidden]{display:none!important}
+body.wa-mode section.inbox .chats{padding-bottom:56px!important}
+body.wa-mode section.inbox .composer #reply{flex:1 1 auto!important}
+.shell-v3.app.nav-top #side-nav,.shell-v3.app.nav-bottom #side-nav{flex-wrap:wrap!important;row-gap:4px!important}
+.shell-v3.app.nav-top .side,.shell-v3.app.nav-bottom .side{overflow:visible!important;flex-wrap:wrap!important}
+.composer input[type=file][hidden]{display:none!important}

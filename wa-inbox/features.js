@@ -2725,7 +2725,7 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
   bar.insertBefore(box, bar.firstChild);
   // the place menu: the four sides, then reorder (drag the pages) and back to the original order
   var pop = document.createElement('div'); pop.className = 'nav-pos-pop'; pop.hidden = true;
-  var sides = [['top', '⬆', 'Top'], [rtl ? 'start' : 'end', '➡', 'Right'], [rtl ? 'end' : 'start', '⬅', 'Left'], ['bottom', '⬇', 'Bottom']];
+  var sides = [['top', '⬆', 'Menu on top'], [rtl ? 'start' : 'end', '➡', 'Menu on the right'], [rtl ? 'end' : 'start', '⬅', 'Menu on the left'], ['bottom', '⬇', 'Menu at the bottom']];
   pop.innerHTML = '<b>' + T('Menu place') + '</b><div class="npp-grid">' + sides.map(function (x) { return '<button type="button" data-pos="' + x[0] + '"><span>' + x[1] + '</span>' + T(x[2]) + '</button>'; }).join('') + '</div>'
     + '<button type="button" class="npp-wide" data-act="edit">✋ ' + T('Reorder the menu (drag the pages)') + '</button><button type="button" class="npp-wide" data-act="reset">↺ ' + T('Original order') + '</button>';
   document.body.appendChild(pop);
