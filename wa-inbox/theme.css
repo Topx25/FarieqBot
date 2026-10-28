@@ -643,3 +643,4 @@ body.wa-mode .wa-mode-menu{display:block}
 body.wa-mode.wa-menu .shell-v3 .side{display:flex!important;flex-direction:column;position:fixed!important;top:0!important;bottom:0!important;inset-inline-start:0;width:260px!important;height:100vh!important;z-index:120!important;overflow:auto!important;box-shadow:0 0 40px rgba(0,0,0,.35)!important;background:var(--card,#fff)!important}
 body.wa-mode.wa-menu .shell-v3 .side #side-nav{display:block!important}
 .nav-ctl .nav-pos-btn{display:inline-grid;place-items:center;color:var(--muted,#667781)}.nav-ctl .nav-pos-btn:hover{color:var(--accent,#0866ff)}
+.shell-v3.app.v-focus{grid-template-columns:minmax(0,1fr)!important}.shell-v3.app.v-focus .main{grid-column:1/-1!important}
