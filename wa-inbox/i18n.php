@@ -22,6 +22,8 @@ return [
     'A section of your dashboard (Team → Activity) records every time a member of your team opens your data and what they did with it.' => 'يوجد في لوحتك قسم (الفريق ← النشاط) يسجل كل دخول لأحد أفراد فريقك على بياناتك وما فعله بها.',
     'Got it, start' => 'فهمت، ابدأ',
     'I agree' => 'موافق',
+    'Leave WhatsApp view' => 'خروج من شكل الواتساب',
+    'WhatsApp Desktop view' => 'شكل واتساب ديسكتوب',
     'Fold the menu to icons' => 'اطوِ القائمة لأيقونات',
     'Original order' => 'الترتيب الأصلي',
     'Reorder the menu (drag the pages)' => 'رتّب القائمة (اسحب الصفحات)',

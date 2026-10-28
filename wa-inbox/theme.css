@@ -592,3 +592,43 @@ td.sel-c{width:32px}tr.picked td{background:color-mix(in srgb,var(--accent) 8%,t
 .npp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.nav-pos-pop button{border:1px solid var(--line);background:var(--card-in,#f5f6f7);color:var(--ink);border-radius:10px;padding:7px 8px;font:inherit;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center}
 .nav-pos-pop button.on{background:var(--accent);color:#fff;border-color:transparent}.nav-pos-pop .npp-wide{justify-content:flex-start}
 .shell-v3.app.nav-edit #side-nav a{cursor:grab;outline:1px dashed var(--accent);outline-offset:-2px}.shell-v3.app.nav-edit #side-nav a.dragging{opacity:.4}
+
+/* WhatsApp Desktop view (chat page): everything but the chats is hidden, colours and layout of WhatsApp Desktop */
+body.wa-mode{--wa-bg:#efeae2;--wa-panel:#ffffff;--wa-head:#f0f2f5;--wa-line:#e9edef;--wa-ink:#111b21;--wa-mut:#667781;--wa-green:#00a884;--wa-out:#d9fdd3;--wa-in:#ffffff;--wa-sel:#f0f2f5;--wa-hover:#f5f6f6;overflow:hidden}
+@media (prefers-color-scheme:dark){body.wa-mode{--wa-bg:#0b141a;--wa-panel:#111b21;--wa-head:#202c33;--wa-line:#222d34;--wa-ink:#e9edef;--wa-mut:#8696a0;--wa-out:#005c4b;--wa-in:#202c33;--wa-sel:#2a3942;--wa-hover:#202c33}}
+html[data-theme=dark] body.wa-mode,body.dark.wa-mode{--wa-bg:#0b141a;--wa-panel:#111b21;--wa-head:#202c33;--wa-line:#222d34;--wa-ink:#e9edef;--wa-mut:#8696a0;--wa-out:#005c4b;--wa-in:#202c33;--wa-sel:#2a3942;--wa-hover:#202c33}
+body.wa-mode .shell-v3 .side,body.wa-mode .topbar,body.wa-mode .page-tabs,body.wa-mode .imp-bar,body.wa-mode .inv-bar,body.wa-mode .hist-bar,body.wa-mode section.hero,body.wa-mode .nav-chat-btn,body.wa-mode .focus-exit,body.wa-mode .off-banner{display:none!important}
+body.wa-mode .shell-v3.app{display:block!important}
+body.wa-mode .shell-v3 .main{padding:0!important;margin:0!important}
+body.wa-mode section.inbox.card{position:fixed!important;inset:0!important;z-index:90;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important;background:var(--wa-panel)!important;display:grid!important;grid-template-columns:minmax(300px,30%) minmax(0,1fr)!important;height:100vh!important;max-height:none!important}
+body.wa-mode section.inbox,body.wa-mode section.inbox *{font-family:"Segoe UI","Helvetica Neue",Helvetica,"Lucida Grande",Arial,Ubuntu,Cantarell,"Fira Sans",sans-serif!important}
+body.wa-mode section.inbox .chat-list{background:var(--wa-panel)!important;border:0!important;border-inline-end:1px solid var(--wa-line)!important;height:100vh!important;max-height:none!important;display:flex;flex-direction:column}
+body.wa-mode section.inbox .chat-list-h{background:var(--wa-panel)!important;border-bottom:1px solid var(--wa-line)!important;padding:8px 12px!important}
+body.wa-mode section.inbox #chat-q{background:var(--wa-head)!important;border:0!important;border-radius:8px!important;height:35px!important;color:var(--wa-ink)!important;box-shadow:none!important}
+body.wa-mode section.inbox .icon-btn{background:transparent!important;border:0!important;color:var(--wa-mut)!important;border-radius:50%!important}
+body.wa-mode section.inbox .icon-btn:hover{background:var(--wa-hover)!important}
+body.wa-mode section.inbox .chips button,body.wa-mode section.inbox .chips a,body.wa-mode section.inbox .chips span[data-f]{background:var(--wa-head)!important;border:0!important;color:var(--wa-mut)!important;border-radius:99px!important}
+body.wa-mode section.inbox .chips .on{background:#e7fce3!important;color:#008069!important}
+body.wa-mode section.inbox .chats .c{margin:0!important;border-radius:0!important;border-bottom:1px solid var(--wa-line)!important;padding:10px 14px!important;box-shadow:none!important;background:transparent!important;color:var(--wa-ink)}
+body.wa-mode section.inbox .chats .c:hover{background:var(--wa-hover)!important}
+body.wa-mode section.inbox .chats .c.on{background:var(--wa-sel)!important;box-shadow:none!important}
+body.wa-mode section.inbox .chats .av{width:49px!important;height:49px!important}
+body.wa-mode section.inbox .c-p{color:var(--wa-mut)!important;font-size:14px!important}
+body.wa-mode section.inbox .chats .c b{font-weight:400!important;font-size:16px;color:var(--wa-ink)}
+body.wa-mode section.inbox .thread{background-color:var(--wa-bg)!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23000' stroke-opacity='.05' stroke-width='1.4'%3E%3Ccircle cx='14' cy='16' r='6'/%3E%3Cpath d='M48 10l8 8-8 8-8-8z'/%3E%3Cpath d='M12 52h14v10H12z'/%3E%3Cpath d='M52 50c6 0 10 4 10 9s-4 9-10 9'/%3E%3C/g%3E%3C/svg%3E")!important;height:100vh!important;display:flex;flex-direction:column}
+body.wa-mode section.inbox .thread-h{background:var(--wa-head)!important;border:0!important;border-inline-start:1px solid var(--wa-line)!important;padding:8px 16px!important;min-height:59px;color:var(--wa-ink)}
+body.wa-mode section.inbox .thread-h .chip-btn,body.wa-mode section.inbox .thread-h .th-chip{background:transparent!important;border:0!important;color:var(--wa-mut)!important}
+body.wa-mode section.inbox .msgs{background:transparent!important;padding:16px 7%!important}
+body.wa-mode section.inbox .b{border-radius:7.5px!important;box-shadow:0 1px .5px rgba(11,20,26,.13)!important;font-size:14.2px;color:var(--wa-ink)!important;max-width:65%!important}
+body.wa-mode section.inbox .b.in{background:var(--wa-in)!important;border-start-start-radius:0!important}
+body.wa-mode section.inbox .b.out{background:var(--wa-out)!important;border-start-end-radius:0!important}
+body.wa-mode section.inbox .composer{background:var(--wa-head)!important;border:0!important;padding:6px 12px!important}
+body.wa-mode section.inbox #reply{background:var(--wa-panel)!important;border:0!important;border-radius:8px!important;color:var(--wa-ink)!important;box-shadow:none!important;min-height:42px}
+body.wa-mode section.inbox .attach-btn,body.wa-mode section.inbox .composer .chip-btn{background:transparent!important;border:0!important;color:var(--wa-mut)!important}
+body.wa-mode section.inbox #send-btn{background:var(--wa-green)!important;color:#fff!important;border-radius:50%!important;box-shadow:none!important}
+body.wa-mode section.inbox .safe-note{display:none!important}
+.wa-mode-btn{border:0;background:transparent;color:#00a884;width:34px;height:34px;border-radius:10px;display:inline-grid;place-items:center;cursor:pointer;margin-inline-start:6px}
+.wa-mode-btn:hover,.wa-mode-btn.on{background:#e7fce3}
+.wa-mode-exit{display:none;position:fixed;z-index:95;bottom:14px;inset-inline-start:14px;border:0;border-radius:99px;background:#00a884;color:#fff;padding:8px 14px;font:600 13px system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 18px -6px rgba(0,0,0,.35);opacity:.85}
+.wa-mode-exit:hover{opacity:1}body.wa-mode .wa-mode-exit{display:block}
+@media (max-width:800px){body.wa-mode section.inbox.card{grid-template-columns:1fr!important}}
