@@ -568,3 +568,27 @@ td.sel-c{width:32px}tr.picked td{background:color-mix(in srgb,var(--accent) 8%,t
 .ap-p{border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:8px 0}.ap-p summary{cursor:pointer}.ap-t{width:100%;font-family:ui-monospace,monospace;font-size:12.5px;margin:6px 0}
 .bh-card .row{gap:14px;align-items:center}.bh-state{font-size:15px}
 .cc-fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}.cc-f{display:flex;align-items:center;gap:8px}.cc-f input[data-fl]{flex:1;min-width:0}
+
+/* Menu on any side: top and bottom make it one row of pages; on the chat page it can fold to icons (nav-mini) */
+.shell-v3.app.nav-top,.shell-v3.app.nav-bottom{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:auto minmax(0,1fr)}
+.shell-v3.app.nav-top .side,.shell-v3.app.nav-bottom .side{order:0!important;position:sticky!important;top:0!important;height:auto!important;flex-direction:row!important;align-items:center!important;gap:10px!important;padding:6px 12px!important;overflow:auto hidden!important;border:0!important;border-bottom:1px solid var(--line)!important;width:auto!important}
+.shell-v3.app.nav-bottom .side{order:2!important;position:fixed!important;top:auto!important;bottom:0;inset-inline:0;border-bottom:0!important;border-top:1px solid var(--line)!important;z-index:60}
+.shell-v3.app.nav-bottom .main{padding-bottom:70px!important}
+.shell-v3.app.nav-top .side .brand,.shell-v3.app.nav-bottom .side .brand{border:0!important;padding:0 6px 0 0!important;margin:0!important;flex:none}
+.shell-v3.app.nav-top .side .brand>div,.shell-v3.app.nav-bottom .side .brand>div{display:none!important}
+.shell-v3.app.nav-top #side-nav,.shell-v3.app.nav-bottom #side-nav{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:4px!important;overflow:visible!important}
+.shell-v3.app.nav-top #side-nav .nav-h,.shell-v3.app.nav-bottom #side-nav .nav-h{display:none!important}
+.shell-v3.app.nav-top #side-nav a,.shell-v3.app.nav-bottom #side-nav a{display:inline-flex!important;flex:none;white-space:nowrap;min-height:34px!important;padding:0 10px!important;border-radius:10px}
+.shell-v3.app.nav-top #side-nav a.nav-folded,.shell-v3.app.nav-bottom #side-nav a.nav-folded{display:inline-flex!important}
+.shell-v3.app.nav-mini{grid-template-columns:62px minmax(0,1fr)!important}.shell-v3.app.nav-mini.nav-flip{grid-template-columns:minmax(0,1fr) 62px!important}
+.shell-v3.app.nav-mini .side{padding:10px 6px!important}.shell-v3.app.nav-mini .side .brand>div,.shell-v3.app.nav-mini #side-nav .nav-h{display:none!important}
+.shell-v3.app.nav-mini #side-nav a{font-size:0!important;justify-content:center!important;padding:0!important;min-height:40px!important}.shell-v3.app.nav-mini #side-nav a i{font-size:18px!important;margin:0!important}
+.shell-v3.app.nav-mini #side-nav a.nav-folded{display:flex!important}
+.nav-chat-btn{position:fixed;top:50%;inset-inline-start:4px;z-index:75;width:22px;height:46px;border-radius:9px;border:1px solid var(--line);background:var(--card,#fff);color:var(--muted);font-size:13px;cursor:pointer;box-shadow:0 4px 14px -6px rgba(0,0,0,.25);padding:0;opacity:.7}
+.nav-chat-btn:hover{opacity:1;color:var(--accent)}.shell-v3.app.nav-flip .nav-chat-btn{inset-inline-start:auto;inset-inline-end:4px}
+.shell-v3.app.nav-top .nav-chat-btn,.shell-v3.app.nav-bottom .nav-chat-btn{display:none}
+.nav-pos-pop{position:fixed;z-index:200;width:240px;background:var(--card,#fff);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px -14px rgba(0,0,0,.3);padding:12px;display:flex;flex-direction:column;gap:8px}
+.nav-pos-pop[hidden]{display:none}.nav-pos-pop b{font-size:13px}
+.npp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.nav-pos-pop button{border:1px solid var(--line);background:var(--card-in,#f5f6f7);color:var(--ink);border-radius:10px;padding:7px 8px;font:inherit;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center}
+.nav-pos-pop button.on{background:var(--accent);color:#fff;border-color:transparent}.nav-pos-pop .npp-wide{justify-content:flex-start}
+.shell-v3.app.nav-edit #side-nav a{cursor:grab;outline:1px dashed var(--accent);outline-offset:-2px}.shell-v3.app.nav-edit #side-nav a.dragging{opacity:.4}

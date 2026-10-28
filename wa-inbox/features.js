@@ -2710,28 +2710,51 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
   b.onclick = function () { draw(); dlg.showModal(); };
 })();
 
-/* ---------- Menu: pinned (🔒) or auto (🔓), right/left (⇄), show/hide (☰) — saved per browser ---------- */
+/* ---------- Menu: pinned (🔒) or auto (🔓), its place on any of the four sides (📍), show/hide (☰), its own order — saved per browser.
+   On the chat page a small button folds it to icons or hides it, apart from the other pages. ---------- */
 (function () {
   var app = document.querySelector('.app.shell-v3'), bar = document.querySelector('.topbar .tb-title'); if (!app || !bar) return;
   var T = function (x) { return (window.WI_T || {})[x] || x; };
   function ld(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
   function sv(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-  var st = { pin: ld('wi_nav_pin2', true), flip: ld('wi_nav_flip', false), hide: ld('wi_nav_hide', false) };
+  var chat = app.getAttribute('data-page') === 'inbox';
+  var st = { pin: ld('wi_nav_pin2', true), pos: ld('wi_nav_pos', ld('wi_nav_flip', false) ? 'end' : 'start'), hide: ld('wi_nav_hide', false), chat: ld('wi_nav_chat', 'open') };
+  var rtl = document.documentElement.dir === 'rtl' || document.body.dir === 'rtl';
   var box = document.createElement('span'); box.className = 'nav-ctl';
-  box.innerHTML = '<button type="button" data-n="hide"></button><button type="button" data-n="pin"></button><button type="button" data-n="flip" title="' + T('Move the menu to the other side') + '">⇄</button>';
+  box.innerHTML = '<button type="button" data-n="hide"></button><button type="button" data-n="pin"></button><button type="button" data-n="pos" title="' + T('Where the menu sits, and its order') + '">📍</button>';
   bar.insertBefore(box, bar.firstChild);
+  // the place menu: the four sides, then reorder (drag the pages) and back to the original order
+  var pop = document.createElement('div'); pop.className = 'nav-pos-pop'; pop.hidden = true;
+  var sides = [['top', '⬆', 'Top'], [rtl ? 'start' : 'end', '➡', 'Right'], [rtl ? 'end' : 'start', '⬅', 'Left'], ['bottom', '⬇', 'Bottom']];
+  pop.innerHTML = '<b>' + T('Menu place') + '</b><div class="npp-grid">' + sides.map(function (x) { return '<button type="button" data-pos="' + x[0] + '"><span>' + x[1] + '</span>' + T(x[2]) + '</button>'; }).join('') + '</div>'
+    + '<button type="button" class="npp-wide" data-act="edit">✋ ' + T('Reorder the menu (drag the pages)') + '</button><button type="button" class="npp-wide" data-act="reset">↺ ' + T('Original order') + '</button>';
+  document.body.appendChild(pop);
+  var mini = null; if (chat) { mini = document.createElement('button'); mini.type = 'button'; mini.className = 'nav-chat-btn'; app.appendChild(mini); }
   function apply() {
-    app.classList.toggle('nav-pin', st.pin && !st.hide); app.classList.toggle('nav-flip', st.flip); app.classList.toggle('nav-hide', st.hide); app.classList.remove('nav-peek');
+    var hide = st.hide || (chat && st.chat === 'hide'), small = chat && st.chat === 'mini' && !st.hide;
+    app.classList.toggle('nav-pin', st.pin && !hide); app.classList.toggle('nav-flip', st.pos === 'end'); app.classList.toggle('nav-top', st.pos === 'top'); app.classList.toggle('nav-bottom', st.pos === 'bottom');
+    app.classList.toggle('nav-hide', hide); app.classList.toggle('nav-mini', small && (st.pos === 'start' || st.pos === 'end')); app.classList.remove('nav-peek');
     var h = box.querySelector('[data-n=hide]'), p = box.querySelector('[data-n=pin]');
-    h.textContent = '☰'; h.title = st.hide ? T('Show the menu') : T('Hide the menu'); h.classList.toggle('on', !st.hide);
-    p.textContent = st.pin ? '🔒' : '🔓'; p.title = st.pin ? T('Menu locked open — click to make it expand on hover') : T('Menu expands on hover — click to lock it open'); p.classList.toggle('on', st.pin); p.disabled = st.hide;
+    h.textContent = '☰'; h.title = hide ? T('Show the menu') : T('Hide the menu'); h.classList.toggle('on', !hide);
+    p.textContent = st.pin ? '🔒' : '🔓'; p.title = st.pin ? T('Menu locked open — click to make it expand on hover') : T('Menu expands on hover — click to lock it open'); p.classList.toggle('on', st.pin); p.disabled = hide;
+    [].forEach.call(pop.querySelectorAll('[data-pos]'), function (b) { b.classList.toggle('on', b.dataset.pos === st.pos); });
+    if (mini) { mini.textContent = st.chat === 'open' ? '«' : st.chat === 'mini' ? '⇤' : '☰'; mini.title = st.chat === 'open' ? T('Fold the menu to icons') : st.chat === 'mini' ? T('Hide the menu') : T('Show the menu'); mini.dataset.st = st.chat; }
   }
   box.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return; var n = b.dataset.n;
+    if (n === 'pos') { var r = b.getBoundingClientRect(); pop.style.top = (r.bottom + 6) + 'px'; pop.style.left = Math.max(8, Math.min(window.innerWidth - 248, r.left - 100)) + 'px'; pop.hidden = !pop.hidden; return; }
     if (n === 'hide' && st.hide && !app.classList.contains('nav-peek') && e.shiftKey) { app.classList.add('nav-peek'); return; }
+    if (n === 'hide' && chat) { st.chat = st.chat === 'open' ? 'hide' : 'open'; sv('wi_nav_chat', st.chat); apply(); return; }
     st[n] = !st[n]; sv('wi_nav_' + n + (n === 'pin' ? '2' : ''), st[n]); apply(); });
+  pop.addEventListener('click', function (e) { var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.pos) { st.pos = b.dataset.pos; sv('wi_nav_pos', st.pos); sv('wi_nav_flip', st.pos === 'end'); apply(); pop.hidden = true; return; }
+    if (b.dataset.act === 'edit') { var on = !app.classList.contains('nav-edit'); app.classList.toggle('nav-edit', on); b.classList.toggle('on', on); try { localStorage.setItem('wi_menu_locked', JSON.stringify(!on)); } catch (x) {}
+      [].forEach.call(document.querySelectorAll('#side-nav a'), function (a) { a.draggable = on; }); if (on && st.hide) { st.hide = false; sv('wi_nav_hide', false); apply(); } return; }
+    if (b.dataset.act === 'reset') { try { localStorage.removeItem('wi_menu_order2'); } catch (x) {} location.reload(); } });
+  document.addEventListener('click', function (e) { if (!pop.hidden && !e.target.closest('.nav-pos-pop') && !e.target.closest('[data-n=pos]')) pop.hidden = true; });
+  if (mini) mini.addEventListener('click', function () { st.chat = st.chat === 'open' ? 'mini' : st.chat === 'mini' ? 'hide' : 'open'; sv('wi_nav_chat', st.chat); apply(); });
   // While hidden: touching the screen edge on the menu side shows it for a moment.
-  document.addEventListener('mousemove', function (e) { if (!st.hide) return; var w = window.innerWidth, rtl = document.documentElement.dir === 'rtl' || document.body.dir === 'rtl';
-    var startRight = rtl !== st.flip, edge = startRight ? e.clientX > w - 6 : e.clientX < 6;
+  document.addEventListener('mousemove', function (e) { if (!app.classList.contains('nav-hide')) return; var w = window.innerWidth, hgt = window.innerHeight, edge;
+    if (st.pos === 'top') edge = e.clientY < 6; else if (st.pos === 'bottom') edge = e.clientY > hgt - 6; else { var startRight = rtl !== (st.pos === 'end'); edge = startRight ? e.clientX > w - 6 : e.clientX < 6; }
     if (edge) app.classList.add('nav-peek'); else if (app.classList.contains('nav-peek') && !e.target.closest('.side')) app.classList.remove('nav-peek'); });
   apply();
 })();
