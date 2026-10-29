@@ -219,15 +219,12 @@ function wi_client_addr(array $u, string $slug, string $domains): array {
     $u['domains'] = array_values(array_unique(array_slice($d, 0, 5))); return $u;
 }
 
-/* ---------- The public landing page (the product's marketing page) ---------- */
-/** Renders landing.html with the brand, the public plans and the links (Settings: landing_cta_url / landing_cta_label / plan_currency). */
-function wi_landing(): void {
-    $lang = function_exists('wf_landing_lang') ? wf_landing_lang() : 'ar'; if (isset($_GET['lang'])) wi_lang();
-    $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); $t = fn($en) => $lang === 'en' ? $en : (function_exists('wf_mt') ? wf_mt($en) : $en);
-    $cur = (string) (wi_sys('plan_currency') ?: '$'); $cards = ''; $plans = array_filter(wi_plans(), fn($p) => !empty($p['public'])); $mid = (int) floor(count($plans) / 2); $i = 0;
+/** The public plans as cards: limits, what every plan has, and each plan feature (the missing ones crossed out). $cta draws a card's button (default: the landing page's). */
+function wi_plan_cards(callable $e, callable $t, string $cur, string $current = '', ?callable $cta = null): string {
+    $cards = ''; $plans = array_filter(wi_plans(), fn($p) => !empty($p['public'])); $mid = (int) floor(count($plans) / 2); $i = 0;
     foreach ($plans as $pid => $p) { $p = wi_plan_clean($p); $hot = $i++ === $mid && count($plans) > 1;
         if ($p['web_only']) { $li = ''; foreach (['Chat bubble on your website', 'The bot answers your visitors 24/7', 'What it cannot answer reaches your WhatsApp', 'Reply from WhatsApp, the visitor sees it', 'Visitor details: name, WhatsApp, email', 'One website'] as $x) $li .= '<li>' . $e($t($x)) . '</li>';
-            $cards .= '<div class="plan"><span class="eyebrow">' . $e($t('Free forever')) . '</span><h3>' . $e($t($p['name'])) . '</h3><div class="price">' . $e($t('Free')) . '</div><ul>' . $li . '</ul><a class="btn g" href="' . $e(preg_replace('/\?.*$/', '', (string) (wi_sys('login_url') ?: wi_sys('base_url'))) . '?signup&plan=' . rawurlencode((string) $pid)) . '">' . $e($t('Add it to my website')) . '</a></div>'; continue; }
+            $cards .= '<div class="plan' . ((string) $pid === $current ? ' mine' : '') . '"><span class="eyebrow">' . $e($t('Free forever')) . '</span><h3>' . $e($t($p['name'])) . '</h3><div class="price">' . $e($t('Free')) . '</div><ul>' . $li . '</ul>' . ($cta ? $cta((string) $pid, $p, false) : '<a class="btn g" href="' . $e(preg_replace('/\?.*$/', '', (string) (wi_sys('login_url') ?: wi_sys('base_url'))) . '?signup&plan=' . rawurlencode((string) $pid)) . '">' . $e($t('Add it to my website')) . '</a>') . '</div>'; continue; }
         $li = '<li>' . $p['numbers'] . ' ' . $e($t('WhatsApp numbers')) . '</li><li>' . ($p['team'] ?: '∞') . ' ' . $e($t('team members')) . '</li>'
             . ($p['bot'] ? '<li>' . $e($t('Smart bot that learns')) . ($p['ai_calls'] ? ' (' . number_format($p['ai_calls']) . ' ' . $e($t('AI replies')) . ')' : '') . '</li>' : '')
             . ($p['cases'] ? '<li>' . $e($t('Customers & tickets follow-up')) . '</li>' : '') . ($p['meetings'] ? '<li>' . $e($t('Meetings')) . '</li>' : '') . ($p['backup'] ? '<li>' . $e($t('Backups')) . '</li>' : '');
@@ -235,7 +232,16 @@ function wi_landing(): void {
         foreach (['Team inbox, transfers and notes', 'Groups follow-up and alerts', 'Media library', 'Broadcasts and scheduling', 'Reports', 'Phone app with notifications'] as $all) $li .= '<li>' . $e($t($all)) . '</li>';
         foreach (wi_plan_features() as $fk => $pf) { $core = ['bot' => 'Smart bot that learns', 'cases' => 'Customers & tickets follow-up', 'meetings' => 'Meetings', 'backup' => 'Backups']; if (isset($core[$fk])) { if (empty($p[$fk])) $li .= '<li class="no">' . $e($t($core[$fk])) . '</li>'; continue; }
             $li .= '<li' . (empty($p[$fk]) ? ' class="no"' : '') . '>' . $e($t($pf[1])) . '</li>'; }
-        $cards .= '<div class="plan' . ($hot ? ' hot' : '') . '">' . ($hot ? '<span class="eyebrow">' . $e($t('Most popular')) . '</span>' : '') . '<h3>' . $e($t($p['name'])) . '</h3><div class="price">' . ($p['price'] > 0 ? $e($cur) . $e(rtrim(rtrim(number_format($p['price'], 2), '0'), '.')) . ' <small>/ ' . $e($p['trial'] ? $p['days'] . ' ' . $t('days') : $t('month')) . '</small>' : $e($t('Free')) . ' <small>' . $p['days'] . ' ' . $e($t('days')) . '</small>') . '</div><ul>' . $li . '</ul><a class="btn ' . ($hot ? 'p' : 'g') . '" href="{{cta_url}}">{{cta_label}}</a></div>'; }
+        $cards .= '<div class="plan' . ($hot ? ' hot' : '') . ((string) $pid === $current ? ' mine' : '') . '">' . ($hot ? '<span class="eyebrow">' . $e($t('Most popular')) . '</span>' : '') . '<h3>' . $e($t($p['name'])) . '</h3><div class="price">' . ($p['price'] > 0 ? $e($cur) . $e(rtrim(rtrim(number_format($p['price'], 2), '0'), '.')) . ' <small>/ ' . $e($p['trial'] ? $p['days'] . ' ' . $t('days') : $t('month')) . '</small>' : $e($t('Free')) . ' <small>' . $p['days'] . ' ' . $e($t('days')) . '</small>') . '</div><ul>' . $li . '</ul>' . ($cta ? $cta((string) $pid, $p, $hot) : '<a class="btn ' . ($hot ? 'p' : 'g') . '" href="{{cta_url}}">{{cta_label}}</a>') . '</div>'; }
+    return $cards;
+}
+
+/* ---------- The public landing page (the product's marketing page) ---------- */
+/** Renders landing.html with the brand, the public plans and the links (Settings: landing_cta_url / landing_cta_label / plan_currency). */
+function wi_landing(): void {
+    $lang = function_exists('wf_landing_lang') ? wf_landing_lang() : 'ar'; if (isset($_GET['lang'])) wi_lang();
+    $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); $t = fn($en) => $lang === 'en' ? $en : (function_exists('wf_mt') ? wf_mt($en) : $en);
+    $cur = (string) (wi_sys('plan_currency') ?: '$'); $cards = wi_plan_cards($e, $t, $cur);
     $dz = (int) ($_GET['d'] ?? 0); $sw = ''; // ?d=1..3 previews a design with a switcher; otherwise the chosen one (General settings)
     if ($dz >= 1 && $dz <= 3) { foreach ([1 => $t('Bright'), 2 => $t('Night'), 3 => $t('Calm')] as $n => $nm) $sw .= '<a href="?d=' . $n . '"' . ($n === $dz ? ' class="on"' : '') . '>' . $e($nm) . '</a>'; $sw = '<nav class="dsw">' . $sw . '</nav>'; }
     else $dz = max(1, min(3, (int) wi_sys('landing_design')));
