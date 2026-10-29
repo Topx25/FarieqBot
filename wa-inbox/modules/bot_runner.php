@@ -45,7 +45,29 @@ function wf_clean_gcfg(array $g): array {
         'media_read' => !empty($g['media_read']) && $g['media_read'] !== '0', // photos and stickers here are read and answered like messages
         'admin_talk' => !empty($g['admin_talk']) && $g['admin_talk'] !== '0',
         'open_topics' => !empty($g['open_topics']) && $g['open_topics'] !== '0', // any subject is answered here, not only the business // the bot also talks with the team here; off: the team gets only their commands (#سؤال, #ترجمة, the case commands), the conversation is with the members
-        'gate_review' => implode(', ', array_slice(array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) ($g['gate_review'] ?? ''))))), 0, 10))];
+        'gate_review' => implode(', ', array_slice(array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) ($g['gate_review'] ?? ''))))), 0, 10)),
+        // who is told in private when a member's question here waits with no answer (empty: the member's case follower, else the reviewers)
+        'resp' => implode(', ', array_slice(array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', (string) ($g['resp'] ?? ''))))), 0, 10))];
+}
+/** The team member who follows this member in the group: the one who talks with them most (replies to them, mentions them,
+ *  is replied to by them) in the group's recent messages. '' when nobody of the team has talked with them. */
+function wf_gwait_admin(string $who, array $rows, array $team): string {
+    $sc = [];
+    foreach (array_slice($rows, -3000) as $r) { if (($r['dir'] ?? '') !== 'in') continue; $p = wf_phone($r['from'] ?? '');
+        if ($p !== '' && $p !== $who && isset($team[$p])) { if (wf_phone((string) ($r['quote_from'] ?? '')) === $who) $sc[$p] = ($sc[$p] ?? 0) + 2; if (in_array($who, array_map('wf_phone', (array) ($r['mentions'] ?? [])), true)) $sc[$p] = ($sc[$p] ?? 0) + 2; }
+        elseif ($p === $who && ($q = wf_phone((string) ($r['quote_from'] ?? ''))) !== '' && isset($team[$q])) $sc[$q] = ($sc[$q] ?? 0) + 1; }
+    if (!$sc) return ''; arsort($sc); return (string) array_key_first($sc);
+}
+/** The people responsible for a waiting member's question: the group's own list, else the follower of the member's case
+ *  (a number, or a team member's name as it shows in this group), else the group's reviewers. Phone numbers. */
+function wf_gwait_resp(string $aid, array $g, string $who, array $rows, array $team): array {
+    $list = fn(string $v) => array_values(array_filter(array_map('wf_phone', preg_split('/[\s,\x{060C}]+/u', $v))));
+    if ($r = $list((string) ($g['resp'] ?? ''))) return $r;
+    if (($a = wf_gwait_admin($who, $rows, $team)) !== '') return [$a];
+    $case = function_exists('wf_case_get') ? wf_case_get($aid, $who) : null; $f = trim((string) ($case['data']['follower'] ?? ''));
+    if ($f !== '') { $d = wf_phone($f); if (strlen($d) >= 10 && strlen($d) === strlen(preg_replace('/\D/', '', $f))) return [$d];
+        foreach (array_reverse($rows) as $rr) { $p = wf_phone($rr['from'] ?? ''); if ($p !== '' && isset($team[$p]) && trim((string) ($rr['from_name'] ?? '')) === $f) return [$p]; } }
+    return array_values(array_unique($list((string) ($g['gate_review'] ?? ''))));
 }
 /* ---------- Warm-up mode: the owner types the word (#هزار) in any private chat on the phone; the bot then chats and jokes
  *  with everyone in the groups that allow it, for a few hours or until the stop word. A product feature for every business. ---------- */
@@ -246,12 +268,16 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
         // and 5 minutes later the bot answers the member itself. Any word from the team in this group after the question cancels it.
         foreach ((array) ($st['gwait'][$x['jid']] ?? []) as $wid => $wq) {
             $wt = (int) ($wq['t'] ?? 0); $answered = false;
-            foreach ($rows as $rr) { $rw = wf_phone($rr['from'] ?? ''); if (strtotime((string) $rr['time']) > $wt && ((($rr['dir'] ?? '') === 'in' && isset($team[$rw])) || (($rr['dir'] ?? '') === 'out' && ($rr['via'] ?? '') !== 'bot'))) { $answered = true; break; } }
+            foreach ($rows as $rr) { $rw = wf_phone($rr['from'] ?? ''); if (strtotime((string) $rr['time']) > $wt && ((($rr['dir'] ?? '') === 'in' && isset($team[$rw])) || (($rr['dir'] ?? '') === 'out' && (!empty($wq['loose']) || ($rr['via'] ?? '') !== 'bot')))) { $answered = true; break; } }
             if ($answered || $wt < time() - 3 * 3600 || $c['mode'] !== 'auto') { unset($st['gwait'][$x['jid']][$wid]); continue; }
             $wm = (array) $wq['m']; $wwho = (string) $wq['who']; $wname = trim((string) ($wm['from_name'] ?? ($wm['name'] ?? ''))) ?: '+' . $wwho;
             if (empty($wq['alerted']) && time() - $wt >= 600 && ($wto = (string) ($c['watch_to'] ?? '')) !== '') {
                 $s = wi_gateway('/chat/send', ['jid' => $wto, 'text' => wf_msg('group_case_waiting', ['name' => $wname, 'group' => (string) ($x['name'] ?? ''), 'minutes' => (int) floor((time() - $wt) / 60), 'text' => mb_substr(trim((string) ($wm['text'] ?? '')), 0, 300)]), 'by' => 'bot', 'via' => 'bot'], $acc);
-                $st['gwait'][$x['jid']][$wid]['alerted'] = time(); wi_log('group_case_waiting', ['account' => $aid, 'group' => $x['jid'], 'who' => $wwho, 'ok' => !empty($s['ok'])]); continue; }
+                // the second alert: the person responsible for this member or group, in private
+                $sent = 0; foreach (wf_gwait_resp($aid, $g, $wwho, $rows, $team) as $rp) { if (isset($done[$rp])) continue; $done[$rp] = 1;
+                    $d = wi_gateway('/chat/send', ['jid' => $rp . (strlen($rp) > 13 ? '@lid' : '@s.whatsapp.net'), 'text' => wf_msg('group_case_waiting_dm', ['name' => $wname, 'phone' => '+' . $wwho, 'group' => (string) ($x['name'] ?? ''), 'minutes' => (int) floor((time() - $wt) / 60), 'text' => mb_substr(trim((string) ($wm['text'] ?? '')), 0, 300)]), 'by' => 'bot', 'via' => 'bot'], $acc); if (!empty($d['ok'])) $sent++; }
+                unset($done);
+                $st['gwait'][$x['jid']][$wid]['alerted'] = time(); wi_log('group_case_waiting', ['account' => $aid, 'group' => $x['jid'], 'who' => $wwho, 'ok' => !empty($s['ok']), 'private' => $sent]); continue; }
             if (!empty($wq['alerted']) && time() - (int) $wq['alerted'] >= 300) {
                 unset($st['gwait'][$x['jid']][$wid]); $wtext = trim((string) ($wm['text'] ?? '')); if ($wtext === '') continue;
                 try { $wr = wf_bot_answer($acc, $wtext, [], '', null, ['role' => (function_exists('wf_roles_cfg') ? (string) (wf_roles_cfg($aid)['group_role'] ?? '') : '') ?: 'bot', 'jid' => $x['jid'] . '|' . $wwho, 'who_name' => $wname]); } catch (Throwable $e) { $wr = []; }
@@ -274,7 +300,7 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             $askT = function_exists('wf_ask_tag') ? wf_ask_tag($aid) : ''; // the ask tag (#سؤال by default): the question is for the bot, answered at once like a tag of the bot
             $asked = $askT !== '' && wf_intake_has($text, $askT); if ($asked) { $mentioned = true; $text = trim(str_ireplace($askT, '', $text)) ?: $text; }
             // The translate tag (#ترجمة): the text after it, or the message it replies to, translated
-            foreach (wf_seed_list('translate_tags', $aid) as $tt) if (wf_intake_has($text, $tt)) { $body = trim(str_ireplace($tt, '', $text)); if ($body === '' && !empty($m['quote']) && isset($byId[(string) $m['quote']])) $body = trim((string) ($byId[(string) $m['quote']]['text'] ?? ''));
+            foreach (wf_seed_list('translate_tags', $aid) as $tt) if (wf_intake_has($text, $tt)) { $body = trim((string) preg_replace_callback('/#[^\s#]+/u', fn($x) => wf_intake_norm($x[0]) === wf_intake_norm($tt) ? '' : $x[0], str_ireplace($tt, '', $text))); if ($body === '' && !empty($m['quote']) && isset($byId[(string) $m['quote']])) $body = trim((string) ($byId[(string) $m['quote']]['text'] ?? ''));
                 if ($body !== '') { $text = wf_prompt('bot_translate', $aid, ['text' => mb_substr($body, 0, 3000)]); $asked = true; $mentioned = true; } break; }
             // The team (admins, its members): only their commands in a group, unless the group lets the bot talk with them (admin_talk); a tag of the bot alone is not a command
             $adminAsks = isset($team[$who]) && ($asked || (!empty($g['admin_talk']) && $mentioned)); // STRICT: team members and admins talk among themselves — the bot answers them only when they tag it or reply to it
@@ -289,6 +315,9 @@ function wf_bot_groups(array $acc, array $c, array &$st, array $team, array $cha
             // a member's question to the team: kept, so the team is reminded and the bot answers when nobody of the team does
             if (!$mentioned && $toOther && !$fun && !isset($team[$who]) && wf_is_question($text) && ($m['id'] ?? '') !== '' && (isset($team[wf_phone((string) ($m['quote_from'] ?? ''))]) || array_intersect(array_map('wf_phone', (array) ($m['mentions'] ?? [])), array_keys($team))) && !isset($st['gwait'][$x['jid']][(string) $m['id']]))
                 $st['gwait'][$x['jid']][(string) $m['id']] = ['t' => strtotime((string) $m['time']) ?: time(), 'who' => $who, 'm' => array_intersect_key($m, array_flip(['id', 'text', 'from', 'from_name', 'name', 'time']))];
+            // a question to nobody in particular from a member someone of the team follows: it is for that admin (answered by anyone, the bot included, cancels it)
+            elseif (!$mentioned && !$toOther && !$fun && !isset($team[$who]) && wf_is_question($text) && ($m['id'] ?? '') !== '' && !isset($st['gwait'][$x['jid']][(string) $m['id']]) && wf_gwait_admin($who, $rows, $team) !== '')
+                $st['gwait'][$x['jid']][(string) $m['id']] = ['t' => strtotime((string) $m['time']) ?: time(), 'who' => $who, 'loose' => 1, 'm' => array_intersect_key($m, array_flip(['id', 'text', 'from', 'from_name', 'name', 'time']))];
             if (!$mentioned && $toOther && !$fun) continue; // STRICT: a message to another member is not for the bot
             $lastTo = max(array_merge([0], (array) ($st['gwho'][$x['jid']][$who] ?? []))); if (!$mentioned && time() - $lastTo < (int) ($fun ? $c['fun_gap'] : (!empty($g['guide']) ? min(10, (int) $c['group_gap']) : $c['group_gap']))) { $st['gq'][$x['jid']][$who] = $m; continue; } // STRICT: one reply per person per 2 minutes (the rest waits)
             $trig = $fun ? 'all' : ($g['trigger'] ?? 'mention');
@@ -703,6 +732,8 @@ function wf_handoff_notify(array $acc, array $c, string $jid, string $name, stri
     $ph = wf_phone(explode('@', $jid)[0]); if (str_ends_with($jid, '@lid')) $ph = wf_phone((string) (wi_contact($jid, $acc)['phone'] ?? '')) ?: $ph;
     $msg = wf_msg('handoff_notify', ['name' => $name !== '' ? $name : '+' . $ph, 'phone' => $ph !== '' ? '+' . $ph : '', 'about' => mb_substr(preg_replace('/\s+/u', ' ', trim($text)), 0, 300), 'reason' => mb_substr($reason, 0, 200), 'link' => $ph !== '' ? 'https://wa.me/' . $ph : '']);
     $ok = false; foreach (array_slice($to, 0, 3) as $p) { $r = wi_gateway('/send', ['to' => $p, 'message' => $msg, 'via' => 'inbox'], $acc); $ok = $ok || !empty($r['ok']); }
+    // the same alert on the team's phones (the app's notifications), whether or not the WhatsApp message went
+    if (function_exists('wi_push_account')) wi_push_account($acc, ['title' => wi_t('A customer asks for a person'), 'body' => ($name !== '' ? $name : '+' . $ph) . ': ' . mb_substr(preg_replace('/\s+/u', ' ', trim($text)), 0, 140), 'url' => './?p=inbox#' . rawurlencode($jid), 'tag' => 'handoff-' . $jid]);
     if ($ok) $st['hn'][$jid] = time();
     foreach ((array) ($st['hn'] ?? []) as $k => $t) if ($t < time() - 7 * 86400) unset($st['hn'][$k]);
     wi_log('handoff_notify', ['account' => (string) $acc['id'], 'jid' => $jid, 'to' => $to, 'ok' => $ok]);
