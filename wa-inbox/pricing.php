@@ -43,6 +43,7 @@ h1{font-size:30px;margin:6px 0}.sub{color:var(--mut);margin:0 0 22px}
 .btn{display:block;text-align:center;padding:10px 14px;border-radius:12px;font-weight:600;text-decoration:none;border:1px solid var(--line);color:var(--ink);background:var(--card)}
 .btn.p{background:var(--blue);color:#fff;border-color:transparent}.btn.cur{background:transparent;color:var(--blue);border-color:var(--blue);cursor:default}
 .note{margin-top:20px;color:var(--mut);font-size:13.5px}
+.cmp-w{overflow-x:auto;margin-top:10px;border-radius:16px;border:1px solid var(--line);background:var(--card)}.cmp{width:100%;border-collapse:collapse;min-width:640px}.cmp th,.cmp td{padding:10px 14px;border-bottom:1px solid var(--line);text-align:center;white-space:nowrap}.cmp thead th{background:var(--bg)}.cmp tbody th{text-align:start;font-weight:500;white-space:normal;min-width:170px}.cmp-y{color:var(--ok);font-weight:700}.cmp-n{color:var(--mut);opacity:.6}.cmp td small{color:var(--mut)}.cmp .mine{background:rgba(8,102,255,.08)}
 </style>
 </head>
 <body><div class="w">
@@ -50,5 +51,6 @@ h1{font-size:30px;margin:6px 0}.sub{color:var(--mut);margin:0 0 22px}
   <h1><?= $e($t('Plans and prices')) ?></h1>
   <p class="sub"><?= $e($t('Everything each plan has. Press Request this plan and we set it up for you.')) ?></p>
   <div class="plans"><?= $cards ?></div>
+  <h2 style="margin:30px 0 4px"><?= $e($t('Compare the plans')) ?></h2><?= wi_plan_compare($e, $t, $cur, $current) ?>
   <p class="note"><?= $e($t('Your plan is marked in blue. The prices are per month unless a card says otherwise.')) ?></p>
 </div></body></html>

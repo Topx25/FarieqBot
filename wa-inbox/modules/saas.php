@@ -236,6 +236,23 @@ function wi_plan_cards(callable $e, callable $t, string $cur, string $current = 
     return $cards;
 }
 
+/** The public plans side by side: price, limits, what every plan has and each plan feature, one row each (✓ / ✕). */
+function wi_plan_compare(callable $e, callable $t, string $cur, string $current = ''): string {
+    $plans = array_map('wi_plan_clean', array_filter(wi_plans(), fn($p) => !empty($p['public']))); if (count($plans) < 2) return '';
+    $yes = '<span class="cmp-y">✓</span>'; $no = '<span class="cmp-n">✕</span>'; $num = fn($v) => (int) $v > 0 ? number_format((int) $v) : '∞';
+    $h = '<div class="cmp-w"><table class="cmp"><thead><tr><th></th>'; foreach ($plans as $pid => $p) $h .= '<th' . ((string) $pid === $current ? ' class="mine"' : '') . '>' . $e($t($p['name'])) . '</th>'; $h .= '</tr></thead><tbody>';
+    $row = function (string $label, callable $cell) use ($plans, $e, $t, $current) { $r = '<tr><th>' . $e($t($label)) . '</th>'; foreach ($plans as $pid => $p) $r .= '<td' . ((string) $pid === $current ? ' class="mine"' : '') . '>' . $cell($p) . '</td>'; return $r . '</tr>'; };
+    $h .= $row('Price', fn($p) => $p['price'] > 0 ? '<b>' . $e($cur . rtrim(rtrim(number_format($p['price'], 2), '0'), '.')) . '</b> <small>/ ' . $e($p['trial'] ? $p['days'] . ' ' . $t('days') : $t('month')) . '</small>' : '<b>' . $e($t('Free')) . '</b>');
+    $h .= $row('WhatsApp numbers', fn($p) => $p['web_only'] ? $no : $e($num($p['numbers'])));
+    $h .= $row('Team members', fn($p) => $p['web_only'] ? $no : $e($num($p['team'])));
+    $h .= $row('AI replies a month', fn($p) => $p['web_only'] ? $e(number_format(max(0, (int) (wi_sys('webchat_free_ai') ?: 300)))) : ($p['bot'] ? $e($num($p['ai_calls'])) : $no));
+    $h .= $row('Website chat', fn($p) => $yes);
+    foreach (['Team inbox, transfers and notes', 'Groups follow-up and alerts', 'Media library', 'Broadcasts and scheduling', 'Reports', 'Phone app with notifications'] as $all) $h .= $row($all, fn($p) => $p['web_only'] ? $no : $yes);
+    $names = ['bot' => 'Smart bot that learns', 'cases' => 'Customers & tickets follow-up', 'meetings' => 'Meetings', 'backup' => 'Backups'];
+    foreach (wi_plan_features() as $fk => $pf) $h .= $row($names[$fk] ?? $pf[1], fn($p) => !empty($p[$fk]) ? $yes : $no);
+    return $h . '</tbody></table></div>';
+}
+
 /* ---------- The public landing page (the product's marketing page) ---------- */
 /** Renders landing.html with the brand, the public plans and the links (Settings: landing_cta_url / landing_cta_label / plan_currency). */
 function wi_landing(): void {
@@ -245,7 +262,7 @@ function wi_landing(): void {
     $dz = (int) ($_GET['d'] ?? 0); $sw = ''; // ?d=1..3 previews a design with a switcher; otherwise the chosen one (General settings)
     if ($dz >= 1 && $dz <= 3) { foreach ([1 => $t('Bright'), 2 => $t('Night'), 3 => $t('Calm')] as $n => $nm) $sw .= '<a href="?d=' . $n . '"' . ($n === $dz ? ' class="on"' : '') . '>' . $e($nm) . '</a>'; $sw = '<nav class="dsw">' . $sw . '</nav>'; }
     else $dz = max(1, min(3, (int) wi_sys('landing_design')));
-    $vars = ['brand' => $e(($lang === 'en' ? trim((string) wi_sys('brand_name_en')) : '') ?: wi_sys('brand_name')), 'plans' => $cards, 'cta_url' => $e(wi_sys('landing_cta_url') ?: (wi_sys('signup_on') ? preg_replace('/\?.*$/', '', (string) (wi_sys('login_url') ?: './')) . '?signup' : (wi_sys('login_url') ?: './?login'))), 'cta_label' => $e(wi_sys('landing_cta_label') ?: $t('Start now')), 'login_url' => $e(wi_sys('login_url') ?: './?login'),
+    $vars = ['compare' => wi_plan_compare($e, $t, $cur), 'brand' => $e(($lang === 'en' ? trim((string) wi_sys('brand_name_en')) : '') ?: wi_sys('brand_name')), 'plans' => $cards, 'cta_url' => $e(wi_sys('landing_cta_url') ?: (wi_sys('signup_on') ? preg_replace('/\?.*$/', '', (string) (wi_sys('login_url') ?: './')) . '?signup' : (wi_sys('login_url') ?: './?login'))), 'cta_label' => $e(wi_sys('landing_cta_label') ?: $t('Start now')), 'login_url' => $e(wi_sys('login_url') ?: './?login'),
         'video_url' => './?intro_video=1', 'design' => $dz, 'design_switch' => $sw, 'privacy_url' => 'privacy', 'terms_url' => 'terms', 'year' => date('Y')];
     $html = (string) @file_get_contents(dirname(__DIR__) . (($_GET['v'] ?? '') === '2' ? '/landing2.html' : (($_GET['v'] ?? '') === '3' ? '/landing3.html' : (($_GET['v'] ?? '') === '1' ? '/landing.html' : (($_GET['v'] ?? '') === '4' ? '/landing4.html' : (($_GET['v'] ?? '') === '6' ? '/landing6.html' : ($lang === 'en' && is_file(dirname(__DIR__) . '/landing5.en.html') ? '/landing5.en.html' : '/landing5.html')))))));
     for ($k = 0; $k < 2; $k++) $html = preg_replace_callback('/\{\{(\w+)\}\}/', fn($m) => $vars[$m[1]] ?? '', $html); // twice: the plan cards carry the button's link

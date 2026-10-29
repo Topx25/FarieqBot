@@ -1147,6 +1147,7 @@ return [
     'Show less' => 'عرض أقل',
     'Open chat' => 'فتح المحادثة',
     'Group library' => 'مكتبة الجروب',
+    'Compare the plans' => 'مقارنة الباقات',
     'Plans and prices' => 'الباقات والأسعار',
     'Your plan' => 'باقتك',
     'I want the plan' => 'عايز باقة',
