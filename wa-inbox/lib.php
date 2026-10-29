@@ -1141,9 +1141,10 @@ function wi_mail_on(): bool { return wi_mc_on() || (trim((string) wi_sys('smtp_h
 function wi_mc_on(): bool { return wi_secret('mc_api_key') !== '' && filter_var((string) wi_sys('mc_from'), FILTER_VALIDATE_EMAIL); }
 function wi_mc_send(string $to, string $subject, string $text): bool {
     $from = (string) wi_sys('mc_from'); $per = ['to' => [['email' => $to]]];
-    // DKIM only when all three parts are there (half-filled DKIM makes every send fail): the key is the PEM body, no header lines or spaces
+    // DKIM with a domain and a selector: a key kept at MailChannels (their DKIM keys page) signs with those two alone;
+    // a private key pasted here is sent too (the PEM body, no header lines or spaces). Neither set: no DKIM fields at all.
     $dd = trim((string) wi_sys('mc_dkim_domain')); $ds = trim((string) wi_sys('mc_dkim_selector')); $dk = preg_replace('/-----[^-]+-----|\s+/', '', wi_secret('mc_dkim_key'));
-    if ($dd !== '' && $ds !== '' && $dk !== '') $per += ['dkim_domain' => $dd, 'dkim_selector' => $ds, 'dkim_private_key' => $dk];
+    if ($dd !== '' && $ds !== '') { $per += ['dkim_domain' => $dd, 'dkim_selector' => $ds]; if ($dk !== '') $per['dkim_private_key'] = $dk; }
     $body = ['from' => ['email' => $from, 'name' => (string) wi_brand('brand_name')], 'subject' => $subject, 'personalizations' => [$per], 'reply_to' => ['email' => (string) (wi_sys('mc_reply_to') ?: $from)],
         'content' => [['type' => 'text/plain', 'value' => $text], ['type' => 'text/html', 'value' => '<!doctype html><html><head><meta charset="utf-8"></head><body dir="auto" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;line-height:1.7">' . nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8')) . '</body></html>']], 'transactional' => true, 'headers' => ['X-Entity-Ref-ID' => bin2hex(random_bytes(8))]];
     $ch = curl_init('https://api.mailchannels.net/tx/v1/send');
