@@ -52,11 +52,36 @@ function wi_push_send_one(array $sub, array $data): int {
     return $code;
 }
 
-/** A notification to every phone / browser of one user. data: title, body, url, tag. */
+/* ---------- The phone app (Android / iPhone): Firebase Cloud Messaging, HTTP v1 with the project's service account ---------- */
+/** An access token for FCM from the service account (push_fcm.json: the account's JSON as Firebase gives it), kept 50 minutes. */
+function wi_fcm_token(): array {
+    $sa = (array) wi_read('push_fcm.json', []); if (empty($sa['private_key']) || empty($sa['client_email']) || empty($sa['project_id'])) return [];
+    $c = (array) wi_read('push_fcm_tok.json', []); if (!empty($c['t']) && (int) ($c['exp'] ?? 0) > time() + 60) return ['t' => $c['t'], 'p' => $sa['project_id']];
+    $now = time(); $h = wi_b64u(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+    $cl = wi_b64u(json_encode(['iss' => $sa['client_email'], 'scope' => 'https://www.googleapis.com/auth/firebase.messaging', 'aud' => 'https://oauth2.googleapis.com/token', 'iat' => $now, 'exp' => $now + 3600]));
+    if (!openssl_sign($h . '.' . $cl, $sig, (string) $sa['private_key'], OPENSSL_ALGO_SHA256)) return [];
+    $ch = curl_init('https://oauth2.googleapis.com/token');
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_POSTFIELDS => http_build_query(['grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer', 'assertion' => $h . '.' . $cl . '.' . wi_b64u($sig)])]);
+    $r = json_decode((string) curl_exec($ch), true); curl_close($ch); if (empty($r['access_token'])) return [];
+    wi_write('push_fcm_tok.json', ['t' => $r['access_token'], 'exp' => $now + 3000]);
+    return ['t' => $r['access_token'], 'p' => $sa['project_id']];
+}
+/** One notification to one app install. Returns the HTTP status (404 = the install is gone). */
+function wi_fcm_send_one(string $token, array $data): int {
+    $a = wi_fcm_token(); if (!$a) return 0;
+    $msg = ['message' => ['token' => $token, 'notification' => ['title' => (string) ($data['title'] ?? ''), 'body' => (string) ($data['body'] ?? '')],
+        'data' => ['url' => (string) ($data['url'] ?? './'), 'tag' => (string) ($data['tag'] ?? '')], 'android' => ['priority' => 'high', 'notification' => array_filter(['tag' => (string) ($data['tag'] ?? ''), 'channel_id' => 'fariek'])]]];
+    $ch = curl_init('https://fcm.googleapis.com/v1/projects/' . rawurlencode($a['p']) . '/messages:send');
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 15, CURLOPT_POSTFIELDS => json_encode($msg, JSON_UNESCAPED_UNICODE), CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $a['t']]]);
+    curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    return $code;
+}
+
+/** A notification to every phone / browser / app install of one user. data: title, body, url, tag. */
 function wi_push_user(string $email, array $data): int {
     $email = strtolower($email); $subs = (array) (wi_read('push_subs.json', [])[$email] ?? []); if (!$subs) return 0;
     $ok = 0; $gone = [];
-    foreach ($subs as $id => $s) { $code = wi_push_send_one((array) $s, $data + ['url' => './']); if ($code >= 200 && $code < 300) $ok++; elseif (in_array($code, [404, 410], true)) $gone[] = $id; }
+    foreach ($subs as $id => $s) { $code = !empty($s['fcm']) ? wi_fcm_send_one((string) $s['fcm'], $data + ['url' => './']) : wi_push_send_one((array) $s, $data + ['url' => './']); if ($code >= 200 && $code < 300) $ok++; elseif (in_array($code, [404, 410], true)) $gone[] = $id; }
     if ($gone) wi_update('push_subs.json', function ($P) use ($email, $gone) { foreach ($gone as $g) unset($P[$email][$g]); return $P; });
     return $ok;
 }
@@ -72,9 +97,9 @@ function wi_push_account(array $acc, array $data, array $only = []): int {
 
 /** ?api=push_key | push_sub | push_unsub | push_test: the browser asks for the key, saves its subscription, removes it, or tries one. */
 function wf_api_push(string $api): void {
-    if (!in_array($api, ['push_key', 'push_sub', 'push_unsub', 'push_test'], true)) return;
+    if (!in_array($api, ['push_key', 'push_sub', 'push_unsub', 'push_test', 'push_fcm'], true)) return;
     $me = strtolower((string) ($_SESSION['email'] ?? '')); if ($me === '') wi_json(['ok' => false, 'error' => 'Sign in first.'], 401);
-    if ($api === 'push_key') wi_json(['ok' => true, 'key' => wi_push_keys()['pub'], 'count' => count((array) (wi_read('push_subs.json', [])[$me] ?? []))]);
+    if ($api === 'push_key') wi_json(['ok' => true, 'key' => wi_push_keys()['pub'], 'fcm' => !empty(wi_read('push_fcm.json', [])['private_key']) && is_file(WI_DIR . '/push_app_ready'), 'count' => count((array) (wi_read('push_subs.json', [])[$me] ?? []))]);
     $in = wf_post();
     if ($api === 'push_sub') {
         $s = (array) ($in['sub'] ?? []); $ep = (string) ($s['endpoint'] ?? '');
@@ -83,6 +108,10 @@ function wf_api_push(string $api): void {
         wi_update('push_subs.json', function ($P) use ($me, $id, $row) { $P[$me][$id] = $row; return $P; });
         wi_log('push_on', []); wi_json(['ok' => true]);
     }
+    // the phone app gives its Firebase token (one per install)
+    if ($api === 'push_fcm') { $t = (string) ($in['token'] ?? ''); if (!preg_match('/^[A-Za-z0-9_:\-]{40,400}$/', $t)) wi_json(['ok' => false, 'error' => 'Not a valid app token.']);
+        $id = 'app_' . substr(md5($t), 0, 12); $row = ['fcm' => $t, 'app' => preg_replace('/[^a-z]/', '', (string) ($in['os'] ?? 'android')), 'ua' => mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 160), 'at' => date('c')];
+        wi_update('push_subs.json', function ($P) use ($me, $id, $row) { $P[$me][$id] = $row; return $P; }); wi_log('push_app_on', []); wi_json(['ok' => true, 'fcm' => (bool) wi_fcm_token()]); }
     if ($api === 'push_unsub') { $id = substr(md5((string) ($in['endpoint'] ?? '')), 0, 16); wi_update('push_subs.json', function ($P) use ($me, $id) { unset($P[$me][$id]); return $P; }); wi_json(['ok' => true]); }
     $n = wi_push_user($me, ['title' => wi_t('Fariek'), 'body' => wi_t('Notifications are on. This is how new chats and alerts will reach you.'), 'url' => './?p=inbox', 'tag' => 'test']);
     wi_json(['ok' => $n > 0, 'sent' => $n, 'error' => $n ? '' : 'Nothing reached this device. Turn the notifications on again.']);

@@ -2210,6 +2210,17 @@ document.addEventListener('keydown', function (e) {
 /* The installable app (PWA): registers the service worker, offers "Install the app" and turns the phone notifications on (Web Push).
    One button in the top bar opens a small panel with both; the state is read from the browser each time it opens. */
 (function () {
+  // inside the phone app (Android / iPhone): its own notifications (Firebase) instead of the browser's; no install button
+  var C = window.Capacitor;
+  if (C && C.isNativePlatform && C.isNativePlatform() && window.WI && document.querySelector('.app')) {
+    var PN = C.Plugins && C.Plugins.PushNotifications; if (!PN) return;
+    PN.addListener('registration', function (t) { WI.post('push_fcm', { token: t.value, os: C.getPlatform() }); });
+    PN.addListener('pushNotificationActionPerformed', function (a) { var u = a && a.notification && a.notification.data && a.notification.data.url; if (u) location.href = u; });
+    if (PN.createChannel) PN.createChannel({ id: 'fariek', name: 'Fariek', importance: 5, visibility: 1, vibration: true }).catch(function () {});
+    // only once the server has the app's Firebase project (an app built without it closes on register)
+    WI.get('push_key').then(function (k) { if (k && k.fcm) PN.requestPermissions().then(function (p) { if (p.receive === 'granted') PN.register(); }); });
+    return;
+  }
   if (!('serviceWorker' in navigator) || !window.WI || !document.querySelector('.app')) return;
   var T = function (x) { return (window.WI_T || {})[x] || x; };
   var reg = null, deferred = null;
