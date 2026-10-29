@@ -40,11 +40,14 @@ function wi_boot(): void {
     if (session_status() !== PHP_SESSION_ACTIVE) {
         session_name('wainbox_sid');
         $secure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https' || ($_SERVER['HTTP_CF_VISITOR'] ?? '') !== '';
-        session_set_cookie_params(['lifetime' => 0, 'path' => (string) wi_sys('cookie_path'), 'secure' => $secure, 'httponly' => true, 'samesite' => 'Strict']);
+        // the phone app stays signed in for 30 days (closed or idle); the web keeps its sign-out after inactivity (WI_IDLE, checked below)
+        $inApp = wi_in_app(); @ini_set('session.gc_maxlifetime', (string) (30 * 86400));
+        session_set_cookie_params(['lifetime' => $inApp ? 30 * 86400 : 0, 'path' => (string) wi_sys('cookie_path'), 'secure' => $secure, 'httponly' => true, 'samesite' => 'Strict']);
         session_start();
+        if ($inApp && !empty($_SESSION['email']) && !headers_sent()) setcookie(session_name(), session_id(), ['expires' => time() + 30 * 86400, 'path' => (string) wi_sys('cookie_path'), 'secure' => $secure, 'httponly' => true, 'samesite' => 'Strict']);
     }
     if (!empty($_SESSION['email'])) {
-        $expired = time() - (int) ($_SESSION['seen'] ?? 0) > WI_IDLE;
+        $expired = time() - (int) ($_SESSION['seen'] ?? 0) > (wi_in_app() ? 30 * 86400 : WI_IDLE);
         $moved = !hash_equals((string) ($_SESSION['fp'] ?? ''), wi_fingerprint());
         $fu = wi_find_user((string) $_SESSION['email']); $blocked = $fu && empty($_SESSION['imp_from']) ? wi_access_blocked($fu) : ''; // the super admin may still look inside an ended panel
         if ($expired || $moved || !$fu || $blocked !== '') {
@@ -100,6 +103,8 @@ function wi_translate_html(string $html): string {
 /** The request body (JSON APIs). The test harness (tests/, command line only) hands it over directly. */
 function wi_input(): string { return PHP_SAPI === 'cli' && isset($GLOBALS['WI_TEST_BODY']) ? (string) $GLOBALS['WI_TEST_BODY'] : (string) file_get_contents('php://input'); }
 function wi_e(?string $v): string { return htmlspecialchars((string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
+/** The request comes from the Fariek phone app (its web view adds FariekApp to the browser name). */
+function wi_in_app(): bool { return stripos((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 'FariekApp') !== false; }
 function wi_fingerprint(): string { return hash('sha256', (string) ($_SERVER['HTTP_USER_AGENT'] ?? '')); }
 /** The visitor's IP. A proxy header (Cloudflare) is believed only when the request really comes from a trusted proxy (Settings → System). */
 function wi_ip(): string {
