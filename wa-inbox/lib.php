@@ -595,7 +595,7 @@ function wi_menu_registry(): array {
 function wi_menu(): array {
     $own = (array) (wi_read('config.json', [])['menu'] ?? []); $out = [];
     foreach (wi_menu_registry() as $sec) {
-        if ($sec['id'] === 'facebook' && !wi_sys('addon_facebook')) continue; // Facebook is an add-on, like the invoices (General settings)
+        if ($sec['id'] === 'facebook' && (!wi_sys('addon_facebook') || (function_exists('wi_plan_allows') && !wi_plan_allows('facebook')))) continue; // Facebook is an add-on (General settings) and a feature of the higher plans
         $sec['default_title'] = $sec['title']; $sec['title'] = (string) ($own['sections'][$sec['id']] ?? $sec['title']);
         foreach ($sec['items'] as &$it) { $o = (array) ($own['items'][$it['key']] ?? []); $it['default_label'] = $it['label']; $it['default_icon'] = $it['icon'];
             if (trim((string) ($o['label'] ?? '')) !== '') $it['label'] = (string) $o['label']; if (trim((string) ($o['icon'] ?? '')) !== '') $it['icon'] = (string) $o['icon'];

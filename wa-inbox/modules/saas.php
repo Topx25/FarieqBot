@@ -18,6 +18,12 @@ function wi_plan_features(): array {
 }
 /** The first four features; one added later is on wherever a plan or a client has not said otherwise, so nobody loses what already works. */
 const WI_PLAN_FEATURES_FIRST = ['bot', 'meetings', 'cases', 'backup'];
+/** The signed-in person's plan allows this feature: a client by their own plan, a team member by their client's; staff always. A feature nobody added is allowed. */
+function wi_plan_allows(string $k): bool {
+    if (!isset(wi_plan_features()[$k])) return true; $me = wi_me(); if (!$me) return false;
+    if (function_exists('wi_is_team') && wi_is_team($me)) { $t = function_exists('wi_tenant') ? wi_tenant($me) : null; return $t ? wi_client_can($t, $k) : false; }
+    return ($me['role'] ?? '') === 'client' ? wi_client_can($me, $k) : true;
+}
 function wi_client_can(array $c, string $k): bool { return array_key_exists('can_' . $k, $c) ? !empty($c['can_' . $k]) : !in_array($k, WI_PLAN_FEATURES_FIRST, true); }
 function wi_plans(): array {
     $saved = wi_read('plans.json', []);

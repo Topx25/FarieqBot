@@ -1147,6 +1147,8 @@ return [
     'Show less' => 'عرض أقل',
     'Open chat' => 'فتح المحادثة',
     'Group library' => 'مكتبة الجروب',
+    'Facebook and Instagram' => 'فيسبوك وإنستجرام',
+    'Facebook pages, Messenger, comments and Instagram messages' => 'صفحات فيسبوك، والماسنجر، والكومنتات، ورسايل إنستجرام',
     'Sign-in codes, password resets and backups by email: MailChannels first, SMTP when there is no MailChannels key' => 'أكواد الدخول، ونسيت كلمة المرور، والنسخ الاحتياطي على الإيميل: MailChannels الأول، وSMTP لو مافيش مفتاح MailChannels',
     'Sign-up and Google sign-in' => 'التسجيل والدخول بجوجل',
     'Who may open an account, the captcha on the sign-up page, and the SaaS domain' => 'مين يقدر يفتح حساب، والكابتشا في صفحة التسجيل، ودومين الـ SaaS',
