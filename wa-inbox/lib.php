@@ -1135,9 +1135,28 @@ function wi_login_id(string $in): array {
     return ['email' => count($hit) === 1 ? $hit[0] : $in, 'many' => count($hit) > 1];
 }
 /** Email by SMTP (Plans page: host, port, user, sender; the password is kept as a secret). Port 465 = TLS from the start, other ports use STARTTLS. */
-function wi_mail_on(): bool { return trim((string) wi_sys('smtp_host')) !== '' && trim((string) wi_sys('smtp_user')) !== '' && wi_secret('smtp_pass') !== ''; }
+function wi_mail_on(): bool { return wi_mc_on() || (trim((string) wi_sys('smtp_host')) !== '' && trim((string) wi_sys('smtp_user')) !== '' && wi_secret('smtp_pass') !== ''); }
+/* MailChannels HTTP API: used before SMTP when its key and sender are set (hosts that redirect outgoing SMTP ports, like cPanel, can still send).
+   A 202 answer is not delivery: each recipient's result is read, a failed one is logged and never breaks the sign-in or reset flow. */
+function wi_mc_on(): bool { return wi_secret('mc_api_key') !== '' && filter_var((string) wi_sys('mc_from'), FILTER_VALIDATE_EMAIL); }
+function wi_mc_send(string $to, string $subject, string $text): bool {
+    $from = (string) wi_sys('mc_from'); $per = ['to' => [['email' => $to]]];
+    // DKIM only when all three parts are there (half-filled DKIM makes every send fail): the key is the PEM body, no header lines or spaces
+    $dd = trim((string) wi_sys('mc_dkim_domain')); $ds = trim((string) wi_sys('mc_dkim_selector')); $dk = preg_replace('/-----[^-]+-----|\s+/', '', wi_secret('mc_dkim_key'));
+    if ($dd !== '' && $ds !== '' && $dk !== '') $per += ['dkim_domain' => $dd, 'dkim_selector' => $ds, 'dkim_private_key' => $dk];
+    $body = ['from' => ['email' => $from, 'name' => (string) wi_brand('brand_name')], 'subject' => $subject, 'personalizations' => [$per], 'reply_to' => ['email' => (string) (wi_sys('mc_reply_to') ?: $from)],
+        'content' => [['type' => 'text/plain', 'value' => $text]], 'transactional' => true, 'headers' => ['X-Entity-Ref-ID' => bin2hex(random_bytes(8))]];
+    $ch = curl_init('https://api.mailchannels.net/tx/v1/send');
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_POSTFIELDS => json_encode($body, JSON_UNESCAPED_UNICODE), CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'X-Api-Key: ' . wi_secret('mc_api_key')]]);
+    $raw = (string) curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    if ($code < 200 || $code > 299) { wi_log('mail_failed', ['via' => 'mailchannels', 'http' => $code, 'why' => mb_substr($raw, 0, 200)]); return false; }
+    $r = json_decode($raw, true); $bad = array_values(array_filter((array) ($r['results'] ?? []), fn($x) => strtolower((string) ($x['status'] ?? '')) === 'failed'));
+    if ($bad) { wi_log('mail_failed', ['via' => 'mailchannels', 'why' => mb_substr((string) ($bad[0]['reason'] ?? 'failed'), 0, 200)]); return false; }
+    wi_log('mail_sent', ['via' => 'mailchannels']); return true;
+}
 function wi_mail(string $to, string $subject, string $text): bool {
     if (!wi_mail_on() || !filter_var($to, FILTER_VALIDATE_EMAIL)) return false;
+    if (wi_mc_on()) return wi_mc_send($to, $subject, $text);
     $host = trim((string) wi_sys('smtp_host')); $port = (int) (wi_sys('smtp_port') ?: 587); $user = trim((string) wi_sys('smtp_user')); $from = trim((string) (wi_sys('smtp_from') ?: $user));
     $s = @stream_socket_client(($port === 465 ? 'ssl://' : 'tcp://') . $host . ':' . $port, $en, $es, 15); if (!$s) { wi_log('mail_failed', ['why' => 'connect']); return false; }
     stream_set_timeout($s, 15);
