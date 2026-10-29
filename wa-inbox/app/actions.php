@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($do === 'signup') {
         if (!wi_turnstile_ok()) { wi_flash('Confirm that you are not a robot, then try again.', 'bad'); header('Location: ./?signup'); exit; }
         $g = (array) ($_SESSION['gsignup'] ?? []); if ($g && time() - (int) $g['at'] > 1800) { unset($_SESSION['gsignup']); $g = []; }
-        $in = array_intersect_key($_POST, array_flip(['name', 'business', 'email', 'phone'])); if ($g) $in['email'] = $g['email'];
+        $in = array_intersect_key($_POST, array_flip(['name', 'business', 'email', 'phone', 'plan'])); if ($g) $in['email'] = $g['email'];
         $ph = $g ? password_hash(bin2hex(random_bytes(24)), PASSWORD_DEFAULT) : password_hash((string) ($_POST['password'] ?? ''), PASSWORD_DEFAULT);
         $err = wi_signup($g ? $in + ['password_hash' => $ph] : $in + ['password' => (string) ($_POST['password'] ?? '')], false);
         if ($err !== '') { wi_flash($err, 'bad'); header('Location: ./?signup'); exit; }

@@ -460,6 +460,7 @@ function wi_client_page_perm(array $u, string $page): string {
     if (($u['role'] ?? '') === 'super') return in_array($page, ['settings', 'backup', 'report', 'users', 'ai'], true) ? '' : 'edit'; // the super admin as the owner of a team: everything a team may see
     // Features the super admin turned on for this client: bot (+ learning + their own AI keys), meetings, cases, backup (exports).
     if (in_array($page, ['settings', 'backup', 'report'], true)) return '';
+    if (!empty($u['web_only'])) return in_array($page, ['dashboard', 'integrations', 'me'], true) ? 'edit' : '';
     if ($page === 'users') return wi_team_seats($u) > 0 ? 'edit' : '';
     if (in_array($page, ['bot', 'botrun', 'botgroup', 'learning', 'ai'], true)) return !empty($u['can_bot']) ? 'edit' : '';
     if ($page === 'meetings') return !empty($u['can_meetings']) ? 'edit' : '';
@@ -606,7 +607,7 @@ function wi_menu(): array {
     return $out;
 }
 function wi_menu_can(string $who, bool $manager): bool {
-    return match ($who) { 'none' => false, 'manager' => $manager, 'users' => wi_can_users(), 'admin' => wi_is_admin() || (wi_me()['role'] ?? '') === 'client', 'super' => wi_is_super(), 'integrations' => (($ime = wi_me()) && ($ime['role'] ?? '') === 'client' && wi_client_can($ime, 'integrations')), 'ai' => wi_is_super() || (($w = wi_me()) && ($w['role'] ?? '') === 'client' && !empty($w['can_bot'])), default => true };
+    return match ($who) { 'none' => false, 'manager' => $manager, 'users' => wi_can_users(), 'admin' => wi_is_admin() || (wi_me()['role'] ?? '') === 'client', 'super' => wi_is_super(), 'integrations' => (($ime = wi_me()) && ($ime['role'] ?? '') === 'client' && (wi_client_can($ime, 'integrations') || !empty($ime['web_only']))), 'ai' => wi_is_super() || (($w = wi_me()) && ($w['role'] ?? '') === 'client' && !empty($w['can_bot'])), default => true };
 }
 function wi_page_names(): array {
     return ['inbox' => 'Inbox', 'search' => 'Search', 'library' => 'Library', 'audio' => 'Audio', 'files' => 'Files', 'analytics' => 'Analytics', 'numbers' => 'Numbers', 'catalog' => 'Product catalog',

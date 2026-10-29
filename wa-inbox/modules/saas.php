@@ -24,6 +24,8 @@ function wi_plan_allows(string $k): bool {
     if (function_exists('wi_is_team') && wi_is_team($me)) { $t = function_exists('wi_tenant') ? wi_tenant($me) : null; return $t ? wi_client_can($t, $k) : false; }
     return ($me['role'] ?? '') === 'client' ? wi_client_can($me, $k) : true;
 }
+/** The signed-in person is on the free website-chat plan (a client, or a team member of one). */
+function wi_web_only(): bool { $me = wi_me(); if (!$me) return false; if (function_exists('wi_is_team') && wi_is_team($me)) { $t = function_exists('wi_tenant') ? wi_tenant($me) : null; return $t && !empty($t['web_only']); } return ($me['role'] ?? '') === 'client' && !empty($me['web_only']); }
 function wi_client_can(array $c, string $k): bool { return array_key_exists('can_' . $k, $c) ? !empty($c['can_' . $k]) : !in_array($k, WI_PLAN_FEATURES_FIRST, true); }
 function wi_plans(): array {
     $saved = wi_read('plans.json', []);
@@ -40,7 +42,7 @@ function wi_plan_clean(array $p): array {
     $feat = []; foreach (array_keys(wi_plan_features()) as $fk) $feat[$fk] = !empty($p[$fk]);
     return $feat + ['name' => mb_substr(trim((string) ($p['name'] ?? '')), 0, 40), 'price' => max(0, round((float) ($p['price'] ?? 0), 2)), 'days' => max(1, min(3650, (int) ($p['days'] ?? 30))),
         'numbers' => max(0, min(100, (int) ($p['numbers'] ?? 1))), 'team' => max(0, min(500, (int) ($p['team'] ?? 0))), 'ai_calls' => max(0, min(1000000, (int) ($p['ai_calls'] ?? 0))), 'ai_tokens' => max(0, min(10000000000, (int) ($p['ai_tokens'] ?? 0))), 'media_gb' => max(0, min(100000, (int) ($p['media_gb'] ?? 0))),
-        'public' => !empty($p['public']), 'trial' => !empty($p['trial'])];
+        'public' => !empty($p['public']), 'trial' => !empty($p['trial']), 'web_only' => !empty($p['web_only'])];
 }
 /** The plan a client is on (by its id), or null for a hand-made client. */
 function wi_client_plan(array $client): ?array { $id = (string) ($client['plan_id'] ?? ''); $p = wi_plans()[$id] ?? null; return is_array($p) ? $p : null; }
@@ -50,6 +52,8 @@ function wi_plan_apply(array $client, string $planId, bool $setEnd): array {
     $client['plan_id'] = $planId; $client['plan'] = (string) $p['name'];
     $client['max_numbers'] = (int) $p['numbers']; $client['max_team'] = (int) $p['team']; $client['ai_calls'] = (int) $p['ai_calls']; $client['ai_tokens'] = (int) ($p['ai_tokens'] ?? 0); $client['media_gb'] = (int) ($p['media_gb'] ?? 0);
     foreach (array_keys(wi_plan_features()) as $fk) $client['can_' . $fk] = !empty($p[$fk]);
+    // the free website-chat plan: only the website chat, answered by the bot, the leads sent from this system's number
+    $client['web_only'] = !empty($p['web_only']); if ($client['web_only']) { $client['can_link'] = false; $client['own_number'] = false; }
     if ($setEnd) { $client['expires'] = date('Y-m-d', strtotime('+' . (int) $p['days'] . ' days')); $client['plan_start'] = date('Y-m-d'); }
     return $client;
 }
@@ -171,6 +175,8 @@ function wi_signup(array $in, bool $create = true): string {
     if ($limited) return 'Too many sign-ups from this connection today. Try again tomorrow.';
     foreach (wi_users() as $u) { if (strtolower((string) $u['email']) === $email) return 'This email already has an account. Sign in instead.'; if ((string) ($u['phone'] ?? '') === $phone) return 'This WhatsApp number already has an account. Sign in instead.'; }
     $planId = ''; foreach (wi_plans() as $id => $p) if (!empty($p['trial'])) { $planId = (string) $id; break; }
+    // a sign-up from the free website-chat plan's button (?signup&plan=…): that plan, when it is public and free
+    $want = (string) ($in['plan'] ?? ''); $wp = wi_plans()[$want] ?? null; if ($wp && !empty($wp['public']) && !empty($wp['web_only']) && (float) ($wp['price'] ?? 0) == 0) $planId = $want;
     if ($planId === '') return 'Sign-up is closed. Contact us.';
     if (!$create) return '';
     $u = ['email' => $email, 'name' => $name, 'business' => $biz, 'phone' => $phone, 'role' => 'client', 'accounts' => [], 'can_reply' => true, 'can_link' => true, 'own_number' => true,
@@ -219,7 +225,9 @@ function wi_landing(): void {
     $lang = function_exists('wf_landing_lang') ? wf_landing_lang() : 'ar'; if (isset($_GET['lang'])) wi_lang();
     $e = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); $t = fn($en) => $lang === 'en' ? $en : (function_exists('wf_mt') ? wf_mt($en) : $en);
     $cur = (string) (wi_sys('plan_currency') ?: '$'); $cards = ''; $plans = array_filter(wi_plans(), fn($p) => !empty($p['public'])); $mid = (int) floor(count($plans) / 2); $i = 0;
-    foreach ($plans as $p) { $p = wi_plan_clean($p); $hot = $i++ === $mid && count($plans) > 1;
+    foreach ($plans as $pid => $p) { $p = wi_plan_clean($p); $hot = $i++ === $mid && count($plans) > 1;
+        if ($p['web_only']) { $li = ''; foreach (['Chat bubble on your website', 'The bot answers your visitors 24/7', 'What it cannot answer reaches your WhatsApp', 'Reply from WhatsApp, the visitor sees it', 'Visitor details: name, WhatsApp, email', 'One website'] as $x) $li .= '<li>' . $e($t($x)) . '</li>';
+            $cards .= '<div class="plan"><span class="eyebrow">' . $e($t('Free forever')) . '</span><h3>' . $e($t($p['name'])) . '</h3><div class="price">' . $e($t('Free')) . '</div><ul>' . $li . '</ul><a class="btn g" href="' . $e(preg_replace('/\?.*$/', '', (string) (wi_sys('login_url') ?: wi_sys('base_url'))) . '?signup&plan=' . rawurlencode((string) $pid)) . '">' . $e($t('Add it to my website')) . '</a></div>'; continue; }
         $li = '<li>' . $p['numbers'] . ' ' . $e($t('WhatsApp numbers')) . '</li><li>' . ($p['team'] ?: '∞') . ' ' . $e($t('team members')) . '</li>'
             . ($p['bot'] ? '<li>' . $e($t('Smart bot that learns')) . ($p['ai_calls'] ? ' (' . number_format($p['ai_calls']) . ' ' . $e($t('AI replies')) . ')' : '') . '</li>' : '')
             . ($p['cases'] ? '<li>' . $e($t('Customers & tickets follow-up')) . '</li>' : '') . ($p['meetings'] ? '<li>' . $e($t('Meetings')) . '</li>' : '') . ($p['backup'] ? '<li>' . $e($t('Backups')) . '</li>' : '');

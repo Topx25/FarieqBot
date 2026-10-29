@@ -104,6 +104,8 @@ function wf_int_api(): void {
 
 /** The Integrations page. */
 function wf_int_page(): string {
+    // the free website-chat plan: the website chat only
+    if (function_exists('wi_web_only') && wi_web_only()) return function_exists('wf_wc_section') ? wf_wc_section() : '';
     $t = fn($s) => wi_e(wi_t($s)); $base = rtrim((string) wi_sys('base_url'), '/') . '/'; $st = (array) wi_read('int_state.json', []); $nums = wf_int_numbers();
     $new = (array) ($_SESSION['int_new_key'] ?? []); unset($_SESSION['int_new_key']);
     $o = '<section class="hero"><div class="hero-t"><span class="hero-ic">🔌</span><div><h1>' . $t('Integrations') . '</h1><p class="muted">' . $t('Connect another system (a store, a CRM) to a WhatsApp number: messages that come in are sent to its webhook, and it sends messages through the number with its API key.') . '</p></div></div></section>';

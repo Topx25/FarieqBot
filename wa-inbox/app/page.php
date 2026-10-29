@@ -43,7 +43,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         <label>Code sent to your WhatsApp<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required autofocus class="otp" placeholder="••••••"></label>
         <button class="btn primary">Activate my account</button>
       <?php elseif ($signup): ?>
-        <input type="hidden" name="do" value="signup"><?php $gs = (array) ($_SESSION['gsignup'] ?? []); ?>
+        <input type="hidden" name="do" value="signup"><?php $gs = (array) ($_SESSION['gsignup'] ?? []); ?><input type="hidden" name="plan" value="<?= wi_e(preg_replace('/[^a-z0-9_-]/', '', (string) ($_GET['plan'] ?? ''))) ?>">
         <?php if ($gs): ?><p class="small center">Google: <b dir="ltr"><?= wi_e($gs['email']) ?></b></p><?php endif; ?>
         <label>Name<input name="name" autocomplete="name" required autofocus maxlength="80" value="<?= wi_e((string) ($gs['name'] ?? '')) ?>"></label>
         <label>Business name<input name="business" autocomplete="organization" maxlength="120"></label>
@@ -267,7 +267,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         <form method="post" class="row" style="margin-top:10px;gap:8px;align-items:center"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="archive_key_backup"><span>🔐 <b>Message archive key</b> <small class="muted">— the key that decrypts the encrypted messages; keep a copy outside the server</small></span><button class="btn ghost sm" onclick="return confirm(this.dataset.q)" data-q="<?= wi_e(wi_t('Send the key to the super admins on WhatsApp (and email when set)?')) ?>">Send me a backup</button></form>
         <form method="post" class="stack" style="margin-top:10px"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="plans_save">
           <p class="muted small">⚙️ <span>Sign-up, Google sign-in, captcha, email and the SaaS domain moved to</span> <a href="?p=settings#sys-email">Settings → System</a></p>
-          <div style="overflow-x:auto"><table class="tbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Days</th><th>Numbers</th><th>Team</th><th>AI calls / month</th><th>AI tokens / month (0 = no limit)</th><th>Media GB (0 = unlimited)</th><?php foreach (wi_plan_features() as $pf): ?><th><?= wi_e(wi_t($pf[1])) ?></th><?php endforeach; ?><th>Shown</th><th>Trial</th><th>Delete</th></tr>
+          <div style="overflow-x:auto"><table class="tbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Days</th><th>Numbers</th><th>Team</th><th>AI calls / month</th><th>AI tokens / month (0 = no limit)</th><th>Media GB (0 = unlimited)</th><?php foreach (wi_plan_features() as $pf): ?><th><?= wi_e(wi_t($pf[1])) ?></th><?php endforeach; ?><th>Shown</th><th>Trial</th><th title="Website chat only: free, no WhatsApp number, the bot answers the website visitors">Website chat only</th><th>Delete</th></tr>
           <?php $prow = 0; foreach (wi_plans() + ['' => ['name' => '', 'price' => 0, 'days' => 30, 'numbers' => 1, 'team' => 0, 'ai_calls' => 0, 'media_gb' => 0]] as $pid => $pp): $n = 'plans[' . $prow++ . ']'; ?>
             <tr><td><input name="<?= $n ?>[id]" value="<?= wi_e((string) $pid) ?>" size="7" placeholder="new" dir="ltr"></td><td><input name="<?= $n ?>[name]" value="<?= wi_e((string) $pp['name']) ?>" size="9" dir="auto"></td>
               <td><input type="number" step="0.01" min="0" name="<?= $n ?>[price]" value="<?= wi_e((string) $pp['price']) ?>" style="width:70px"></td><td><input type="number" min="1" name="<?= $n ?>[days]" value="<?= (int) $pp['days'] ?>" style="width:60px"></td>
@@ -275,7 +275,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
               <td><input type="number" min="0" name="<?= $n ?>[ai_calls]" value="<?= (int) $pp['ai_calls'] ?>" style="width:75px"></td>
               <td><input type="number" min="0" name="<?= $n ?>[ai_tokens]" value="<?= (int) ($pp['ai_tokens'] ?? 0) ?>" style="width:100px"></td>
               <td><input type="number" min="0" name="<?= $n ?>[media_gb]" value="<?= (int) ($pp['media_gb'] ?? 0) ?>" style="width:65px"></td>
-              <?php foreach (array_merge(array_keys(wi_plan_features()), ['public', 'trial']) as $fk): ?><td><input type="checkbox" name="<?= $n ?>[<?= $fk ?>]" value="1" <?= !empty($pp[$fk]) ? 'checked' : '' ?>></td><?php endforeach; ?>
+              <?php foreach (array_merge(array_keys(wi_plan_features()), ['public', 'trial', 'web_only']) as $fk): ?><td><input type="checkbox" name="<?= $n ?>[<?= $fk ?>]" value="1" <?= !empty($pp[$fk]) ? 'checked' : '' ?>></td><?php endforeach; ?>
               <td><?php if ($pid !== ''): ?><input type="checkbox" name="<?= $n ?>[del]" value="1"><?php endif; ?></td></tr>
           <?php endforeach; ?></table></div>
           <p class="muted">Prices are shown in <?= wi_e((string) (wi_sys('currency') ?: 'USD')) ?>. A client on a plan gets its limits when you choose the plan for them; their end date is extended with the renew buttons.</p>

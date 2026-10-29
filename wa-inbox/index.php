@@ -120,8 +120,9 @@ if (isset($_GET['ai_report']) && wi_is_super()) { require_once __DIR__ . '/featu
 if (in_array($page, ['saas', 'plans', 'clients', 'errors'], true) && !wi_is_super()) $page = 'dashboard';
 if (in_array($page, ['saas', 'plans', 'clients'], true) && wi_standalone()) $page = 'dashboard'; // one customer: no subscriptions // subscriptions are the super admin's
 // Integrations live in each client's panel (the super admin opens the client's panel to see them)
-if ($page === 'integrations' && (wi_me()['role'] ?? '') === 'client' && !wi_client_can(wi_me(), 'integrations')) $page = 'dashboard'; // switched off in the client's plan
-if ($page === 'facebook' && function_exists('wi_plan_allows') && !wi_plan_allows('facebook')) $page = 'dashboard'; // Facebook and Instagram come with the higher plans
+if ($page === 'integrations' && (wi_me()['role'] ?? '') === 'client' && !wi_client_can(wi_me(), 'integrations') && empty(wi_me()['web_only'])) $page = 'dashboard'; // switched off in the client's plan
+if ($page === 'facebook' && function_exists('wi_plan_allows') && !wi_plan_allows('facebook')) $page = 'dashboard';
+if (function_exists('wi_web_only') && wi_web_only() && $page !== 'me') $page = 'integrations'; // the free website-chat plan opens on its website chat // Facebook and Instagram come with the higher plans
 if ($page === 'integrations' && (wi_me()['role'] ?? '') !== 'client') { if (wi_is_super()) { wi_flash('Integrations are managed inside each client\'s panel: open the client\'s panel, then Integrations.', 'ok'); header('Location: ?p=clients'); exit; } $page = 'dashboard'; }
 if (!in_array($page, ['saas', 'plans', 'integrations', 'business', 'clients', 'errors', 'me', 'dashboard', 'inbox', 'search', 'users', 'link', 'accounts', 'gateway', 'broadcast', 'analytics', 'library', 'audio', 'changes', 'help', 'files', 'media', 'ai', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'learning', 'facebook', 'catalog'], true)) $page = 'dashboard';
 $fxPages = ['business', 'learning', 'cases', 'groups', 'schedule', 'programs', 'status', 'health', 'report', 'backup', 'customer', 'numbers', 'bot', 'botrun', 'botgroup', 'meetings', 'settings', 'facebook', 'catalog'];

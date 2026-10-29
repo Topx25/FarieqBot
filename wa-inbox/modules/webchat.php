@@ -4,7 +4,10 @@
 
 /** Every site: key => [aid, name, domains[], to, lang, hello, color, on]. */
 function wf_wc_sites(): array { return (array) wi_read('webchat.json', []); }
-function wf_wc_mine(): array { $n = wf_int_numbers(); return array_filter(wf_wc_sites(), fn($s) => isset($n[(string) ($s['aid'] ?? '')])); }
+function wf_wc_mine(): array {
+    // the free website-chat plan: the sites this person made (they are sent from this system's number, which is not theirs)
+    if (function_exists('wi_web_only') && wi_web_only()) { $me = strtolower((string) ((function_exists('wi_tenant') && wi_is_team(wi_me()) ? (wi_tenant(wi_me())['email'] ?? '') : (wi_me()['email'] ?? '')))); return array_filter(wf_wc_sites(), fn($s) => strtolower((string) ($s['owner'] ?? '')) === $me && $me !== ''); }
+    $n = wf_int_numbers(); return array_filter(wf_wc_sites(), fn($s) => isset($n[(string) ($s['aid'] ?? '')])); }
 /** The admin's WhatsApp: a phone number or a group (…@g.us). */
 function wf_wc_to(string $to): string { $to = trim($to); if (preg_match('/^[0-9-]{6,40}@g\.us$/', $to)) return $to; $d = preg_replace('/\D/', '', $to); return strlen($d) >= 8 ? $d . '@s.whatsapp.net' : ''; }
 /** The calling website is one of the site's domains (or a sub-domain of one). */
@@ -65,11 +68,14 @@ function wf_wc_public(): void {
     $rc = function_exists('wf_bot_run_cfg') ? wf_bot_run_cfg((string) $s['aid']) : []; $botOn = ($s['mode'] ?? 'bot') === 'bot' && ($rc['mode'] ?? 'off') !== 'off' && ($rc['web_chat'] ?? true); if (!empty($s['landing'])) $botOn = ($s['mode'] ?? 'bot') === 'bot';
     // the number is not linked yet (or is offline): nothing can reach the team, so the bot keeps answering and the visitor's details are kept as a lead
     $gwOn = !empty(wi_gateway('/status', null, $acc)['connected']); if (!$gwOn && empty($s['landing'])) { $botOn = true; $isHuman = false; }
+    if (!empty($s['free'])) $botOn = true; // the free plan: always the bot, from the site's own text (never this system's number bot)
     if (!$botOn) $isHuman = true;
     if (!$isHuman && $msg !== '') { $hist = []; foreach (array_slice((array) ($c['msgs'] ?? []), -8) as $m) $hist[] = ['from' => ($m['who'] ?? '') === 'me' ? 'customer' : 'bot', 'text' => (string) $m['text']];
         if (!empty($s['landing']) && function_exists('wf_landing_answer')) { $reply = wf_landing_answer($msg, array_map(fn($x) => ['me' => $x['from'] === 'customer', 'text' => $x['text']], $hist), $lang); $handoff = $reply === '' || !empty($GLOBALS['wf_landing_handoff']); }
-        else { $r = $gwOn ? wf_bot_answer($acc, $msg, $hist) : []; if (!empty($r['ok']) && trim((string) ($r['reply'] ?? '')) !== '' && empty($r['handoff'])) $reply = trim((string) $r['reply']);
-            if ($reply === '') $reply = wf_wc_site_answer($key, $s, $msg, $hist); $handoff = $reply === '' || (!empty($r['handoff']) && $gwOn); } }
+        else { $r = $gwOn && empty($s['free']) ? wf_bot_answer($acc, $msg, $hist) : []; if (!empty($r['ok']) && trim((string) ($r['reply'] ?? '')) !== '' && empty($r['handoff'])) $reply = trim((string) $r['reply']);
+            // the free plan: a monthly cap on bot replies (wi_sys webchat_free_ai, default 300); past it the visitor goes to the owner on WhatsApp
+            $capped = false; if (!empty($s['free'])) { $mon = date('Y-m'); $cap = max(0, (int) (wi_sys('webchat_free_ai') ?: 300)); wi_update('webchat_usage.json', function ($U) use ($key, $mon, $cap, &$capped) { $U = (array) $U; $n = (int) ($U[$key][$mon] ?? 0); if ($n >= $cap) { $capped = true; return $U; } $U[$key] = [$mon => $n + 1]; return $U; }); }
+            if ($reply === '' && !$capped) $reply = wf_wc_site_answer($key, $s, $msg, $hist); $handoff = $reply === '' || (!empty($r['handoff']) && $gwOn); } }
     if (!$gwOn && empty($s['landing']) && ($handoff ?? $human)) { $c = wf_wc_conv($sid); wi_update('webchat_leads.json', function ($A) use ($key, $c, $msg) { $A = (array) $A; $A[] = ['site' => $key, 'name' => (string) ($c['name'] ?? ''), 'phone' => (string) ($c['phone'] ?? ''), 'email' => (string) ($c['email'] ?? ''), 'text' => mb_substr($msg, 0, 800), 'at' => date('c')]; return array_slice($A, -2000); });
         $t = wf_landing_t('Thank you! The team will contact you on WhatsApp soon.', $lang); $new = []; if ($reply !== '') { wf_wc_add($sid, $key, ['who' => 'bot', 'text' => mb_substr($reply, 0, 2000)]); $new[] = ['who' => 'bot', 'text' => $reply]; }
         if (!$reply || $human) { wf_wc_add($sid, $key, ['who' => 'bot', 'text' => $t]); $new[] = ['who' => 'bot', 'text' => $t]; } wi_log('webchat_lead', ['site' => $key]); $out(['ok' => true, 'msgs' => $new, 'human' => false, 'last' => (int) (wf_wc_conv($sid)['seq'] ?? 0)]); }
@@ -130,6 +136,7 @@ function wf_wc_script(string $key, array $s): string {
         'title' => (string) ($s['name'] ?? ''), 'hello' => trim((string) ($s['hello'] ?? '')) ?: $L('Hi! How can we help you?'), 'ph' => $L('Write your message'), 'send' => $L('Send'),
         'start' => $L('Start the chat'), 'intro' => $L('Your details, so the team can reach you if the chat is cut:'), 'name' => $L('Your name'), 'phone' => $L('Your WhatsApp number'), 'email' => $L('Your email (optional)'),
         'botoff' => $L('Talk to a person'), 'boton' => $L('Back to the bot'), 'end' => $L('End the chat'), 'endq' => $L('End this chat? A new one starts next time.'), 'ended' => $L('The chat has ended. Thank you!'), 'again' => $L('New chat'),
+        'powered' => !empty($s['free']) ? $L('Powered by Fariek') : '', 'powered_url' => 'https://fariek.com/?utm_source=webchat&utm_medium=free',
         'person' => $L('A person answers you now'), 'bot' => $L('The bot answers you now'), 'need' => $L('Write your name and WhatsApp number.'), 'err' => $L('Could not send now. Try again.')];
     return '(function(){if(window.__fqwc)return;window.__fqwc=1;var C=' . json_encode($cfg, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES) . ";\n" . <<<'JS'
 var d=document,S,last=0,human=false,ended=false,me={};
@@ -146,7 +153,7 @@ d.head.appendChild(st);
 var b=d.createElement('button');b.id='fqwc-b';b.type='button';b.textContent='💬';var w=d.createElement('div');w.id='fqwc-w';
 w.innerHTML='<div id="fqwc-h"><b><span id="fqwc-t"></span><small id="fqwc-m"></small></b><button type="button" id="fqwc-hu"></button><button type="button" id="fqwc-e"></button><button type="button" id="fqwc-c">✕</button></div>'
 +'<form id="fqwc-s"><p id="fqwc-in"></p><input id="fqwc-n" autocomplete="name" maxlength="60"><input id="fqwc-p" inputmode="tel" autocomplete="tel" maxlength="20" dir="ltr"><input id="fqwc-em" type="email" autocomplete="email" maxlength="80" dir="ltr"><div class="er" id="fqwc-er"></div><button id="fqwc-go"></button></form>'
-+'<div id="fqwc-l"></div><form id="fqwc-f"><input id="fqwc-i" autocomplete="off"><button></button></form>';
++'<div id="fqwc-l"></div><form id="fqwc-f"><input id="fqwc-i" autocomplete="off"><button></button></form>'+(C.powered?'<a id="fqwc-pw" href="'+C.powered_url+'" target="_blank" rel="noopener" style="display:block;text-align:center;font-size:11px;color:#8a94a6;padding:4px 0 6px;text-decoration:none">⚡ '+C.powered+'</a>':'');
 d.body.appendChild(w);d.body.appendChild(b);
 var $=function(i){return d.getElementById(i)},L=$('fqwc-l');$('fqwc-t').textContent=C.title;$('fqwc-in').textContent=C.intro;$('fqwc-n').placeholder=C.name;$('fqwc-p').placeholder=C.phone;$('fqwc-em').placeholder=C.email;$('fqwc-go').textContent=C.start;$('fqwc-e').textContent=C.end;$('fqwc-i').placeholder=C.ph;w.querySelector('#fqwc-f button').textContent=C.send;
 var add=function(who,t){var e=d.createElement('div');e.className=who;var im=[];t=String(t).replace(/\[img:([a-z0-9-]+)\]/g,function(_,k){im.push(k);return''}).trim();e.textContent=t;im.forEach(function(k){var g=d.createElement('img');g.src=C.api.split('?')[0]+'?guide_img='+k+'&lang='+(C.dir==='rtl'?'ar':'en');g.style.cssText='display:block;width:100%;border-radius:10px;margin-top:6px';e.appendChild(g)});L.appendChild(e);L.scrollTop=L.scrollHeight};
@@ -178,12 +185,14 @@ function wf_wc_section(): string {
             . '<form method="post" class="stack" style="margin-top:10px">' . $csrf . '<input type="hidden" name="do" value="wc_act"><input type="hidden" name="k" value="' . wi_e($k) . '"><input type="hidden" name="act" value="about">'
             . '<label>' . $t('About the company (the bot answers visitors from this, with the website pages)') . '<textarea name="about" rows="5" maxlength="6000" dir="auto" placeholder="' . $t('Services, products, prices, branches, working hours, contacts…') . '">' . wi_e((string) ($s['about'] ?? '')) . '</textarea></label><div><button class="btn primary sm">' . $t('Save') . '</button></div></form></div></details>'; }
     $opt = ''; foreach ($nums as $aid => $a) $opt .= '<option value="' . wi_e((string) $aid) . '">' . wi_e((string) ($a['name'] ?? $aid)) . '</option>';
+    $free = function_exists('wi_web_only') && wi_web_only();
+    if ($free && wf_wc_mine()) return $o . '<p class="muted small">' . $t('The free plan has one website. Upgrade the plan for more.') . '</p></div>';
     $o .= '<details><summary class="btn ghost sm">➕ ' . $t('Add a website') . '</summary><form method="post" class="form-grid" style="margin-top:10px">' . $csrf . '<input type="hidden" name="do" value="wc_save">'
         . '<label>' . $t('Website name') . '<input name="name" required maxlength="60"></label>'
         . '<label>' . $t('Domains (comma separated)') . '<input name="domains" required dir="ltr" placeholder="example.com"></label>'
-        . '<label>' . $t('Number') . '<select name="aid">' . $opt . '</select></label>'
+        . ($free ? '' : '<label>' . $t('Number') . '<select name="aid">' . $opt . '</select></label>')
         . '<label>' . $t('Send what the bot cannot answer to (WhatsApp number or group ID)') . '<input name="to" required dir="ltr" placeholder="2010… / 1203…@g.us"></label>'
-        . '<label>' . $t('Who answers the visitors') . '<select name="mode"><option value="bot">' . $t('The bot first, then the team on WhatsApp') . '</option><option value="team">' . $t('The team on WhatsApp (every message reaches WhatsApp)') . '</option></select></label>'
+        . ($free ? '<p class="muted small gcf-wide">🤖 ' . $t('The bot answers your visitors from your website and the text below; what it cannot answer reaches you on WhatsApp.') . '</p>' : '') . '<label' . ($free ? ' hidden' : '') . '>' . $t('Who answers the visitors') . '<select name="mode"><option value="bot">' . $t('The bot first, then the team on WhatsApp') . '</option><option value="team">' . $t('The team on WhatsApp (every message reaches WhatsApp)') . '</option></select></label>'
         . '<label>' . $t('Welcome message') . '<input name="hello" maxlength="300"></label>'
         . '<label>' . $t('Language') . '<select name="lang"><option value="ar">' . $t('Arabic') . '</option><option value="en">' . $t('English') . '</option></select></label>'
         . '<label>' . $t('Color') . '<input type="color" name="color" value="#25d366"></label>' . (wi_is_super() ? '<label class="check"><input type="checkbox" name="landing" value="1"> ' . $t('This product\'s own page (replaces its chat bubble)') . '</label>' : '')
@@ -217,12 +226,15 @@ wi_hook_add('api_handlers', fn(array $H) => array_merge($H, ['wf_api_webchat']))
 /** Saves from the Integrations page. */
 function wf_wc_action(string $do): void {
     if ($do === 'wc_save') { $aid = (string) ($_POST['aid'] ?? ''); $to = trim((string) ($_POST['to'] ?? ''));
+        // the free plan: one site, sent from this system's main number, the bot answers; it shows "Powered by" on the bubble
+        $free = function_exists('wi_web_only') && wi_web_only(); if ($free) { if (wf_wc_mine()) { wi_flash('The free plan has one website. Upgrade the plan for more.', 'bad'); header('Location: ?p=integrations'); exit; } $aid = 'main'; $_POST['mode'] = 'bot'; }
         $dom = array_values(array_filter(array_map(fn($d) => preg_replace('#^(https?://)?(www\.)?([^/:\s]+).*$#i', '$3', strtolower(trim($d))), explode(',', (string) ($_POST['domains'] ?? ''))), fn($d) => preg_match('/^[a-z0-9.-]+\.[a-z]{2,}$/', $d)));
-        if (!isset(wf_int_numbers()[$aid]) || !$dom || wf_wc_to($to) === '') { wi_flash('Choose a number, a domain and a WhatsApp number or group.', 'bad'); header('Location: ?p=integrations'); exit; }
+        if ((!$free && !isset(wf_int_numbers()[$aid])) || !$dom || wf_wc_to($to) === '') { wi_flash('Choose a number, a domain and a WhatsApp number or group.', 'bad'); header('Location: ?p=integrations'); exit; }
         $k = 'wc_' . bin2hex(random_bytes(8));
         wi_update('webchat.json', function ($A) use ($k, $aid, $dom, $to) { $A = (array) $A; $A[$k] = ['aid' => $aid, 'name' => mb_substr(trim((string) ($_POST['name'] ?? '')), 0, 60), 'domains' => $dom, 'to' => $to, 'on' => true,
             'mode' => ($_POST['mode'] ?? '') === 'team' ? 'team' : 'bot', 'lang' => ($_POST['lang'] ?? '') === 'en' ? 'en' : 'ar', 'hello' => mb_substr(trim((string) ($_POST['hello'] ?? '')), 0, 300), 'color' => preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($_POST['color'] ?? '')) ? $_POST['color'] : '#25d366', 'landing' => wi_is_super() && !empty($_POST['landing']) ? 1 : 0, 'at' => date('c')]; return $A; });
-        wi_log('webchat_add', ['site' => $k, 'account' => $aid]); header('Location: ?p=integrations'); exit; }
+        if ($free) { $ow = strtolower((string) (wi_me()['email'] ?? '')); wi_update('webchat.json', function ($A) use ($k, $ow) { $A[$k]['owner'] = $ow; $A[$k]['free'] = true; return $A; }); }
+        wi_log('webchat_add', ['site' => $k, 'account' => $aid, 'free' => $free]); header('Location: ?p=integrations'); exit; }
     $k = (string) ($_POST['k'] ?? ''); if (!isset(wf_wc_mine()[$k])) { wi_flash('Not found.', 'bad'); header('Location: ?p=integrations'); exit; }
     $act = (string) ($_POST['act'] ?? '');
     if ($act === 'mode') { $mv = ($_POST['mode'] ?? '') === 'team' ? 'team' : 'bot'; wi_update('webchat.json', function ($A) use ($k, $mv) { $A[$k]['mode'] = $mv; return $A; }); }
