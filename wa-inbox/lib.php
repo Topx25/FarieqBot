@@ -1145,7 +1145,7 @@ function wi_mc_send(string $to, string $subject, string $text): bool {
     $dd = trim((string) wi_sys('mc_dkim_domain')); $ds = trim((string) wi_sys('mc_dkim_selector')); $dk = preg_replace('/-----[^-]+-----|\s+/', '', wi_secret('mc_dkim_key'));
     if ($dd !== '' && $ds !== '' && $dk !== '') $per += ['dkim_domain' => $dd, 'dkim_selector' => $ds, 'dkim_private_key' => $dk];
     $body = ['from' => ['email' => $from, 'name' => (string) wi_brand('brand_name')], 'subject' => $subject, 'personalizations' => [$per], 'reply_to' => ['email' => (string) (wi_sys('mc_reply_to') ?: $from)],
-        'content' => [['type' => 'text/plain', 'value' => $text]], 'transactional' => true, 'headers' => ['X-Entity-Ref-ID' => bin2hex(random_bytes(8))]];
+        'content' => [['type' => 'text/plain', 'value' => $text], ['type' => 'text/html', 'value' => '<!doctype html><html><head><meta charset="utf-8"></head><body dir="auto" style="font-family:Tahoma,Arial,sans-serif;font-size:15px;line-height:1.7">' . nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8')) . '</body></html>']], 'transactional' => true, 'headers' => ['X-Entity-Ref-ID' => bin2hex(random_bytes(8))]];
     $ch = curl_init('https://api.mailchannels.net/tx/v1/send');
     curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 20, CURLOPT_POSTFIELDS => json_encode($body, JSON_UNESCAPED_UNICODE), CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'X-Api-Key: ' . wi_secret('mc_api_key')]]);
     $raw = (string) curl_exec($ch); $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
