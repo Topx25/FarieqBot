@@ -674,7 +674,7 @@ function wi_api_page(string $api): string {
         // Calls that belong to a page but were missing (they skipped the page check), and calls any signed-in user may make ('*': the handler checks who may use it)
         foreach (['inbox' => 'chats_all media acc_state recommend recommend_send suggest', 'audio' => 'audio_cats', 'accounts' => 'restore', 'cases' => 'case_files case_trail case_deep case_follow case_delete',
             'botrun' => 'bot_quality bot_commands team_watch checkin_preview', 'botgroup' => 'visitors', 'learning' => 'learn_lean',
-            '*' => 'plan_usage home sysguide jslog hide_for qr_mine my_google perm_share perm_list perm_invite client_backup acc_invoices ui_colors ui_theme ai_tasks gw_rules menu_cfg sys_settings msg_templates ig_state push_key push_sub push_unsub push_test push_fcm'] as $pg => $list)
+            '*' => 'plan_usage home sysguide jslog hide_for qr_mine my_google perm_share perm_list perm_invite client_backup acc_invoices ui_colors ui_theme ai_tasks gw_rules menu_cfg sys_settings msg_templates ig_state sys_test push_key push_sub push_unsub push_test push_fcm'] as $pg => $list)
             foreach (explode(' ', $list) as $a) $map[$a] ??= $pg; }
     if ($api === 'meeting_targets') return ($_GET['ctx'] ?? '') === 'cases' ? 'cases' : 'meetings'; // the case form uses the same group/member lists
     if (str_starts_with($api, 'meeting')) return 'meetings';

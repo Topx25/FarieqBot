@@ -4,6 +4,13 @@ function wf_sys_fields(): array {
     return [
         'legal_owner' => ['Owner name on the privacy policy and terms pages (empty = product name)', 'text'], 'legal_email' => ['Contact e-mail on those pages', 'text'],
         'privacy_text' => ['Privacy policy page (index.php?privacy) — empty = the built-in text; "# " starts a heading', 'longtext'], 'terms_text' => ['Terms of service page (index.php?terms) — empty = the built-in text', 'longtext'],
+        // sign-up, sign-in and email (moved here from the plans page); "secret" values are kept encrypted and never shown again
+        'signup_on' => ['Visitors may sign up (a trial on the plan marked «trial»)', 'int01'], 'google_login_on' => ['Sign in and sign up with Google', 'int01'],
+        'turnstile_site' => ['Cloudflare Turnstile site key (the captcha on the sign-up page; empty = off)', 'text'], 'turnstile_secret' => ['Cloudflare Turnstile secret key', 'secret'],
+        'saas_domain' => ['SaaS domain (each client may get name.this-domain)', 'host'],
+        'mc_api_key' => ['MailChannels API key (email by API, used before SMTP)', 'secret'], 'mc_from' => ['MailChannels sender email', 'email'], 'mc_reply_to' => ['Reply-to email (empty = the sender)', 'email'],
+        'mc_dkim_domain' => ['DKIM domain', 'host'], 'mc_dkim_selector' => ['DKIM selector (as on the MailChannels DKIM keys page)', 'text'], 'mc_dkim_key' => ['DKIM private key (PEM; empty when the key is kept at MailChannels)', 'secret'],
+        'smtp_host' => ['SMTP server (when there is no MailChannels key)', 'host'], 'smtp_port' => ['SMTP port (587 or 465)', 'port'], 'smtp_user' => ['SMTP user', 'text'], 'smtp_pass' => ['SMTP password', 'secret'], 'smtp_from' => ['SMTP sender email (empty = the SMTP user)', 'email'],
         'brand_name' => ['Product name', 'text'], 'brand_name_en' => ['Product name in English (the English product page; empty = the same name)', 'text'], 'brand_logo' => ['Logo (emoji or short text)', 'text'], 'device_name' => ['Device name shown on linked phones', 'text'],
         'base_url' => ['Dashboard address (used in links sent on WhatsApp, Google sign-in, meetings)', 'url'], 'cookie_path' => ['Sign-in cookie path', 'text'],
         'timezone' => ['Time zone', 'tz'], 'country_code' => ['Country code for local numbers (e.g. 20, 966)', 'digits'], 'trunk_prefix' => ['Local prefix to drop (usually 0)', 'digits'],
@@ -12,13 +19,42 @@ function wf_sys_fields(): array {
         'ai_engine' => ['AI engine: local (own keys, AI providers page) or bridge (through the invoice system)', 'text'], 'addon_facebook' => ['Facebook add-on: pages, Messenger and comments (1 = on, 0 = off)', 'int01'], 'addon_instagram' => ['Instagram add-on: direct messages of the Instagram account linked to a connected Facebook page (1 = on, 0 = off)', 'int01'], 'addon_invoices' => ['Invoices add-on (1 = on, 0 = off)', 'int01'], 'invoices_config' => ['Invoice system config.php path (empty = next to this app)', 'text'], 'trusted_proxies' => ['Trusted proxies whose visitor-IP header is believed (IP ranges, space separated; default = Cloudflare)', 'text'], 'bridge_url' => ['AI / invoice bridge address', 'url'], 'bridge_host' => ['Bridge host header (optional)', 'text'],
     ];
 }
+/** Settings → System: one test per part that can be tried (email, captcha, Google sign-in, phone notifications, the address, the WhatsApp numbers). */
+function wf_sys_test(string $what): array {
+    $me = strtolower((string) ($_SESSION['email'] ?? ''));
+    if ($what === 'email') { if (!wi_mail_on()) return ['ok' => false, 'msg' => 'No email sender is set (MailChannels key and sender, or SMTP).'];
+        $ok = wi_mail($me, wi_t('Fariek') . ': ' . wi_t('Email test'), wi_t('This test email came from the system settings. If it reached you, sign-in codes and password resets reach your users too.'));
+        $last = []; foreach (array_reverse(array_slice(file(WI_DIR . '/audit.jsonl') ?: [], -20)) as $l) { $j = json_decode($l, true); if (in_array($j['action'] ?? '', ['mail_sent', 'mail_failed'], true)) { $last = $j; break; } }
+        return $ok ? ['ok' => true, 'msg' => wi_t('Sent to') . ' ' . $me . ' (' . ($last['via'] ?? 'smtp') . '). ' . wi_t('Check the inbox and the spam folder.')] : ['ok' => false, 'msg' => (string) ($last['why'] ?? 'The email was not sent.')]; }
+    if ($what === 'captcha') { $sec = wi_secret('turnstile_secret'); if ((string) wi_sys('turnstile_site') === '' || $sec === '') return ['ok' => false, 'msg' => 'The site key and the secret key are both needed.'];
+        $ch = curl_init('https://challenges.cloudflare.com/turnstile/v0/siteverify'); curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_POSTFIELDS => http_build_query(['secret' => $sec, 'response' => 'test'])]);
+        $r = json_decode((string) curl_exec($ch), true); curl_close($ch); $codes = (array) ($r['error-codes'] ?? []);
+        return in_array('invalid-input-secret', $codes, true) ? ['ok' => false, 'msg' => 'Cloudflare refused the secret key.'] : ['ok' => is_array($r), 'msg' => is_array($r) ? 'Cloudflare accepted the secret key.' : 'Cloudflare did not answer.']; }
+    if ($what === 'google') { $on = function_exists('wf_glogin_on') && wf_glogin_on(); $cb = rtrim((string) wi_sys('base_url'), '/') . '/?google_cb=1';
+        return ['ok' => $on, 'msg' => ($on ? wi_t('Google sign-in is ready.') : wi_t('Google sign-in is off or its keys are missing.')) . ' ' . wi_t('Return address to allow in Google Cloud:') . ' ' . $cb]; }
+    if ($what === 'push') { $n = function_exists('wi_push_user') ? wi_push_user($me, ['title' => wi_t('Fariek'), 'body' => wi_t('Notifications are on. This is how new chats and alerts will reach you.'), 'url' => './', 'tag' => 'test']) : 0;
+        $fcm = function_exists('wi_fcm_token') && wi_fcm_token();
+        return ['ok' => $n > 0, 'msg' => ($n ? wi_t('Sent to your devices:') . ' ' . $n : wi_t('No device of yours has notifications on. Turn them on from 📱 in the top bar or from the phone app.')) . ' · ' . wi_t('Phone app (Firebase):') . ' ' . ($fcm ? '✅' : '❌')]; }
+    if ($what === 'address') { $u = (string) wi_sys('base_url'); if ($u === '') return ['ok' => false, 'msg' => 'The dashboard address is empty.'];
+        $ch = curl_init($u); curl_setopt_array($ch, [CURLOPT_NOBODY => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10, CURLOPT_FOLLOWLOCATION => true]); curl_exec($ch); $c = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+        return ['ok' => $c >= 200 && $c < 400, 'msg' => $u . ' → HTTP ' . $c]; }
+    if ($what === 'numbers') { $on = 0; $off = []; foreach (wi_accounts() as $a) { if (empty($a['enabled']) || !empty($a['archived']) || ($a['channel'] ?? '') === 'fb') continue; $st = wi_gateway('/status', null, $a); if (!empty($st['connected'])) $on++; else $off[] = (string) $a['name']; }
+        return ['ok' => !$off, 'msg' => wi_t('Connected:') . ' ' . $on . ($off ? ' · ' . wi_t('Not connected:') . ' ' . implode(', ', $off) : '')]; }
+    return ['ok' => false, 'msg' => 'Unknown test.'];
+}
 function wf_api_system(string $api): void {
+    if ($api === 'sys_test') { if (!wi_is_super()) wi_json(['ok' => false, 'error' => 'Super admin only.'], 403); @set_time_limit(60); $w = (string) (wf_post()['what'] ?? ''); $r = wf_sys_test($w); wi_log('sys_test', ['what' => $w, 'ok' => $r['ok']]); wi_json(['ok' => true, 'pass' => $r['ok'], 'msg' => wi_t($r['msg'])]); }
     if ($api !== 'sys_settings') return;
     if (!wi_is_super()) wi_json(['ok' => false, 'error' => 'Super admin only.'], 403);
     $F = wf_sys_fields();
     if ($_SERVER['REQUEST_METHOD'] === 'POST') { $in = (array) (wf_post()['sys'] ?? []); $c = wi_read('config.json', []); $S = (array) ($c['system'] ?? []);
         foreach ($F as $k => [, $type]) { if (!array_key_exists($k, $in)) continue; $v = trim((string) $in[$k]);
-            if ($type === 'int') $v = max(1, min(1440, (int) $v));
+            // a secret is kept encrypted, only when a new one is typed (empty = keep the saved one)
+            if ($type === 'secret') { if ($v !== '') wi_secret_set($k, $v); continue; }
+            if ($type === 'port') $v = max(1, min(65535, (int) $v));
+            elseif ($type === 'email' && $v !== '' && !filter_var($v, FILTER_VALIDATE_EMAIL)) wi_json(['ok' => false, 'error' => 'Not a valid email address.']);
+            elseif ($type === 'host') { $v = strtolower($v); if ($v !== '' && !preg_match('/^[a-z0-9.-]{3,100}$/', $v)) wi_json(['ok' => false, 'error' => 'Not a valid domain or server name.']); }
+            elseif ($type === 'int') $v = max(1, min(1440, (int) $v));
             elseif ($type === 'int01') $v = (int) $v ? 1 : 0;
             elseif ($type === 'digits') $v = preg_replace('/\D/', '', $v);
             elseif ($type === 'tz' && !in_array($v, timezone_identifiers_list(), true)) wi_json(['ok' => false, 'error' => 'Unknown time zone.']);
@@ -28,7 +64,7 @@ function wf_api_system(string $api): void {
             if ($k === 'cookie_path') $v = '/' . trim($v, '/') . (trim($v, '/') !== '' ? '/' : '');
             $S[$k] = is_string($v) ? mb_substr($v, 0, $type === 'longtext' ? 20000 : 300) : $v; }
         $c['system'] = $S; wi_write('config.json', $c); wi_log('system_settings_save', ['keys' => array_keys($in)]); wi_json(['ok' => true]); }
-    $out = []; foreach ($F as $k => [$label, $type]) $out[] = ['key' => $k, 'label' => $label, 'type' => $type, 'value' => wi_sys($k), 'default' => wi_sys_defaults()[$k] ?? ''];
+    $out = []; foreach ($F as $k => [$label, $type]) $out[] = ['key' => $k, 'label' => $label, 'type' => $type, 'value' => $type === 'secret' ? '' : wi_sys($k), 'saved' => $type === 'secret' ? wi_secret($k) !== '' : null, 'default' => $type === 'secret' ? '' : (wi_sys_defaults()[$k] ?? '')];
     wi_json(['ok' => true, 'fields' => $out, 'timezones' => timezone_identifiers_list()]);
 }
 /* ---------- Gateway content rules (wa-local/rules.json): never-stored texts, stripped link domains, text tags ---------- */

@@ -671,3 +671,12 @@ body.wa-mode.wa-menu .shell-v3 .side #side-nav{display:block!important}
 body.wa-mode .cf-chip.on{background:#00a884}
 /* full screen on a phone: the "Show the menu" button sits small at the bottom instead of over the chat search */
 @media (max-width:760px){.app.v-focus .focus-exit{top:auto!important;bottom:16px;inset-inline-start:12px;padding:8px 12px!important;font-size:13px!important;box-shadow:0 6px 18px -6px rgba(0,0,0,.4)}.app.v-focus .focus-exit span{display:none}}
+/* Settings → System: secrets with a saved / not set pill, a test row under each part, the answer in green or red */
+#sys-card .sys-secret .pill{font-size:11.5px;padding:1px 8px;border-radius:999px;margin-inline-start:6px;vertical-align:middle}
+#sys-card .sys-secret .pill.ok{background:#e7f6ec;color:#0a7d3e}#sys-card .sys-secret .pill.off{background:var(--card-in,#f0f2f5);color:var(--muted,#667781)}
+#sys-card .sys-tests{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px;padding-top:12px;border-top:1px dashed var(--line)}
+#sys-card .sys-tr{flex:1 1 100%;font-size:13.5px;line-height:1.6;padding:8px 12px;border-radius:10px;display:none;word-break:break-word}
+#sys-card .sys-tr:not(:empty){display:block;background:var(--card-in,#f5f6f7)}#sys-card .sys-tr.ok{background:#e7f6ec;color:#0a5c2e}#sys-card .sys-tr.bad{background:#fdecec;color:#9b1c1c}
+#sys-card .bs-nav a{display:flex;align-items:center;gap:6px}
+#sys-card .bs-sec{animation:sysIn .18s ease}@keyframes sysIn{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#sys-card .bs-sec{animation:none}}

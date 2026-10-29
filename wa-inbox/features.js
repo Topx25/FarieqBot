@@ -1644,19 +1644,28 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
         if ((b = e.target.closest('[data-mtreset]'))) post('msg_templates', { key: b.dataset.mtreset, reset: 1 }).then(function () { msgCard(); }); }; }); })();
     (function sysCard() { get('sys_settings').then(function (x) { var el = document.getElementById('sys-card'); if (!x.ok || !el) return;
       var by = {}; x.fields.forEach(function (f) { by[f.key] = f; }); var used = {};
-      var SECS = [['brand', '🏷️', 'Brand and address', 'The name, logo and address people see', ['brand_name', 'brand_name_en', 'brand_logo', 'device_name', 'base_url', 'cookie_path']],
+      // [id, icon, title, description, fields, test]: a section with a test gets a button that tries it for real and shows the answer under it
+      var SECS = [['email', '📧', 'Email', 'Sign-in codes, password resets and backups by email: MailChannels first, SMTP when there is no MailChannels key', ['mc_api_key', 'mc_from', 'mc_reply_to', 'mc_dkim_domain', 'mc_dkim_selector', 'mc_dkim_key', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from'], 'email'],
+        ['signup', '🚪', 'Sign-up and Google sign-in', 'Who may open an account, the captcha on the sign-up page, and the SaaS domain', ['signup_on', 'google_login_on', 'turnstile_site', 'turnstile_secret', 'saas_domain'], 'captcha', 'google'],
+        ['app', '📲', 'Phone app and notifications', 'The Android app and the browser notifications: a test sends one to your own devices', [], 'push'],
+        ['brand', '🏷️', 'Brand and address', 'The name, logo and address people see', ['brand_name', 'brand_name_en', 'brand_logo', 'device_name', 'base_url', 'cookie_path'], 'address'],
         ['region', '🌍', 'Region and language', 'Time zone, numbers, currency and the language of messages', ['timezone', 'country_code', 'trunk_prefix', 'number_locale', 'currency', 'msg_lang']],
         ['login', '🔐', 'Sign-in and security', 'Sign-in codes, locks and trusted proxies', ['idle_min', 'otp_min', 'max_fails', 'lock_min', 'trusted_proxies']],
-        ['numbers', '📱', 'Numbers protection', 'Daily limits that keep the WhatsApp numbers safe, and numbers left unlinked', ['group_add_day', 'keyword_per_hour', 'keyword_cooldown_min', 'idle_warn_days', 'idle_stop_days', 'idle_qr_min']],
+        ['numbers', '📱', 'Numbers protection', 'Daily limits that keep the WhatsApp numbers safe, and numbers left unlinked', ['group_add_day', 'keyword_per_hour', 'keyword_cooldown_min', 'idle_warn_days', 'idle_stop_days', 'idle_qr_min'], 'numbers'],
         ['files', '📦', 'Files and history', 'Largest file sizes and how many months are read', ['max_send_mb', 'max_learn_mb', 'max_status_mb', 'max_export_mb', 'months_recent', 'months_short', 'months_long', 'refresh_pct']],
         ['ai', '🤖', 'AI', 'Where the AI runs and its safety filter', ['ai_engine', 'ai_safety', 'bridge_url', 'bridge_host']],
         ['addons', '🧩', 'Add-ons', 'Turn on only what this installation sells', ['addon_facebook', 'addon_instagram', 'addon_invoices', 'invoices_config', 'notify_clients', 'backup_folder', 'changelog']],
         ['market', '📣', 'Landing page and plans', 'The public page at /welcome', ['landing_home', 'landing_design', 'landing_cta_url', 'landing_cta_label', 'plan_currency']],
         ['legal', '⚖️', 'Privacy and terms', 'The owner name and the text of the legal pages', ['legal_owner', 'legal_email', 'privacy_text', 'terms_text']]];
       var fld = function (f) { var v = f.value == null ? '' : f.value; used[f.key] = 1;
+        // a secret is never shown back: a password field, with "saved" or "not set" beside its name
+        if (f.type === 'secret') return '<label class="sys-secret">' + esc(T(f.label)) + ' <span class="pill ' + (f.saved ? 'ok' : 'off') + '">' + (f.saved ? '🔒 ' + T('Saved') : T('Not set')) + '</span>'
+          + (/key \(PEM/.test(f.label) ? '<textarea data-sys="' + f.key + '" rows="3" dir="ltr" autocomplete="off" placeholder="' + esc(f.saved ? T('Paste a new one to replace it') : '-----BEGIN PRIVATE KEY-----') + '"></textarea>'
+          : '<input type="password" data-sys="' + f.key + '" dir="ltr" autocomplete="new-password" placeholder="' + esc(f.saved ? T('Type a new one to replace it') : '') + '">') + '</label>';
         if (f.type === 'int01') return '<label class="check"><input type="checkbox" data-sys="' + f.key + '"' + (+v ? ' checked' : '') + '> ' + esc(T(f.label)) + '</label>';
         return '<label' + (f.type === 'longtext' ? ' class="gcf-wide"' : '') + '>' + esc(T(f.label)) + (f.type === 'longtext' ? '<textarea data-sys="' + f.key + '" rows="6" dir="auto" placeholder="' + esc(T('Empty = the built-in text')) + '">' + esc(v) + '</textarea>' : f.type === 'tz' ? '<input list="sys-tz" data-sys="' + f.key + '" value="' + esc(v) + '">' : '<input data-sys="' + f.key + '" type="' + (f.type === 'int' ? 'number' : 'text') + '" dir="auto" value="' + esc(v) + '" placeholder="' + esc(f.default) + '">') + '</label>'; };
-      var secs = SECS.map(function (s) { var body = s[4].filter(function (k) { return by[k]; }).map(function (k) { return fld(by[k]); }).join(''); return body ? [s, body] : null; }).filter(Boolean);
+      var tests = function (s) { var t = s.slice(5); return t.length ? '<div class="sys-tests">' + t.map(function (w) { return '<button type="button" class="btn ghost sm" data-systest="' + w + '">🧪 ' + T({ email: 'Send me a test email', captcha: 'Test the captcha keys', google: 'Check Google sign-in', push: 'Send me a test notification', address: 'Test the dashboard address', numbers: 'Check the WhatsApp numbers' }[w]) + '</button>'; }).join('') + '<div class="sys-tr" aria-live="polite"></div></div>' : ''; };
+      var secs = SECS.map(function (s) { var body = s[4].filter(function (k) { return by[k]; }).map(function (k) { return fld(by[k]); }).join('') + tests(s); return body ? [s, body] : null; }).filter(Boolean);
       var rest = x.fields.filter(function (f) { return !used[f.key]; }); if (rest.length) secs.push([['other', '⚙️', 'Other', '', []], rest.map(fld).join('')]);
       el.innerHTML = '<details class="card" open><summary><b>🏗️ ' + T('System') + '</b> <span class="muted small">' + T('Brand, address, time zone, country code, sign-in limits — values for this installation') + '</span></summary><div class="bs-wrap">'
         + '<nav class="bs-nav">' + secs.map(function (p) { return '<a href="#sys-' + p[0][0] + '">' + p[0][1] + ' ' + esc(T(p[0][2])) + '</a>'; }).join('') + '</nav>'
@@ -1665,10 +1674,13 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
         + '<p class="muted small">' + T('Changing the dashboard address or cookie path signs everyone out; set them to where the dashboard really is.') + '</p><div class="row" style="position:sticky;bottom:0;background:var(--card,#fff);padding:8px 0"><button class="btn primary sm" id="sys-save">💾 ' + T('Save') + '</button></div></details>';
       var tab = function (id) { if (!el.querySelector('#sys-' + id)) id = secs[0][0][0]; [].forEach.call(el.querySelectorAll('.bs-sec'), function (x) { x.hidden = x.id !== 'sys-' + id; });
         [].forEach.call(el.querySelectorAll('.bs-nav a'), function (a) { a.classList.toggle('on', a.getAttribute('href') === '#sys-' + id); }); try { localStorage.setItem('wi_sys_tab', id); } catch (e) {} };
-      var last = ''; try { last = localStorage.getItem('wi_sys_tab') || ''; } catch (e) {} tab(last);
+      var last = ''; try { last = localStorage.getItem('wi_sys_tab') || ''; } catch (e) {} if (/^#sys-/.test(location.hash)) last = location.hash.slice(5); tab(last);
+      // a test: the answer shows under the buttons in green or red (save first, the test reads what is saved)
+      el.addEventListener('click', function (e) { var b = e.target.closest('[data-systest]'); if (!b) return; var out = b.parentNode.querySelector('.sys-tr'); b.disabled = true; out.className = 'sys-tr'; out.textContent = '⏳ ' + T('Testing…');
+        post('sys_test', { what: b.dataset.systest }).then(function (r) { b.disabled = false; out.className = 'sys-tr ' + (r.ok && r.pass ? 'ok' : 'bad'); out.textContent = (r.ok && r.pass ? '✅ ' : '⚠️ ') + (r.msg || r.error || ''); }); });
       el.querySelector('.bs-nav').onclick = function (e) { var a = e.target.closest('a'); if (!a) return; e.preventDefault(); tab(a.getAttribute('href').slice(5)); };
       document.getElementById('sys-save').onclick = function () { var v = {}; [].forEach.call(el.querySelectorAll('[data-sys]'), function (i) { v[i.dataset.sys] = i.type === 'checkbox' ? (i.checked ? 1 : 0) : i.value; });
-        post('sys_settings', { sys: v }).then(function (r) { toast(r.ok ? '✓ ' + T('Saved') : '⚠️ ' + T(r.error)); }); }; }); })();
+        post('sys_settings', { sys: v }).then(function (r) { toast(r.ok ? '✓ ' + T('Saved') : '⚠️ ' + T(r.error)); if (r.ok) sysCard(); }); }; }); })();
     var L2 = function (u, t) { return '<a href="' + u + '" target="_blank" rel="noopener">' + t + ' ↗</a>'; };
     root.addEventListener('change', function (e) { var c = e.target.closest('[data-inv-acc]'); if (!c) return; c.disabled = true;
       post('acc_invoices', { acc: c.dataset.invAcc, on: c.checked ? 1 : 0 }).then(function (x) { c.disabled = false; if (!x.ok) { c.checked = !c.checked; toast('⚠️ ' + x.error); return; } c.parentNode.querySelector('b').textContent = x.on ? T('On') : T('Off'); toast(x.on ? '🧾 ' + T('Invoices on') : '⏸ ' + T('Invoices off')); }); });
