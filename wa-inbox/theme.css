@@ -657,3 +657,17 @@ body.wa-mode.wa-menu .shell-v3 .side #side-nav{display:block!important}
 .pwa-btn{display:inline-grid;place-items:center;width:34px;height:34px;border:0;border-radius:50%;background:transparent;color:var(--muted,#667781);cursor:pointer}.pwa-btn:hover{background:var(--card-in,#f0f2f5);color:var(--accent,#0866ff)}
 .pwa-pop{position:fixed;z-index:200;width:290px;background:var(--card,#fff);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px -14px rgba(0,0,0,.3);padding:14px;display:flex;flex-direction:column;gap:10px}
 .pwa-pop[hidden]{display:none}.pwa-pop hr{border:0;border-top:1px solid var(--line);margin:2px 0}.pwa-pop p{margin:0}.pwa-pop .ok{color:#0a7d3e;font-weight:600}.pwa-pop .row{display:flex;gap:6px}
+/* chat filter: chips, touch-sized, one row each that scrolls sideways on a phone; 16px search text so iPhone Safari does not zoom */
+.cf-bar{display:flex!important;flex-direction:column;gap:8px;padding:10px 12px!important}.cf-bar[hidden]{display:none!important}
+.cf-top{display:flex;align-items:center;gap:8px}
+.cf-s{flex:1;display:flex;align-items:center;gap:6px;min-width:0;background:var(--card-in,#f0f2f5);border-radius:999px;padding:0 12px;color:var(--muted,#667781)}
+.cf-s input{flex:1;min-width:0;border:0!important;background:transparent!important;box-shadow:none!important;font-size:16px!important;padding:9px 0!important;-webkit-appearance:none;appearance:none;color:var(--ink)}
+.cf-n{font-size:12px;color:var(--muted,#667781);white-space:nowrap}
+.cf-x{width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:var(--muted,#667781);font-size:16px;cursor:pointer;flex:none}.cf-x:hover{background:var(--card-in,#f0f2f5)}
+.cf-row{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px}.cf-row::-webkit-scrollbar{display:none}
+.cf-chip{flex:none;min-height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--card,#fff);color:var(--ink);font:inherit;font-size:13.5px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.cf-chip.on{background:var(--accent,#0866ff);border-color:transparent;color:#fff}
+@media (pointer:coarse){.cf-chip{min-height:40px;font-size:14.5px}}
+body.wa-mode .cf-chip.on{background:#00a884}
+/* full screen on a phone: the "Show the menu" button sits small at the bottom instead of over the chat search */
+@media (max-width:760px){.app.v-focus .focus-exit{top:auto!important;bottom:16px;inset-inline-start:12px;padding:8px 12px!important;font-size:13px!important;box-shadow:0 6px 18px -6px rgba(0,0,0,.4)}.app.v-focus .focus-exit span{display:none}}

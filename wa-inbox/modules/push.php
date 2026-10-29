@@ -151,5 +151,11 @@ function wf_pwa_serve(string $what): void {
         }
         header('Content-Type: image/png'); header('Cache-Control: public, max-age=604800'); readfile($cf); exit;
     }
+    if ($what === 'apk') {
+        // the Android app, built from the fariek-app project and copied to .data/app/fariek.apk
+        $f = WI_DIR . '/app/fariek.apk'; if (!is_file($f)) { http_response_code(404); exit; }
+        header('Content-Type: application/vnd.android.package-archive'); header('Content-Disposition: attachment; filename="fariek.apk"'); header('Content-Length: ' . filesize($f)); header('Cache-Control: no-cache');
+        readfile($f); exit;
+    }
     http_response_code(404); exit;
 }

@@ -63,7 +63,7 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         <button class="btn primary">Continue</button>
       <?php endif; ?>
     </form>
-    <?php if (empty($_SESSION['pending']) && !$sp && !$fg && empty($_SESSION['gsignup']) && function_exists('wf_glogin_on') && wf_glogin_on()): ?><a class="btn ghost block" href="?google_login=1<?= $signup ? '&amp;signup=1' : '' ?>"><b>G</b> <span><?= $signup ? 'Sign up with Google' : 'Sign in with Google' ?></span></a><?php endif; ?>
+    <?php if (empty($_SESSION['pending']) && !$sp && !$fg && empty($_SESSION['gsignup']) && function_exists('wf_glogin_on') && wf_glogin_on() && stripos((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 'FariekApp') === false): ?><a class="btn ghost block" href="?google_login=1<?= $signup ? '&amp;signup=1' : '' ?>"><b>G</b> <span><?= $signup ? 'Sign up with Google' : 'Sign in with Google' ?></span></a><?php endif; ?>
     <?php if (!empty($_SESSION['pending']) && !$sp && !$fg): ?><form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="otp_resend"><button class="btn ghost block">Resend code</button></form><?php endif; ?>
     <?php if (!empty($_SESSION['pending']) || $sp || $fg): ?><form method="post"><input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="<?= $sp ? 'signup_cancel' : ($fg ? 'forgot_cancel' : 'cancel') ?>"><button class="btn ghost block">Back</button></form><?php endif; ?>
     <?php if ($signup): ?><p class="center small">Already have an account? <a href="?login">Sign in</a></p>

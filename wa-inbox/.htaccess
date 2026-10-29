@@ -19,6 +19,7 @@ DirectoryIndex index.php
   RewriteRule ^sw\.js$ index.php?pwa=sw [L,QSA]
   RewriteRule ^pwa-(192|512)\.png$ index.php?pwa=icon&s=$1 [L,QSA]
   RewriteRule ^pwa-512m\.png$ index.php?pwa=icon&s=512&m=1 [L,QSA]
+  RewriteRule ^fariek\.apk$ index.php?pwa=apk [L,QSA]
   # Integrations API with clean addresses (api host): /v1/send, /v1/media
   RewriteRule ^v1/(send|media)/?$ index.php?int_api=$1 [L,QSA]
   # the OpenWA (WAHA style) addresses, for programs made for that gateway
