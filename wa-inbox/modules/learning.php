@@ -50,10 +50,10 @@ function wf_kb_topic_search(string $base, string $text, int $max = 5): array {
 /** The lesson passages behind one topic that share the most words with the question (for the answer's sources). */
 function wf_kb_topic_chunks(int $cid, string $text, int $n = 3): array {
     $m = wi_db(); if (!$m) return []; $words = array_filter(explode(' ', wf_kb_norm($text)), fn($w) => mb_strlen($w) >= 3); $out = [];
-    $r = $m->query("SELECT k.id, k.text FROM wi_concept_chunks cc JOIN wi_learn_chunks k ON k.id = cc.chunk_id WHERE cc.concept_id = " . (int) $cid . " LIMIT 400");
-    while ($r && ($x = $r->fetch_assoc())) { $nt = ' ' . wf_kb_norm((string) $x['text']) . ' '; $sc = 0; foreach ($words as $w) if (str_contains($nt, ' ' . $w)) $sc++; $out[] = [$sc, mb_strlen((string) $x['text']), (string) $x['text']]; }
+    $r = $m->query("SELECT k.id, k.text, d.name FROM wi_concept_chunks cc JOIN wi_learn_chunks k ON k.id = cc.chunk_id JOIN wi_learn_docs d ON d.id = k.doc_id WHERE cc.concept_id = " . (int) $cid . " AND d.status = 'active' AND k.dropped = 0 LIMIT 400");
+    while ($r && ($x = $r->fetch_assoc())) { $nt = ' ' . wf_kb_norm((string) $x['text']) . ' '; $sc = 0; foreach ($words as $w) if (str_contains($nt, ' ' . $w)) $sc++; $out[] = [$sc, mb_strlen((string) $x['text']), (string) $x['text'], (string) $x['name'], (int) $x['id']]; }
     usort($out, fn($a, $b) => [$b[0], $b[1]] <=> [$a[0], $a[1]]);
-    return array_map(fn($x) => ['kind' => 'file', 'topic' => '', 'text' => mb_substr($x[2], 0, 1200), 'agree' => true], array_slice($out, 0, $n));
+    return array_map(fn($x) => ['kind' => 'file', 'topic' => '', 'title' => $x[3], 'text' => mb_substr($x[2], 0, 1200), 'agree' => true, 'doc' => 0, 'id' => $x[4]], array_slice($out, 0, $n));
 }
 /* ---------- Duplicate content by match percentage (Learning settings dup_pct, default 90, and sim_pct, default 75) ---------- */
 /** A text's fingerprint: 48 MinHash values over its 3-word shingles (normalised Arabic), so the share of equal values estimates how much two texts match. */
@@ -310,9 +310,24 @@ function wf_rules_save(string $aid, array $list): void {
     wi_write('bot.json', $all);
 }
 
+/** An active file of this number with the same bytes or the same text (fingerprints are added once to files stored before this check). */
+function wf_doc_same(string $base, string $shaFile, string $text): ?array {
+    $m = wi_db(); if (!$m) return null; static $cols = null;
+    if ($cols === null) { $r = $m->query("SHOW COLUMNS FROM wi_learn_docs LIKE 'sha_text'"); if ($r && !$r->num_rows) $m->query("ALTER TABLE wi_learn_docs ADD sha_file CHAR(40) CHARACTER SET ascii NULL, ADD sha_text CHAR(40) CHARACTER SET ascii NULL"); $cols = true; }
+    $e = $m->real_escape_string($base); $dir = WI_DIR . '/learn_docs/' . preg_replace('/\W/', '', $base);
+    $q = $m->query("SELECT id, kind FROM wi_learn_docs WHERE base = '$e' AND status = 'active' AND sha_text IS NULL LIMIT 50");
+    while ($q && ($x = $q->fetch_assoc())) { $f = glob($dir . '/' . (int) $x['id'] . '.*')[0] ?? ''; if ($f === '') { $m->query("UPDATE wi_learn_docs SET sha_text = '' WHERE id = " . (int) $x['id']); continue; }
+        [$t] = wf_doc_text($f, (string) $x['kind']); $m->query("UPDATE wi_learn_docs SET sha_file = '" . sha1_file($f) . "', sha_text = '" . ($t !== '' ? sha1(wf_kb_norm($t)) : '') . "' WHERE id = " . (int) $x['id']); }
+    $st = $text !== '' ? sha1(wf_kb_norm($text)) : '';
+    $r = $m->query("SELECT id, name, created_at FROM wi_learn_docs WHERE base = '$e' AND status = 'active' AND (" . ($shaFile !== '' ? "sha_file = '" . $m->real_escape_string($shaFile) . "'" : '0') . ($st !== '' ? " OR sha_text = '" . $st . "'" : '') . ") ORDER BY id LIMIT 1");
+    return $r && ($x = $r->fetch_assoc()) ? $x : null;
+}
 /** Reads a file, splits it into passages and stores both (shared by uploads and Google Drive imports). */
 function wf_doc_ingest(string $base, string $name, string $ext, string $path, int $size, string $by, bool $uploaded = false, string $source = '', string $driveId = '', string $driveMod = ''): array {
     $m = wi_db(); [$text, $note] = wf_doc_text($path, $ext);
+    // the same file twice for this number (same bytes, or the same text from Drive or a converted copy, under any name): refused before it is split
+    if (($same = wf_doc_same($base, (string) @sha1_file($path), $text)) !== null) { if ($uploaded) @unlink($path); else @unlink($path);
+        return ['id' => 0, 'chunks' => 0, 'status' => 'duplicate', 'duplicate_of' => (int) $same['id'], 'note' => wf_msg('learn_dup_file', ['name' => (string) $same['name'], 'date' => substr((string) $same['created_at'], 0, 10)])]; }
     $chunks = $text !== '' ? wf_doc_chunks($text) : []; $status = $chunks ? 'active' : 'unreadable'; $chars = mb_strlen($text); $nc = count($chunks);
     if ($source !== '') $note = trim($note . ' ' . $source);
     $st = $m->prepare("INSERT INTO wi_learn_docs (base, name, kind, size, chars, chunks, status, note, created_by, created_at) VALUES (?,?,?,?,?,?,?,?,?,NOW())");
@@ -337,6 +352,7 @@ function wf_doc_ingest(string $base, string $name, string $ext, string $path, in
         $mhs[$cid] = $mh; $names[$cid] = $name; foreach (wf_kb_mh_bands($mh) as $bk) $bands[$bk][] = $cid; }
     if ($nDup || $nSim) { arsort($from); $note = trim($note . ' ' . wi_t('Repeated') . ': ' . $nDup . '/' . $nc . ($nc ? ' (' . round($nDup * 100 / $nc) . '%)' : '') . ($from ? ' ' . wi_t('from') . ' «' . array_key_first($from) . '»' : '') . ($nSim ? ' · ' . wi_t('Similar') . ': ' . $nSim : ''));
         $note = mb_substr($note, 0, 250); $u = $m->prepare("UPDATE wi_learn_docs SET note = ? WHERE id = ?"); $u->bind_param('si', $note, $id); $u->execute(); }
+    $sf = (string) @sha1_file($dst) ?: ''; $stx = $text !== '' ? sha1(wf_kb_norm($text)) : ''; $u0 = $m->prepare("UPDATE wi_learn_docs SET sha_file = ?, sha_text = ? WHERE id = ?"); if ($u0) { $u0->bind_param('ssi', $sf, $stx, $id); $u0->execute(); }
     if ($driveId !== '') { $u = $m->prepare("UPDATE wi_learn_docs SET drive_id = ?, drive_modified = ? WHERE id = ?"); $u->bind_param('ssi', $driveId, $driveMod, $id); $u->execute(); }
     return ['id' => $id, 'chunks' => $nc, 'status' => $status, 'note' => $note, 'duplicates' => $nDup ?? 0, 'similar' => $nSim ?? 0];
 }
@@ -357,6 +373,7 @@ function wf_api_learning_docs(string $api): void {
             if ($f['size'] > (int) wi_sys('max_learn_mb') * 1048576) wi_json(['ok' => false, 'error' => 'The file is larger than the allowed size (' . (int) wi_sys('max_learn_mb') . ' MB).']);
             $name = mb_substr(basename((string) $f['name']), 0, 200); $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
             $res = wf_doc_ingest($base, $name, $ext, $f['tmp_name'], (int) $f['size'], (string) $_SESSION['email'], true);
+            if (($res['status'] ?? '') === 'duplicate') { wi_log('learn_doc_duplicate', ['name' => $name, 'of' => $res['duplicate_of']]); wi_json(['ok' => false, 'duplicate' => true, 'error' => $res['note']]); }
             wi_log('learn_doc_upload', ['name' => $name, 'chunks' => $res['chunks']]);
             if (!empty($res['chunks'])) wi_job_add('doc_verify', $base, ['base' => $base], (string) $_SESSION['email']); // checked against the groups in the background
             wi_json(['ok' => true] + $res);
@@ -402,7 +419,7 @@ function wf_api_learning_docs(string $api): void {
                 if (!$got[0]) { $out[] = ['name' => $name, 'ok' => false, 'error' => $got[1]]; continue; }
                 $r = wf_doc_ingest($base, $got[2], $got[1], $got[0], (int) filesize($got[0]), (string) $_SESSION['email'], false, '(Google Drive)', $id, (string) ($f['modified'] ?? ''));
                 $name = $got[2];
-                $out[] = ['name' => $name, 'ok' => true] + $r;
+                $out[] = ['name' => $name, 'ok' => ($r['status'] ?? '') !== 'duplicate'] + (($r['status'] ?? '') === 'duplicate' ? ['error' => $r['note']] : []) + $r;
             }
             wi_log('learn_drive_import', ['files' => count($out)]);
             wi_json(['ok' => true, 'results' => $out]);
@@ -481,7 +498,8 @@ function wf_drive_folder_sync(string $base): array {
         if ($old && $old['drive_modified'] === $f['modifiedTime']) { if ($old['status'] === 'off') { /* switched off by a person: leave it */ } continue; }
         $got = wf_drive_fetch($t['token'], $fid, $f['mimeType'], $f['name']); if (!$got[0]) { $sum['errors'][] = $f['name'] . ': ' . $got[1]; continue; }
         if ($old) { $oid = (int) $old['id']; $m->query("DELETE FROM wi_learn_chunks WHERE doc_id = $oid"); $m->query("DELETE FROM wi_learn_docs WHERE id = $oid"); foreach (glob(WI_DIR . '/learn_docs/' . preg_replace('/\W/', '', $base) . '/' . $oid . '.*') ?: [] as $z) @unlink($z); }
-        wf_doc_ingest($base, $got[2], $got[1], $got[0], (int) filesize($got[0]), 'Google Drive', false, '(Google Drive · ' . ($fo['name'] ?? '') . ')', $fid, (string) $f['modifiedTime']);
+        $ri = wf_doc_ingest($base, $got[2], $got[1], $got[0], (int) filesize($got[0]), 'Google Drive', false, '(Google Drive · ' . ($fo['name'] ?? '') . ')', $fid, (string) $f['modifiedTime']);
+        if (($ri['status'] ?? '') === 'duplicate') { $sum['skipped'] = ($sum['skipped'] ?? 0) + 1; continue; }
         $sum[$old ? 'updated' : 'added']++;
     }
     foreach ($have as $fid => $x) if (!isset($files[$fid]) && $x['status'] === 'active') { $oid = (int) $x['id']; $m->query("UPDATE wi_learn_docs SET status = 'off', note = 'Removed from the linked Drive folder' WHERE id = $oid"); $sum['removed']++; }
@@ -511,7 +529,8 @@ function wf_drive_import_folder(string $base, string $folder, string $fname, str
         if (isset($have[$fid]) && $have[$fid] === $f['modifiedTime']) { $sum['skipped']++; continue; }
         $t = wf_drive_token(); $got = wf_drive_fetch($t['token'], $fid, $f['mimeType'], $f['name']);
         if (!$got[0]) { $sum['errors'][] = $f['name'] . ': ' . $got[1]; continue; }
-        wf_doc_ingest($base, $got[2], $got[1], $got[0], (int) filesize($got[0]), $by, false, '(Google Drive · ' . $f['path'] . ')', $fid, (string) $f['modifiedTime']);
+        $ri = wf_doc_ingest($base, $got[2], $got[1], $got[0], (int) filesize($got[0]), $by, false, '(Google Drive · ' . $f['path'] . ')', $fid, (string) $f['modifiedTime']);
+        if (($ri['status'] ?? '') === 'duplicate') { $sum['skipped']++; continue; }
         $sum['added']++;
         if (++$n % 5 === 0) { $L = wi_read('learning.json', []); $L[$base]['import'] = ['folder' => $fname, 'running' => true, 'done' => $n, 'total' => count($files), 'at' => date('c')]; wi_write('learning.json', $L); }
     }
