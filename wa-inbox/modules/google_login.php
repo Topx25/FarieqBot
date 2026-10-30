@@ -4,7 +4,11 @@
 // and a known person still gets the usual WhatsApp code, so Google never skips the second step.
 
 /** The installation's Google app: [client id, client secret], or empty strings when it is not set up. */
-function wf_glogin_app(): array { $op = wi_read('drive.json', []); return [(string) ($op['client_id'] ?? ''), !empty($op['client_secret']) ? wi_secret('google_client_secret', (string) $op['client_secret']) : '']; }
+/** The Google client for signing in: its own (Settings → System → Sign-up and Google sign-in) when both parts are set, else the Drive client (kept for older setups). */
+function wf_glogin_app(): array {
+    $id = trim((string) wi_sys('login_google_client_id')); $sec = wi_secret('login_google_client_secret'); if ($id !== '' && $sec !== '') return [$id, $sec];
+    $op = wi_read('drive.json', []); return [(string) ($op['client_id'] ?? ''), !empty($op['client_secret']) ? wi_secret('google_client_secret', (string) $op['client_secret']) : ''];
+}
 function wf_glogin_on(): bool { [$id, $sec] = wf_glogin_app(); return $id !== '' && $sec !== '' && (bool) wi_sys('google_login_on'); }
 function wf_glogin_redirect(): string { return wi_sys('base_url') . '?google_cb=1'; }
 /** ?google_login=1: off to Google. */

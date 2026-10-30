@@ -6,6 +6,7 @@ function wf_sys_fields(): array {
         'privacy_text' => ['Privacy policy page (index.php?privacy) — empty = the built-in text; "# " starts a heading', 'longtext'], 'terms_text' => ['Terms of service page (index.php?terms) — empty = the built-in text', 'longtext'],
         // sign-up, sign-in and email (moved here from the plans page); "secret" values are kept encrypted and never shown again
         'signup_on' => ['Visitors may sign up (a trial on the plan marked «trial»)', 'int01'], 'google_login_on' => ['Sign in and sign up with Google', 'int01'],
+        'login_google_client_id' => ['Google sign-in: its own OAuth client ID (empty = the Google Drive client)', 'text'], 'login_google_client_secret' => ['Google sign-in: its own client secret', 'secret'],
         'turnstile_site' => ['Cloudflare Turnstile site key (the captcha on the sign-up page; empty = off)', 'text'], 'turnstile_secret' => ['Cloudflare Turnstile secret key', 'secret'],
         'saas_domain' => ['SaaS domain (each client may get name.this-domain)', 'host'],
         'mc_api_key' => ['MailChannels API key (email by API, used before SMTP)', 'secret'], 'mc_from' => ['MailChannels sender email', 'email'], 'mc_reply_to' => ['Reply-to email (empty = the sender)', 'email'],
@@ -31,7 +32,8 @@ function wf_sys_test(string $what): array {
         $r = json_decode((string) curl_exec($ch), true); curl_close($ch); $codes = (array) ($r['error-codes'] ?? []);
         return in_array('invalid-input-secret', $codes, true) ? ['ok' => false, 'msg' => 'Cloudflare refused the secret key.'] : ['ok' => is_array($r), 'msg' => is_array($r) ? 'Cloudflare accepted the secret key.' : 'Cloudflare did not answer.']; }
     if ($what === 'google') { $on = function_exists('wf_glogin_on') && wf_glogin_on(); $cb = rtrim((string) wi_sys('base_url'), '/') . '/?google_cb=1';
-        return ['ok' => $on, 'msg' => ($on ? wi_t('Google sign-in is ready.') : wi_t('Google sign-in is off or its keys are missing.')) . ' ' . wi_t('Return address to allow in Google Cloud:') . ' ' . $cb]; }
+        $own = trim((string) wi_sys('login_google_client_id')) !== '' && wi_secret('login_google_client_secret') !== '';
+        return ['ok' => $on, 'msg' => ($on ? wi_t('Google sign-in is ready.') : wi_t('Google sign-in is off or its keys are missing.')) . ' ' . ($own ? wi_t('It uses its own Google client.') : wi_t('It uses the Google Drive client (set its own client to publish it).')) . ' ' . wi_t('Return address to allow in Google Cloud:') . ' ' . $cb]; }
     if ($what === 'push') { $n = function_exists('wi_push_user') ? wi_push_user($me, ['title' => wi_t('Fariek'), 'body' => wi_t('Notifications are on. This is how new chats and alerts will reach you.'), 'url' => './', 'tag' => 'test']) : 0;
         $fcm = function_exists('wi_fcm_token') && wi_fcm_token();
         return ['ok' => $n > 0, 'msg' => ($n ? wi_t('Sent to your devices:') . ' ' . $n : wi_t('No device of yours has notifications on. Turn them on from 📱 in the top bar or from the phone app.')) . ' · ' . wi_t('Phone app (Firebase):') . ' ' . ($fcm ? '✅' : '❌')]; }

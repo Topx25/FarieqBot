@@ -1646,7 +1646,7 @@ function PK(k) { var c = (window.WI_PACK || {}).case || {}; return c[k] || ''; }
       var by = {}; x.fields.forEach(function (f) { by[f.key] = f; }); var used = {};
       // [id, icon, title, description, fields, test]: a section with a test gets a button that tries it for real and shows the answer under it
       var SECS = [['email', '📧', 'Email', 'Sign-in codes, password resets and backups by email: MailChannels first, SMTP when there is no MailChannels key', ['mc_api_key', 'mc_from', 'mc_reply_to', 'mc_dkim_domain', 'mc_dkim_selector', 'mc_dkim_key', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_from'], 'email'],
-        ['signup', '🚪', 'Sign-up and Google sign-in', 'Who may open an account, the captcha on the sign-up page, and the SaaS domain', ['signup_on', 'google_login_on', 'turnstile_site', 'turnstile_secret', 'saas_domain'], 'captcha', 'google'],
+        ['signup', '🚪', 'Sign-up and Google sign-in', 'Who may open an account, the captcha on the sign-up page, and the SaaS domain', ['signup_on', 'google_login_on', 'login_google_client_id', 'login_google_client_secret', 'turnstile_site', 'turnstile_secret', 'saas_domain'], 'captcha', 'google'],
         ['app', '📲', 'Phone app and notifications', 'The Android app and the browser notifications: a test sends one to your own devices', [], 'push'],
         ['brand', '🏷️', 'Brand and address', 'The name, logo and address people see', ['brand_name', 'brand_name_en', 'brand_logo', 'device_name', 'base_url', 'cookie_path'], 'address'],
         ['region', '🌍', 'Region and language', 'Time zone, numbers, currency and the language of messages', ['timezone', 'country_code', 'trunk_prefix', 'number_locale', 'currency', 'msg_lang']],
