@@ -53,12 +53,15 @@ if (in_array($step, ['group', 'all'], true)) {
     // the map's existing concepts join the merge, so none of them is lost
     $old = []; $q = $m->query("SELECT id, name, explain_text, answer_hint, status FROM wi_concepts WHERE base='" . $m->real_escape_string($aid) . "' AND status IN ('active','suggested')"); while ($o = $q->fetch_assoc()) $old[] = $o;
     $list = ''; foreach ($S['groups'] as $i => $g) $list .= 'G' . $i . '. ' . $g['name'] . ' (' . count($g['chunks']) . ")\n"; foreach ($old as $i => $o) $list .= 'C' . $i . '. ' . $o['name'] . " (existing concept)\n";
-    $r = $ai('Knowledge map: merge', "These are topic groups from different parts of the lessons (G…) and the existing concepts of the map (C…). Merge the ones about the same subject into final topics, at most 120. Every existing concept (C…) must end up in exactly one final topic. Keep distinct subjects apart. Name each final topic clearly, in the groups' language.\nReturn JSON only: {\"topics\":[{\"name\":\"final topic\",\"g\":[0,5],\"c\":[2]}]}\n\n" . $list, 240);
+    $r = $ai('Knowledge map: merge', "These are topic groups from different parts of the lessons (G…) and the existing concepts of the map (C…). Merge only the ones that are clearly about the SAME subject into final topics: aim for 60 to 120 final topics (never fewer than 50). Every group (G…) and every existing concept (C…) must end up in exactly one final topic. Keep distinct subjects apart: a person asking about one should not get the other. Name each final topic clearly, in the groups' language.\nReturn JSON only: {\"topics\":[{\"name\":\"final topic\",\"g\":[0,5],\"c\":[2]}]}\n\n" . $list, 240);
     $S['final'] = [];
     foreach ((array) ($r['topics'] ?? []) as $tp) { $ids = []; foreach ((array) ($tp['g'] ?? []) as $gi) if (isset($S['groups'][(int) $gi])) $ids = array_merge($ids, $S['groups'][(int) $gi]['chunks']);
         $cs = []; foreach ((array) ($tp['c'] ?? []) as $ci) if (isset($old[(int) $ci])) $cs[] = $old[(int) $ci];
         if ($ids || $cs) $S['final'][] = ['name' => trim((string) $tp['name']), 'chunks' => array_values(array_unique($ids)), 'concepts' => $cs]; }
-    $say('group: final topics ' . count($S['final']));
+    // too few topics means the merge lumped subjects together: then every group stays a topic of its own (same names joined)
+    if (count($S['final']) < 40) { $by = []; foreach ($S['groups'] as $g) { $k = wf_kb_norm($g['name']); $by[$k] ??= ['name' => $g['name'], 'chunks' => [], 'concepts' => []]; $by[$k]['chunks'] = array_values(array_unique(array_merge($by[$k]['chunks'], $g['chunks']))); }
+        foreach ($old as $o) { $by['c' . $o['id']] = ['name' => (string) $o['name'], 'chunks' => [], 'concepts' => [$o]]; } $S['final'] = array_values($by); }
+    $S['topics'] = []; $say('group: final topics ' . count($S['final']));
 }
 
 // ---- 3) each topic written from its own chunks: explanation, answer guidance, search forms, sample questions
