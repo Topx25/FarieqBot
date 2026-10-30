@@ -684,3 +684,15 @@ body.wa-mode .cf-chip.on{background:#00a884}
 .mf-admit{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;margin:4px 0}.mf-admit legend{font-weight:600;padding:0 6px}
 .mf-adm{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;align-items:start;padding:8px 10px;border-radius:10px;border:1px solid transparent;cursor:pointer}.mf-adm input{grid-row:span 2;margin-top:4px}.mf-adm small{grid-column:2}
 .mf-adm:hover{background:var(--card-in,#f5f6f7)}.mf-adm:has(input:checked){border-color:var(--accent,#0866ff);background:color-mix(in srgb,var(--accent,#0866ff) 7%,transparent)}
+/* My account: a header card with the person, tabs, one part at a time */
+.me-head{display:flex;gap:18px;align-items:center;padding:20px 22px;max-width:820px;margin-bottom:12px}
+.me-av{width:64px;height:64px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:26px;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accent,#0866ff),#7c4dff)}
+.me-id{min-width:0}.me-id h1{margin:0;font-size:22px}.me-id p{margin:2px 0 8px;word-break:break-all}
+.me-chips{display:flex;flex-wrap:wrap;gap:6px}.me-chip{font-size:12.5px;padding:3px 10px;border-radius:999px;background:var(--card-in,#f0f2f5)}.me-chip.role{background:color-mix(in srgb,var(--accent,#0866ff) 14%,transparent);color:var(--accent,#0866ff);font-weight:600}
+.me-tabs{display:flex;gap:6px;flex-wrap:wrap;max-width:820px;margin-bottom:12px;border-bottom:1px solid var(--line);padding-bottom:0}
+.me-tabs button{border:0;background:none;padding:10px 14px;font:inherit;font-weight:600;color:var(--muted,#667781);border-bottom:3px solid transparent;cursor:pointer;margin-bottom:-1px}
+.me-tabs button.on{color:var(--accent,#0866ff);border-bottom-color:var(--accent,#0866ff)}.me-tabs button:hover{color:var(--ink)}
+.me-wrap{max-width:820px}.me-card{max-width:820px!important}.me-card[hidden]{display:none!important}
+.me-card form{gap:12px}.me-card h2{margin:0 0 2px;font-size:17px}.me-card .me-sub{margin-top:10px;padding-top:14px;border-top:1px dashed var(--line)}
+@media (min-width:760px){.me-card[data-me=profile] form{display:grid!important;grid-template-columns:1fr 1fr;column-gap:16px}.me-card[data-me=profile] form>h2,.me-card[data-me=profile] form>.row,.me-card[data-me=profile] form>p{grid-column:1/-1}}
+@media (max-width:600px){.me-head{flex-direction:column;text-align:center}.me-chips{justify-content:center}.me-tabs{overflow-x:auto;flex-wrap:nowrap}.me-tabs button{white-space:nowrap}}

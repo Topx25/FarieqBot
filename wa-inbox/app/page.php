@@ -372,18 +372,24 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
         d.addEventListener('change', syncFt);
         q('cl-q').addEventListener('input', function () { var v = this.value.trim().toLowerCase(); [].forEach.call(document.querySelectorAll('.cl-card'), function (c) { c.hidden = v !== '' && c.dataset.q.indexOf(v) === -1; }); }); });</script>
     <?php elseif ($page === 'me'): ?>
-      <section class="hero"><div class="hero-t"><span class="hero-ic">👤</span><div><h1>My account</h1><p class="muted">Your name, your WhatsApp number for login codes, and your password.</p></div></div></section>
-      <div class="card" style="max-width:560px"><form method="post" class="stack pad">
+      <?php $meRole = ['super' => 'Super admin', 'admin' => 'Admin', 'manager' => 'Manager', 'client' => 'Client'][$me['role'] ?? ''] ?? 'Viewer'; $meNm = trim((string) ($me['name'] ?? '')) ?: (string) ($me['email'] ?? ''); ?>
+      <section class="me-head card"><span class="me-av"><?= wi_e(mb_strtoupper(mb_substr($meNm, 0, 1))) ?></span>
+        <div class="me-id"><h1 dir="auto"><?= wi_e($meNm) ?></h1><p class="muted" dir="ltr"><?= wi_e((string) ($me['email'] ?? '')) ?><?= !empty($me['phone']) ? ' · +' . wi_e((string) $me['phone']) : '' ?></p>
+          <div class="me-chips"><span class="me-chip role"><?= wi_e(wi_t($meRole)) ?></span><?php if (!empty($me['plan'])): ?><span class="me-chip">📦 <?= wi_e(wi_t((string) $me['plan'])) ?></span><?php endif; ?><?php foreach (array_slice(wi_my_accounts(), 0, 4) as $mA): ?><span class="me-chip">📱 <?= wi_e((string) $mA['name']) ?></span><?php endforeach; ?><?php if (!empty($me['created_at'])): ?><span class="me-chip muted"><?= wi_e(wi_t('Member since')) ?> <?= wi_e(substr((string) $me['created_at'], 0, 10)) ?></span><?php endif; ?></div></div></section>
+      <nav class="me-tabs" id="me-tabs" role="tablist"></nav>
+      <div class="me-wrap">
+      <div class="card me-card" data-me="profile" data-me-t="👤 <?= wi_e(wi_t('Profile and password')) ?>"><form method="post" class="stack pad">
         <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="my_account">
+        <h2>👤 <?= wi_e(wi_t('Profile')) ?></h2>
         <label>Email<input value="<?= wi_e($me['email'] ?? '') ?>" disabled dir="ltr"></label>
         <label>Name<input name="name" value="<?= wi_e($me['name'] ?? '') ?>"></label>
         <label>WhatsApp number<input name="phone" value="<?= wi_e($me['phone'] ?? '') ?>" inputmode="tel" required dir="ltr"></label>
+        <h2 class="me-sub">🔒 <?= wi_e(wi_t('Password')) ?></h2>
         <label>New password (leave empty to keep it)<input type="password" name="password" minlength="10" autocomplete="new-password" dir="ltr"></label>
         <label>Current password<input type="password" name="current" required autocomplete="current-password" dir="ltr"></label>
-        <p class="muted small">Role: <b><?= wi_e(['super' => 'Super admin', 'admin' => 'Admin', 'manager' => 'Manager', 'client' => 'Client'][$me['role'] ?? ''] ?? 'Viewer') ?></b> · Numbers: <?= wi_e(implode(', ', array_map(fn($a) => $a['name'], wi_my_accounts())) ?: '—') ?></p>
         <div class="row"><button class="btn primary">Save</button></div>
       </form></div>
-      <div class="card" style="max-width:560px"><form method="post" class="stack pad">
+      <div class="card me-card" data-me="look" data-me-t="🎨 <?= wi_e(wi_t('Look')) ?>"><form method="post" class="stack pad">
         <input type="hidden" name="_csrf" value="<?= wi_e(wi_csrf()) ?>"><input type="hidden" name="do" value="my_theme">
         <h2>🎨 <?= wi_e(wi_t('Dashboard theme')) ?></h2><p class="muted small"><?= wi_e(wi_t('Your own theme on your screens. Light or dark is switched from the top bar.')) ?></p>
         <label><select name="theme"><option value=""><?= wi_e(wi_t('As the system')) ?> (<?= wi_e(wi_t(WI_THEMES[wi_config()['ui_theme'] ?? ''] ?? 'Classic')) ?>)</option>
@@ -392,11 +398,11 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
       </form></div>
       <?php if (($me['role'] ?? '') !== 'super' && wi_owned_accounts((string) $me['email']) && empty($_SESSION['imp_from'])): // owners of a private number: their own Google and backup ?>
       <?php if (!empty($_GET['drive'])): ?><div class="alert ok" style="max-width:560px"><?= wi_e((string) $_GET['drive']) ?></div><?php endif; ?>
-      <div class="card" style="max-width:560px" id="gg-card"><div class="card-h"><h2>🔗 Google account</h2><span class="badge" id="gg-badge">…</span></div>
+      <div class="card me-card" id="gg-card" data-me="google" data-me-t="🔗 Google"><div class="card-h"><h2>🔗 Google account</h2><span class="badge" id="gg-badge">…</span></div>
         <div class="pad stack"><p class="muted small">Your own Google account for your panel: importing learning files from your Google Drive and creating Google Meet links on your calendar. Only your panel uses it.</p>
           <div id="gg-body" class="muted small">Loading…</div><div class="row" id="gg-act"></div></div></div>
       <?php if (wi_can_self_backup($me)): ?>
-      <div class="card" style="max-width:560px" id="cb-card"><div class="card-h"><h2>💾 Backup to my Google Drive</h2><span class="badge" id="cb-badge">…</span></div>
+      <div class="card me-card" id="cb-card" data-me="backup" data-me-t="💾 <?= wi_e(wi_t('Backup')) ?>"><div class="card-h"><h2>💾 Backup to my Google Drive</h2><span class="badge" id="cb-badge">…</span></div>
         <div class="pad stack"><p class="muted small">All chats and data of your numbers (cases, notes, bot, learning, team) in one file in your own Google Drive. Connect your Google account above first.</p>
           <div class="row wrap"><label class="check"><input type="checkbox" id="cb-en"> Every day at</label><select id="cb-hour"><?php for ($h = 0; $h < 24; $h++): ?><option value="<?= $h ?>"><?= sprintf('%02d:00', $h) ?></option><?php endfor; ?></select>
             <label class="check"><input type="checkbox" id="cb-media"> Include photos and recordings</label><label>Keep the last <input type="number" id="cb-keep" min="1" max="30" style="width:64px"> copies</label></div>
@@ -424,7 +430,15 @@ if (in_array($uiTheme, ['google', 'orchid', 'studio', 'aurora', 'fq-violet', 'fq
           WI.post('my_google', { do: x.dataset.gg, read: x.dataset.read ? 1 : 0 }).then(function (r) { if (!r.ok) { alert(r.error || T('Failed')); return; } if (r.url) location.href = r.url; else load(); }); });
         load(); });</script>
       <?php endif; ?>
-      <?= function_exists('wf_acdel_card') ? wf_acdel_card() : '' ?>
+      <?php $acdel = function_exists('wf_acdel_card') ? wf_acdel_card() : ''; if ($acdel !== ''): ?><div class="me-card" data-me="danger" data-me-t="⚠️ <?= wi_e(wi_t('Delete the account')) ?>"><?= $acdel ?></div><?php endif; ?>
+      </div>
+      <script>document.addEventListener('DOMContentLoaded', function () { // one tab per part of the account (the cards present for this person); the open one is remembered
+        var nav = document.getElementById('me-tabs'), cards = [].slice.call(document.querySelectorAll('.me-card[data-me]')); if (!nav || !cards.length) return;
+        nav.innerHTML = cards.map(function (c) { return '<button type="button" role="tab" data-tab="' + c.dataset.me + '">' + c.dataset.meT + '</button>'; }).join('');
+        var show = function (k) { if (!cards.some(function (c) { return c.dataset.me === k; })) k = cards[0].dataset.me; cards.forEach(function (c) { c.hidden = c.dataset.me !== k; });
+          [].forEach.call(nav.children, function (b) { var on = b.dataset.tab === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); }); try { localStorage.setItem('wi_me_tab', k); } catch (e) {} };
+        nav.addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
+        var start = (location.hash || '').replace('#', ''); if (!start) { try { start = localStorage.getItem('wi_me_tab') || ''; } catch (e) {} } if (new URLSearchParams(location.search).get('drive')) start = 'google'; show(start); });</script>
     <?php elseif ($page === 'help'): ?>
       <iframe src="?help_doc=<?= (int) @filemtime(dirname(__DIR__) . '/help.html') ?>" title="Help" style="width:100%;height:calc(100vh - 120px);border:0;border-radius:14px;background:#fff"></iframe>
     <?php elseif ($page === 'changes'): ?>
