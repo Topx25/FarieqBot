@@ -79,7 +79,13 @@ if ($apply) {
     wf_kb_topics_db();
     $e = fn($v) => $m->real_escape_string((string) $v); $m->query("DELETE c, t FROM wi_concepts c LEFT JOIN wi_concept_terms t ON t.concept_id=c.id WHERE c.base='" . $e($aid) . "' AND c.status='draft'");
     $m->query("DELETE FROM wi_concept_chunks WHERE base='" . $e($aid) . "' AND concept_id NOT IN (SELECT id FROM wi_concepts)");
-    $saved = 0; foreach ($S['topics'] as $tp) {
+    // a topic whose explanation repeats an earlier one (dup_pct and above) joins it: its search forms and passages are added there, no second topic
+    $dPct = (int) wf_learn_cfg($aid)['dup_pct']; $keep = []; foreach ($S['topics'] as $tp) { $mh = wf_kb_minhash($tp['title'] . ' ' . $tp['explain']); $hit = null;
+        foreach ($keep as $k => $o) if (wf_kb_mh_pct($mh, $o['mh']) >= $dPct) { $hit = $k; break; }
+        if ($hit === null) { $keep[] = $tp + ['mh' => $mh]; continue; }
+        $keep[$hit]['forms'] = array_values(array_unique(array_merge($keep[$hit]['forms'], [$tp['title']], $tp['forms']))); $keep[$hit]['chunks'] = array_values(array_unique(array_merge($keep[$hit]['chunks'], $tp['chunks']))); }
+    $say('apply: ' . (count($S['topics']) - count($keep)) . ' repeated topics joined their original');
+    $saved = 0; foreach ($keep as $tp) {
         $m->query("INSERT INTO wi_concepts (base, name, explain_text, answer_hint, status, created_by, created_at) VALUES ('" . $e($aid) . "','" . $e($tp['title']) . "','" . $e($tp['explain']) . "','" . $e($tp['hint']) . "','draft','kb_map_build',NOW())"); $cid = (int) $m->insert_id; if (!$cid) continue; $saved++;
         foreach (array_unique(array_merge([$tp['title']], $tp['forms'])) as $f) { $f = mb_substr(trim((string) $f), 0, 180); if ($f === '') continue; $m->query("INSERT INTO wi_concept_terms (concept_id, term, norm, relation) VALUES ($cid,'" . $e($f) . "','" . $e(wf_kb_norm($f)) . "','form')"); }
         foreach ((array) $tp['questions'] as $qq) { $qq = mb_substr(trim((string) $qq), 0, 180); if ($qq !== '') $m->query("INSERT INTO wi_concept_terms (concept_id, term, norm, relation) VALUES ($cid,'" . $e($qq) . "','" . $e(wf_kb_norm($qq)) . "','question')"); }

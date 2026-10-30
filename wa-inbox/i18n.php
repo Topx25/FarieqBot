@@ -1147,6 +1147,8 @@ return [
     'Show less' => 'عرض أقل',
     'Open chat' => 'فتح المحادثة',
     'Group library' => 'مكتبة الجروب',
+    'Repeated' => 'مكرر',
+    'Similar' => 'مشابه',
     'Compare the plans' => 'مقارنة الباقات',
     'Plans and prices' => 'الباقات والأسعار',
     'Your plan' => 'باقتك',

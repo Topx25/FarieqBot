@@ -55,6 +55,23 @@ function wf_kb_topic_chunks(int $cid, string $text, int $n = 3): array {
     usort($out, fn($a, $b) => [$b[0], $b[1]] <=> [$a[0], $a[1]]);
     return array_map(fn($x) => ['kind' => 'file', 'topic' => '', 'text' => mb_substr($x[2], 0, 1200), 'agree' => true], array_slice($out, 0, $n));
 }
+/* ---------- Duplicate content by match percentage (Learning settings dup_pct, default 90, and sim_pct, default 75) ---------- */
+/** A text's fingerprint: 48 MinHash values over its 3-word shingles (normalised Arabic), so the share of equal values estimates how much two texts match. */
+function wf_kb_minhash(string $text): string {
+    $w = explode(' ', wf_kb_norm($text)); $sh = []; for ($i = 0, $n = count($w); $i < max(1, $n - 2); $i++) $sh[implode(' ', array_slice($w, $i, 3))] = 1;
+    $out = ''; for ($k = 0; $k < 48; $k++) { $min = PHP_INT_MAX; foreach ($sh as $x => $_) { $h = crc32($k . '|' . $x); if ($h < $min) $min = $h; } $out .= str_pad(dechex($min === PHP_INT_MAX ? 0 : $min), 8, '0', STR_PAD_LEFT); }
+    return $out;
+}
+/** How much two fingerprints match, 0 to 100. */
+function wf_kb_mh_pct(string $a, string $b): int { if (strlen($a) !== 384 || strlen($b) !== 384) return 0; $eq = 0; for ($i = 0; $i < 384; $i += 8) if (substr($a, $i, 8) === substr($b, $i, 8)) $eq++; return (int) round($eq * 100 / 48); }
+/** The 12 band keys of a fingerprint: two texts that match well share at least one (the candidates to compare, instead of every pair). */
+function wf_kb_mh_bands(string $mh): array { $b = []; for ($i = 0; $i < 12; $i++) $b[] = $i . ':' . substr($mh, $i * 32, 32); return $b; }
+/** The fingerprint column on the passages (added once). */
+function wf_kb_dedupe_db(): bool {
+    $m = wi_db(); if (!$m || !wf_learn_install()) return false; static $ok = null; if ($ok !== null) return $ok;
+    $r = $m->query("SHOW COLUMNS FROM wi_learn_chunks LIKE 'mh'"); if ($r && !$r->num_rows) $m->query("ALTER TABLE wi_learn_chunks ADD mh VARCHAR(384) CHARACTER SET ascii NULL");
+    return $ok = true;
+}
 /** Topic choice per chat: the numbered list the bot sent, waiting for the person's number (expires after kb_pick_min minutes, default 30). */
 function wf_kb_pick_get(string $base, string $jid): array { $p = (array) (wi_read('kb_pick.json', [])[$base][$jid] ?? []); return $p && (int) ($p['at'] ?? 0) > time() - 60 * max(5, (int) (wf_learn_cfg($base)['kb_pick_min'] ?? 30)) ? $p : []; }
 function wf_kb_pick_set(string $base, string $jid, ?array $ids): void {
@@ -67,7 +84,7 @@ function wf_kb_pick_number(string $text, int $count): int {
     return preg_match('/^\D{0,6}(\d{1,2})\D{0,6}$/u', $t, $mm) && (int) $mm[1] >= 1 && (int) $mm[1] <= $count ? (int) $mm[1] : 0;
 }
 const WF_RELATIONS = ['related' => 'related to', 'breaks' => 'is one of the things that break', 'remedy' => 'is a solution for', 'symptom' => 'is a symptom of', 'example' => 'is an example of', 'same' => 'means the same as'];
-function wf_learn_cfg(string $base): array { return (wi_read('learning.json', [])[$base] ?? []) + ['cache' => true, 'guide' => true, 'min_sim' => 0.9, 'ttl_days' => 30, 'tokens_per_answer' => 0, 'all_groups' => true]; }
+function wf_learn_cfg(string $base): array { return (wi_read('learning.json', [])[$base] ?? []) + ['dup_pct' => 90, 'sim_pct' => 75, 'cache' => true, 'guide' => true, 'min_sim' => 0.9, 'ttl_days' => 30, 'tokens_per_answer' => 0, 'all_groups' => true]; }
 
 /** Concepts whose linked words appear in the message (word-boundary match on normalised text). */
 function wf_guide_match(string $base, string $text): array {
@@ -303,10 +320,25 @@ function wf_doc_ingest(string $base, string $name, string $ext, string $path, in
     $dir = WI_DIR . '/learn_docs/' . preg_replace('/\W/', '', $base); if (!is_dir($dir)) { @mkdir($dir, 0700, true); @chmod($dir, 0700); @chmod(dirname($dir), 0700); }
     $dst = $dir . '/' . $id . '.' . (in_array($ext, ['txt', 'md', 'csv', 'json', 'html', 'htm', 'docx', 'pdf'], true) ? $ext : 'bin'); // never an executable extension // the original is kept (not served on the web)
     if ($uploaded) @move_uploaded_file($path, $dst); else @rename($path, $dst);
-    $ins = $m->prepare("INSERT INTO wi_learn_chunks (doc_id, base, idx, text, words) VALUES (?,?,?,?,?)");
-    foreach ($chunks as $i => $c) { $w = implode(' ', wf_words($c)); $ins->bind_param('isiss', $id, $base, $i, $c, $w); $ins->execute(); }
+    // every passage is checked against what this number already has: a repeat (dup_pct and above) is kept out of answers and points to its original,
+    // a close one (sim_pct to dup_pct) is marked similar for review; the file's note says how much repeated and from where
+    $dup = wf_kb_dedupe_db(); $cfgL = wf_learn_cfg($base); $dPct = max(50, min(100, (int) $cfgL['dup_pct'])); $sPct = max(30, min($dPct, (int) $cfgL['sim_pct']));
+    $bands = []; $mhs = []; $names = [];
+    if ($dup) { $q = $m->query("SELECT k.id, k.mh, d.name FROM wi_learn_chunks k JOIN wi_learn_docs d ON d.id = k.doc_id WHERE k.base = '" . $m->real_escape_string($base) . "' AND k.dropped = 0 AND k.mh IS NOT NULL");
+        while ($q && ($x = $q->fetch_assoc())) { $mhs[(int) $x['id']] = (string) $x['mh']; $names[(int) $x['id']] = (string) $x['name']; foreach (wf_kb_mh_bands((string) $x['mh']) as $bk) $bands[$bk][] = (int) $x['id']; } }
+    $ins = $m->prepare("INSERT INTO wi_learn_chunks (doc_id, base, idx, text, words) VALUES (?,?,?,?,?)"); $nDup = 0; $nSim = 0; $from = [];
+    foreach ($chunks as $i => $c) { $w = implode(' ', wf_words($c)); $ins->bind_param('isiss', $id, $base, $i, $c, $w); $ins->execute(); $cid = (int) $m->insert_id;
+        if (!$dup || !$cid) continue; $mh = wf_kb_minhash($c); $best = 0; $bid = 0; $seen = [];
+        foreach (wf_kb_mh_bands($mh) as $bk) foreach ($bands[$bk] ?? [] as $oid) { if (isset($seen[$oid])) continue; $seen[$oid] = 1; $p = wf_kb_mh_pct($mh, $mhs[$oid]); if ($p > $best) { $best = $p; $bid = $oid; } }
+        if ($best >= $dPct) { $nDup++; $from[$names[$bid] ?? '?'] = ($from[$names[$bid] ?? '?'] ?? 0) + 1; $why = $best . '% = #' . $bid . ' ' . mb_substr($names[$bid] ?? '', 0, 80);
+            $m->query("UPDATE wi_learn_chunks SET mh = '" . $mh . "', dropped = 1, verdict = 'duplicate', verdict_why = '" . $m->real_escape_string($why) . "' WHERE id = " . $cid); continue; }
+        $sim = $best >= $sPct; if ($sim) $nSim++;
+        $m->query("UPDATE wi_learn_chunks SET mh = '" . $mh . "'" . ($sim ? ", verdict = 'similar', verdict_why = '" . $m->real_escape_string($best . '% ~ #' . $bid . ' ' . mb_substr($names[$bid] ?? '', 0, 80)) . "'" : '') . " WHERE id = " . $cid);
+        $mhs[$cid] = $mh; $names[$cid] = $name; foreach (wf_kb_mh_bands($mh) as $bk) $bands[$bk][] = $cid; }
+    if ($nDup || $nSim) { arsort($from); $note = trim($note . ' ' . wi_t('Repeated') . ': ' . $nDup . '/' . $nc . ($nc ? ' (' . round($nDup * 100 / $nc) . '%)' : '') . ($from ? ' ' . wi_t('from') . ' «' . array_key_first($from) . '»' : '') . ($nSim ? ' · ' . wi_t('Similar') . ': ' . $nSim : ''));
+        $note = mb_substr($note, 0, 250); $u = $m->prepare("UPDATE wi_learn_docs SET note = ? WHERE id = ?"); $u->bind_param('si', $note, $id); $u->execute(); }
     if ($driveId !== '') { $u = $m->prepare("UPDATE wi_learn_docs SET drive_id = ?, drive_modified = ? WHERE id = ?"); $u->bind_param('ssi', $driveId, $driveMod, $id); $u->execute(); }
-    return ['id' => $id, 'chunks' => $nc, 'status' => $status, 'note' => $note];
+    return ['id' => $id, 'chunks' => $nc, 'status' => $status, 'note' => $note, 'duplicates' => $nDup ?? 0, 'similar' => $nSim ?? 0];
 }
 /** Google Drive: what the connected account can read for learning (Google Docs are exported as text). */
 const WF_DRIVE_LEARN_TYPES = [
