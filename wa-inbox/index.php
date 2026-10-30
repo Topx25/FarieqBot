@@ -7,6 +7,7 @@ if (!is_file(WI_DIR . '/installed.json') && !wi_users()) { header('Location: ins
 if (isset($_GET['int_api'])) { require __DIR__ . '/features.php'; wf_int_api(); } // Integrations: another system sends through a number with its API key
 if (isset($_GET['wc'])) { require __DIR__ . '/features.php'; wf_wc_public(); } // website chat on a client's site (public, no session)
 if (isset($_GET['ext_send'])) { require __DIR__ . '/features.php'; wf_ext_send((string) $_GET['ext_send']); } // this server's own tools send a code from the main number (token per tool)
+if (isset($_GET['acdel_dl'])) { require __DIR__ . '/features.php'; wf_acdel_download((string) $_GET['acdel_dl']); } // the data file of an account being deleted (its secret link)
 if (isset($_GET['pwa'])) { require __DIR__ . '/features.php'; if ($_GET['pwa'] !== '1') wf_pwa_serve((string) $_GET['pwa']); } // the installable app: manifest, icons, service worker
 if (isset($_GET['guide_img'])) { require __DIR__ . '/features.php'; wf_guide_img(); } // a picture card of one page, for the product chat
 if (wi_standalone() && (isset($_GET['landing_chat']) || isset($_GET['landing']))) { header('Location: ./'); exit; } // the self-hosted edition has no product page

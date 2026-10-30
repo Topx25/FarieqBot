@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         session_regenerate_id(true); $_SESSION['email'] = $back; unset($_SESSION['imp_from'], $_SESSION['acc']); $_SESSION['seen'] = time();
         header('Location: ?p=users'); exit;
     }
-    if ($do === 'acdel_request' || $do === 'acdel_admin') { require_once dirname(__DIR__) . '/features.php'; $do === 'acdel_request' ? wf_acdel_request() : wf_acdel_admin(); }
+    if (in_array($do, ['acdel_request', 'acdel_confirm', 'acdel_admin'], true)) { require_once dirname(__DIR__) . '/features.php'; $do === 'acdel_request' ? wf_acdel_request() : ($do === 'acdel_confirm' ? wf_acdel_confirm() : wf_acdel_admin()); }
     if ($do === 'terms_accept') { require_once dirname(__DIR__) . '/features.php'; wf_terms_accept(); }
     if ($do === 'logout') { if (!empty($_SESSION['email'])) { require_once dirname(__DIR__) . '/features.php'; if (function_exists('wf_data_purge_chats')) wf_data_purge_chats((string) $_SESSION['email']); } wi_log('logout'); $_SESSION = []; session_destroy(); header('Location: ./'); exit; }
     // My account: every user can change their own name, WhatsApp number and password (the current password is required).
