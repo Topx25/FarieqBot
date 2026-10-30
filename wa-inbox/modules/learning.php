@@ -288,7 +288,7 @@ function wf_doc_chunks(string $text): array {
 function wf_doc_retrieve(string $base, string $text, int $n = 3): array {
     $m = wi_db(); if (!$m) return []; $want = array_flip(wf_words($text)); if (!$want) return [];
     if (function_exists('wf_clean_install')) wf_clean_install();
-    $st = $m->prepare("SELECT c.id, c.doc_id, c.text, c.words, c.verdict, d.name FROM wi_learn_chunks c JOIN wi_learn_docs d ON d.id = c.doc_id WHERE c.base = ? AND d.status = 'active' AND c.words <> '' AND c.verdict <> 'conflict'"); // what the team does differently is never used
+    $st = $m->prepare("SELECT c.id, c.doc_id, c.text, c.words, c.verdict, d.name FROM wi_learn_chunks c JOIN wi_learn_docs d ON d.id = c.doc_id WHERE c.base = ? AND d.status = 'active' AND c.words <> '' AND c.verdict <> 'conflict' AND c.verdict <> 'duplicate'"); // a repeated passage is read once, from its original // what the team does differently is never used
     $st->bind_param('s', $base); $st->execute(); $r = $st->get_result(); $out = [];
     while ($x = $r->fetch_assoc()) { $w = array_flip(explode(' ', $x['words'])); $hit = count(array_intersect_key($w, $want)); if ($hit >= 2 || ($hit && count($want) <= 2)) $out[] = ['score' => $hit / max(3, count($want)) * 3 * (($x['verdict'] ?? '') === 'agree' ? 1.5 : 1), 'agree' => ($x['verdict'] ?? '') === 'agree', 'kind' => 'file', 'id' => 'f' . $x['id'], 'doc' => (int) $x['doc_id'], 'title' => $x['name'], 'topic' => $x['name'], 'text' => $x['text']]; }
     usort($out, fn($a, $b) => $b['score'] <=> $a['score']); $out = array_slice($out, 0, $n);
