@@ -173,7 +173,22 @@ function wf_bot_answer(array $acc, string $text, array $history = [], string $pr
     }
     // 2) Guide: concepts whose words appear in the message go in as short cards — and fewer library chunks are needed.
     $guide = wf_learn_cfg($aid)['guide'] ? wf_guide_match($aid, $text) : [];
+    // 2b) The knowledge map of TOPICS (Learning → topics on): the person's words find the topics; one clear topic answers from its explanation and passages,
+    //     several close ones are offered as a numbered list and the person's number picks one (kept per chat for a while).
+    $topicSrc = []; $kbJid = (string) ($opt['jid'] ?? '');
+    if (!empty(wf_learn_cfg($aid)['topics']) && function_exists('wf_kb_topic_search') && ($opt['role'] ?? 'bot') !== 'owner') {
+        $pick = $kbJid !== '' ? wf_kb_pick_get($aid, $kbJid) : []; $num = $pick ? wf_kb_pick_number($text, count($pick['ids'])) : 0; $chosen = null;
+        if ($num) { $cid = (int) $pick['ids'][$num - 1]; wf_kb_pick_set($aid, $kbJid, null); $mdb = wi_db(); $mq = $mdb ? $mdb->query("SELECT id, name, explain_text, answer_hint FROM wi_concepts WHERE id = " . $cid) : null;
+            if ($mq && ($row = $mq->fetch_assoc())) { $chosen = ['id' => (int) $row['id'], 'name' => (string) $row['name'], 'explain' => (string) $row['explain_text'], 'hint' => (string) $row['answer_hint'], 'terms' => []]; $text = (string) ($pick['q'] ?? $row['name']) ?: (string) $row['name']; } }
+        $tops = $chosen ? [$chosen] : wf_kb_topic_search($aid, $text, 5);
+        $close = $chosen ? [] : array_values(array_filter($tops, fn($x) => $x['score'] >= max(1, $tops[0]['score'] * (float) (wf_learn_cfg($aid)['kb_close'] ?? 0.75))));
+        if (count($close) >= 2 && $kbJid !== '') { $items = ''; foreach (array_slice($close, 0, 5) as $i => $x) $items .= ($i + 1) . '. ' . $x['name'] . "\n";
+            wf_kb_pick_set($aid, $kbJid, array_map(fn($x) => $x['id'], array_slice($close, 0, 5))); wi_update('kb_pick.json', function ($P) use ($aid, $kbJid, $text) { $P[$aid][$kbJid]['q'] = mb_substr($text, 0, 300); return $P; });
+            return ['ok' => true, 'reply' => wf_msg('kb_choose', ['items' => rtrim($items)]), 'confidence' => 0.9, 'handoff' => false, 'clarify' => true, 'reason' => 'several topics match: the person picks one', 'symptoms' => false, 'complaint' => '', 'sources' => [], 'used' => [], 'kb_choice' => array_column(array_slice($close, 0, 5), 'id'), 'task' => ['model' => 'map', 'tokens_in' => 0, 'tokens_out' => 0]]; }
+        if ($tops) { $guide = array_merge([$tops[0]], array_filter($guide, fn($g) => (int) $g['id'] !== (int) $tops[0]['id'])); $topicSrc = wf_kb_topic_chunks((int) $tops[0]['id'], $text, 3); }
+    }
     $src = wf_retrieve($acc, $text . ' ' . implode(' ', array_slice(array_column($history, 'text'), -2)), $guide ? 3 : 6);
+    if ($topicSrc) $src = array_merge($topicSrc, $src);
     // passages from uploaded files (Learning → File library)
     try { $src = array_merge(wf_doc_retrieve($aid, $text, 2), $src); } catch (Throwable $e) {}
     $ctx = ''; foreach ($src as $i => $x) $ctx .= '### S' . ($i + 1) . ' [' . ($x['kind'] === 'library' ? 'library text' : ($x['kind'] === 'file' ? (!empty($x['agree']) ? 'uploaded file, matches the team' : 'uploaded file') : 'team answer')) . ($x['topic'] ? ' · ' . $x['topic'] : '') . "]\nAbout: " . $x['title'] . "\n" . $x['text'] . "\n\n";

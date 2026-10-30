@@ -16,6 +16,56 @@ function wf_learn_install(): bool {
         status ENUM('active','off') NOT NULL DEFAULT 'active', hits INT NOT NULL DEFAULT 0, tokens_saved INT NOT NULL DEFAULT 0, created_at DATETIME NULL, last_used DATETIME NULL, expires_at DATETIME NULL, KEY b (base, status)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"));
 }
+/* ---------- The knowledge map as TOPICS: each concept has a full explanation, answer guidance, its search forms (terms) and its source chunks ---------- */
+/** The chunks behind each topic, and the 'draft' state (a new map is built as drafts and switched on together). */
+function wf_kb_topics_db(): bool {
+    $m = wi_db(); if (!$m || !wf_learn_install()) return false; static $ok = null; if ($ok !== null) return $ok;
+    $r = $m->query("SHOW COLUMNS FROM wi_concepts LIKE 'status'"); $t = $r ? (string) ($r->fetch_assoc()['Type'] ?? '') : '';
+    if ($t !== '' && !str_contains($t, "'draft'")) $m->query("ALTER TABLE wi_concepts MODIFY status ENUM('active','suggested','off','draft') NOT NULL DEFAULT 'active'");
+    return $ok = (bool) $m->query("CREATE TABLE IF NOT EXISTS wi_concept_chunks (base VARCHAR(40) NOT NULL, concept_id INT NOT NULL, chunk_id INT NOT NULL, PRIMARY KEY (concept_id, chunk_id), KEY b (base)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+}
+/** Arabic text as search keys: no diacritics or tatweel, one alef, ta marbuta as ha, alef maqsura as ya, no leading article; the words joined by one space. */
+function wf_kb_norm(string $s): string {
+    $s = mb_strtolower(preg_replace('/[\x{064B}-\x{065F}\x{0670}\x{0640}]/u', '', $s));
+    $s = strtr($s, ['أ' => 'ا', 'إ' => 'ا', 'آ' => 'ا', 'ٱ' => 'ا', 'ة' => 'ه', 'ى' => 'ي', 'ؤ' => 'و', 'ئ' => 'ي']);
+    $w = preg_split('/[^\p{L}\p{N}]+/u', $s, -1, PREG_SPLIT_NO_EMPTY);
+    return implode(' ', array_map(fn($x) => mb_strlen($x) > 4 ? preg_replace('/^(وال|بال|كال|فال|لل|ال)/u', '', $x) : $x, $w));
+}
+/** The active topics that match the person's words, best first: a search form (or the title) found in the words counts by its length,
+ *  a word shared with a sample question counts a little. [['id','name','explain','hint','score','terms'=>[]]] */
+function wf_kb_topic_search(string $base, string $text, int $max = 5): array {
+    $m = wi_db(); if (!$m || !wf_kb_topics_db()) return []; $q = ' ' . wf_kb_norm($text) . ' '; if (trim($q) === '') return [];
+    $words = array_flip(array_filter(explode(' ', trim($q)), fn($w) => mb_strlen($w) >= 3));
+    $st = $m->prepare("SELECT c.id, c.name, c.explain_text, c.answer_hint, t.term, t.norm, t.relation FROM wi_concepts c JOIN wi_concept_terms t ON t.concept_id = c.id WHERE c.base = ? AND c.status = 'active'");
+    $st->bind_param('s', $base); $st->execute(); $r = $st->get_result(); $hit = [];
+    while ($x = $r->fetch_assoc()) { $n = trim((string) $x['norm']); if ($n === '') continue; $sc = 0;
+        if ($x['relation'] === 'question') { foreach (explode(' ', $n) as $w) if (mb_strlen($w) >= 4 && isset($words[$w])) $sc += 0.5; }
+        elseif (str_contains($q, ' ' . $n . ' ')) $sc = 1 + substr_count($n, ' ') * 1.5;
+        if ($sc <= 0) continue;
+        $hit[$x['id']] ??= ['id' => (int) $x['id'], 'name' => (string) $x['name'], 'explain' => (string) $x['explain_text'], 'hint' => (string) $x['answer_hint'], 'score' => 0, 'terms' => []];
+        $hit[$x['id']]['score'] += $sc; $hit[$x['id']]['terms'][] = ['term' => (string) $x['term'], 'relation' => $x['relation'] === 'question' ? 'related' : 'related']; }
+    usort($hit, fn($a, $b) => $b['score'] <=> $a['score']);
+    return array_slice($hit, 0, $max);
+}
+/** The lesson passages behind one topic that share the most words with the question (for the answer's sources). */
+function wf_kb_topic_chunks(int $cid, string $text, int $n = 3): array {
+    $m = wi_db(); if (!$m) return []; $words = array_filter(explode(' ', wf_kb_norm($text)), fn($w) => mb_strlen($w) >= 3); $out = [];
+    $r = $m->query("SELECT k.id, k.text FROM wi_concept_chunks cc JOIN wi_learn_chunks k ON k.id = cc.chunk_id WHERE cc.concept_id = " . (int) $cid . " LIMIT 400");
+    while ($r && ($x = $r->fetch_assoc())) { $nt = ' ' . wf_kb_norm((string) $x['text']) . ' '; $sc = 0; foreach ($words as $w) if (str_contains($nt, ' ' . $w)) $sc++; $out[] = [$sc, mb_strlen((string) $x['text']), (string) $x['text']]; }
+    usort($out, fn($a, $b) => [$b[0], $b[1]] <=> [$a[0], $a[1]]);
+    return array_map(fn($x) => ['kind' => 'file', 'topic' => '', 'text' => mb_substr($x[2], 0, 1200), 'agree' => true], array_slice($out, 0, $n));
+}
+/** Topic choice per chat: the numbered list the bot sent, waiting for the person's number (expires after kb_pick_min minutes, default 30). */
+function wf_kb_pick_get(string $base, string $jid): array { $p = (array) (wi_read('kb_pick.json', [])[$base][$jid] ?? []); return $p && (int) ($p['at'] ?? 0) > time() - 60 * max(5, (int) (wf_learn_cfg($base)['kb_pick_min'] ?? 30)) ? $p : []; }
+function wf_kb_pick_set(string $base, string $jid, ?array $ids): void {
+    wi_update('kb_pick.json', function ($P) use ($base, $jid, $ids) { $P = (array) $P; if ($ids === null) unset($P[$base][$jid]); else $P[$base][$jid] = ['ids' => array_values($ids), 'at' => time()];
+        foreach ((array) ($P[$base] ?? []) as $j => $x) if ((int) ($x['at'] ?? 0) < time() - 86400) unset($P[$base][$j]); return $P; });
+}
+/** The person's answer to the list: a number (Western or Arabic-Indic digits) that is one of the listed topics, else 0. */
+function wf_kb_pick_number(string $text, int $count): int {
+    $t = strtr(trim($text), ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9']);
+    return preg_match('/^\D{0,6}(\d{1,2})\D{0,6}$/u', $t, $mm) && (int) $mm[1] >= 1 && (int) $mm[1] <= $count ? (int) $mm[1] : 0;
+}
 const WF_RELATIONS = ['related' => 'related to', 'breaks' => 'is one of the things that break', 'remedy' => 'is a solution for', 'symptom' => 'is a symptom of', 'example' => 'is an example of', 'same' => 'means the same as'];
 function wf_learn_cfg(string $base): array { return (wi_read('learning.json', [])[$base] ?? []) + ['cache' => true, 'guide' => true, 'min_sim' => 0.9, 'ttl_days' => 30, 'tokens_per_answer' => 0, 'all_groups' => true]; }
 
