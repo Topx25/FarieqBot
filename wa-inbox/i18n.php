@@ -1147,6 +1147,8 @@ return [
     'Show less' => 'عرض أقل',
     'Open chat' => 'فتح المحادثة',
     'Group library' => 'مكتبة الجروب',
+    'Your sign-in code' => 'كود الدخول',
+    'A 6-digit code was sent to your e-mail.' => 'اتبعتلك كود من 6 أرقام على الإيميل.',
     'Google sign-in: its own OAuth client ID (empty = the Google Drive client)' => 'الدخول بجوجل: Client ID خاص بيه (فاضي = عميل Google Drive)',
     'Google sign-in: its own client secret' => 'الدخول بجوجل: الـ Client secret الخاص بيه',
     'It uses its own Google client.' => 'شغال بعميل جوجل الخاص بيه.',

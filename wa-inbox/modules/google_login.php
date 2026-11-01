@@ -40,6 +40,10 @@ function wf_glogin_callback(): void {
     if (($blk = wi_access_blocked($u)) !== '') wf_glogin_fail($blk);
     $code = (string) random_int(100000, 999999);
     $_SESSION['pending'] = ['email' => $email, 'hash' => password_hash($code, PASSWORD_DEFAULT), 'at' => time(), 'tries' => 0];
-    if (!wi_send_whatsapp((string) $u['phone'], wf_msg('otp', ['code' => $code, 'minutes' => (int) wi_sys('otp_min')]))) { unset($_SESSION['pending']); wf_glogin_fail('Could not send the code on WhatsApp. Check that the gateway is connected.'); }
-    wi_flash('A 6-digit code was sent to your WhatsApp.', 'ok'); header('Location: ./'); exit;
+    // the second step's code: on WhatsApp when the account has a number, and by e-mail too when e-mail sending is set; it fails only when neither went out
+    $otp = wf_msg('otp', ['code' => $code, 'minutes' => (int) wi_sys('otp_min')]);
+    $byWa = (string) ($u['phone'] ?? '') !== '' && wi_send_code((string) $u['phone'], $otp, $code);
+    $byMail = function_exists('wi_mail_on') && wi_mail_on() && wi_mail($email, wi_t('Your sign-in code'), $otp);
+    if (!$byWa && !$byMail) { unset($_SESSION['pending']); wf_glogin_fail('Could not send the code on WhatsApp. Check that the gateway is connected.'); }
+    wi_flash($byWa ? 'A 6-digit code was sent to your WhatsApp.' : 'A 6-digit code was sent to your e-mail.', 'ok'); header('Location: ./'); exit;
 }
